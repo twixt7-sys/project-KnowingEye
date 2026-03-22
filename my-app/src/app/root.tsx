@@ -7,12 +7,18 @@ export function Root() {
   const hideHeaderFooter = location.pathname === "/login";
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {!hideHeaderFooter && <Header />}
-      <main className="flex-1">
-        <Outlet />
-      </main>
-      {!hideHeaderFooter && <Footer />}
+    <div className="bg-dark-grid min-h-screen flex flex-col position-relative">
+      {/* Animated Grid Background */}
+      <div className="grid-background" />
+
+      {/* Main Content */}
+      <div className="relative z-10 flex flex-col min-h-screen">
+        {!hideHeaderFooter && <Header />}
+        <main className="flex-1">
+          <Outlet />
+        </main>
+        {!hideHeaderFooter && <Footer />}
+      </div>
     </div>
   );
 }

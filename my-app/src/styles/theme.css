@@ -39,6 +39,8 @@
   --sidebar-accent-foreground: #1a1a2e;
   --sidebar-border: #e5e7eb;
   --sidebar-ring: #5b6fe8;
+  --grid-line-color: rgba(30, 144, 255, 0.04);
+  --grid-radial-gradient: radial-gradient(circle at 20% 50%, rgba(30, 144, 255, 0.02) 0%, transparent 50%);
 }
 
 .dark {
@@ -74,6 +76,9 @@
   --sidebar-accent-foreground: #e5e7eb;
   --sidebar-border: #2a2a3e;
   --sidebar-ring: #6d7ff5;
+  --grid-line-color: rgba(30, 144, 255, 0.08);
+  --grid-line-color: rgba(30, 144, 255, 0.08);
+  --grid-radial-gradient: radial-gradient(circle at 20% 50%, rgba(30, 144, 255, 0.06) 0%, transparent 50%);
 }
 
 @theme inline {
@@ -176,4 +181,121 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+}
+
+/* Modern Theme-Aware Grid Background */
+.bg-dark-grid {
+  position: relative;
+  background: var(--background);
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+.grid-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(var(--grid-line-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line-color) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
+  animation: gridFloat 20s linear infinite;
+}
+
+@keyframes gridFloat {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(50px, 50px);
+  }
+}
+
+.grid-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--grid-radial-gradient);
+  pointer-events: none;
+}
+
+/* Smooth Transitions for Lists and Elements */
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.list-enter-from {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.list-move {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Modern Badge Styles */
+.badge {
+  border-radius: 50px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Position Utilities */
+.position-relative {
+  position: relative;
+  z-index: 1;
+}
+
+/* Page Transition Effects */
+.page-enter-active,
+.page-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+/* Smooth hover effects for modern feel */
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Glass morphism effect */
+.glass {
+  backdrop-filter: blur(16px) saturate(180%);
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.125);
+}
+
+.dark .glass {
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
