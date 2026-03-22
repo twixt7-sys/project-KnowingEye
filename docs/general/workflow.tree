@@ -1,0 +1,207 @@
+KNOWING-EYE-SYSTEM-WORKFLOW
+│
+├── 0. SYSTEM INITIALIZATION
+│   ├── Load Environment Configurations
+│   │   ├── Backend (.env, Django settings)
+│   │   ├── Frontend (.env, API endpoints)
+│   │   ├── AI Model Paths (YOLO, CNN, FaceNet/ArcFace)
+│   │   └── Database Connection Setup
+│   │
+│   ├── Initialize Services
+│   │   ├── Django Server (REST API)
+│   │   ├── React Client
+│   │   ├── WebSocket Server (for real-time monitoring)
+│   │   └── Media Storage (local/cloud)
+│   │
+│   └── Load ML Models
+│       ├── YOLO Model (face + posture detection)
+│       ├── CNN Model (feature extraction)
+│       └── FaceNet / ArcFace (face embedding)
+│
+├── 1. AUTHENTICATION & USER MANAGEMENT
+│   ├── User Registration
+│   │   ├── Input Validation
+│   │   ├── Password Hashing
+│   │   └── Store User Record
+│   │
+│   ├── User Login
+│   │   ├── Credential Verification
+│   │   ├── Token Generation (JWT / Session)
+│   │   └── Role Assignment
+│   │       ├── Admin
+│   │       └── Examinee
+│   │
+│   └── Session Handling
+│       ├── Token Validation
+│       ├── Session Expiry
+│       └── Access Control Middleware
+│
+├── 2. EXAM MANAGEMENT MODULE (ADMIN SIDE)
+│   ├── Exam Creation
+│   │   ├── Define Metadata (title, duration, rules)
+│   │   ├── Question Input
+│   │   │   ├── Multiple Choice
+│   │   │   ├── Identification
+│   │   │   └── Other Types (optional)
+│   │   ├── Answer Key Storage
+│   │   └── Save Exam Configuration
+│   │
+│   ├── Exam Scheduling
+│   │   ├── Set Availability Window
+│   │   ├── Assign Examinees
+│   │   └── Generate Exam Session ID
+│   │
+│   ├── Exam Deployment
+│   │   ├── Publish Exam
+│   │   └── Notify Examinees
+│   │
+│   └── Exam Monitoring Interface
+│       ├── Real-Time Session View
+│       ├── Behavior Alerts Feed
+│       └── Session Controls (pause, terminate)
+│
+├── 3. EXAM SESSION FLOW (EXAMINEE SIDE)
+│   ├── Pre-Exam Phase
+│   │   ├── Login Verification
+│   │   ├── System Check
+│   │   │   ├── Webcam Access
+│   │   │   ├── Internet Stability
+│   │   │   └── Device Compatibility
+│   │   ├── Identity Verification
+│   │   │   ├── Capture Face Image
+│   │   │   ├── Generate Face Embedding
+│   │   │   └── Compare with Registered Identity
+│   │   └── Exam Instructions Display
+│   │
+│   ├── Exam Proper
+│   │   ├── Load Questions
+│   │   ├── Start Timer
+│   │   ├── Answer Submission (per question / batch)
+│   │   └── Auto-save Mechanism
+│   │
+│   └── Submission Phase
+│       ├── Final Answer Submission
+│       ├── Lock Exam Session
+│       └── Store Responses
+│
+├── 4. REAL-TIME MONITORING PIPELINE
+│   ├── Video Capture
+│   │   ├── Webcam Stream Access (Frontend)
+│   │   ├── Frame Sampling (interval-based)
+│   │   └── Stream Transmission (WebSocket/API)
+│   │
+│   ├── Preprocessing
+│   │   ├── Frame Resize
+│   │   ├── Normalization
+│   │   └── Noise Reduction
+│   │
+│   ├── Detection Layer (YOLO)
+│   │   ├── Face Detection
+│   │   ├── Body/Posture Detection
+│   │   └── Object Detection (phones, extra faces)
+│   │
+│   ├── Feature Extraction (CNN)
+│   │   ├── Facial Landmarks
+│   │   ├── Head Pose Estimation
+│   │   └── Eye Gaze Direction
+│   │
+│   ├── Identity Verification (FaceNet / ArcFace)
+│   │   ├── Generate Embeddings
+│   │   ├── Compare with Baseline
+│   │   └── Detect Identity Mismatch
+│   │
+│   └── Behavior Analysis
+│       ├── Define Behavioral Rules
+│       │   ├── Face Not Detected
+│       │   ├── Multiple Faces
+│       │   ├── Looking Away
+│       │   ├── Suspicious Posture
+│       │   └── Device Usage
+│       │
+│       ├── Event Detection
+│       │   ├── Timestamp Event
+│       │   └── Assign Event Type
+│       │
+│       └── Send Events to Scoring Engine
+│
+├── 5. BEHAVIOR SCORING ENGINE
+│   ├── Input Events Stream
+│   ├── Assign Weights per Behavior
+│   │   ├── Minor (e.g., glance away)
+│   │   ├── Moderate (frequent movement)
+│   │   └── Severe (multiple faces detected)
+│   │
+│   ├── Compute Suspicion Score
+│   │   ├── Aggregate Scores Over Time
+│   │   └── Normalize Score
+│   │
+│   ├── Threshold Evaluation
+│   │   ├── Low Risk
+│   │   ├── Medium Risk
+│   │   └── High Risk
+│   │
+│   └── Trigger Alerts
+│       ├── Real-Time Notification to Admin
+│       └── Store Flagged Events
+│
+├── 6. DATA STORAGE & LOGGING
+│   ├── User Data
+│   ├── Exam Data
+│   ├── Responses
+│   ├── Session Logs
+│   │   ├── Login/Logout
+│   │   ├── Exam Start/End
+│   │   └── Activity Logs
+│   │
+│   ├── Monitoring Data
+│   │   ├── Video Snippets / Frames
+│   │   ├── Detected Events
+│   │   └── Behavior Scores
+│   │
+│   └── Audit Trail
+│       └── Administrative Actions
+│
+├── 7. ADMIN DASHBOARD & ANALYTICS
+│   ├── Overview Dashboard
+│   │   ├── Active Exams
+│   │   ├── Active Examinees
+│   │   └── Alert Summary
+│   │
+│   ├── Session Review
+│   │   ├── Replay Video / Frames
+│   │   ├── Timeline of Events
+│   │   └── Behavior Score Graph
+│   │
+│   ├── Reports Generation
+│   │   ├── Per Examinee Report
+│   │   ├── Per Exam Summary
+│   │   └── Export (PDF/CSV)
+│   │
+│   └── Decision Support
+│       ├── Flagged Cases Review
+│       └── Final Integrity Assessment
+│
+├── 8. SYSTEM EVALUATION MODULE
+│   ├── Functional Testing
+│   ├── Usability Testing
+│   ├── Performance Testing
+│   │   ├── Latency (real-time detection)
+│   │   └── Throughput
+│   │
+│   └── Accuracy Metrics
+│       ├── Detection Accuracy
+│       ├── False Positives
+│       └── False Negatives
+│
+└── 9. SECURITY & COMPLIANCE
+    ├── Data Privacy
+    │   ├── Consent Handling
+    │   └── Data Encryption
+    │
+    ├── Secure Communication
+    │   ├── HTTPS
+    │   └── Token Authentication
+    │
+    └── Access Control
+        ├── Role-Based Permissions
+        └── Activity Monitoring
