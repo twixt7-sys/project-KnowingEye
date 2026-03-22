@@ -1,0 +1,231 @@
+{
+  "project": {
+    "title": "Knowing Eye",
+    "full_title": "A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis",
+    "type": "Capstone Project",
+    "date_started": "2026-03",
+    "institution": {
+      "name": "Legacy College of Compostela",
+      "department": "Institute of Information Technology",
+      "location": "Compostela, Davao de Oro, Philippines"
+    },
+    "team": [
+      "Saturnino C. Ancog III",
+      "Khrisha Marie O. Cavan",
+      "Kervy N. Cadiente",
+      "Twixt Jasley J. Tamera"
+    ]
+  },
+
+  "vision": {
+    "problem_statement": "Online examination systems lack reliable real-time monitoring, leading to increased risk of cheating and heavy reliance on manual supervision.",
+    "solution": "A full-stack web-based examination platform integrated with AI-powered behavioral monitoring using computer vision and deep learning.",
+    "core_goal": "Enhance exam integrity, automate monitoring, and provide data-driven evaluation of examinee behavior."
+  },
+
+  "objectives": {
+    "general": "To design and develop a centralized web-based examination platform with integrated real-time behavioral monitoring.",
+    "specific": [
+      "Develop exam creation and management system",
+      "Implement session-guided online examinations",
+      "Capture and store video streams and session logs",
+      "Analyze facial presence, gaze, and posture in real time",
+      "Detect suspicious behaviors using AI models",
+      "Generate behavioral reports and anomaly flags",
+      "Provide an administrative analytics dashboard",
+      "Evaluate system usability, functionality, and effectiveness"
+    ]
+  },
+
+  "system_scope": {
+    "included": [
+      "Web-based examination platform",
+      "Real-time webcam monitoring",
+      "Facial detection and posture analysis",
+      "Behavior scoring and anomaly detection",
+      "Admin dashboard with reports",
+      "Session logging and storage"
+    ],
+    "excluded": [
+      "Mobile application support",
+      "External system integrations (e.g., LTO databases)",
+      "Biometric hardware devices",
+      "Nationwide deployment"
+    ],
+    "target_users": [
+      "Exam Administrators",
+      "Examinees"
+    ],
+    "environment": "Controlled academic testing environment with simulated exam sessions"
+  },
+
+  "system_architecture": {
+    "type": "Full-Stack Web Application with AI Processing Pipeline",
+    "components": {
+      "frontend": {
+        "framework": "React",
+        "language": "TypeScript",
+        "responsibilities": [
+          "User interface",
+          "Exam interaction",
+          "Webcam capture",
+          "Real-time communication"
+        ]
+      },
+      "backend": {
+        "framework": "Django",
+        "language": "Python",
+        "responsibilities": [
+          "API services",
+          "Authentication",
+          "Exam management",
+          "Data processing",
+          "Monitoring coordination"
+        ]
+      },
+      "database": {
+        "type": "Relational (PostgreSQL or MySQL)",
+        "stores": [
+          "Users",
+          "Exams",
+          "Responses",
+          "Session logs",
+          "Behavior records"
+        ]
+      },
+      "ai_module": {
+        "type": "Computer Vision + Deep Learning",
+        "responsibilities": [
+          "Face detection",
+          "Posture detection",
+          "Feature extraction",
+          "Behavior analysis"
+        ]
+      },
+      "communication": {
+        "type": "REST + WebSocket",
+        "purpose": "Real-time monitoring and data streaming"
+      }
+    }
+  },
+
+  "core_features": {
+    "exam_management": [
+      "Create and configure exams",
+      "Schedule and deploy exams",
+      "Manage examinees"
+    ],
+    "exam_execution": [
+      "Session-guided exam flow",
+      "Auto-save answers",
+      "Timed assessments"
+    ],
+    "monitoring": [
+      "Real-time webcam capture",
+      "Face detection",
+      "Gaze tracking",
+      "Posture analysis",
+      "Identity verification"
+    ],
+    "analysis": [
+      "Behavior scoring engine",
+      "Anomaly detection",
+      "Event flagging"
+    ],
+    "reporting": [
+      "Behavioral reports",
+      "Session playback",
+      "Admin dashboard analytics"
+    ]
+  },
+
+  "ai_models": {
+    "detection": "YOLO",
+    "feature_extraction": "CNN",
+    "face_recognition": ["FaceNet", "ArcFace"],
+    "capabilities": [
+      "Face detection",
+      "Head pose estimation",
+      "Eye gaze tracking",
+      "Posture recognition",
+      "Object detection (e.g., phone)"
+    ]
+  },
+
+  "data_handling": {
+    "inputs": [
+      "Webcam video streams",
+      "User interactions",
+      "Exam responses"
+    ],
+    "outputs": [
+      "Behavior logs",
+      "Suspicion scores",
+      "Flagged events",
+      "Reports"
+    ],
+    "datasets": {
+      "public": "Facial landmarks and posture datasets",
+      "custom": "Recorded mock exam sessions with consent"
+    }
+  },
+
+  "workflow_summary": [
+    "User logs in and starts exam session",
+    "System verifies identity via face recognition",
+    "Webcam streams are captured in real time",
+    "AI models analyze facial and postural behavior",
+    "Behavior scoring engine evaluates actions",
+    "Suspicious events are flagged and logged",
+    "Admin monitors sessions via dashboard",
+    "Reports are generated after exam completion"
+  ],
+
+  "security_and_privacy": {
+    "measures": [
+      "User authentication and authorization",
+      "Encrypted communication (HTTPS)",
+      "Role-based access control"
+    ],
+    "privacy": [
+      "User consent for video capture",
+      "Data used only for academic purposes",
+      "Secure storage of sensitive data"
+    ]
+  },
+
+  "evaluation_metrics": {
+    "technical": [
+      "Detection accuracy",
+      "Latency",
+      "System performance"
+    ],
+    "usability": [
+      "User satisfaction",
+      "Ease of use"
+    ],
+    "effectiveness": [
+      "Reduction in manual monitoring",
+      "Accuracy of anomaly detection"
+    ]
+  },
+
+  "development_stack": {
+    "frontend": ["React", "TypeScript"],
+    "backend": ["Django", "Python"],
+    "ai": ["OpenCV", "TensorFlow", "PyTorch"],
+    "tools": [
+      "GitHub",
+      "Google Colab",
+      "GPU-enabled environment"
+    ]
+  },
+
+  "future_improvements": [
+    "Mobile application support",
+    "Multi-camera monitoring",
+    "Advanced AI behavior prediction",
+    "Integration with institutional systems",
+    "Scalable cloud deployment"
+  ]
+}
