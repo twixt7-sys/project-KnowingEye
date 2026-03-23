@@ -1,25 +1,41 @@
 import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
-import { Menu, X } from "lucide-react";
+import { Menu, X, User, LogOut } from "lucide-react";
 import { useState } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
+import { useAuth } from "../auth-context";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout, isAuthenticated, isAdmin, isExaminee } = useAuth();
 
   const navItems = [
     { name: "Home", path: "/" },
     { name: "Features", path: "/features" },
-    { name: "Dashboard", path: "/dashboard" },
-    { name: "Student", path: "/student/dashboard" },
     { name: "About", path: "/about" },
   ];
 
+  // Add role-specific navigation
+  if (isAuthenticated) {
+    if (isAdmin) {
+      navItems.push({ name: "Dashboard", path: "/dashboard" });
+    } else if (isExaminee) {
+      navItems.push({ name: "Dashboard", path: "/student/dashboard" });
+    }
+  }
+
   const isActive = (path: string) => location.pathname === path;
 
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="fixed top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo and brand */}
@@ -50,13 +66,35 @@ export function Header() {
           {/* Right side actions */}
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Link
-              to="/login"
-              className="hidden md:inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              Sign In
-            </Link>
-            
+
+            {isAuthenticated ? (
+              <div className="flex items-center gap-4">
+                {/* User info */}
+                <div className="hidden md:flex items-center gap-2 text-sm">
+                  <User className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">
+                    {user?.username} ({user?.role})
+                  </span>
+                </div>
+
+                {/* Logout button */}
+                <button
+                  onClick={handleLogout}
+                  className="hidden md:inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm bg-red-500 text-white hover:bg-red-600 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="hidden md:inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
+
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -89,13 +127,30 @@ export function Header() {
                 {item.name}
               </Link>
             ))}
-            <Link
-              to="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block mx-4 mt-4 text-center rounded-lg px-4 py-2 text-sm bg-primary text-primary-foreground"
-            >
-              Sign In
-            </Link>
+
+            {isAuthenticated ? (
+              <div className="px-4 py-2 space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <User className="w-4 h-4" />
+                  <span>{user?.username} ({user?.role})</span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm bg-red-500 text-white hover:bg-red-600 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block mx-4 mt-4 text-center rounded-lg px-4 py-2 text-sm bg-primary text-primary-foreground"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         )}
       </nav>

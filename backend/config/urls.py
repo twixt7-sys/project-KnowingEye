@@ -19,5 +19,17 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/monitoring/', include('monitoring.urls')),    
+    
+    # Authentication endpoints
+    path('api/auth/', include('authentication.urls')),
+    
+    # Exam management endpoints
+    path('api/', include('exams.urls')),
+    
+    # User sessions endpoints
+    path('api/', include('user_sessions.urls')),
+    
+    # Monitoring endpoints
+    path('api/monitoring/', include('monitoring.urls')),
 ]
+

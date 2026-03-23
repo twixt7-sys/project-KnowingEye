@@ -82,7 +82,7 @@
   --grid-line-color: rgba(30, 144, 255, 0.08);
   --grid-line-color: rgba(30, 144, 255, 0.08);
   --grid-radial-gradient: radial-gradient(circle at 20% 50%, rgba(30, 144, 255, 0.06) 0%, transparent 50%);
-  --soft-light: rgba(168, 213, 255, 0.1) 
+  --soft-light: rgba(168, 213, 255, 0.1)
 }
 
 @theme inline {
