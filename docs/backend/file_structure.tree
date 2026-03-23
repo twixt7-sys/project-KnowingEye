@@ -1,0 +1,132 @@
+knowing_eye_backend/
+│
+├── manage.py
+├── requirements.txt
+├── .env
+│
+├── config/                      
+│   ├── __init__.py
+│   ├── settings.py              # Global configuration
+│   ├── urls.py                  # Root API routing
+│   ├── asgi.py                  # ASGI entry (WebSockets support)
+│   ├── wsgi.py
+│
+│   # ARCHITECTURE: Entry Layer (Configuration Layer)
+│   # WHY:
+│   # Centralizes system configuration, routing, and deployment setup.
+│   # Separates framework-level concerns from business logic.
+│
+├── apps/                        
+│   │
+│   ├── authentication/
+│   │   ├── migrations/
+│   │   ├── models.py
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   ├── permissions.py
+│   │   └── services.py
+│   │
+│   │   # ARCHITECTURE: Modular Monolith (Domain Module)
+│   │   # WHY:
+│   │   # Encapsulates authentication logic in one domain.
+│   │   # Keeps user-related logic isolated and reusable.
+│   │
+│   ├── exams/
+│   │   ├── migrations/
+│   │   ├── models.py            # Exam, Question
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   └── services.py
+│   │
+│   │   # ARCHITECTURE: Domain-Driven Module
+│   │   # WHY:
+│   │   # Separates exam logic (core business feature).
+│   │   # Makes system easier to scale and maintain.
+│   │
+│   ├── sessions/
+│   │   ├── migrations/
+│   │   ├── models.py            # ExamSession
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   └── services.py
+│   │
+│   │   # ARCHITECTURE: Application Service Layer
+│   │   # WHY:
+│   │   # Handles real-time exam lifecycle (start, end, timing).
+│   │   # Acts as coordinator between exams and monitoring.
+│   │
+│   ├── monitoring/
+│   │   ├── migrations/
+│   │   ├── views.py             # REST frame receiver
+│   │   ├── consumers.py         # WebSocket consumers
+│   │   ├── routing.py
+│   │   └── services.py
+│   │
+│   │   # ARCHITECTURE: Real-Time Processing Layer
+│   │   # WHY:
+│   │   # Acts as bridge between frontend camera and backend AI.
+│   │   # Separates streaming concerns from business logic.
+│   │
+│   ├── behavior/
+│   │   ├── migrations/
+│   │   ├── models.py            # BehaviorLog
+│   │   ├── services.py          # Scoring engine
+│   │   └── utils.py
+│   │
+│   │   # ARCHITECTURE: Domain Logic Layer (Core Intelligence)
+│   │   # WHY:
+│   │   # Centralizes decision-making (suspicion scoring).
+│   │   # This is your system’s “brain judgment,” not just detection.
+│   │
+│   ├── reports/
+│   │   ├── migrations/
+│   │   ├── views.py
+│   │   ├── serializers.py
+│   │   └── services.py
+│   │
+│   │   # ARCHITECTURE: Presentation/Data Aggregation Layer
+│   │   # WHY:
+│   │   # Transforms raw logs into meaningful outputs for admins.
+│   │   # Keeps reporting separate from processing logic.
+│
+├── ai/                          
+│   │
+│   ├── __init__.py
+│   ├── detection/
+│   │   ├── face_detector.py
+│   │   ├── posture_detector.py
+│   │   └── object_detector.py
+│   │
+│   ├── recognition/
+│   │   ├── facenet.py
+│   │   └── arcface.py
+│   │
+│   ├── preprocessing/
+│   │   └── image_utils.py
+│   │
+│   ├── pipeline.py              # Main AI pipeline entry point
+│   └── config.py
+│
+│   # ARCHITECTURE: Layered AI Processing Module
+│   # WHY:
+│   # Separates AI from Django apps to keep system modular.
+│   # Allows future migration into microservice if needed.
+│   # Prevents tight coupling between web logic and ML models.
+│
+├── core/                        
+│   ├── permissions.py
+│   ├── exceptions.py
+│   ├── utils.py
+│   └── constants.py
+│
+│   # ARCHITECTURE: Shared Kernel Layer
+│   # WHY:
+│   # Provides reusable utilities across modules.
+│   # Prevents duplication and enforces consistency.
+│
+├── media/                       
+├── logs/                        
+└── static/

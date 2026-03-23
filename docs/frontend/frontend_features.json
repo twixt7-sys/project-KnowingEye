@@ -1,0 +1,86 @@
+{
+  "frontend": {
+    "framework": "React 18 with Vite",
+    "language": "TypeScript",
+    "build_tool": "Vite",
+    "styling": "Tailwind CSS + shadcn/ui",
+    "routing": "React Router v6",
+    "state_management": "React hooks (useState, useEffect)"
+  },
+
+  "ui_components": {
+    "library": "shadcn/ui (built on Radix UI)",
+    "additional": "Material-UI (@mui/material)",
+    "theme": "Dark/Light mode support",
+    "icons": "Lucide React"
+  },
+
+  "pages_implemented": {
+    "public_pages": [
+      "Home - Landing page with hero section",
+      "Features - System capabilities showcase",
+      "About - Project information",
+      "Login - Authentication interface"
+    ],
+    "admin_pages": [
+      "Dashboard - Administrative overview"
+    ],
+    "student_pages": [
+      "Student Dashboard - Exam access",
+      "Exam Taking - Interactive exam interface with timer",
+      "Exam Submitted - Post-submission confirmation",
+      "Exam Results - Score and feedback display",
+      "Exam Summary - Exam details and statistics"
+    ],
+    "utility_pages": [
+      "Not Found - 404 error page"
+    ]
+  },
+
+  "exam_flow": {
+    "sequence": [
+      "Student Dashboard → Select Exam",
+      "Exam Taking → Answer questions with monitoring",
+      "Auto-submit on timer expiry or manual submit",
+      "Exam Submitted → Confirmation page",
+      "Exam Results → View scores and feedback"
+    ],
+    "features": [
+      "Real-time timer display",
+      "Question navigation (previous/next)",
+      "Question flagging for review",
+      "Progress tracking",
+      "Mock behavior monitoring alerts"
+    ]
+  },
+
+  "monitoring_simulation": {
+    "current_status": "Mock implementation",
+    "features": [
+      "Webcam status indicator",
+      "Random behavior alerts (face detection, posture, etc.)",
+      "Monitoring active/inactive states"
+    ],
+    "planned_features": [
+      "Actual webcam access",
+      "Frame capture and streaming",
+      "Real-time AI analysis feedback"
+    ]
+  },
+
+  "responsive_design": {
+    "breakpoints": "Mobile-first approach",
+    "layouts": "Grid and flexbox based",
+    "components": "Adaptive to screen sizes"
+  },
+
+  "accessibility": {
+    "standards": "WCAG guidelines",
+    "features": [
+      "Keyboard navigation",
+      "Screen reader support",
+      "High contrast support",
+      "Focus management"
+    ]
+  }
+}

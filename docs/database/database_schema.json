@@ -1,0 +1,151 @@
+{
+  "database_design": {
+    "status": "Planned - Not Implemented",
+    "type": "Relational Database (PostgreSQL preferred, MySQL alternative)",
+    "architecture": "Normalized schema with foreign key relationships"
+  },
+
+  "core_tables": {
+    "users": {
+      "description": "System users (administrators and examinees)",
+      "columns": {
+        "id": "Primary key (UUID/Auto-increment)",
+        "username": "Unique username",
+        "email": "Unique email address",
+        "password_hash": "Hashed password",
+        "role": "Enum: 'admin', 'examinee'",
+        "first_name": "User's first name",
+        "last_name": "User's last name",
+        "is_active": "Account status",
+        "created_at": "Registration timestamp",
+        "updated_at": "Last update timestamp"
+      }
+    },
+
+    "exams": {
+      "description": "Exam definitions and configurations",
+      "columns": {
+        "id": "Primary key",
+        "title": "Exam title",
+        "description": "Exam description",
+        "duration_minutes": "Time limit in minutes",
+        "total_questions": "Number of questions",
+        "passing_score": "Minimum passing percentage",
+        "instructions": "Exam instructions for examinees",
+        "is_active": "Whether exam is available",
+        "created_by": "Foreign key to users.id (admin)",
+        "created_at": "Creation timestamp",
+        "updated_at": "Last update timestamp"
+      }
+    },
+
+    "questions": {
+      "description": "Individual exam questions",
+      "columns": {
+        "id": "Primary key",
+        "exam_id": "Foreign key to exams.id",
+        "question_text": "The question content",
+        "question_type": "Enum: 'multiple_choice', 'identification', 'true_false'",
+        "options": "JSON array of answer options (for multiple choice)",
+        "correct_answer": "The correct answer",
+        "points": "Points awarded for correct answer",
+        "order": "Display order in exam",
+        "created_at": "Creation timestamp"
+      }
+    },
+
+    "exam_sessions": {
+      "description": "Individual exam taking sessions",
+      "columns": {
+        "id": "Primary key (UUID)",
+        "exam_id": "Foreign key to exams.id",
+        "user_id": "Foreign key to users.id (examinee)",
+        "started_at": "Session start timestamp",
+        "submitted_at": "Submission timestamp",
+        "time_remaining": "Seconds remaining when submitted",
+        "status": "Enum: 'in_progress', 'completed', 'terminated'",
+        "ip_address": "Client IP address",
+        "user_agent": "Browser/client information"
+      }
+    },
+
+    "responses": {
+      "description": "Examinee answers to questions",
+      "columns": {
+        "id": "Primary key",
+        "session_id": "Foreign key to exam_sessions.id",
+        "question_id": "Foreign key to questions.id",
+        "answer_text": "The provided answer",
+        "is_correct": "Whether answer matches correct_answer",
+        "time_spent": "Seconds spent on question",
+        "answered_at": "Timestamp when answered"
+      }
+    },
+
+    "behavior_logs": {
+      "description": "Real-time monitoring data from AI analysis",
+      "columns": {
+        "id": "Primary key",
+        "session_id": "Foreign key to exam_sessions.id",
+        "timestamp": "Log timestamp",
+        "frame_number": "Sequential frame identifier",
+        "face_detected": "Boolean: face presence",
+        "face_confidence": "Detection confidence score",
+        "gaze_direction": "Enum: 'center', 'left', 'right', 'up', 'down'",
+        "posture": "Enum: 'normal', 'slouching', 'standing', 'away_from_camera'",
+        "multiple_faces": "Boolean: multiple faces detected",
+        "anomaly_score": "Calculated suspicion score (0-100)",
+        "alert_triggered": "Boolean: whether alert was sent",
+        "raw_frame_data": "Optional: base64 encoded frame (for review)"
+      }
+    },
+
+    "behavior_alerts": {
+      "description": "Triggered alerts and notifications",
+      "columns": {
+        "id": "Primary key",
+        "session_id": "Foreign key to exam_sessions.id",
+        "behavior_log_id": "Foreign key to behavior_logs.id",
+        "alert_type": "Enum: 'face_not_detected', 'multiple_faces', 'gaze_away', 'posture_change', 'suspicious_activity'",
+        "severity": "Enum: 'low', 'medium', 'high', 'critical'",
+        "message": "Human-readable alert description",
+        "timestamp": "Alert timestamp",
+        "acknowledged": "Boolean: whether admin acknowledged",
+        "escalated": "Boolean: whether escalated for review"
+      }
+    }
+  },
+
+  "relationships": {
+    "users_exams": "One-to-many (admin creates multiple exams)",
+    "exams_questions": "One-to-many (exam contains multiple questions)",
+    "users_sessions": "One-to-many (user takes multiple exam sessions)",
+    "exams_sessions": "One-to-many (exam has multiple sessions)",
+    "sessions_responses": "One-to-many (session has multiple answers)",
+    "sessions_behavior_logs": "One-to-many (session generates monitoring logs)",
+    "behavior_logs_alerts": "One-to-many (log can trigger multiple alerts)"
+  },
+
+  "indexes": {
+    "performance_indexes": [
+      "exam_sessions(user_id, status)",
+      "responses(session_id, question_id)",
+      "behavior_logs(session_id, timestamp)",
+      "behavior_alerts(session_id, timestamp, severity)"
+    ],
+    "foreign_key_indexes": "All foreign key columns automatically indexed"
+  },
+
+  "data_retention": {
+    "exam_responses": "Retain indefinitely for academic records",
+    "behavior_logs": "Retain for 1 year, then archive",
+    "behavior_alerts": "Retain for 2 years for audit purposes",
+    "session_metadata": "Retain indefinitely"
+  },
+
+  "backup_strategy": {
+    "frequency": "Daily full backups, hourly transaction logs",
+    "retention": "30 days rolling backup, 1 year archive",
+    "disaster_recovery": "Geo-redundant backup storage"
+  }
+}

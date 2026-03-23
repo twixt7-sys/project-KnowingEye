@@ -1,0 +1,63 @@
+frontend/
+│
+├── public/
+│   ├── favicon.ico
+│   └── assets/                 # Static assets
+│
+├── src/
+│   ├── App.tsx                # Application entry point
+│   ├── app/
+│   │   ├── root.tsx            # Root layout component
+│   │   ├── routes.ts           # React Router configuration
+│   │   ├── App.tsx             # Main app component
+│   │   │
+│   │   ├── components/
+│   │   │   ├── ui/             # Reusable UI components (shadcn/ui)
+│   │   │   │   ├── button.tsx
+│   │   │   │   ├── card.tsx
+│   │   │   │   ├── input.tsx
+│   │   │   │   ├── dialog.tsx
+│   │   │   │   └── ... (40+ components)
+│   │   │   │
+│   │   │   ├── footer.tsx      # Site footer
+│   │   │   ├── header.tsx      # Site header
+│   │   │   ├── logo.tsx        # Logo component
+│   │   │   ├── theme-toggle.tsx # Dark/light theme toggle
+│   │   │   └── figma/          # Figma-related components
+│   │   │       └── ImageWithFallback.tsx
+│   │   │
+│   │   ├── pages/              # Page components
+│   │   │   ├── home.tsx        # Landing page
+│   │   │   ├── features.tsx    # Features showcase
+│   │   │   ├── about.tsx       # About page
+│   │   │   ├── login.tsx       # Authentication page
+│   │   │   ├── dashboard.tsx   # Admin dashboard
+│   │   │   ├── student-dashboard.tsx # Student dashboard
+│   │   │   ├── exam-taking.tsx # Exam interface
+│   │   │   ├── exam-submitted.tsx # Post-submission page
+│   │   │   ├── exam-results.tsx # Results display
+│   │   │   ├── exam-summary.tsx # Exam summary
+│   │   │   └── not-found.tsx   # 404 page
+│   │   │
+│   │   ├── styles/             # Styling files
+│   │   │   ├── index.css       # Main styles
+│   │   │   ├── tailwind.css    # Tailwind imports
+│   │   │   ├── fonts.css       # Font definitions
+│   │   │   └── theme.css       # Theme variables
+│   │   │
+│   │   └── imports/
+│   │       └── pasted_text/
+│   │           └── knowing-eye-project.json # Project data
+│   │
+│   ├── index.css               # Global styles
+│   └── vite-env.d.ts           # Vite type definitions
+│
+├── package.json                # Dependencies and scripts
+├── tsconfig.json               # TypeScript configuration
+├── tsconfig.app.json           # App-specific TS config
+├── tsconfig.node.json          # Node-specific TS config
+├── vite.config.ts              # Vite build configuration
+├── tailwind.config.ts          # Tailwind CSS configuration
+├── postcss.config.mjs          # PostCSS configuration
+├── eslint.config.js            # ESLint configuration
+└── index.html                  # HTML template

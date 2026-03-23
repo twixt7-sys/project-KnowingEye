@@ -1,0 +1,37 @@
+/api/
+│
+├── auth/
+│   ├── login/                  POST
+│   ├── register/               POST
+│   ├── logout/                 POST
+│   └── me/                     GET
+│
+├── exams/
+│   ├── /                       GET, POST
+│   ├── {exam_id}/              GET, PUT, DELETE
+│   ├── {exam_id}/questions/    GET, POST
+│   └── {exam_id}/start/        POST
+│
+├── sessions/
+│   ├── /                       GET
+│   ├── {session_id}/           GET
+│   ├── {session_id}/submit/    POST
+│   └── {session_id}/end/       POST
+│
+├── monitoring/
+│   ├── frame/                  POST   # send image frame
+│   ├── status/                 GET
+│   └── alert/                  GET
+│
+├── behavior/
+│   ├── {session_id}/logs/      GET
+│   └── {session_id}/score/     GET
+│
+├── reports/
+│   ├── /                       GET
+│   ├── {session_id}/           GET
+│   └── export/                 GET
+│
+└── websocket/
+    ├── /ws/monitor/{session_id}/
+    └── /ws/alerts/{session_id}/
