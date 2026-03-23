@@ -9,7 +9,8 @@ export function Root() {
   return (
     <div className="bg-dark-grid min-h-screen flex flex-col position-relative">
       {/* Animated Grid Background */}
-      <div className="grid-background" />
+      <div className="soft-light"></div>
+      <div className="grid-background"/>
 
       {/* Main Content */}
       <div className="relative z-10 flex flex-col min-h-screen">
