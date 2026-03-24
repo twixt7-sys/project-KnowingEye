@@ -23,6 +23,7 @@ interface AuthContextType {
     username: string;
     email: string;
     password: string;
+    password2: string;
     role: 'ADMIN' | 'EXAMINEE';
   }) => Promise<void>;
   logout: () => void;
@@ -34,8 +35,6 @@ interface AuthContextType {
 
 // Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Auth provider component
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,26 +57,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     accountType?: 'admin' | 'student'
   ) => {
+    // accountType is currently an optional hint; we don't use it directly now (backend determines role)
     try {
       setIsLoading(true);
-      await apiClient.login({ username, password });
-
-      // Prefer explicit account-type input, fallback to username-based heuristics
-      const userRole = accountType
-        ? accountType === 'admin'
-          ? 'ADMIN'
-          : 'EXAMINEE'
-        : username.toLowerCase().includes('admin') || username.toLowerCase().includes('administrator')
-        ? 'ADMIN'
-        : 'EXAMINEE';
+      const response = await apiClient.login({ username, password });
 
       const userData: User = {
-        id: 1, // Should be from backend when profile endpoint exists
-        username,
-        email: `${username}@example.com`, // Placeholder, should be backend value
-        role: userRole,
-        is_admin: userRole === 'ADMIN',
-        is_examinee: userRole === 'EXAMINEE',
+        id: response.user.id,
+        username: response.user.username,
+        email: response.user.email,
+        role: response.user.role as 'ADMIN' | 'EXAMINEE',
+        is_admin: response.user.role === 'ADMIN',
+        is_examinee: response.user.role === 'EXAMINEE',
       };
 
       setUser(userData);
@@ -93,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     username: string;
     email: string;
     password: string;
+    password2: string;
     role: 'ADMIN' | 'EXAMINEE';
   }) => {
     try {
@@ -138,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 // Hook to use auth context
-export function useAuth() {
+export function useAuth(): AuthContextType {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');

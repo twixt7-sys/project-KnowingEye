@@ -27,7 +27,7 @@ urlpatterns = [
     path('api/', include('exams.urls')),
     
     # User sessions endpoints
-    path('api/', include('user_sessions.urls')),
+    path('api/', include('exam_sessions.urls')),
     
     # Monitoring endpoints
     path('api/monitoring/', include('monitoring.urls')),

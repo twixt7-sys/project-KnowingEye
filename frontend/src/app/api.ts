@@ -89,7 +89,18 @@ class ApiClient {
 
   // Authentication methods
   async login(credentials: { username: string; password: string }) {
-    const response = await this.request<{ access: string; refresh: string }>(
+    const response = await this.request<{
+      access: string;
+      refresh: string;
+      user: {
+        id: number;
+        username: string;
+        email: string;
+        role: string;
+        first_name: string;
+        last_name: string;
+      };
+    }>(
       '/auth/token/',
       {
         method: 'POST',
@@ -108,12 +119,25 @@ class ApiClient {
     username: string;
     email: string;
     password: string;
+    password2: string;
     role?: 'ADMIN' | 'EXAMINEE';
   }) {
-    return this.request('/auth/register/', {
+    const response = await this.request<{
+      message: string;
+      user: {
+        id: number;
+        username: string;
+        email: string;
+        first_name: string;
+        last_name: string;
+        role: string;
+      };
+    }>('/auth/register/', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
+
+    return response;
   }
 
   // Exam methods

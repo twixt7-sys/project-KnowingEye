@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import sys
 from pathlib import Path
 from datetime import timedelta
-# from decouple import config  # Temporarily commented out
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -48,7 +48,7 @@ INSTALLED_APPS = [
 
     'authentication',
     'exams',
-    'user_sessions',
+    'exam_sessions',
     'monitoring',
     'behavior',
     'reports',
@@ -89,17 +89,17 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 # Use PostgreSQL for production, SQLite for development
-DB_ENGINE = 'django.db.backends.sqlite3'  # Using SQLite for development
+DB_ENGINE = config('DB_ENGINE', default='django.db.backends.postgresql')
 
 if DB_ENGINE == 'django.db.backends.postgresql':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'knowing_eye',
-            'USER': 'postgres',
-            'PASSWORD': 'postgres',
-            'HOST': 'localhost',
-            'PORT': '5432',
+            'NAME': config('DB_NAME', default='knowing_eye'),
+            'USER': config('DB_USER', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default='postgres'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
         }
     }
 else:

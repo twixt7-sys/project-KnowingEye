@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
                 ('is_staff', models.BooleanField(default=False, help_text='Designates whether the user can log into this admin site.', verbose_name='staff status')),
                 ('date_joined', models.DateTimeField(default=django.utils.timezone.now, verbose_name='date joined')),
                 ('email', models.EmailField(max_length=254, unique=True)),
-                ('role', models.CharField(choices=[('admin', 'Administrator'), ('examinee', 'Examinee')], default='examinee', help_text='User role: admin or examinee', max_length=20)),
+                ('role', models.CharField(choices=[('ADMIN', 'Administrator'), ('EXAMINEE', 'Examinee')], default='EXAMINEE', help_text='User role: ADMIN or EXAMINEE', max_length=20)),
                 ('is_active', models.BooleanField(default=True, help_text='Designates whether this user account should be treated as active.')),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),

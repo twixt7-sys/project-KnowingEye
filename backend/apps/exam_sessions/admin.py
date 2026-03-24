@@ -9,7 +9,7 @@ class ResponseInline(admin.TabularInline):
     """Inline admin for responses within exam sessions."""
     model = Response
     extra = 0
-    readonly_fields = ['question', 'answer_text', 'is_correct', 'score', 'time_spent', 'submitted_at']
+    readonly_fields = ['question', 'answer_text', 'is_correct', 'time_spent', 'answered_at']
     can_delete = False
 
     def has_add_permission(self, request, obj=None):
@@ -38,7 +38,7 @@ class ExamSessionAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'user__email', 'exam__title', 'id']
     readonly_fields = [
         'id', 'started_at', 'submitted_at', 'total_score', 'percentage_score',
-        'passed', 'duration', 'responses_count'
+        'passed', 'time_remaining', 'responses_count'
     ]
     inlines = [ResponseInline, SessionLogInline]
 
@@ -47,7 +47,7 @@ class ExamSessionAdmin(admin.ModelAdmin):
             'fields': ('id', 'user', 'exam')
         }),
         ('Timing', {
-            'fields': ('started_at', 'submitted_at', 'duration')
+            'fields': ('started_at', 'submitted_at', 'time_remaining')
         }),
         ('Results', {
             'fields': ('total_score', 'percentage_score', 'passed', 'responses_count')
@@ -56,9 +56,10 @@ class ExamSessionAdmin(admin.ModelAdmin):
 
     def duration_display(self, obj):
         """Display session duration in a readable format."""
-        if obj.duration:
-            minutes = obj.duration // 60
-            seconds = obj.duration % 60
+        duration = obj.duration_seconds
+        if duration:
+            minutes = duration // 60
+            seconds = duration % 60
             return f"{minutes}m {seconds}s"
         return "-"
     duration_display.short_description = "Duration"
@@ -84,15 +85,15 @@ class ResponseAdmin(admin.ModelAdmin):
     """Admin interface for responses."""
     list_display = [
         'id', 'session_link', 'question', 'answer_text', 'is_correct',
-        'score', 'time_spent', 'submitted_at'
+        'time_spent', 'answered_at'
     ]
-    list_filter = ['is_correct', 'submitted_at', 'session__exam']
+    list_filter = ['is_correct', 'answered_at', 'session__exam']
     search_fields = ['session__user__username', 'question__text', 'answer_text']
-    readonly_fields = ['id', 'session', 'question', 'answer_text', 'is_correct', 'score', 'time_spent', 'submitted_at']
+    readonly_fields = ['id', 'session', 'question', 'answer_text', 'is_correct', 'time_spent', 'answered_at']
 
     def session_link(self, obj):
         """Link to the exam session."""
-        url = reverse('admin:user_sessions_examsession_change', args=[obj.session.id])
+        url = reverse('admin:exam_sessions_examsession_change', args=[obj.session.id])
         return format_html('<a href="{}">{}</a>', url, obj.session.id)
     session_link.short_description = "Session"
 
@@ -115,7 +116,7 @@ class SessionLogAdmin(admin.ModelAdmin):
 
     def session_link(self, obj):
         """Link to the exam session."""
-        url = reverse('admin:user_sessions_examsession_change', args=[obj.session.id])
+        url = reverse('admin:exam_sessions_examsession_change', args=[obj.session.id])
         return format_html('<a href="{}">{}</a>', url, obj.session.id)
     session_link.short_description = "Session"
 

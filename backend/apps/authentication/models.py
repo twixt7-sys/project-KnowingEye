@@ -9,15 +9,15 @@ class User(AbstractUser):
     """
 
     class Role(models.TextChoices):
-        ADMIN = 'admin', 'Administrator'
-        EXAMINEE = 'examinee', 'Examinee'
+        ADMIN = 'ADMIN', 'Administrator'
+        EXAMINEE = 'EXAMINEE', 'Examinee'
 
     email = models.EmailField(unique=True)
     role = models.CharField(
         max_length=20,
         choices=Role.choices,
         default=Role.EXAMINEE,
-        help_text='User role: admin or examinee'
+        help_text='User role: ADMIN or EXAMINEE'
     )
     is_active = models.BooleanField(
         default=True,

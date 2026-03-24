@@ -40,7 +40,7 @@ export function Login() {
       const role = userType === "admin" ? "ADMIN" : "EXAMINEE";
       if (isLogin) {
         // Login with selected account type hint for client-side role resolution
-        await login(formData.username, formData.password, userType);
+        await login(formData.username, formData.password);
         navigate(from, { replace: true });
       } else {
         // Registration with selected account type
@@ -58,6 +58,7 @@ export function Login() {
           username: formData.username,
           email: formData.email,
           password: formData.password,
+          password2: formData.confirmPassword,
           role,
         });
 

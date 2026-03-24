@@ -2,8 +2,9 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+import uuid
 
-from apps.exams.models import Exam
+from exams.models import Exam
 
 User = get_user_model()
 
@@ -20,7 +21,7 @@ class ExamSession(models.Model):
         TERMINATED = 'terminated', 'Terminated'
         EXPIRED = 'expired', 'Expired'
 
-    id = models.UUIDField(primary_key=True, editable=False, default=None)
+    id = models.UUIDField(primary_key=True, editable=False, default=uuid.uuid4)
     exam = models.ForeignKey(
         Exam,
         on_delete=models.PROTECT,
