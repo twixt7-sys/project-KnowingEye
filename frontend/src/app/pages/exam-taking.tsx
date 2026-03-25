@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   Camera,
@@ -22,6 +22,12 @@ export function ExamTaking() {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [behaviorAlerts, setBehaviorAlerts] = useState<string[]>([]);
   const [webcamActive, setWebcamActive] = useState(true);
+  const [isFloating, setIsFloating] = useState(false);
+  const [floatingPosition, setFloatingPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const floatingRef = useRef<HTMLDivElement>(null);
 
   // Mock questions
   const questions = Array.from({ length: 50 }, (_, i) => ({
@@ -68,6 +74,80 @@ export function ExamTaking() {
 
     return () => clearInterval(alertInterval);
   }, []);
+
+  // Start webcam
+  useEffect(() => {
+    const startCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+        setWebcamActive(true);
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setWebcamActive(false);
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      // Cleanup: stop the stream
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  // Initialize floating position to bottom right
+  useEffect(() => {
+    if (isFloating && floatingRef.current) {
+      const rect = floatingRef.current.getBoundingClientRect();
+      setFloatingPosition({
+        x: window.innerWidth - rect.width - 16, // 16px from right edge
+        y: window.innerHeight - rect.height - 16, // 16px from bottom edge
+      });
+    }
+  }, [isFloating]);
+
+  // Drag functionality
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        setFloatingPosition({
+          x: e.clientX - dragOffset.x,
+          y: e.clientY - dragOffset.y,
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (floatingRef.current) {
+      const rect = floatingRef.current.getBoundingClientRect();
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+      setIsDragging(true);
+    }
+  };
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -237,10 +317,43 @@ export function ExamTaking() {
             </div>
 
             {/* Webcam feed */}
-            <div className="bg-card rounded-xl border border-border p-6">
-              <h3 className="font-semibold mb-4">Monitoring Feed</h3>
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center relative overflow-hidden">
-                <Camera className="w-16 h-16 text-muted-foreground" />
+            <div
+              ref={floatingRef}
+              className={`bg-card rounded-xl border border-border p-6 ${
+                isFloating
+                  ? "fixed z-50 shadow-2xl cursor-move"
+                  : "relative"
+              }`}
+              style={
+                isFloating
+                  ? {
+                      left: `${floatingPosition.x}px`,
+                      top: `${floatingPosition.y}px`,
+                      width: "20rem",
+                      height: "auto",
+                      maxHeight: "55vh",
+                    }
+                  : {}
+              }
+              onMouseDown={isFloating ? handleMouseDown : undefined}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold">Monitoring Feed</h3>
+                <button
+                  onClick={() => setIsFloating((v) => !v)}
+                  className="text-sm px-3 py-1 rounded-lg border border-border hover:bg-accent transition-colors"
+                >
+                  {isFloating ? "Dock" : "Floating"}
+                </button>
+              </div>
+
+              <div className="aspect-video bg-muted rounded-lg relative overflow-hidden">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  muted
+                  className="w-full h-full object-cover rounded-lg"
+                />
                 <div className="absolute top-3 left-3 px-3 py-1 bg-red-500 text-white text-xs rounded-full flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
                   Recording
