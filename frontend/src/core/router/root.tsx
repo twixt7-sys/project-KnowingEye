@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from "react-router";
-import { Header } from "./components/header";
-import { Footer } from "./components/footer";
-import { useAuth } from "./auth-context";
+import { Header } from "../../shared/components/layout/header";
+import { Footer } from "../../shared/components/layout/footer";
+import { useAuth } from "../providers/auth-provider";
 
 export function Root() {
   const location = useLocation();

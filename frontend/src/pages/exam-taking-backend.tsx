@@ -9,7 +9,7 @@ import {
   Flag,
   Loader2,
 } from "lucide-react";
-import { examAPI, type ExamSession, type ResponseData } from "../api";
+import { examAPI, type ExamSession, type ResponseData } from "../core/config/api";
 
 export function ExamTakingWithBackend() {
   const { examId } = useParams();

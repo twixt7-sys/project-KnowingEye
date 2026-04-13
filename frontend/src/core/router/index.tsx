@@ -1,17 +1,17 @@
 import { createBrowserRouter } from "react-router";
 import { Root } from "./root";
-import { Home } from "./pages/home";
-import { Features } from "./pages/features";
-import { Dashboard } from "./pages/dashboard";
-import { About } from "./pages/about";
-import { Login } from "./pages/login";
-import { NotFound } from "./pages/not-found";
-import { StudentDashboard } from "./pages/student-dashboard";
-import { ExamTaking } from "./pages/exam-taking";
-import { ExamSubmitted } from "./pages/exam-submitted";
-import { ExamResults } from "./pages/exam-results";
-import { ExamSummary } from "./pages/exam-summary";
-import { ProtectedRoute } from "./components/protected-route";
+import { Home } from "../../pages/home";
+import { Features } from "../../pages/features";
+import { Dashboard } from "../../pages/dashboard";
+import { About } from "../../pages/about";
+import { Login } from "../../pages/login";
+import { NotFound } from "../../pages/not-found";
+import { StudentDashboard } from "../../pages/student-dashboard";
+import { ExamTaking } from "../../pages/exam-taking";
+import { ExamSubmitted } from "../../pages/exam-submitted";
+import { ExamResults } from "../../pages/exam-results";
+import { ExamSummary } from "../../pages/exam-summary";
+import { ProtectedRoute } from "../../shared/components/common/protected-route";
 
 export const router = createBrowserRouter([
   {

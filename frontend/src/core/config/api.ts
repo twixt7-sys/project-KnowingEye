@@ -1,7 +1,7 @@
 // API Service for Knowing Eye Backend Integration
 // This demonstrates how the frontend would connect to the Django REST API
 
-const API_BASE_URL = 'http://localhost:8000/api';
+import { API_BASE_URL } from './env';
 
 // Types for API responses
 export interface Exam {

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
-import { Logo } from "../components/logo";
+import { Logo } from "../shared/components/layout/logo";
 import { Eye, EyeOff, User, Lock, AlertCircle, Loader2 } from "lucide-react";
-import { useAuth } from "../auth-context";
+import { useAuth } from "../core/providers/auth-provider";
 
 export function Login() {
   const [showPassword, setShowPassword] = useState(false);

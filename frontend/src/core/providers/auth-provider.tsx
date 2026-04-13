@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { apiClient } from './api';
+import { apiClient } from '../config/api';
 
 // User type definition
 export interface User {

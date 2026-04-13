@@ -1,9 +1,9 @@
 import { Logo } from "./logo";
-import { ThemeToggle } from "./theme-toggle";
+import { ThemeToggle } from "../common/theme-toggle";
 import { Menu, X, User, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { useAuth } from "../auth-context";
+import { useAuth } from "../../../core/providers/auth-provider";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
