@@ -1,0 +1,14 @@
+
+[backend]
+
+install:
+python -m pip install -r requirements.txt
+
+migrate:
+python manage.py migrate
+
+seed:
+python manage.py seed
+
+start:
+python manage.py runserver
