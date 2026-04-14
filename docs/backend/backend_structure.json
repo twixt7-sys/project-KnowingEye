@@ -1,18 +1,58 @@
 {
   "backend": {
     "framework": "Django",
-    "architecture_pattern": "Feature-Based Modular Monolith with Layered Services",
+    "architecture_pattern": "Feature-Based Modular Monolith with Layered Architecture",
     "language": "Python"
   },
 
-  "core_architecture": {
-    "pattern": "Feature-Based + Layered (Controller, Action, Service, Repository)",
-    "description": "Each feature module encapsulates its own models, business logic, and API layer while following internal layering for separation of concerns"
+  "architecture_layers": {
+    "core": {
+      "description": "Global system configuration and foundational logic",
+      "responsibilities": [
+        "Django settings and environment configuration",
+        "Global routing (URLs, ASGI, WSGI)",
+        "Authentication and permission base classes",
+        "Exception handling",
+        "System-wide utilities and constants"
+      ]
+    },
+
+    "features": {
+      "description": "Domain-driven modules representing business features",
+      "pattern": "Each feature contains its own models, actions, services, repositories, and API layer"
+    },
+
+    "shared": {
+      "description": "Reusable logic shared across features",
+      "responsibilities": [
+        "Base repository and service classes",
+        "Common DTOs and validators",
+        "Reusable mixins",
+        "Utility functions"
+      ]
+    },
+
+    "ai_module": {
+      "description": "Independent AI processing layer",
+      "responsibilities": [
+        "Image preprocessing",
+        "Detection and recognition models",
+        "Feature extraction",
+        "Returning structured AI results"
+      ]
+    }
   },
 
   "feature_modules": {
     "auth": {
-      "description": "Handles authentication and user identity",
+      "description": "Authentication and user identity management",
+      "layers": [
+        "models",
+        "repositories",
+        "services",
+        "actions",
+        "api"
+      ],
       "features": [
         "Login and registration",
         "JWT/session authentication",
@@ -21,88 +61,151 @@
     },
 
     "exams": {
-      "description": "Manages exam creation and configuration",
+      "description": "Exam creation and management",
+      "layers": [
+        "models",
+        "repositories",
+        "services",
+        "actions",
+        "api"
+      ],
       "features": [
-        "Create and update exams",
-        "Question management",
-        "Assign examinees"
+        "Create exams",
+        "Manage questions",
+        "Assign examinees",
+        "Schedule exams"
       ]
     },
 
     "session": {
-      "description": "Controls live exam sessions",
+      "description": "Live exam session handling",
+      "layers": [
+        "models",
+        "repositories",
+        "services",
+        "actions",
+        "api"
+      ],
       "features": [
-        "Session lifecycle (start/end)",
-        "Timer tracking",
-        "Answer submission"
+        "Start and end sessions",
+        "Timer management",
+        "Answer submission tracking"
       ]
     },
 
     "monitoring": {
-      "description": "Handles real-time monitoring and frame ingestion",
+      "description": "Real-time monitoring and frame processing",
+      "layers": [
+        "services",
+        "actions",
+        "api (REST + WebSocket)"
+      ],
       "features": [
-        "Receive frames via REST/WebSocket",
-        "Stream frames to AI pipeline",
-        "Emit real-time results"
+        "Receive image frames",
+        "Stream frames via WebSocket",
+        "Trigger AI processing",
+        "Return real-time analysis"
       ]
     },
 
     "behavior": {
-      "description": "Processes AI outputs into meaningful insights",
+      "description": "Behavioral analysis and scoring",
+      "layers": [
+        "models",
+        "repositories",
+        "services",
+        "actions"
+      ],
       "features": [
-        "Behavior scoring engine",
-        "Anomaly detection",
-        "Alert triggering"
+        "Aggregate AI outputs",
+        "Compute suspicion scores",
+        "Detect anomalies",
+        "Generate alerts"
       ]
     },
 
     "reports": {
-      "description": "Generates administrative reports",
+      "description": "Reporting and analytics",
+      "layers": [
+        "repositories",
+        "services",
+        "actions",
+        "api"
+      ],
       "features": [
+        "Generate reports",
         "Session summaries",
         "Behavior logs",
-        "Flagged events"
+        "Flagged event reports"
       ]
     },
 
     "profile": {
       "description": "User profile management",
+      "layers": [
+        "models",
+        "repositories",
+        "services",
+        "actions",
+        "api"
+      ],
       "features": [
-        "Update user details",
-        "Profile retrieval"
+        "Update user profile",
+        "Retrieve user details"
       ]
     }
   },
 
-  "layered_structure": {
-    "controller": "Handles HTTP/WebSocket requests (views, consumers)",
-    "action": "Single-use business operations (use cases)",
-    "service": "Core business logic and orchestration",
-    "repository": "Database access layer",
-    "model": "Django ORM models"
-  },
+  "api_design": {
+    "type": "REST + WebSocket",
 
-  "real_time_architecture": {
-    "technology": "Django Channels",
-    "flow": [
-      "Frontend sends frame via WebSocket",
-      "Consumer receives frame",
-      "Action triggers AI pipeline",
-      "Behavior service evaluates results",
-      "Alert generated if needed",
-      "Result sent back via WebSocket"
-    ]
-  },
+    "rest_endpoints": [
+      {
+        "endpoint": "/api/auth/login",
+        "method": "POST",
+        "description": "User authentication"
+      },
+      {
+        "endpoint": "/api/exams",
+        "method": "GET/POST",
+        "description": "Retrieve or create exams"
+      },
+      {
+        "endpoint": "/api/exams/{id}",
+        "method": "GET",
+        "description": "Get exam details"
+      },
+      {
+        "endpoint": "/api/session/start",
+        "method": "POST",
+        "description": "Start exam session"
+      },
+      {
+        "endpoint": "/api/session/submit",
+        "method": "POST",
+        "description": "Submit answers"
+      },
+      {
+        "endpoint": "/api/monitor/frame",
+        "method": "POST",
+        "description": "Fallback frame upload"
+      },
+      {
+        "endpoint": "/api/reports",
+        "method": "GET",
+        "description": "Retrieve reports"
+      }
+    ],
 
-  "ai_integration": {
-    "type": "Internal module (extractable to microservice)",
-    "pipeline": [
-      "Preprocessing (OpenCV)",
-      "Detection (YOLO)",
-      "Feature extraction (CNN)",
-      "Face recognition (FaceNet/ArcFace)",
-      "Structured output"
-    ]
+    "websocket": {
+      "technology": "Django Channels",
+      "purpose": "Real-time monitoring and feedback",
+      "events": [
+        "frame_stream",
+        "analysis_result",
+        "alert_notification"
+      ]
+    }
   },
 
   "data_models": {
@@ -113,5 +216,36 @@
     "Response": ["id", "session_id", "question_id", "answer"],
     "BehaviorLog": ["id", "session_id", "timestamp", "event_type", "score"],
     "Alert": ["id", "session_id", "type", "severity", "timestamp"]
+  },
+
+  "processing_flow": [
+    "Frontend captures frame",
+    "Frame sent via WebSocket",
+    "Monitoring consumer receives frame",
+    "ProcessFrameAction is triggered",
+    "AI pipeline processes image",
+    "Behavior service evaluates output",
+    "Alert generated if necessary",
+    "Result returned to frontend in real time"
+  ],
+
+  "performance": {
+    "frame_handling": "1–5 FPS per user",
+    "latency_target_ms": 300,
+    "scalability_strategy": [
+      "Async processing via Django Channels or Celery",
+      "Queue-based frame processing",
+      "GPU acceleration for AI models"
+    ]
+  },
+
+  "security": {
+    "authentication": "JWT or session-based",
+    "authorization": "Role-based access control",
+    "data_protection": [
+      "HTTPS encryption",
+      "Secure API endpoints",
+      "Input validation"
+    ]
   }
 }

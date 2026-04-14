@@ -4,129 +4,156 @@ knowing_eye_backend/
 ├── requirements.txt
 ├── .env
 │
-├── config/                      
-│   ├── __init__.py
-│   ├── settings.py              # Global configuration
-│   ├── urls.py                  # Root API routing
-│   ├── asgi.py                  # ASGI entry (WebSockets support)
-│   ├── wsgi.py
-│
-│   # ARCHITECTURE: Entry Layer (Configuration Layer)
-│   # WHY:
-│   # Centralizes system configuration, routing, and deployment setup.
-│   # Separates framework-level concerns from business logic.
-│
-├── apps/                        
-│   │
-│   ├── authentication/
-│   │   ├── migrations/
-│   │   ├── models.py
-│   │   ├── serializers.py
-│   │   ├── views.py
+├── core/                         # ⚙️ GLOBAL SYSTEM LAYER
+│   ├── config/
+│   │   ├── settings.py
 │   │   ├── urls.py
+│   │   ├── asgi.py
+│   │   └── wsgi.py
+│   │
+│   ├── database/
+│   │   └── base_model.py        # abstract models (timestamps, etc.)
+│   │
+│   ├── security/
 │   │   ├── permissions.py
-│   │   └── services.py
+│   │   └── authentication.py
 │   │
-│   │   # ARCHITECTURE: Modular Monolith (Domain Module)
-│   │   # WHY:
-│   │   # Encapsulates authentication logic in one domain.
-│   │   # Keeps user-related logic isolated and reusable.
+│   ├── exceptions/
+│   │   └── handlers.py
 │   │
-│   ├── exams/
-│   │   ├── migrations/
-│   │   ├── models.py            # Exam, Question
-│   │   ├── serializers.py
-│   │   ├── views.py
-│   │   ├── urls.py
-│   │   └── services.py
-│   │
-│   │   # ARCHITECTURE: Domain-Driven Module
-│   │   # WHY:
-│   │   # Separates exam logic (core business feature).
-│   │   # Makes system easier to scale and maintain.
-│   │
-│   ├── sessions/
-│   │   ├── migrations/
-│   │   ├── models.py            # ExamSession
-│   │   ├── serializers.py
-│   │   ├── views.py
-│   │   ├── urls.py
-│   │   └── services.py
-│   │
-│   │   # ARCHITECTURE: Application Service Layer
-│   │   # WHY:
-│   │   # Handles real-time exam lifecycle (start, end, timing).
-│   │   # Acts as coordinator between exams and monitoring.
-│   │
-│   ├── monitoring/
-│   │   ├── migrations/
-│   │   ├── views.py             # REST frame receiver
-│   │   ├── consumers.py         # WebSocket consumers
-│   │   ├── routing.py
-│   │   └── services.py
-│   │
-│   │   # ARCHITECTURE: Real-Time Processing Layer
-│   │   # WHY:
-│   │   # Acts as bridge between frontend camera and backend AI.
-│   │   # Separates streaming concerns from business logic.
-│   │
-│   ├── behavior/
-│   │   ├── migrations/
-│   │   ├── models.py            # BehaviorLog
-│   │   ├── services.py          # Scoring engine
-│   │   └── utils.py
-│   │
-│   │   # ARCHITECTURE: Domain Logic Layer (Core Intelligence)
-│   │   # WHY:
-│   │   # Centralizes decision-making (suspicion scoring).
-│   │   # This is your system’s “brain judgment,” not just detection.
-│   │
-│   ├── reports/
-│   │   ├── migrations/
-│   │   ├── views.py
-│   │   ├── serializers.py
-│   │   └── services.py
-│   │
-│   │   # ARCHITECTURE: Presentation/Data Aggregation Layer
-│   │   # WHY:
-│   │   # Transforms raw logs into meaningful outputs for admins.
-│   │   # Keeps reporting separate from processing logic.
+│   └── utils/
+│       ├── helpers.py
+│       └── constants.py
 │
-├── ai/                          
+│   # PURPOSE:
+│   # System-wide logic, configs, and foundations
+│
+├── features/                     # 💥 MAIN BUSINESS DOMAINS
+│
+│   ├── auth/
+│   │   ├── models/
+│   │   ├── repositories/
+│   │   │   └── user_repository.py
+│   │   │
+│   │   ├── services/
+│   │   │   └── auth_service.py
+│   │   │
+│   │   ├── actions/
+│   │   │   ├── login_action.py
+│   │   │   └── register_action.py
+│   │   │
+│   │   ├── api/
+│   │   │   ├── views.py
+│   │   │   ├── serializers.py
+│   │   │   └── urls.py
+│   │   │
+│   │   └── types.py
+│
+│   ├── exams/
+│   │   ├── models/
+│   │   │   ├── exam.py
+│   │   │   └── question.py
+│   │   │
+│   │   ├── repositories/
+│   │   ├── services/
+│   │   ├── actions/
+│   │   │   ├── create_exam_action.py
+│   │   │   └── update_exam_action.py
+│   │   │
+│   │   ├── api/
+│   │   └── types.py
+│
+│   ├── session/
+│   │   ├── models/
+│   │   │   └── session.py
+│   │   │
+│   │   ├── repositories/
+│   │   ├── services/
+│   │   ├── actions/
+│   │   │   ├── start_session_action.py
+│   │   │   ├── submit_answer_action.py
+│   │   │   └── end_session_action.py
+│   │   │
+│   │   ├── api/
+│   │   └── types.py
+│
+│   ├── monitoring/              # 🎥 YOUR CORE FEATURE
+│   │   ├── services/
+│   │   │   └── monitoring_service.py
+│   │   │
+│   │   ├── actions/
+│   │   │   └── process_frame_action.py
+│   │   │
+│   │   ├── websocket/
+│   │   │   ├── consumers.py
+│   │   │   └── routing.py
+│   │   │
+│   │   ├── api/
+│   │   │   └── views.py         # fallback REST endpoint
+│   │   │
+│   │   └── types.py
+│
+│   ├── behavior/                # 🧠 AI RESULT INTERPRETATION
+│   │   ├── models/
+│   │   │   └── behavior_log.py
+│   │   │
+│   │   ├── repositories/
+│   │   ├── services/
+│   │   │   └── scoring_service.py
+│   │   │
+│   │   ├── actions/
+│   │   │   └── evaluate_behavior_action.py
+│   │   │
+│   │   └── types.py
+│
+│   ├── reports/
+│   │   ├── repositories/
+│   │   ├── services/
+│   │   │   └── report_service.py
+│   │   │
+│   │   ├── actions/
+│   │   │   └── generate_report_action.py
+│   │   │
+│   │   ├── api/
+│   │   └── types.py
+│
+│   ├── profile/
+│   │   ├── models/
+│   │   ├── repositories/
+│   │   ├── services/
+│   │   ├── actions/
+│   │   ├── api/
+│   │   └── types.py
+│
+│   # PURPOSE:
+│   # Each folder = one feature (just like frontend)
+│
+├── shared/                      # 🔁 CROSS-FEATURE UTILITIES
+│   ├── dto/
+│   │   └── base_dto.py
 │   │
-│   ├── __init__.py
-│   ├── detection/
-│   │   ├── face_detector.py
-│   │   ├── posture_detector.py
-│   │   └── object_detector.py
+│   ├── mixins/
+│   │   └── timestamp_mixin.py
 │   │
-│   ├── recognition/
-│   │   ├── facenet.py
-│   │   └── arcface.py
+│   ├── services/
+│   │   └── base_service.py
 │   │
+│   ├── repositories/
+│   │   └── base_repository.py
+│   │
+│   └── utils/
+│       └── validators.py
+│
+│   # PURPOSE:
+│   # Shared reusable logic across features
+│
+├── ai/                          # 🤖 AI ENGINE (ISOLATED BRAIN)
 │   ├── preprocessing/
-│   │   └── image_utils.py
-│   │
-│   ├── pipeline.py              # Main AI pipeline entry point
+│   ├── detection/
+│   ├── recognition/
+│   ├── pipeline.py
 │   └── config.py
 │
-│   # ARCHITECTURE: Layered AI Processing Module
-│   # WHY:
-│   # Separates AI from Django apps to keep system modular.
-│   # Allows future migration into microservice if needed.
-│   # Prevents tight coupling between web logic and ML models.
-│
-├── core/                        
-│   ├── permissions.py
-│   ├── exceptions.py
-│   ├── utils.py
-│   └── constants.py
-│
-│   # ARCHITECTURE: Shared Kernel Layer
-│   # WHY:
-│   # Provides reusable utilities across modules.
-│   # Prevents duplication and enforces consistency.
-│
-├── media/                       
-├── logs/                        
+├── media/
+├── logs/
 └── static/

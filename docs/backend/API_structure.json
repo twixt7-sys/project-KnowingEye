@@ -1,0 +1,212 @@
+{
+  "api": {
+    "authentication": {
+      "base": "/api/auth",
+      "endpoints": [
+        {
+          "path": "/token/",
+          "method": "POST",
+          "description": "Obtain JWT access and refresh tokens",
+          "body": ["username", "password"],
+          "response": ["access", "refresh", "user"]
+        },
+        {
+          "path": "/token/refresh/",
+          "method": "POST",
+          "description": "Refresh JWT access token",
+          "body": ["refresh"],
+          "response": ["access"]
+        },
+        {
+          "path": "/register/",
+          "method": "POST",
+          "description": "Register new user",
+          "body": [
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "password",
+            "password2",
+            "role"
+          ],
+          "response": ["message", "user"]
+        },
+        {
+          "path": "/profile/",
+          "method": "GET",
+          "description": "Get current user profile",
+          "auth": true
+        },
+        {
+          "path": "/profile/update_profile/",
+          "method": "PUT",
+          "description": "Update user profile",
+          "auth": true
+        },
+        {
+          "path": "/profile/change_password/",
+          "method": "POST",
+          "description": "Change password",
+          "auth": true
+        },
+        {
+          "path": "/users/",
+          "method": "GET",
+          "description": "List users",
+          "auth": true
+        },
+        {
+          "path": "/users/{id}/",
+          "method": "GET",
+          "description": "Get user details",
+          "auth": true
+        }
+      ]
+    },
+
+    "exams": {
+      "base": "/api/exams",
+      "endpoints": [
+        {
+          "path": "/",
+          "method": "GET",
+          "description": "List exams"
+        },
+        {
+          "path": "/",
+          "method": "POST",
+          "description": "Create exam (admin only)"
+        },
+        {
+          "path": "/{id}/",
+          "method": "GET",
+          "description": "Get exam detail"
+        },
+        {
+          "path": "/{id}/",
+          "method": "PUT",
+          "description": "Update exam"
+        },
+        {
+          "path": "/{id}/",
+          "method": "PATCH",
+          "description": "Partial update exam"
+        },
+        {
+          "path": "/{id}/",
+          "method": "DELETE",
+          "description": "Delete exam"
+        },
+        {
+          "path": "/{id}/questions/",
+          "method": "GET",
+          "description": "List questions"
+        },
+        {
+          "path": "/{id}/questions/",
+          "method": "POST",
+          "description": "Create question"
+        },
+        {
+          "path": "/{id}/questions/{question_id}/",
+          "method": "GET",
+          "description": "Get question"
+        },
+        {
+          "path": "/{id}/questions/{question_id}/",
+          "method": "PUT",
+          "description": "Update question"
+        },
+        {
+          "path": "/{id}/questions/{question_id}/",
+          "method": "DELETE",
+          "description": "Delete question"
+        },
+        {
+          "path": "/{id}/publish/",
+          "method": "POST",
+          "description": "Publish exam"
+        },
+        {
+          "path": "/{id}/archive/",
+          "method": "POST",
+          "description": "Archive exam"
+        }
+      ]
+    },
+
+    "sessions": {
+      "base": "/api/sessions",
+      "endpoints": [
+        {
+          "path": "/",
+          "method": "GET",
+          "description": "List sessions"
+        },
+        {
+          "path": "/{id}/",
+          "method": "GET",
+          "description": "Session detail"
+        },
+        {
+          "path": "/start/",
+          "method": "POST",
+          "description": "Start session"
+        },
+        {
+          "path": "/{id}/submit/",
+          "method": "POST",
+          "description": "Submit session"
+        },
+        {
+          "path": "/{id}/logs/",
+          "method": "GET",
+          "description": "Session logs"
+        },
+        {
+          "path": "/{id}/terminate/",
+          "method": "POST",
+          "description": "Terminate session"
+        }
+      ]
+    },
+
+    "responses": {
+      "base": "/api/responses",
+      "endpoints": [
+        {
+          "path": "/",
+          "method": "GET",
+          "description": "List responses"
+        },
+        {
+          "path": "/{id}/",
+          "method": "GET",
+          "description": "Response detail"
+        }
+      ]
+    },
+
+    "monitoring": {
+      "base": "/api/monitoring",
+      "endpoints": [
+        {
+          "path": "/frame/",
+          "method": "POST",
+          "description": "Upload frame (fallback)",
+          "body": ["image (base64)"],
+          "response": ["status", "shape", "message"]
+        }
+      ],
+      "websocket": {
+        "implemented": false,
+        "planned_events": [
+          "frame_stream",
+          "analysis_result",
+          "alert_notification"
+        ]
+      }
+    }
+  }
+}
