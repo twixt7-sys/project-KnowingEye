@@ -57,18 +57,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     password: string,
     accountType?: 'admin' | 'student'
   ) => {
-    // accountType is currently an optional hint; we don't use it directly now (backend determines role)
     try {
       setIsLoading(true);
       const response = await apiClient.login({ username, password });
+
+      const role: 'ADMIN' | 'EXAMINEE' =
+        accountType === 'admin'
+          ? 'ADMIN'
+          : accountType === 'student'
+          ? 'EXAMINEE'
+          : (response.user.role as 'ADMIN' | 'EXAMINEE');
 
       const userData: User = {
         id: response.user.id,
         username: response.user.username,
         email: response.user.email,
-        role: response.user.role as 'ADMIN' | 'EXAMINEE',
-        is_admin: response.user.role === 'ADMIN',
-        is_examinee: response.user.role === 'EXAMINEE',
+        role,
+        is_admin: role === 'ADMIN',
+        is_examinee: role === 'EXAMINEE',
       };
 
       setUser(userData);

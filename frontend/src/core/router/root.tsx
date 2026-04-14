@@ -1,11 +1,9 @@
 import { Outlet, useLocation } from "react-router";
 import { Header } from "../../shared/components/layout/header";
 import { Footer } from "../../shared/components/layout/footer";
-import { useAuth } from "../providers/auth-provider";
 
 export function Root() {
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
 
   // Hide header/footer on login page, or show them on all other pages
   const hideHeaderFooter = location.pathname === "/login";

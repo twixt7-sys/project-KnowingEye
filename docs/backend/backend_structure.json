@@ -1,121 +1,108 @@
 {
   "backend": {
     "framework": "Django",
-    "architecture_pattern": "Modular Monolith with AI Processing Layer",
+    "architecture_pattern": "Feature-Based Modular Monolith with Layered Services",
     "language": "Python"
   },
 
-  "core_modules": {
-    "authentication": {
-      "description": "Handles user login, registration, and access control",
+  "core_architecture": {
+    "pattern": "Feature-Based + Layered (Controller, Action, Service, Repository)",
+    "description": "Each feature module encapsulates its own models, business logic, and API layer while following internal layering for separation of concerns"
+  },
+
+  "feature_modules": {
+    "auth": {
+      "description": "Handles authentication and user identity",
       "features": [
-        "JWT or session-based authentication",
-        "Role-based access (admin, examinee)"
+        "Login and registration",
+        "JWT/session authentication",
+        "Role-based access control"
       ]
     },
 
-    "exam_management": {
-      "description": "Manages exams, questions, and configurations",
+    "exams": {
+      "description": "Manages exam creation and configuration",
       "features": [
-        "Create exams",
-        "Manage questions",
-        "Assign examinees",
-        "Schedule exams"
+        "Create and update exams",
+        "Question management",
+        "Assign examinees"
       ]
     },
 
-    "exam_session": {
+    "session": {
       "description": "Controls live exam sessions",
       "features": [
-        "Session start and end",
-        "Timer handling",
-        "Answer submission tracking"
+        "Session lifecycle (start/end)",
+        "Timer tracking",
+        "Answer submission"
       ]
     },
 
     "monitoring": {
-      "description": "Handles incoming video frames and monitoring requests",
+      "description": "Handles real-time monitoring and frame ingestion",
       "features": [
-        "Receive image frames from frontend",
-        "Forward frames to AI module",
-        "Return analysis results"
+        "Receive frames via REST/WebSocket",
+        "Stream frames to AI pipeline",
+        "Emit real-time results"
       ]
     },
 
-    "behavior_analysis": {
-      "description": "Processes AI outputs and computes behavioral scores",
+    "behavior": {
+      "description": "Processes AI outputs into meaningful insights",
       "features": [
-        "Aggregate AI detection results",
-        "Compute suspicion score",
-        "Trigger anomaly flags"
+        "Behavior scoring engine",
+        "Anomaly detection",
+        "Alert triggering"
       ]
     },
 
-    "reporting": {
-      "description": "Generates reports for administrators",
+    "reports": {
+      "description": "Generates administrative reports",
       "features": [
-        "Behavior logs",
         "Session summaries",
-        "Flagged event reports"
+        "Behavior logs",
+        "Flagged events"
+      ]
+    },
+
+    "profile": {
+      "description": "User profile management",
+      "features": [
+        "Update user details",
+        "Profile retrieval"
       ]
     }
   },
 
-  "ai_integration": {
-    "type": "Internal module or separate microservice",
-    "pipeline": [
-      "Receive frame",
-      "Preprocess image (OpenCV)",
-      "Run detection model (YOLO)",
-      "Extract features (CNN)",
-      "Face verification (FaceNet / ArcFace)",
-      "Return structured results"
+  "layered_structure": {
+    "controller": "Handles HTTP/WebSocket requests (views, consumers)",
+    "action": "Single-use business operations (use cases)",
+    "service": "Core business logic and orchestration",
+    "repository": "Database access layer",
+    "model": "Django ORM models"
+  },
+
+  "real_time_architecture": {
+    "technology": "Django Channels",
+    "flow": [
+      "Frontend sends frame via WebSocket",
+      "Consumer receives frame",
+      "Action triggers AI pipeline",
+      "Behavior service evaluates results",
+      "Alert generated if needed",
+      "Result sent back via WebSocket"
     ]
   },
 
-  "api_design": {
-    "type": "REST + WebSocket",
-    "rest_endpoints": [
-      {
-        "endpoint": "/api/auth/login",
-        "method": "POST",
-        "description": "User authentication"
-      },
-      {
-        "endpoint": "/api/exams",
-        "method": "GET/POST",
-        "description": "Retrieve or create exams"
-      },
-      {
-        "endpoint": "/api/exams/{id}",
-        "method": "GET",
-        "description": "Get exam details"
-      },
-      {
-        "endpoint": "/api/session/start",
-        "method": "POST",
-        "description": "Start exam session"
-      },
-      {
-        "endpoint": "/api/monitor/frame",
-        "method": "POST",
-        "description": "Send image frame for analysis"
-      },
-      {
-        "endpoint": "/api/reports",
-        "method": "GET",
-        "description": "Retrieve monitoring reports"
-      }
-    ],
-    "websocket": {
-      "purpose": "Real-time monitoring and feedback",
-      "technology": "Django Channels",
-      "events": [
-        "frame_stream",
-        "analysis_result",
-        "alert_notification"
-      ]
-    }
+  "ai_integration": {
+    "type": "Internal module (extractable to microservice)",
+    "pipeline": [
+      "Preprocessing (OpenCV)",
+      "Detection (YOLO)",
+      "Feature extraction (CNN)",
+      "Face recognition (FaceNet/ArcFace)",
+      "Structured output"
+    ]
   },
 
   "data_models": {
@@ -124,42 +111,7 @@
     "Question": ["id", "exam_id", "content", "choices", "answer"],
     "Session": ["id", "user_id", "exam_id", "start_time", "end_time"],
     "Response": ["id", "session_id", "question_id", "answer"],
-    "BehaviorLog": [
-      "id",
-      "session_id",
-      "timestamp",
-      "event_type",
-      "score"
-    ]
-  },
-
-  "processing_flow": [
-    "Frontend captures frame",
-    "Frame sent via API/WebSocket",
-    "Backend receives frame",
-    "AI module processes image",
-    "Results passed to behavior analysis",
-    "Score computed and stored",
-    "Response returned to frontend"
-  ],
-
-  "performance": {
-    "frame_handling": "1–5 FPS per user",
-    "latency_target_ms": 300,
-    "scalability_strategy": [
-      "Async processing (Celery or Channels)",
-      "Queue-based frame handling",
-      "GPU acceleration for AI models"
-    ]
-  },
-
-  "security": {
-    "authentication": "JWT or session-based",
-    "authorization": "Role-based access control",
-    "data_protection": [
-      "HTTPS encryption",
-      "Secure API endpoints",
-      "Input validation"
-    ]
+    "BehaviorLog": ["id", "session_id", "timestamp", "event_type", "score"],
+    "Alert": ["id", "session_id", "type", "severity", "timestamp"]
   }
 }
