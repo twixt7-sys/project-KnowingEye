@@ -63,31 +63,44 @@ class Command(BaseCommand):
             reader = csv.DictReader(f)
             for row in reader:
                 user_id = int(row['id'])
+                username = row['username']
+                email = row['email']
                 defaults = {
-                    'username': row['username'],
-                    'email': row['email'],
+                    'username': username,
+                    'email': email,
                     'first_name': row['first_name'],
                     'last_name': row['last_name'],
                     'role': row['role'],
                     'is_active': self.parse_bool(row['is_active']),
                 }
-                user, created = self.user_model.objects.get_or_create(
-                    id=user_id,
-                    defaults=defaults,
-                )
-                if created:
+
+                user = self.user_model.objects.filter(username=username).first()
+                if user is None:
+                    user = self.user_model.objects.filter(email=email).first()
+                if user is None:
+                    user = self.user_model.objects.filter(id=user_id).first()
+
+                if user is None:
+                    user = self.user_model(id=user_id, **defaults)
                     user.set_password(row.get('raw_password', 'password'))
                     user.save()
                     self.stdout.write(f'Created user {user.username}.')
-                else:
-                    updated = False
-                    for field, value in defaults.items():
-                        if getattr(user, field) != value:
-                            setattr(user, field, value)
-                            updated = True
-                    if updated:
-                        user.save(update_fields=list(defaults.keys()))
-                        self.stdout.write(f'Updated user {user.username}.')
+                    continue
+
+                updated = False
+                for field, value in defaults.items():
+                    if getattr(user, field) != value:
+                        setattr(user, field, value)
+                        updated = True
+
+                if updated:
+                    user.save(update_fields=list(defaults.keys()))
+                    self.stdout.write(f'Updated user {user.username}.')
+
+                if row.get('raw_password') and not user.has_usable_password():
+                    user.set_password(row['raw_password'])
+                    user.save(update_fields=['password'])
+                    self.stdout.write(f'Set password for user {user.username}.')
 
     def load_exams(self, data_dir):
         path = data_dir / 'exams.csv'
