@@ -2,107 +2,177 @@ Agile Workflow and Work Breakdown Structure
 
 1. Product Vision & Backlog Definition
    1.1. Define core product goals and scope
-       - Exam management, session-guided delivery, behavior monitoring, reporting
-       - Role-based access for examiners and examinees
-       - PostgreSQL target with SQLite fallback
-   1.2. Capture key features from project documentation
-       - Frontend: React 18 + Vite, feature-based module architecture, real-time WebSocket monitoring
-       - Backend: Django modular monolith, REST + WebSocket, layered core/features/shared/AI
-       - AI module: frame processing, detection, scoring, anomaly alerts
-   1.3. Create product backlog items
-       - Auth & profile management
-       - Exam CRUD and question management
-       - Session lifecycle, timer, response capture
-       - Monitoring frame ingestion and fallback REST endpoint
-       - Behavior scoring and alerts
-       - Reporting and session analytics
-       - Shared utilities, DTOs, validation, base models
+       - Clarify product outcome: online exam system with behavior monitoring and reporting
+       - Confirm user roles: examiner/admin, examinee
+       - Decide deployment target: PostgreSQL production, SQLite dev fallback
+       - Establish non-functional goals: responsive UI, real-time feedback, data integrity
+   1.2. Capture project requirements from documentation
+       - Map backend responsibilities to feature areas: auth, exams, session, monitoring, behavior, reports, profile
+       - Map frontend modules to pages and components: auth, dashboard, exams, session, monitoring, reports, profile
+       - Align schema design with API and feature needs: users, exams, questions, sessions, logs, alerts
+       - Confirm monitoring flow: webcam capture → WebSocket/REST delivery → AI processing → alerts
+   1.3. Create product backlog items (epics and stories)
+       - Epic: Authentication & User Management
+           * Story: Implement registration API and frontend form
+           * Story: Implement login and JWT/session handling
+           * Story: Build role-aware protected routes
+           * Story: Add profile retrieval and update flows
+       - Epic: Exam Management
+           * Story: Create exam CRUD backend APIs
+           * Story: Add question CRUD and options storage
+           * Story: Build examiner exam list and exam detail views
+           * Story: Add exam publish/archive actions
+       - Epic: Session & Responses
+           * Story: Start session endpoint and session record creation
+           * Story: Implement timer and time remaining persistence
+           * Story: Capture answer submission per question
+           * Story: End session, calculate score, and save results
+       - Epic: Monitoring & Real-Time Communication
+           * Story: Build WebSocket consumer for frame streaming
+           * Story: Add REST /api/monitoring/frame fallback endpoint
+           * Story: Create frontend webcam streamer and monitoring panel
+           * Story: Emit analysis results and alerts in real time
+       - Epic: Behavior Analysis & Alerts
+           * Story: Model behavior log structure and storage
+           * Story: Create scoring service for suspicious behavior
+           * Story: Generate alert records and severity levels
+           * Story: Build UI indicators for detected behaviors
+       - Epic: Reporting & Analytics
+           * Story: Implement report service and session log retrieval
+           * Story: Build report viewer and filter interfaces
+           * Story: Add export option for CSV/PDF
+           * Story: Show recent alerts and session summaries
+       - Epic: Shared Architecture & Utilities
+           * Story: Create base repository/service classes
+           * Story: Add DTOs, validators, timestamp mixins
+           * Story: Build shared UI layout components and loading/error screens
+           * Story: Configure API base URL and environment constants
 
 2. Agile Iterations (Sprints)
    2.1. Sprint 1: Foundation & Core Platform
-       - Setup repo, environment, dependencies, and CI conventions
-       - Implement core Django settings, URL routing, ASGI/WGI, and shared utilities
-       - Scaffold frontend routing, providers, environment config, and shared UI layout
-       - Build user auth and role-based access flow
+       - Task 2.1.1: Initialize backend project structure and install requirements
+       - Task 2.1.2: Create Django settings modules and environment config
+       - Task 2.1.3: Configure URL routing, ASGI, WSGI, and channels settings
+       - Task 2.1.4: Implement core shared utilities and helpers
+       - Task 2.1.5: Bootstrap frontend with Vite and install React dependencies
+       - Task 2.1.6: Add router, protected routes, auth provider, query provider
+       - Task 2.1.7: Build site shell: header, sidebar, footer, loading, error states
+       - Task 2.1.8: Implement auth backend models and login/register endpoints
+       - Task 2.1.9: Add frontend login/register pages and state management
    2.2. Sprint 2: Exam Management & Session Engine
-       - Build exam model, serializers, views, and API endpoints
-       - Add question model, management, and exam-detail APIs
-       - Implement session model, start/submit/terminate endpoints, and response tracking
-       - Create examinee exam-taking page and examiner exam management page
+       - Task 2.2.1: Build exam models, migrations, and repository methods
+       - Task 2.2.2: Implement exam serializers, API views, and URL routes
+       - Task 2.2.3: Add question model, options JSON storage, and link to exams
+       - Task 2.2.4: Create exam CRUD endpoints and question management APIs
+       - Task 2.2.5: Implement session model, start/terminate endpoints, and logs
+       - Task 2.2.6: Add response model, answer persistence, and scoring fields
+       - Task 2.2.7: Build examinee exam page, timer component, and answer sheet UI
+       - Task 2.2.8: Create examiner exam management page and exam detail view
    2.3. Sprint 3: Monitoring & Real-Time Communication
-       - Develop monitoring service, WebSocket consumer, and fallback REST frame endpoint
-       - Create frontend webcam stream and monitoring dashboard components
-       - Implement frame stream event flow and analysis result handling
+       - Task 2.3.1: Add monitoring feature service and frame processing action
+       - Task 2.3.2: Build Django Channels consumer and websocket routing
+       - Task 2.3.3: Add REST fallback `/api/monitoring/frame/` endpoint
+       - Task 2.3.4: Implement frontend webcam capture hook and stream client
+       - Task 2.3.5: Build monitoring dashboard, webcam tile, and alert badge
+       - Task 2.3.6: Wire websocket events for frame_stream and analysis_result
+       - Task 2.3.7: Create alert handling and live grid behavior updates
    2.4. Sprint 4: Behavior Analysis & Reporting
-       - Add behavior log model, scoring service, and alert generation
-       - Implement report service, session summary endpoints, and export support
-       - Build behavior UI components and report viewer pages
+       - Task 2.4.1: Define behavior log schema and persistence layer
+       - Task 2.4.2: Implement scoring service and behavior evaluation action
+       - Task 2.4.3: Add alert generation on suspicious event thresholds
+       - Task 2.4.4: Build report service endpoints and session analytics APIs
+       - Task 2.4.5: Create frontend behavior log list and score indicator components
+       - Task 2.4.6: Build report table, session log viewer, and export button
+       - Task 2.4.7: Add reports page and examiner analytics dashboard
    2.5. Sprint 5: Polish, Data, and Deployment Readiness
-       - Complete profile management, user settings, and examiner/examinee dashboards
-       - Seed database data, finalize frontend shared components, accessibility, and responsive layouts
-       - Test end-to-end flows, fix bugs, and prepare production settings
+       - Task 2.5.1: Implement profile management and avatar upload flows
+       - Task 2.5.2: Add examiner/examinee dashboards and overview cards
+       - Task 2.5.3: Add responsive layout fixes and accessibility improvements
+       - Task 2.5.4: Generate seed data and verify SQLite workflow
+       - Task 2.5.5: Run end-to-end API and monitoring integration tests
+       - Task 2.5.6: Finalize production settings, CORS, static/media config
+       - Task 2.5.7: Document setup, run, and deployment instructions
 
 3. Work Breakdown Structure (WBS)
    3.1. Project Initiation
-       - Review project scope and documentation
-       - Identify major features and architecture layers
-       - Define sprint goals and acceptance criteria
+       - Task 3.1.1: Review `Project.json`, API design, backend and frontend structure docs
+       - Task 3.1.2: Create a detailed backlog from epics and user stories
+       - Task 3.1.3: Define acceptance criteria for each sprint
+       - Task 3.1.4: Establish definitions of done and test coverage goals
    3.2. Backend Architecture
        3.2.1. Core
-           - Django settings, environment config, ASGI/WGI, URL routing
-           - Permissions, exception handlers, global utilities
+           - Task 3.2.1.1: Configure Django settings and environment file handling
+           - Task 3.2.1.2: Build URL and route management for API and websocket paths
+           - Task 3.2.1.3: Add global exception handlers and permission utilities
+           - Task 3.2.1.4: Implement request/response helpers and API response formatting
        3.2.2. Shared
-           - Base repository, service, DTO, mixins, validators
-           - Common helpers and constants
+           - Task 3.2.2.1: Create `base_repository` and `base_service` abstractions
+           - Task 3.2.2.2: Add DTO base classes and shared validation routines
+           - Task 3.2.2.3: Implement timestamp mixin and reusable model mixins
+           - Task 3.2.2.4: Add shared utility functions for formatting and business logic
        3.2.3. Features
-           - Auth: user repository, auth service, actions, API endpoints
-           - Exams: exam/question models, services, actions, API
-           - Session: session lifecycle, answer submission, logs
-           - Monitoring: frame processing, WebSocket consumers, REST fallback
-           - Behavior: scoring service, behavior log model, alerts
-           - Reports: report generation, API views, analytics
-           - Profile: user profile endpoints and update actions
+           - Task 3.2.3.1: Auth feature: user repository, auth service, JWT/session actions, user endpoints
+           - Task 3.2.3.2: Exams feature: exam/question models, CRUD services, publish/archive actions, serializers
+           - Task 3.2.3.3: Session feature: lifecycle actions, answer submission, status updates, logs
+           - Task 3.2.3.4: Monitoring feature: frame service, websocket consumer, REST fallback, API view
+           - Task 3.2.3.5: Behavior feature: scoring engine, behavior repository, evaluation actions
+           - Task 3.2.3.6: Reports feature: report generation, filtering, summary export
+           - Task 3.2.3.7: Profile feature: user profile APIs and update actions
        3.2.4. AI Module
-           - Pipeline integration, preprocessing, detection, recognition
-           - Interface with monitoring and behavior services
+           - Task 3.2.4.1: Define AI pipeline entry points and config contracts
+           - Task 3.2.4.2: Add preprocessing utilities for frame normalization
+           - Task 3.2.4.3: Integrate detection/recognition modules with monitoring flow
+           - Task 3.2.4.4: Produce structured analysis output for behavior service consumption
    3.3. Frontend Architecture
        3.3.1. Core Layer
-           - Router and protected routes
-           - Auth, WebSocket, theme, query providers
-           - Environment and API configuration
+           - Task 3.3.1.1: Configure router with public and role-protected routes
+           - Task 3.3.1.2: Implement authentication provider and session persistence
+           - Task 3.3.1.3: Add WebSocket provider and event dispatch hooks
+           - Task 3.3.1.4: Build theme provider and environment-based API client
        3.3.2. Feature Modules
-           - Auth: login/register forms, hooks, API client
-           - Exams: exam builder, exam list, detail hooks, API client
-           - Session: timer, answer sheet, question view, session hooks
-           - Monitoring: webcam stream, monitoring panel, alerts, live grid
-           - Behavior: score indicators, behavior logs, flag components
-           - Dashboard: overview cards, alerts, stats charts
-           - Reports: report table, export button, log viewer
-           - Profile: profile form, avatar upload, profile hooks
+           - Task 3.3.2.1: Auth: login/register form components, validation, API hooks
+           - Task 3.3.2.2: Exams: exam builder UI, question editor, exam list view
+           - Task 3.3.2.3: Session: timer hook, answer sheet, question navigation, auto-save
+           - Task 3.3.2.4: Monitoring: webcam stream hook, monitoring panel, alert badge
+           - Task 3.3.2.5: Behavior: score indicator, flag list, behavior log view
+           - Task 3.3.2.6: Dashboard: overview cards, recent alerts, stats chart
+           - Task 3.3.2.7: Reports: report table, export button, log viewer components
+           - Task 3.3.2.8: Profile: profile form and avatar upload workflow
        3.3.3. Shared Layer
-           - Common UI components, layout, loading/error states
-           - Reusable hooks and utilities, global types
+           - Task 3.3.3.1: Create reusable UI components and layout shell
+           - Task 3.3.3.2: Build loading, error, and empty-state components
+           - Task 3.3.3.3: Implement shared hooks for debounce, local storage, and API helpers
+           - Task 3.3.3.4: Define global types and shared utility functions
    3.4. Database Design
-       - Users, exams, questions, sessions, responses
-       - Session logs, behavior logs, alerts
-       - Relationships and indexes for core lookup paths
+       - Task 3.4.1: Create schema for users, exams, questions, sessions, responses
+       - Task 3.4.2: Add session logs, behavior logs, alerts tables
+       - Task 3.4.3: Define foreign key relationships and cascade rules
+       - Task 3.4.4: Add indexes for common query patterns on users, exams, sessions
+       - Task 3.4.5: Validate SQLite dev schema compatibility with PostgreSQL target
    3.5. Quality & Validation
-       - Unit tests for backend feature modules
-       - Frontend component and hook tests
-       - Integration tests for API and monitoring flow
-       - Seed data generation and environment verification
+       - Task 3.5.1: Write backend tests for auth, exams, session, monitoring, behavior, reports
+       - Task 3.5.2: Add frontend tests for forms, hooks, and page flows
+       - Task 3.5.3: Build integration tests for `/api/monitoring/frame/`, websocket events, and session flows
+       - Task 3.5.4: Create seed data scripts and verify data import/export
+       - Task 3.5.5: Conduct acceptance checks for user story completion and bug fixes
 
 4. Release Planning
    4.1. MVP Release
-       - Auth, exam creation, session exam-taking, monitoring UI, basic reports
-       - Use SQLite development fallback and seed data support
+       - Task 4.1.1: Deliver login/register, user profile, auth-protected routes
+       - Task 4.1.2: Deliver exam CRUD, question management, and start/submit session flows
+       - Task 4.1.3: Deliver monitoring panel with webcam stream and fallback frame upload
+       - Task 4.1.4: Deliver basic reporting, recent alerts, and session summary pages
+       - Task 4.1.5: Ensure SQLite development flow and seed data support
    4.2. Post-MVP Enhancements
-       - Real-time AI behavior analysis accuracy improvements
-       - Additional monitoring alerts, posture/gaze detection
-       - Reporting exports, admin dashboards, and UX polish
+       - Task 4.2.1: Improve AI behavior detection and alert accuracy
+       - Task 4.2.2: Add posture/gaze/object detection event types
+       - Task 4.2.3: Expand report exports and admin dashboard analytics
+       - Task 4.2.4: Improve UX polish, accessibility, and responsive UI
+       - Task 4.2.5: Plan PostgreSQL migration and production deployment
 
 5. Continuous Improvement
-   - Review and refine backlog each sprint
-   - Validate against project vision and acceptance criteria
-   - Track dependencies between backend, frontend, AI, and database layers
+   - Task 5.1: Review sprint results and update backlog every iteration
+   - Task 5.2: Refine user stories with acceptance criteria and dependencies
+   - Task 5.3: Track cross-team integration between backend, frontend, AI, and database
+   - Task 5.4: Maintain documentation for architecture, API, setup, and deployment
 
