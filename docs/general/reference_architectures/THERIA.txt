@@ -1,0 +1,1 @@
+architecture = Therian Architecture: Feature-Based Layered Modular Monolith (service–repository pattern)
