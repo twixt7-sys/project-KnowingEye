@@ -224,99 +224,99 @@ Knowing Eye: Web-Based Examination Platform with Behavioral Monitoring
 			3.3.7.2 Add profile update functionality
 			3.3.7.3 Handle avatar/image upload
 4. AI Module Development
-4.1 Data Processing
-4.1.1 Frame capture preprocessing
-4.1.1.1 Implement frame acquisition from webcam
-4.1.1.2 Add image normalization and resizing
-4.1.1.3 Apply noise reduction and enhancement
-4.2 Model Integration
-4.2.1 Integrate YOLO for detection
-4.2.1.1 Load and configure YOLO model
-4.2.1.2 Implement face and posture detection
-4.2.2 Implement CNN feature extraction
-4.2.2.1 Develop CNN layers for feature extraction
-4.2.2.2 Process extracted features for analysis
-4.2.3 Integrate FaceNet/ArcFace for identity verification
-4.2.3.1 Load facial recognition model
-4.2.3.2 Implement identity consistency checks
-4.3 Behavioral Analysis
-4.3.1 Facial detection and tracking
-4.3.1.1 Detect faces in frames
-4.3.1.2 Track facial movements over time
-4.3.2 Head movement analysis
-4.3.2.1 Analyze head orientation
-4.3.2.2 Detect unusual head movements
-4.3.3 Eye gaze tracking
-4.3.3.1 Track eye positions
-4.3.3.2 Identify gaze direction
-4.3.4 Posture detection
-4.3.4.1 Detect body posture
-4.3.4.2 Analyze posture changes
-4.3.5 Suspicious behavior classification
-4.3.5.1 Classify detected behaviors
-4.3.5.2 Flag potential anomalies
-4.4 Output & Integration
-4.4.1 Format structured AI outputs
-4.4.1.1 Structure analysis results
-4.4.1.2 Prepare data for backend consumption
-4.4.2 Send results to backend services
-4.4.2.1 Implement API calls for result transmission
-4.4.2.2 Handle asynchronous processing
-4.4.3 Optimize processing latency
-4.4.3.1 Tune model performance
-4.4.3.2 Implement efficient processing pipelines
-4.4.4 Handle model fallback and failures
-4.4.4.1 Add error handling and fallbacks
-4.4.4.2 Ensure system reliability
+	4.1 Data Processing
+		4.1.1 Frame capture preprocessing
+			4.1.1.1 Implement frame acquisition from webcam
+			4.1.1.2 Add image normalization and resizing
+			4.1.1.3 Apply noise reduction and enhancement
+	4.2 Model Integration
+		4.2.1 Integrate YOLO for detection
+			4.2.1.1 Load and configure YOLO model
+			4.2.1.2 Implement face and posture detection
+		4.2.2 Implement CNN feature extraction
+			4.2.2.1 Develop CNN layers for feature extraction
+			4.2.2.2 Process extracted features for analysis
+		4.2.3 Integrate FaceNet/ArcFace for identity verification
+			4.2.3.1 Load facial recognition model
+			4.2.3.2 Implement identity consistency checks
+	4.3 Behavioral Analysis
+		4.3.1 Facial detection and tracking
+			4.3.1.1 Detect faces in frames
+			4.3.1.2 Track facial movements over time
+		4.3.2 Head movement analysis
+			4.3.2.1 Analyze head orientation
+			4.3.2.2 Detect unusual head movements
+		4.3.3 Eye gaze tracking
+			4.3.3.1 Track eye positions
+			4.3.3.2 Identify gaze direction
+		4.3.4 Posture detection
+			4.3.4.1 Detect body posture
+			4.3.4.2 Analyze posture changes
+		4.3.5 Suspicious behavior classification
+			4.3.5.1 Classify detected behaviors
+			4.3.5.2 Flag potential anomalies
+	4.4 Output & Integration
+		4.4.1 Format structured AI outputs
+			4.4.1.1 Structure analysis results
+			4.4.1.2 Prepare data for backend consumption
+		4.4.2 Send results to backend services
+			4.4.2.1 Implement API calls for result transmission
+			4.4.2.2 Handle asynchronous processing
+		4.4.3 Optimize processing latency
+			4.4.3.1 Tune model performance
+			4.4.3.2 Implement efficient processing pipelines
+		4.4.4 Handle model fallback and failures
+			4.4.4.1 Add error handling and fallbacks
+			4.4.4.2 Ensure system reliability
 5. Frontend Development
-5.1 Core Setup
-5.1.1 Initialize React project with Vite
-5.1.1.1 Set up project structure
-5.1.1.2 Configure Vite build tool
-5.1.2 Configure routing and navigation
-5.1.2.1 Implement React Router
-5.1.2.2 Design navigation components
-5.1.3 Setup global state management
-5.1.3.1 Choose and configure state management
-5.1.3.2 Implement global state for app data
-5.1.4 Configure API client and environment variables
-5.1.4.1 Set up Axios or fetch for API calls
-5.1.4.2 Manage environment configurations
-5.2 Feature Modules
-5.2.1 Authentication UI
-5.2.1.1 Create login and registration forms
-5.2.1.2 Add input validation and error handling
-5.2.1.3 Implement session persistence
-5.2.2 Exam Interface
-5.2.2.1 Develop exam listing and selection UI
-5.2.2.2 Implement question rendering and navigation
-5.2.2.3 Add timer display
-5.2.2.4 Create answer submission UI
-5.2.3 Monitoring Interface
-5.2.3.1 Integrate webcam functionality
-5.2.3.2 Display live video stream
-5.2.3.3 Add alert indicators and notifications
-5.2.3.4 Build monitoring dashboard
-5.2.4 Behavior Visualization
-5.2.4.1 Implement behavior score indicators
-5.2.4.2 Create flagged event list
-5.2.4.3 Add real-time updates
-5.2.5 Dashboard
-5.2.5.1 Design overview statistics cards
-5.2.5.2 Display recent alerts
-5.2.5.3 Show activity summaries
-5.2.6 Reports Interface
-5.2.6.1 Create report table and filters
-5.2.6.2 Implement session log viewer
-5.2.6.3 Add export options
-5.2.7 Profile Interface
-5.2.7.1 Develop profile editing forms
-5.2.7.2 Implement avatar upload UI
-5.3 Shared Components
-5.3.1 Create layout components (header, sidebar, footer)
-5.3.2 Implement loading and error states
-5.3.3 Develop reusable UI components
-5.3.4 Build custom hooks
+	5.1 Core Setup
+		5.1.1 Initialize React project with Vite
+			5.1.1.1 Set up project structure
+			5.1.1.2 Configure Vite build tool
+		5.1.2 Configure routing and navigation
+			5.1.2.1 Implement React Router
+			5.1.2.2 Design navigation components
+		5.1.3 Setup global state management
+			5.1.3.1 Choose and configure state management
+			5.1.3.2 Implement global state for app data
+		5.1.4 Configure API client and environment variables
+			5.1.4.1 Set up Axios or fetch for API calls
+			5.1.4.2 Manage environment configurations
+	5.2 Feature Modules
+		5.2.1 Authentication UI
+			5.2.1.1 Create login and registration forms
+			5.2.1.2 Add input validation and error handling
+			5.2.1.3 Implement session persistence
+		5.2.2 Exam Interface
+			5.2.2.1 Develop exam listing and selection UI
+			5.2.2.2 Implement question rendering and navigation
+			5.2.2.3 Add timer display
+			5.2.2.4 Create answer submission UI
+		5.2.3 Monitoring Interface
+			5.2.3.1 Integrate webcam functionality
+			5.2.3.2 Display live video stream
+			5.2.3.3 Add alert indicators and notifications
+			5.2.3.4 Build monitoring dashboard
+		5.2.4 Behavior Visualization
+			5.2.4.1 Implement behavior score indicators
+			5.2.4.2 Create flagged event list
+			5.2.4.3 Add real-time updates
+		5.2.5 Dashboard
+			5.2.5.1 Design overview statistics cards
+			5.2.5.2 Display recent alerts
+			5.2.5.3 Show activity summaries
+		5.2.6 Reports Interface
+			5.2.6.1 Create report table and filters
+			5.2.6.2 Implement session log viewer
+			5.2.6.3 Add export options
+		5.2.7 Profile Interface
+			5.2.7.1 Develop profile editing forms
+			5.2.7.2 Implement avatar upload UI
+	5.3 Shared Components
+		5.3.1 Create layout components (header, sidebar, footer)
+		5.3.2 Implement loading and error states
+		5.3.3 Develop reusable UI components
+		5.3.4 Build custom hooks
 6. Integration & System Testing
 6.1 Backend Testing
 6.1.1 Unit testing for services and APIs
