@@ -150,79 +150,79 @@ Knowing Eye: Web-Based Examination Platform with Behavioral Monitoring
 			2.5.5.1 Design schema compatible with both databases
 			2.5.5.2 Plan migration scripts for production
 3. Backend Development
-3.1 Core System Setup
-3.1.1 Initialize Django project
-3.1.1.1 Set up virtual environment and install dependencies
-3.1.1.2 Create Django project with proper structure
-3.1.2 Configure environment variables and settings modules
-3.1.2.1 Define settings for development and production
-3.1.2.2 Secure sensitive data with environment variables
-3.1.3 Setup ASGI, WSGI, and Channels
-3.1.3.1 Configure ASGI for async support
-3.1.3.2 Set up Channels for WebSocket handling
-3.1.4 Configure middleware and security settings
-3.1.4.1 Implement CORS, CSRF, and security headers
-3.1.4.2 Add authentication middleware
-3.1.5 Implement global error handling
-3.1.5.1 Create custom exception handlers
-3.1.5.2 Implement logging for errors
-3.2 Shared Modules Development
-3.2.1 Create base repository classes
-3.2.1.1 Develop generic repository pattern
-3.2.1.2 Implement CRUD operations
-3.2.2 Create base service layer
-3.2.2.1 Define service interfaces
-3.2.2.2 Implement business logic abstraction
-3.2.3 Implement DTOs and validation utilities
-3.2.3.1 Create data transfer objects
-3.2.3.2 Add input validation
-3.2.4 Implement timestamp and reusable model mixins
-3.2.4.1 Add timestamp fields to models
-3.2.4.2 Create reusable mixins
-3.2.5 Create common utility functions
-3.2.5.1 Develop helper functions for common tasks
-3.2.5.2 Implement constants and enums
-3.3 Feature Development
-3.3.1 Authentication & User Management
-3.3.1.1 Implement user registration API
-3.3.1.2 Develop login and authentication (JWT/session)
-3.3.1.3 Add password hashing and validation
-3.3.1.4 Set up role-based access control
-3.3.1.5 Create profile management APIs
-3.3.2 Examination Management
-3.3.2.1 Create exam model and database schema
-3.3.2.2 Develop question model with options handling
-3.3.2.3 Implement CRUD APIs for exams and questions
-3.3.2.4 Add exam publishing and archiving functionality
-3.3.2.5 Configure exam settings (time limits, rules)
-3.3.3 Session Management
-3.3.3.1 Implement session initialization and lifecycle
-3.3.3.2 Add timer and time tracking
-3.3.3.3 Handle answer submission
-3.3.3.4 Develop score computation logic
-3.3.3.5 Manage session termination and result storage
-3.3.4 Monitoring System
-3.3.4.1 Implement WebSocket consumer
-3.3.4.2 Create frame streaming endpoint
-3.3.4.3 Develop REST fallback endpoint
-3.3.4.4 Add frame buffering and preprocessing
-3.3.4.5 Handle real-time data processing
-3.3.5 Behavior Analysis System
-3.3.5.1 Create behavior log model and storage
-3.3.5.2 Implement detection event handling
-3.3.5.3 Develop scoring algorithm
-3.3.5.4 Add threshold-based anomaly detection
-3.3.5.5 Build alert generation system
-3.3.6 Reporting System
-3.3.6.1 Develop report generation APIs
-3.3.6.2 Implement session log retrieval
-3.3.6.3 Add behavioral analytics computation
-3.3.6.4 Create export functionality (CSV/PDF)
-3.3.6.5 Generate summary statistics
-3.3.7 Profile Management
-3.3.7.1 Implement user profile retrieval
-3.3.7.2 Add profile update functionality
-3.3.7.3 Handle avatar/image upload
+	3.1 Core System Setup
+		3.1.1 Initialize Django project
+			3.1.1.1 Set up virtual environment and install dependencies
+			3.1.1.2 Create Django project with proper structure
+		3.1.2 Configure environment variables and settings modules
+			3.1.2.1 Define settings for development and production
+			3.1.2.2 Secure sensitive data with environment variables
+		3.1.3 Setup ASGI, WSGI, and Channels
+			3.1.3.1 Configure ASGI for async support
+			3.1.3.2 Set up Channels for WebSocket handling
+		3.1.4 Configure middleware and security settings
+			3.1.4.1 Implement CORS, CSRF, and security headers
+			3.1.4.2 Add authentication middleware
+		3.1.5 Implement global error handling
+			3.1.5.1 Create custom exception handlers
+			3.1.5.2 Implement logging for errors
+	3.2 Shared Modules Development
+		3.2.1 Create base repository classes
+			3.2.1.1 Develop generic repository pattern
+			3.2.1.2 Implement CRUD operations
+		3.2.2 Create base service layer
+			3.2.2.1 Define service interfaces
+			3.2.2.2 Implement business logic abstraction
+		3.2.3 Implement DTOs and validation utilities
+			3.2.3.1 Create data transfer objects
+			3.2.3.2 Add input validation
+		3.2.4 Implement timestamp and reusable model mixins
+			3.2.4.1 Add timestamp fields to models
+			3.2.4.2 Create reusable mixins
+		3.2.5 Create common utility functions
+			3.2.5.1 Develop helper functions for common tasks
+			3.2.5.2 Implement constants and enums
+	3.3 Feature Development
+		3.3.1 Authentication & User Management
+			3.3.1.1 Implement user registration API
+			3.3.1.2 Develop login and authentication (JWT/session)
+			3.3.1.3 Add password hashing and validation
+			3.3.1.4 Set up role-based access control
+			3.3.1.5 Create profile management APIs
+		3.3.2 Examination Management
+			3.3.2.1 Create exam model and database schema
+			3.3.2.2 Develop question model with options handling
+			3.3.2.3 Implement CRUD APIs for exams and questions
+			3.3.2.4 Add exam publishing and archiving functionality
+			3.3.2.5 Configure exam settings (time limits, rules)
+		3.3.3 Session Management
+			3.3.3.1 Implement session initialization and lifecycle
+			3.3.3.2 Add timer and time tracking
+			3.3.3.3 Handle answer submission
+			3.3.3.4 Develop score computation logic
+			3.3.3.5 Manage session termination and result storage
+		3.3.4 Monitoring System
+			3.3.4.1 Implement WebSocket consumer
+			3.3.4.2 Create frame streaming endpoint
+			3.3.4.3 Develop REST fallback endpoint
+			3.3.4.4 Add frame buffering and preprocessing
+			3.3.4.5 Handle real-time data processing
+		3.3.5 Behavior Analysis System
+			3.3.5.1 Create behavior log model and storage
+			3.3.5.2 Implement detection event handling
+			3.3.5.3 Develop scoring algorithm
+			3.3.5.4 Add threshold-based anomaly detection
+			3.3.5.5 Build alert generation system
+		3.3.6 Reporting System
+			3.3.6.1 Develop report generation APIs
+			3.3.6.2 Implement session log retrieval
+			3.3.6.3 Add behavioral analytics computation
+			3.3.6.4 Create export functionality (CSV/PDF)
+			3.3.6.5 Generate summary statistics
+		3.3.7 Profile Management
+			3.3.7.1 Implement user profile retrieval
+			3.3.7.2 Add profile update functionality
+			3.3.7.3 Handle avatar/image upload
 4. AI Module Development
 4.1 Data Processing
 4.1.1 Frame capture preprocessing
