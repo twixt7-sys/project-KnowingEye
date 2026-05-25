@@ -1,0 +1,120 @@
+theria/
+│
+├── docs/
+│   ├── README.md
+│   ├── architecture/
+│   │   ├── overview.md
+│   │   ├── frontend.md
+│   │   ├── backend.md
+│   │   └── patterns/
+│   │       ├── modular_monolith.md
+│   │       ├── service_repository.md
+│   │       └── feature_based.md
+│   │
+│   ├── api/
+│   │   ├── endpoints.md
+│   │   └── schemas/
+│   │       └── *.json
+│   │
+│   ├── database/
+│   │   ├── schema.md
+│   │   ├── erd.png
+│   │   └── migrations.md
+│   │
+│   └── decisions/              # ADRs (architecture decision records)
+│       └── *.md
+│
+├── frontend/
+│   ├── README.md
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── public/
+│   │   └── ...
+│   │
+│   └── src/
+│       ├── core/              # global, feature-agnostic only
+│       │   ├── config/
+│       │   │   └── env.ts
+│       │   ├── api/
+│       │   │   └── client.ts      # axios/fetch wrapper
+│       │   ├── routing/
+│       │   │   └── router.tsx
+│       │   ├── state/
+│       │   │   └── store.ts
+│       │   └── utils/
+│       │       └── helpers.ts
+│       │
+│       ├── features/
+│       │   ├── authentication/
+│       │   │   ├── components/
+│       │   │   ├── hooks/
+│       │   │   ├── authentication.api.ts
+│       │   │   ├── authentication.service.ts
+│       │   │   ├── authentication.types.ts
+│       │   │   └── index.ts
+│       │   │
+│       │   ├── account_management/
+│       │   ├── streaks/
+│       │   ├── notifications/
+│       │   ├── analysis/
+│       │   └── activity_logging/
+│       │
+│       ├── shared/            # reusable UI + hooks only
+│       │   ├── components/
+│       │   │   ├── Button/
+│       │   │   ├── Modal/
+│       │   │   └── Input/
+│       │   ├── hooks/
+│       │   ├── styles/
+│       │   └── types/
+│       │
+│       └── app/
+│           ├── App.tsx
+│           └── main.tsx
+│
+├── backend/
+│   ├── README.md
+│   ├── requirements.txt / pyproject.toml
+│   │
+│   └── app/
+│       ├── core/                  # infrastructure only
+│       │   ├── config/
+│       │   │   └── settings.py
+│       │   ├── database/
+│       │   │   ├── connection.py
+│       │   │   └── base.py
+│       │   ├── security/
+│       │   │   └── auth_utils.py
+│       │   └── base/
+│       │       ├── base_controller.py
+│       │       ├── base_service.py
+│       │       └── base_repository.py
+│       │
+│       ├── modules/              # feature-based modules (THE core of your system)
+│       │   ├── authentication/
+│       │   │   ├── authentication.controller.py
+│       │   │   ├── authentication.service.py
+│       │   │   ├── authentication.repository.py
+│       │   │   ├── authentication.models.py
+│       │   │   ├── authentication.schemas.py
+│       │   │   └── __init__.py
+│       │   │
+│       │   ├── account_management/
+│       │   ├── streaks/
+│       │   ├── notifications/
+│       │   ├── analysis/
+│       │   └── activity_logging/
+│       │
+│       ├── shared/              # cross-module logic (use sparingly)
+│       │   ├── utils/
+│       │   ├── exceptions/
+│       │   └── constants/
+│       │
+│       ├── api/                 # route registration layer
+│       │   └── router.py
+│       │
+│       └── main.py              # app entrypoint
+│
+├── .gitignore
+├── README.md
+└── docker-compose.yml (optional)

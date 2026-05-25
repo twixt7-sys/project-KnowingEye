@@ -1,0 +1,198 @@
+src/
+├── core/                         # ⚙️ App-level foundation (global brain)
+│   ├── router/
+│   │   ├── index.tsx             # React Router setup
+│   │   ├── protected-routes.tsx  # role-based guards
+│   │   └── route-types.ts
+│   │
+│   ├── providers/
+│   │   ├── auth-provider.tsx
+│   │   ├── websocket-provider.tsx
+│   │   ├── theme-provider.tsx
+│   │   └── query-provider.tsx    # React Query / data fetching
+│   │
+│   ├── config/
+│   │   ├── env.ts                # environment variables
+│   │   ├── api.ts                # API base config
+│   │   └── constants.ts
+│   │
+│   └── hooks/
+│       └── use-app-init.ts       # bootstrapping logic
+│
+├── features/                     # 💥 Feature modules (core of your system)
+│
+│   ├── auth/
+│   │   ├── components/
+│   │   │   ├── login-form.tsx
+│   │   │   └── register-form.tsx
+│   │   │
+│   │   ├── api/
+│   │   │   └── auth-api.ts       # login/register requests
+│   │   │
+│   │   ├── hooks/
+│   │   │   ├── use-login.ts
+│   │   │   └── use-auth.ts
+│   │   │
+│   │   ├── store/               # optional (Zustand/Redux)
+│   │   │   └── auth-store.ts
+│   │   │
+│   │   ├── types.ts
+│   │   └── utils.ts
+│
+│   ├── exams/
+│   │   ├── components/
+│   │   │   ├── exam-form-builder.tsx     # Google Forms style
+│   │   │   ├── question-editor.tsx
+│   │   │   ├── exam-card.tsx
+│   │   │   └── exam-list.tsx
+│   │   │
+│   │   ├── api/
+│   │   │   └── exam-api.ts
+│   │   │
+│   │   ├── hooks/
+│   │   │   ├── use-exams.ts
+│   │   │   ├── use-create-exam.ts
+│   │   │   └── use-exam-details.ts
+│   │   │
+│   │   ├── types.ts
+│   │   └── utils.ts
+│
+│   ├── session/
+│   │   ├── components/
+│   │   │   ├── timer.tsx
+│   │   │   ├── answer-sheet.tsx
+│   │   │   └── question-view.tsx
+│   │   │
+│   │   ├── api/
+│   │   │   └── session-api.ts
+│   │   │
+│   │   ├── hooks/
+│   │   │   ├── use-session.ts
+│   │   │   ├── use-submit-answer.ts
+│   │   │   └── use-timer.ts
+│   │   │
+│   │   ├── store/
+│   │   │   └── session-store.ts
+│   │   │
+│   │   └── types.ts
+│
+│   ├── monitoring/              # 🎥 YOUR CORE FEATURE
+│   │   ├── components/
+│   │   │   ├── webcam-stream.tsx
+│   │   │   ├── monitoring-panel.tsx
+│   │   │   ├── alert-badge.tsx
+│   │   │   ├── student-tile.tsx
+│   │   │   └── live-grid.tsx
+│   │   │
+│   │   ├── api/
+│   │   │   └── monitoring-api.ts   # fallback REST calls
+│   │   │
+│   │   ├── websocket/
+│   │   │   ├── socket-client.ts
+│   │   │   └── events.ts           # event definitions
+│   │   │
+│   │   ├── hooks/
+│   │   │   ├── use-webcam.ts
+│   │   │   ├── use-frame-stream.ts
+│   │   │   ├── use-monitoring.ts
+│   │   │   └── use-alerts.ts
+│   │   │
+│   │   ├── store/
+│   │   │   └── monitoring-store.ts
+│   │   │
+│   │   ├── types.ts
+│   │   └── utils.ts
+│
+│   ├── behavior/                # 🧠 UI reflection of AI results
+│   │   ├── components/
+│   │   │   ├── score-indicator.tsx
+│   │   │   ├── behavior-log.tsx
+│   │   │   └── flag-indicator.tsx
+│   │   │
+│   │   ├── hooks/
+│   │   │   └── use-behavior.ts
+│   │   │
+│   │   └── types.ts
+│
+│   ├── dashboard/
+│   │   ├── components/
+│   │   │   ├── overview-cards.tsx
+│   │   │   ├── recent-alerts.tsx
+│   │   │   └── stats-chart.tsx
+│   │   │
+│   │   ├── hooks/
+│   │   │   └── use-dashboard.ts
+│   │   │
+│   │   └── types.ts
+│
+│   ├── reports/
+│   │   ├── components/
+│   │   │   ├── report-table.tsx
+│   │   │   ├── session-log-viewer.tsx
+│   │   │   └── export-button.tsx
+│   │   │
+│   │   ├── api/
+│   │   │   └── reports-api.ts
+│   │   │
+│   │   ├── hooks/
+│   │   │   └── use-reports.ts
+│   │   │
+│   │   └── types.ts
+│
+│   ├── profile/
+│   │   ├── components/
+│   │   │   ├── profile-form.tsx
+│   │   │   └── avatar-upload.tsx
+│   │   │
+│   │   ├── api/
+│   │   │   └── profile-api.ts
+│   │   │
+│   │   └── hooks/
+│   │       └── use-profile.ts
+│
+├── shared/                      # 🔁 truly reusable
+│   ├── components/
+│   │   ├── ui/                  # shadcn/ui components
+│   │   ├── layout/
+│   │   │   ├── header.tsx
+│   │   │   ├── footer.tsx
+│   │   │   └── sidebar.tsx
+│   │   │
+│   │   └── common/
+│   │       ├── loading.tsx
+│   │       ├── error-state.tsx
+│   │       └── empty-state.tsx
+│   │
+│   ├── hooks/
+│   │   ├── use-debounce.ts
+│   │   └── use-local-storage.ts
+│   │
+│   ├── utils/
+│   │   ├── format-date.ts
+│   │   └── helpers.ts
+│   │
+│   └── types/
+│       └── global.d.ts
+│
+├── pages/                       # 🧭 routing layer only (NO LOGIC)
+│   ├── landing/
+│   │   └── landing-page.tsx
+│   │
+│   ├── examiner/
+│   │   ├── dashboard-page.tsx
+│   │   ├── exams-page.tsx
+│   │   ├── monitoring-page.tsx
+│   │   ├── reports-page.tsx
+│   │   └── profile-page.tsx
+│   │
+│   ├── examinee/
+│   │   ├── dashboard-page.tsx
+│   │   ├── exam-page.tsx
+│   │   ├── results-page.tsx
+│   │   └── profile-page.tsx
+│   │
+│   └── auth/
+│       ├── login-page.tsx
+│       └── register-page.tsx
+│
+└── app.tsx

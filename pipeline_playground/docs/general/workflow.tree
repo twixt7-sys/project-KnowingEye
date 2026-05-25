@@ -1,0 +1,426 @@
+Work Breakdown Structure (WBS)
+Knowing Eye: Web-Based Examination Platform with Behavioral Monitoring
+
+1. Project Initiation & Planning
+	1.1 Project Understanding and Scope Definition
+		1.1.1 Review project documents, system architecture, and requirements
+			1.1.1.1 Analyze the MAIN_DOCUMENT.docx for objectives and scope
+			1.1.1.2 Understand the significance of the study for examination integrity
+			1.1.1.3 Identify key objectives: centralized platform, exam management, monitoring, computer vision analysis, deep learning integration, behavior scoring, administrative dashboard, and evaluation
+		1.1.2 Define system scope, boundaries, and constraints
+			1.1.2.1 Limit to web-based desktop/laptop environments with webcams
+			1.1.2.2 Exclude mobile applications, external database integration, biometric hardware, and nationwide deployment
+			1.1.2.3 Focus on behavioral indicators rather than definitive cheating accusations
+			1.1.2.4 Target institutions like LTO, TESDA, and higher education for computer-based examinations
+		1.1.3 Identify stakeholders (administrators, examinees, developers)
+			1.1.3.1 Define administrator roles: exam creation, monitoring, report review
+			1.1.3.2 Define examinee roles: participating in monitored online exams
+			1.1.3.3 Define developer roles: system design, implementation, testing
+		1.1.4 Define user roles and permissions (admin, examiner, examinee)
+			1.1.4.1 Establish role-based access control (RBAC) for security
+			1.1.4.2 Assign permissions for exam management, session monitoring, and report access
+		1.1.5 Establish system objectives aligned with study goals
+			1.1.5.1 Objective 1: Design centralized web-based examination platform
+			1.1.5.2 Objective 2: Implement examination management module
+			1.1.5.3 Objective 3: Develop monitoring and data management system
+			1.1.5.4 Objective 4: Apply computer vision for real-time behavior analysis
+			1.1.5.5 Objective 5: Integrate deep learning algorithms (YOLO, CNN, FaceNet/ArcFace)
+			1.1.5.6 Objective 6: Develop behavior monitoring and scoring module
+			1.1.5.7 Objective 7: Generate administrative dashboard for visualization
+			1.1.5.8 Objective 8: Evaluate functionality, usability, and effectiveness
+	1.2 Requirements Engineering
+		1.2.1 Gather functional requirements (exam, monitoring, reporting)
+			1.2.1.1 Define exam creation and configuration requirements
+			1.2.1.2 Specify session-guided online exam delivery
+			1.2.1.3 Outline webcam capture and video stream handling
+			1.2.1.4 Detail facial detection, posture analysis, and behavioral monitoring
+			1.2.1.5 Describe anomaly flagging and scoring engine
+			1.2.1.6 Specify administrative dashboard and report generation
+		1.2.2 Gather non-functional requirements (performance, scalability, usability)
+			1.2.2.1 Define performance metrics for real-time processing
+			1.2.2.2 Establish scalability for institutional use
+			1.2.2.3 Ensure usability for administrators and examinees
+			1.2.2.4 Specify security and privacy requirements for video data
+		1.2.3 Define system workflows (exam flow, monitoring flow)
+			1.2.3.1 Map out examinee exam workflow: login, exam selection, question navigation, submission
+			1.2.3.2 Design monitoring workflow: webcam access, frame capture, AI analysis, alert generation
+			1.2.3.3 Outline administrator workflow: exam setup, session monitoring, report review
+		1.2.4 Create use case diagrams and user stories
+			1.2.4.1 Develop use cases for each user role
+			1.2.4.2 Write user stories for key features (e.g., "As an admin, I want to create exams")
+		1.2.5 Define acceptance criteria for all major features
+			1.2.5.1 Set criteria for exam management functionality
+			1.2.5.2 Define criteria for monitoring accuracy and real-time performance
+			1.2.5.3 Establish criteria for dashboard usability and data visualization
+	1.3 Project Planning
+		1.3.1 Develop Agile backlog (epics, user stories, tasks)
+			1.3.1.1 Create epics for major objectives (platform development, AI integration, etc.)
+			1.3.1.2 Break down epics into user stories and tasks
+		1.3.2 Define sprint structure and timelines
+			1.3.2.1 Plan sprints aligned with capstone project timeline
+			1.3.2.2 Allocate time for analysis, design, implementation, testing, evaluation
+		1.3.3 Assign roles and responsibilities within the team
+			1.3.3.1 Assign backend development tasks
+			1.3.3.2 Assign frontend development tasks
+			1.3.3.3 Assign AI module development tasks
+		1.3.4 Define Definition of Done (DoD) and testing standards
+			1.3.4.1 Establish DoD criteria for each task type
+			1.3.4.2 Define testing standards for unit, integration, and system tests
+		1.3.5 Establish risk management plan
+			1.3.5.1 Identify risks: technical challenges in AI integration, privacy concerns
+			1.3.5.2 Develop mitigation strategies for identified risks
+====== SYSTEM DEVELOPMENT ======
+2. System Architecture Design
+	2.1 High-Level Architecture Design
+		2.1.1 Define system architecture (modular monolith or layered architecture)
+		2.1.2 Identify system components (frontend, backend, AI module, database)
+			2.1.2.1 Define frontend component (React + Vite)
+			2.1.2.2 Define backend component (Django + REST + Channels)
+			2.1.2.3 Define AI module for computer vision processing
+			2.1.2.4 Specify database component (SQLite for development, PostgreSQL for production)
+		2.1.3 Define communication protocols (REST APIs, WebSocket)
+			2.1.3.1 Use REST APIs for CRUD operations
+			2.1.3.2 Implement WebSocket for real-time monitoring
+		2.1.4 Design system deployment architecture
+			2.1.4.1 Plan deployment for web-based environment
+			2.1.4.2 Consider cloud hosting options within scope
+	2.2 Backend Architecture Design
+		2.2.1 Define backend framework structure (Django + Django REST + Channels)
+			2.2.1.1 Set up Django project structure
+			2.2.1.2 Integrate Django REST Framework for APIs
+			2.2.1.3 Configure Channels for WebSocket support
+		2.2.2 Design modular feature-based structure
+			2.2.2.1 Organize features: authentication, exams, sessions, monitoring, reports
+			2.2.2.2 Implement service-repository pattern for data access
+		2.2.3 Define service-repository pattern
+			2.2.3.1 Create base repository classes for data operations
+			2.2.3.2 Develop service layer for business logic
+		2.2.4 Design API structure and routing
+			2.2.4.1 Define RESTful API endpoints for all features
+			2.2.4.2 Implement URL routing and versioning
+		2.2.5 Define authentication and authorization strategy
+			2.2.5.1 Implement JWT or session-based authentication
+			2.2.5.2 Set up role-based permissions
+	2.3 Frontend Architecture Design
+		2.3.1 Define frontend framework structure (React + Vite)
+			2.3.1.1 Initialize React application with Vite
+			2.3.1.2 Set up TypeScript for type safety
+		2.3.2 Design component hierarchy and routing
+			2.3.2.1 Plan component structure for features
+			2.3.2.2 Implement routing with React Router
+		2.3.3 Define state management approach
+			2.3.3.1 Choose state management solution (Context API or Redux)
+			2.3.3.2 Design global state for user sessions and monitoring data
+		2.3.4 Plan UI/UX layout and navigation structure
+			2.3.4.1 Design responsive layouts for desktop/laptop
+			2.3.4.2 Plan navigation for admin and examinee interfaces
+	2.4 AI & Monitoring Architecture Design
+		2.4.1 Define AI pipeline architecture
+			2.4.1.1 Design pipeline for frame acquisition to analysis output
+			2.4.1.2 Ensure real-time processing capabilities
+		2.4.2 Design frame acquisition and preprocessing flow
+			2.4.2.1 Implement webcam frame capture
+			2.4.2.2 Add preprocessing: normalization, resizing, noise reduction
+		2.4.3 Define model integration strategy (YOLO, CNN, FaceNet/ArcFace)
+			2.4.3.1 Integrate YOLO for face and posture detection
+			2.4.3.2 Implement CNN for feature extraction
+			2.4.3.3 Use FaceNet/ArcFace for facial identity verification
+		2.4.4 Design real-time processing pipeline
+			2.4.4.1 Optimize for low latency in behavioral analysis
+			2.4.4.2 Handle frame buffering and sequential processing
+		2.4.5 Define output format for behavioral analysis
+			2.4.5.1 Structure outputs for anomaly detection and scoring
+			2.4.5.2 Format data for backend storage and dashboard visualization
+	2.5 Database Design
+		2.5.1 Identify entities (users, exams, sessions, logs, alerts)
+			2.5.1.1 Define User entity with roles
+			2.5.1.2 Define Exam and Question entities
+			2.5.1.3 Define Session, Log, and Alert entities
+		2.5.2 Define relational schema and normalization
+			2.5.2.1 Establish relationships between entities
+			2.5.2.2 Normalize to reduce redundancy
+		2.5.3 Establish foreign keys and constraints
+			2.5.3.1 Implement referential integrity
+			2.5.3.2 Add validation constraints
+		2.5.4 Design indexing strategy for performance
+			2.5.4.1 Index frequently queried fields
+			2.5.4.2 Optimize for real-time data access
+		2.5.5 Ensure compatibility (SQLite → PostgreSQL migration)
+			2.5.5.1 Design schema compatible with both databases
+			2.5.5.2 Plan migration scripts for production
+3. Backend Development
+	3.1 Core System Setup
+		3.1.1 Initialize Django project
+			3.1.1.1 Set up virtual environment and install dependencies
+			3.1.1.2 Create Django project with proper structure
+		3.1.2 Configure environment variables and settings modules
+			3.1.2.1 Define settings for development and production
+			3.1.2.2 Secure sensitive data with environment variables
+		3.1.3 Setup ASGI, WSGI, and Channels
+			3.1.3.1 Configure ASGI for async support
+			3.1.3.2 Set up Channels for WebSocket handling
+		3.1.4 Configure middleware and security settings
+			3.1.4.1 Implement CORS, CSRF, and security headers
+			3.1.4.2 Add authentication middleware
+		3.1.5 Implement global error handling
+			3.1.5.1 Create custom exception handlers
+			3.1.5.2 Implement logging for errors
+	3.2 Shared Modules Development
+		3.2.1 Create base repository classes
+			3.2.1.1 Develop generic repository pattern
+			3.2.1.2 Implement CRUD operations
+		3.2.2 Create base service layer
+			3.2.2.1 Define service interfaces
+			3.2.2.2 Implement business logic abstraction
+		3.2.3 Implement DTOs and validation utilities
+			3.2.3.1 Create data transfer objects
+			3.2.3.2 Add input validation
+		3.2.4 Implement timestamp and reusable model mixins
+			3.2.4.1 Add timestamp fields to models
+			3.2.4.2 Create reusable mixins
+		3.2.5 Create common utility functions
+			3.2.5.1 Develop helper functions for common tasks
+			3.2.5.2 Implement constants and enums
+	3.3 Feature Development
+		3.3.1 Authentication & User Management
+			3.3.1.1 Implement user registration API
+			3.3.1.2 Develop login and authentication (JWT/session)
+			3.3.1.3 Add password hashing and validation
+			3.3.1.4 Set up role-based access control
+			3.3.1.5 Create profile management APIs
+		3.3.2 Examination Management
+			3.3.2.1 Create exam model and database schema
+			3.3.2.2 Develop question model with options handling
+			3.3.2.3 Implement CRUD APIs for exams and questions
+			3.3.2.4 Add exam publishing and archiving functionality
+			3.3.2.5 Configure exam settings (time limits, rules)
+		3.3.3 Session Management
+			3.3.3.1 Implement session initialization and lifecycle
+			3.3.3.2 Add timer and time tracking
+			3.3.3.3 Handle answer submission
+			3.3.3.4 Develop score computation logic
+			3.3.3.5 Manage session termination and result storage
+		3.3.4 Monitoring System
+			3.3.4.1 Implement WebSocket consumer
+			3.3.4.2 Create frame streaming endpoint
+			3.3.4.3 Develop REST fallback endpoint
+			3.3.4.4 Add frame buffering and preprocessing
+			3.3.4.5 Handle real-time data processing
+		3.3.5 Behavior Analysis System
+			3.3.5.1 Create behavior log model and storage
+			3.3.5.2 Implement detection event handling
+			3.3.5.3 Develop scoring algorithm
+			3.3.5.4 Add threshold-based anomaly detection
+			3.3.5.5 Build alert generation system
+		3.3.6 Reporting System
+			3.3.6.1 Develop report generation APIs
+			3.3.6.2 Implement session log retrieval
+			3.3.6.3 Add behavioral analytics computation
+			3.3.6.4 Create export functionality (CSV/PDF)
+			3.3.6.5 Generate summary statistics
+		3.3.7 Profile Management
+			3.3.7.1 Implement user profile retrieval
+			3.3.7.2 Add profile update functionality
+			3.3.7.3 Handle avatar/image upload
+4. AI Module Development
+	4.1 Data Processing
+		4.1.1 Frame capture preprocessing
+			4.1.1.1 Implement frame acquisition from webcam
+			4.1.1.2 Add image normalization and resizing
+			4.1.1.3 Apply noise reduction and enhancement
+	4.2 Model Integration
+		4.2.1 Integrate YOLO for detection
+			4.2.1.1 Load and configure YOLO model
+			4.2.1.2 Implement face and posture detection
+		4.2.2 Implement CNN feature extraction
+			4.2.2.1 Develop CNN layers for feature extraction
+			4.2.2.2 Process extracted features for analysis
+		4.2.3 Integrate FaceNet/ArcFace for identity verification
+			4.2.3.1 Load facial recognition model
+			4.2.3.2 Implement identity consistency checks
+	4.3 Behavioral Analysis
+		4.3.1 Facial detection and tracking
+			4.3.1.1 Detect faces in frames
+			4.3.1.2 Track facial movements over time
+		4.3.2 Head movement analysis
+			4.3.2.1 Analyze head orientation
+			4.3.2.2 Detect unusual head movements
+		4.3.3 Eye gaze tracking
+			4.3.3.1 Track eye positions
+			4.3.3.2 Identify gaze direction
+		4.3.4 Posture detection
+			4.3.4.1 Detect body posture
+			4.3.4.2 Analyze posture changes
+		4.3.5 Suspicious behavior classification
+			4.3.5.1 Classify detected behaviors
+			4.3.5.2 Flag potential anomalies
+	4.4 Output & Integration
+		4.4.1 Format structured AI outputs
+			4.4.1.1 Structure analysis results
+			4.4.1.2 Prepare data for backend consumption
+		4.4.2 Send results to backend services
+			4.4.2.1 Implement API calls for result transmission
+			4.4.2.2 Handle asynchronous processing
+		4.4.3 Optimize processing latency
+			4.4.3.1 Tune model performance
+			4.4.3.2 Implement efficient processing pipelines
+		4.4.4 Handle model fallback and failures
+			4.4.4.1 Add error handling and fallbacks
+			4.4.4.2 Ensure system reliability
+5. Frontend Development
+	5.1 Core Setup
+		5.1.1 Initialize React project with Vite
+			5.1.1.1 Set up project structure
+			5.1.1.2 Configure Vite build tool
+		5.1.2 Configure routing and navigation
+			5.1.2.1 Implement React Router
+			5.1.2.2 Design navigation components
+		5.1.3 Setup global state management
+			5.1.3.1 Choose and configure state management
+			5.1.3.2 Implement global state for app data
+		5.1.4 Configure API client and environment variables
+			5.1.4.1 Set up Axios or fetch for API calls
+			5.1.4.2 Manage environment configurations
+	5.2 Feature Modules
+		5.2.1 Authentication UI
+			5.2.1.1 Create login and registration forms
+			5.2.1.2 Add input validation and error handling
+			5.2.1.3 Implement session persistence
+		5.2.2 Exam Interface
+			5.2.2.1 Develop exam listing and selection UI
+			5.2.2.2 Implement question rendering and navigation
+			5.2.2.3 Add timer display
+			5.2.2.4 Create answer submission UI
+		5.2.3 Monitoring Interface
+			5.2.3.1 Integrate webcam functionality
+			5.2.3.2 Display live video stream
+			5.2.3.3 Add alert indicators and notifications
+			5.2.3.4 Build monitoring dashboard
+		5.2.4 Behavior Visualization
+			5.2.4.1 Implement behavior score indicators
+			5.2.4.2 Create flagged event list
+			5.2.4.3 Add real-time updates
+		5.2.5 Dashboard
+			5.2.5.1 Design overview statistics cards
+			5.2.5.2 Display recent alerts
+			5.2.5.3 Show activity summaries
+		5.2.6 Reports Interface
+			5.2.6.1 Create report table and filters
+			5.2.6.2 Implement session log viewer
+			5.2.6.3 Add export options
+		5.2.7 Profile Interface
+			5.2.7.1 Develop profile editing forms
+			5.2.7.2 Implement avatar upload UI
+	5.3 Shared Components
+		5.3.1 Create layout components (header, sidebar, footer)
+		5.3.2 Implement loading and error states
+		5.3.3 Develop reusable UI components
+		5.3.4 Build custom hooks
+6. Integration & System Testing
+	6.1 Backend Testing
+		6.1.1 Unit testing for services and APIs
+			6.1.1.1 Test individual functions and methods
+			6.1.1.2 Validate API endpoints
+		6.1.2 Authentication and authorization tests
+			6.1.2.1 Test login and access control
+			6.1.2.2 Verify role permissions
+		6.1.3 API endpoint validation
+			6.1.3.1 Test CRUD operations
+			6.1.3.2 Validate data integrity
+	6.2 Frontend Testing
+		6.2.1 Component testing
+			6.2.1.1 Test individual React components
+			6.2.1.2 Validate component rendering
+		6.2.2 UI interaction testing
+			6.2.2.1 Test user interactions
+			6.2.2.2 Validate form submissions
+		6.2.3 Form validation testing
+			6.2.3.1 Test input validation
+			6.2.3.2 Check error messages
+	6.3 Integration Testing
+		6.3.1 API integration with frontend
+			6.3.1.1 Test data flow between frontend and backend
+			6.3.1.2 Validate API responses
+		6.3.2 WebSocket communication testing
+			6.3.2.1 Test real-time data transmission
+			6.3.2.2 Validate monitoring streams
+		6.3.3 AI pipeline integration testing
+			6.3.3.1 Test AI model integration
+			6.3.3.2 Validate behavioral analysis outputs
+	6.4 System Testing
+		6.4.1 End-to-end exam flow testing
+			6.4.1.1 Simulate complete exam process
+			6.4.1.2 Test from login to result submission
+		6.4.2 Monitoring accuracy validation
+			6.4.2.1 Evaluate detection accuracy
+			6.4.2.2 Test anomaly flagging
+		6.4.3 Performance and stress testing
+			6.4.3.1 Test system under load
+			6.4.3.2 Validate real-time performance
+7. Deployment & Release
+	7.1 Deployment Preparation
+		7.1.1 Configure production environment
+			7.1.1.1 Set up production settings
+			7.1.1.2 Configure environment variables
+		7.1.2 Setup PostgreSQL database
+			7.1.2.1 Migrate from SQLite to PostgreSQL
+			7.1.2.2 Configure database connections
+		7.1.3 Configure static and media files
+			7.1.3.1 Set up file storage
+			7.1.3.2 Configure CDN if needed
+		7.1.4 Setup CORS and security policies
+			7.1.4.1 Implement security headers
+			7.1.4.2 Configure CORS for web access
+	7.2 Deployment Execution
+		7.2.1 Deploy backend services
+			7.2.1.1 Deploy Django application
+			7.2.1.2 Configure web server (e.g., Gunicorn, Nginx)
+		7.2.2 Deploy frontend application
+			7.2.2.1 Build and deploy React app
+			7.2.2.2 Configure hosting
+		7.2.3 Configure domain and hosting
+			7.2.3.1 Set up domain
+			7.2.3.2 Configure SSL certificates
+		7.2.4 Verify deployment stability
+			7.2.4.1 Test deployed application
+			7.2.4.2 Monitor performance
+	7.3 Documentation
+		7.3.1 System documentation
+			7.3.1.1 Document architecture and design
+			7.3.1.2 Create user guides
+		7.3.2 API documentation
+			7.3.2.1 Generate API docs
+			7.3.2.2 Document endpoints
+		7.3.3 User manual
+			7.3.3.1 Create manuals for admins and examinees
+			7.3.3.2 Include setup and usage instructions
+		7.3.4 Deployment guide
+			7.3.4.1 Document deployment process
+			7.3.4.2 Provide troubleshooting tips
+8. Evaluation & Continuous Improvement
+	8.1 System Evaluation
+		8.1.1 Usability testing
+			8.1.1.1 Conduct user testing sessions
+			8.1.1.2 Gather feedback on interface and workflow
+		8.1.2 Performance evaluation
+			8.1.2.1 Measure system performance metrics
+			8.1.2.2 Evaluate AI accuracy and latency
+		8.1.3 Accuracy of behavior detection
+			8.1.3.1 Test detection algorithms
+			8.1.3.2 Validate against ground truth data
+		8.1.4 User feedback collection
+			8.1.4.1 Survey administrators and examinees
+			8.1.4.2 Analyze feedback for improvements
+	8.2 Continuous Improvement
+		8.2.1 Bug fixing and optimization
+			8.2.1.1 Address identified issues
+			8.2.1.2 Optimize performance bottlenecks
+		8.2.2 Feature enhancements
+			8.2.2.1 Add new features based on feedback
+			8.2.2.2 Improve existing functionalities
+		8.2.3 AI model improvements
+			8.2.3.1 Refine detection algorithms
+			8.2.3.2 Update models with new data
+		8.2.4 System scalability planning
+			8.2.4.1 Plan for larger deployments
+			8.2.4.2 Consider future enhancements within scope

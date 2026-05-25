@@ -1,0 +1,355 @@
+{
+  "project": {
+    "title": "Knowing Eye",
+    "full_title": "A Full-Stack Session-Guided Web-Based Examination Platform with Integrated Behavior Monitoring",
+    "type": "Capstone Project",
+    "date_started": "2026-03",
+    "institution": {
+      "name": "Legacy College of Compostela",
+      "department": "Institute of Information Technology",
+      "location": "Compostela, Davao de Oro, Philippines"
+    },
+    "team": [
+      "Saturnino C. Ancog III",
+      "Khrisha Marie O. Cavan",
+      "Kervy N. Cadiente",
+      "Twixt Jasley J. Tamera"
+    ]
+  },
+
+  "vision": {
+    "problem_statement": "Online examination systems lack reliable real-time behavioral monitoring, resulting in increased cheating risks and heavy reliance on manual supervision.",
+    "solution": "A centralized web-based examination platform integrated with AI-powered behavioral monitoring using computer vision and deep learning.",
+    "core_goal": "Enhance examination integrity, automate proctoring, and provide data-driven behavioral insights."
+  },
+
+  "objectives": {
+    "general": "Design and implement a full-stack examination platform with real-time behavior monitoring.",
+    "specific": [
+      "Build exam creation and management capabilities",
+      "Implement session-guided exam taking and answer tracking",
+      "Capture and log monitoring frames and session events",
+      "Analyze facial presence, gaze, and posture in near real time",
+      "Detect suspicious behaviors and generate alerts",
+      "Provide reporting and analytics for administrators",
+      "Support role-based access for examiners and examinees"
+    ]
+  },
+
+  "system_scope": {
+    "included": [
+      "Web-based exam management and delivery",
+      "Role-based login for examiners and examinees",
+      "Exam session tracking and response submission",
+      "Behavior monitoring with webcam frame analysis",
+      "Session logs, behavioral reports, and alerts",
+      "Administrative dashboard and profile management"
+    ],
+    "excluded": [
+      "Standalone mobile application",
+      "External institutional SIS integration",
+      "Specialized biometric hardware",
+      "Nationwide deployment at this stage"
+    ],
+    "target_users": [
+      "Exam administrators",
+      "Examinees"
+    ],
+    "environment": "Academic assessment environments with controlled online proctoring"
+  },
+
+  "implementation_status": {
+    "frontend": {
+      "status": "Implemented",
+      "framework": "React 18 with Vite",
+      "language": "TypeScript",
+      "architecture": "Feature-Based Modular Architecture",
+      "features_implemented": [
+        "Auth pages and protected routing",
+        "Exam dashboard and exam-taking flow",
+        "Monitoring UI with mock alerts",
+        "Reports and profile pages",
+        "Shared UI components and providers"
+      ],
+      "features_pending": [
+        "Actual webcam capture integration",
+        "Real-time WebSocket monitoring stream",
+        "Production-ready UI polish"
+      ]
+    },
+    "backend": {
+      "status": "In Progress",
+      "framework": "Django",
+      "language": "Python",
+      "architecture": "Feature-Based Modular Monolith with Layered Architecture",
+      "features_implemented": [
+        "Core Django configuration and feature app structure",
+        "Custom user model and authentication layout",
+        "Exam, question, session, and response models",
+        "Seed data command and SQLite development support"
+      ],
+      "features_pending": [
+        "Complete REST API controllers and serializers",
+        "WebSocket consumer integration for monitoring",
+        "AI pipeline integration in backend",
+        "Production PostgreSQL deployment"
+      ]
+    },
+    "database": {
+      "status": "Targeted",
+      "type": "PostgreSQL",
+      "development_fallback": "SQLite",
+      "naming_convention": "snake_case",
+      "id_strategy": "UUID recommended, AutoField supported for compatibility"
+    },
+    "ai_module": {
+      "status": "Planned",
+      "description": "AI engine for behavioral analysis and anomaly detection",
+      "models": ["YOLO", "CNN", "FaceNet", "ArcFace"],
+      "capabilities": [
+        "Face detection",
+        "Posture estimation",
+        "Gaze analysis",
+        "Behavior scoring"
+      ]
+    }
+  },
+
+  "architecture": {
+    "backend": {
+      "framework": "Django",
+      "language": "Python",
+      "layers": [
+        "core (config, database, security, exceptions, utils)",
+        "features (auth, exams, session, monitoring, behavior, reports, profile)",
+        "shared (DTOs, mixins, services, repositories, validators)",
+        "ai (pipeline, detection, recognition)"
+      ],
+      "api": "REST + WebSocket",
+      "responsibilities": [
+        "Authentication and authorization",
+        "Exam and session management",
+        "Monitoring coordination",
+        "Behavior evaluation",
+        "Report generation"
+      ]
+    },
+    "frontend": {
+      "framework": "React 18",
+      "language": "TypeScript",
+      "layout": "Feature-based modules with shared components",
+      "providers": [
+        "Auth provider",
+        "WebSocket provider",
+        "Theme provider",
+        "Query provider"
+      ],
+      "pages": [
+        "Landing",
+        "Auth",
+        "Examiner dashboard",
+        "Examinee dashboard",
+        "Exam taking",
+        "Monitoring",
+        "Reports",
+        "Profile"
+      ]
+    },
+    "communication": {
+      "rest": "Auth, exams, sessions, responses, monitoring fallback",
+      "websocket": "Real-time monitoring and alert events"
+    }
+  },
+
+  "feature_modules": {
+    "auth": {
+      "description": "Authentication and user session management",
+      "frontend": ["login", "register", "profile"],
+      "backend": ["token", "register", "profile", "users"]
+    },
+    "exams": {
+      "description": "Exam creation and management",
+      "frontend": ["exam builder", "exam list", "exam detail"],
+      "backend": ["exam CRUD", "question management", "publish/archive"]
+    },
+    "session": {
+      "description": "Live exam session handling",
+      "frontend": ["timer", "question navigation", "answer submission"],
+      "backend": ["start session", "submit responses", "session logs"]
+    },
+    "monitoring": {
+      "description": "Real-time behavior monitoring",
+      "frontend": ["webcam stream UI", "alert badges", "monitoring grid"],
+      "backend": ["frame processing", "analysis results", "alert generation"]
+    },
+    "behavior": {
+      "description": "Behavior scoring and anomaly interpretation",
+      "frontend": ["score indicators", "behavior logs"],
+      "backend": ["scoring service", "behavior models"]
+    },
+    "reports": {
+      "description": "Reporting and analytics",
+      "frontend": ["report table", "session log viewer", "export"],
+      "backend": ["report generation", "summary endpoints"]
+    },
+    "profile": {
+      "description": "User profile management",
+      "frontend": ["profile form", "avatar upload"],
+      "backend": ["profile retrieval", "update", "change password"]
+    }
+  },
+
+  "api_design": {
+    "authentication": {
+      "base": "/api/auth",
+      "endpoints": [
+        {"path": "/token/", "method": "POST", "description": "Obtain JWT access and refresh tokens"},
+        {"path": "/token/refresh/", "method": "POST", "description": "Refresh JWT access token"},
+        {"path": "/register/", "method": "POST", "description": "Register new user"},
+        {"path": "/profile/", "method": "GET", "description": "Get current user profile"},
+        {"path": "/profile/update_profile/", "method": "PUT", "description": "Update user profile"},
+        {"path": "/profile/change_password/", "method": "POST", "description": "Change password"},
+        {"path": "/users/", "method": "GET", "description": "List users"},
+        {"path": "/users/{id}/", "method": "GET", "description": "Get user details"}
+      ]
+    },
+    "exams": {
+      "base": "/api/exams",
+      "endpoints": [
+        {"path": "/", "method": "GET", "description": "List exams"},
+        {"path": "/", "method": "POST", "description": "Create exam"},
+        {"path": "/{id}/", "method": "GET", "description": "Get exam detail"},
+        {"path": "/{id}/", "method": "PUT", "description": "Update exam"},
+        {"path": "/{id}/", "method": "PATCH", "description": "Partial update exam"},
+        {"path": "/{id}/", "method": "DELETE", "description": "Delete exam"},
+        {"path": "/{id}/questions/", "method": "GET", "description": "List questions"},
+        {"path": "/{id}/questions/", "method": "POST", "description": "Create question"},
+        {"path": "/{id}/questions/{question_id}/", "method": "GET", "description": "Get question"},
+        {"path": "/{id}/questions/{question_id}/", "method": "PUT", "description": "Update question"},
+        {"path": "/{id}/questions/{question_id}/", "method": "DELETE", "description": "Delete question"},
+        {"path": "/{id}/publish/", "method": "POST", "description": "Publish exam"},
+        {"path": "/{id}/archive/", "method": "POST", "description": "Archive exam"}
+      ]
+    },
+    "sessions": {
+      "base": "/api/sessions",
+      "endpoints": [
+        {"path": "/", "method": "GET", "description": "List sessions"},
+        {"path": "/{id}/", "method": "GET", "description": "Get session detail"},
+        {"path": "/start/", "method": "POST", "description": "Start session"},
+        {"path": "/{id}/submit/", "method": "POST", "description": "Submit session"},
+        {"path": "/{id}/logs/", "method": "GET", "description": "Get session logs"},
+        {"path": "/{id}/terminate/", "method": "POST", "description": "Terminate session"}
+      ]
+    },
+    "responses": {
+      "base": "/api/responses",
+      "endpoints": [
+        {"path": "/", "method": "GET", "description": "List responses"},
+        {"path": "/{id}/", "method": "GET", "description": "Get response detail"}
+      ]
+    },
+    "monitoring": {
+      "base": "/api/monitoring",
+      "endpoints": [
+        {"path": "/frame/", "method": "POST", "description": "Upload frame fallback"}
+      ],
+      "websocket": {
+        "purpose": "Real-time frame streaming and alert notifications",
+        "events": ["frame_stream", "analysis_result", "alert_notification"]
+      }
+    }
+  },
+
+  "database_schema": {
+    "type": "PostgreSQL",
+    "naming_convention": "snake_case",
+    "id_strategy": "UUID recommended",
+    "tables": {
+      "users": {
+        "fields": ["id", "username", "email", "first_name", "last_name", "password", "role", "is_active", "created_at", "updated_at"]
+      },
+      "exams": {
+        "fields": ["id", "title", "description", "instructions", "duration_minutes", "passing_score", "status", "created_by_id", "created_at", "updated_at"]
+      },
+      "questions": {
+        "fields": ["id", "exam_id", "question_text", "question_type", "options", "correct_answer", "points", "order", "created_at", "updated_at"]
+      },
+      "sessions": {
+        "fields": ["id", "user_id", "exam_id", "status", "started_at", "submitted_at", "time_remaining", "ip_address", "user_agent", "total_score", "percentage_score", "passed"]
+      },
+      "responses": {
+        "fields": ["id", "session_id", "question_id", "answer_text", "is_correct", "points", "time_spent", "flagged_for_review", "answered_at"]
+      },
+      "session_logs": {
+        "fields": ["id", "session_id", "event_type", "event_display", "details", "ip_address", "timestamp"]
+      },
+      "behavior_logs": {
+        "fields": ["id", "session_id", "event_type", "score", "confidence", "metadata", "timestamp"]
+      },
+      "alerts": {
+        "fields": ["id", "session_id", "type", "severity", "message", "resolved", "created_at"]
+      }
+    }
+  },
+
+  "frontend_features": {
+    "framework": "React 18 with Vite",
+    "language": "TypeScript",
+    "architecture": "Feature-Based Modular Architecture",
+    "routing": "React Router v6 with role-based protected routes",
+    "real_time": "WebSocket for monitoring and alerts",
+    "core_layer": [
+      "Router",
+      "Auth provider",
+      "WebSocket provider",
+      "Theme provider",
+      "Query provider",
+      "Environment configuration"
+    ],
+    "feature_modules": [
+      "auth",
+      "exams",
+      "session",
+      "monitoring",
+      "behavior",
+      "dashboard",
+      "reports",
+      "profile"
+    ],
+    "shared_layer": [
+      "UI/layout components",
+      "common hooks",
+      "utility functions",
+      "global types"
+    ],
+    "pages": [
+      "landing",
+      "login",
+      "register",
+      "examiner dashboard",
+      "examinee dashboard",
+      "exam taking",
+      "monitoring",
+      "reports",
+      "profile"
+    ]
+  },
+
+  "frontend_structure": {
+    "core": ["router", "providers", "config", "hooks"],
+    "features": ["auth", "exams", "session", "monitoring", "behavior", "dashboard", "reports", "profile"],
+    "shared": ["components", "hooks", "utils", "types"],
+    "pages": ["landing", "examiner", "examinee", "auth"]
+  },
+
+  "workflow_summary": [
+    "User logs in and accesses dashboard",
+    "Examiner or examinee selects an exam",
+    "Exam session is started and timed",
+    "Monitoring runs in parallel with exam delivery",
+    "Responses are saved and submitted",
+    "AI analysis evaluates behavior and flags events",
+    "Reports and session summaries are generated"
+  ]
+}

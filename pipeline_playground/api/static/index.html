@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Knowing Eye — Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --surface: #121826;
+      --surface2: #1a2234;
+      --border: rgba(99, 140, 255, 0.15);
+      --text: #e8ecf4;
+      --muted: #8b95a8;
+      --accent: #5b8def;
+      --accent2: #7c5cff;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --glow: rgba(91, 141, 239, 0.35);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "DM Sans", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(91, 141, 239, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(124, 92, 255, 0.08), transparent);
+    }
+    .app { max-width: 1280px; margin: 0 auto; padding: 1.5rem; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;
+    }
+    .brand { display: flex; align-items: center; gap: 0.75rem; }
+    .logo {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: grid; place-items: center; font-size: 1.25rem;
+      box-shadow: 0 0 24px var(--glow);
+    }
+    h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; }
+    .subtitle { font-size: 0.8rem; color: var(--muted); }
+    .status-pill {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.45rem 0.9rem; border-radius: 999px;
+      background: var(--surface2); border: 1px solid var(--border);
+      font-size: 0.8rem;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    .dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); animation: pulse 2s infinite; }
+    @keyframes pulse { 50% { opacity: 0.5; } }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.25rem;
+    }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .video-wrap { position: relative; aspect-ratio: 16/10; background: #000; }
+    #video {
+      width: 100%; height: 100%; object-fit: cover;
+      transform: scaleX(-1);
+    }
+    .video-overlay {
+      position: absolute; inset: 0; pointer-events: none;
+      border: 2px solid transparent; transition: border-color 0.3s;
+    }
+    .video-overlay.alert { border-color: rgba(248, 113, 113, 0.5); }
+    .face-box {
+      position: absolute; border: 2px solid var(--ok);
+      border-radius: 8px; transition: all 0.2s;
+    }
+    .face-box.warn { border-color: var(--warn); }
+    .face-box.bad { border-color: var(--danger); }
+    .controls {
+      display: flex; gap: 0.5rem; padding: 1rem; flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+    }
+    button {
+      font-family: inherit; font-size: 0.85rem; font-weight: 600;
+      padding: 0.55rem 1rem; border-radius: 10px; border: none; cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    button:active { transform: scale(0.98); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white; box-shadow: 0 4px 16px var(--glow);
+    }
+    .btn-ghost {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--accent); }
+    .sidebar { display: flex; flex-direction: column; gap: 1rem; }
+    .score-hero {
+      text-align: center; padding: 1.25rem 1rem;
+      background: linear-gradient(180deg, var(--surface2) 0%, var(--surface) 100%);
+    }
+    .ring-wrap { position: relative; width: 140px; height: 140px; margin: 0 auto 0.75rem; }
+    .ring-wrap svg { transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: var(--surface2); stroke-width: 10; }
+    .ring-fg {
+      fill: none; stroke-width: 10; stroke-linecap: round;
+      stroke: url(#grad); transition: stroke-dashoffset 0.4s ease;
+    }
+    .ring-label {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .ring-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+    .ring-unit { font-size: 0.75rem; color: var(--muted); }
+    .threshold-note { font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; }
+    .metrics { padding: 0 1rem 1rem; display: flex; flex-direction: column; gap: 0.65rem; }
+    .metric {
+      display: grid; grid-template-columns: 1fr auto;
+      align-items: center; gap: 0.5rem;
+    }
+    .metric-name { font-size: 0.78rem; color: var(--muted); }
+    .metric-bar {
+      grid-column: 1 / -1; height: 6px; background: var(--surface2);
+      border-radius: 999px; overflow: hidden;
+    }
+    .metric-fill {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.35s ease, background 0.35s;
+    }
+    .metric-fill.low { background: linear-gradient(90deg, var(--warn), var(--danger)); }
+    .metric-pct {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 0.8rem; font-weight: 500;
+    }
+    .alerts-card { padding: 1rem; max-height: 200px; overflow-y: auto; }
+    .alerts-card h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.6rem; }
+    .alert-item {
+      font-size: 0.8rem; padding: 0.5rem 0.65rem; border-radius: 8px;
+      background: rgba(248, 113, 113, 0.08); border-left: 3px solid var(--danger);
+      margin-bottom: 0.4rem;
+    }
+    .alert-item:empty { display: none; }
+    .empty-state { color: var(--muted); font-size: 0.8rem; font-style: italic; }
+    input[type="text"] {
+      font-family: inherit; font-size: 0.85rem;
+      padding: 0.5rem 0.75rem; border-radius: 8px;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); width: 140px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">👁</div>
+        <div>
+          <h1>Knowing Eye</h1>
+          <p class="subtitle">Behavior monitoring playground</p>
+        </div>
+      </div>
+      <div class="status-pill">
+        <span class="dot" id="statusDot"></span>
+        <span id="statusText">Connecting…</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <div class="video-wrap">
+          <video id="video" autoplay playsinline muted></video>
+          <div class="video-overlay" id="videoOverlay"></div>
+          <div id="faceBox" class="face-box" style="display:none"></div>
+        </div>
+        <div class="controls">
+          <input type="text" id="sessionId" placeholder="Session ID" value="playground-001" />
+          <button class="btn-primary" id="btnStart">Start monitoring</button>
+          <button class="btn-ghost" id="btnEnroll">Enroll face</button>
+          <button class="btn-ghost" id="btnStop" disabled>Stop</button>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="card score-hero">
+          <div class="ring-wrap">
+            <svg width="140" height="140" viewBox="0 0 140 140">
+              <defs>
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#5b8def" />
+                  <stop offset="100%" stop-color="#7c5cff" />
+                </linearGradient>
+              </defs>
+              <circle class="ring-bg" cx="70" cy="70" r="58" />
+              <circle class="ring-fg" id="ringFg" cx="70" cy="70" r="58"
+                stroke-dasharray="364.4" stroke-dashoffset="364.4" />
+            </svg>
+            <div class="ring-label">
+              <span class="ring-value" id="overallPct">—</span>
+              <span class="ring-unit">% compliant</span>
+            </div>
+          </div>
+          <p class="threshold-note">Alert threshold: <strong id="thresholdLbl">80</strong>%</p>
+        </div>
+
+        <div class="card metrics" id="metricsPanel"></div>
+
+        <div class="card alerts-card">
+          <h3>Active alerts</h3>
+          <div id="alertsList"><p class="empty-state">No alerts</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const METRIC_LABELS = {
+      face_presence_pct: "Face presence",
+      gaze_focus_pct: "Gaze focus",
+      posture_compliance_pct: "Posture",
+      identity_match_pct: "Identity match",
+      object_clear_pct: "Clear frame",
+    };
+    const CIRC = 2 * Math.PI * 58;
+    const ringFg = document.getElementById("ringFg");
+    ringFg.style.strokeDasharray = CIRC;
+
+    let stream = null, ws = null, running = false, interval = null;
+    const video = document.getElementById("video");
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    function wsUrl() {
+      const p = location.protocol === "https:" ? "wss:" : "ws:";
+      return `${p}//${location.host}/ws/monitor`;
+    }
+
+    function setStatus(live, text) {
+      document.getElementById("statusDot").className = "dot" + (live ? " live" : "");
+      document.getElementById("statusText").textContent = text;
+    }
+
+    function pctColor(pct, threshold) {
+      if (pct >= threshold) return "var(--ok)";
+      if (pct >= threshold - 15) return "var(--warn)";
+      return "var(--danger)";
+    }
+
+    function updateUI(analysis) {
+      const m = analysis.metrics || {};
+      const threshold = m.alert_threshold_pct ?? 80;
+      document.getElementById("thresholdLbl").textContent = threshold;
+
+      const overall = m.overall_compliance_pct ?? 0;
+      document.getElementById("overallPct").textContent = Math.round(overall);
+      document.getElementById("overallPct").style.color = pctColor(overall, threshold);
+      const offset = CIRC * (1 - overall / 100);
+      ringFg.style.strokeDashoffset = offset;
+      ringFg.style.stroke = overall >= threshold ? "url(#grad)" : "var(--danger)";
+
+      const panel = document.getElementById("metricsPanel");
+      panel.innerHTML = "";
+      for (const [key, label] of Object.entries(METRIC_LABELS)) {
+        const val = m[key];
+        if (val == null) continue;
+        const low = val < threshold;
+        const row = document.createElement("div");
+        row.className = "metric";
+        row.innerHTML = `
+          <span class="metric-name">${label}</span>
+          <span class="metric-pct" style="color:${pctColor(val, threshold)}">${val.toFixed(1)}%</span>
+          <div class="metric-bar"><div class="metric-fill ${low ? "low" : ""}" style="width:${val}%"></div></div>
+        `;
+        panel.appendChild(row);
+      }
+
+      const alerts = document.getElementById("alertsList");
+      if (!analysis.alerts?.length) {
+        alerts.innerHTML = '<p class="empty-state">All metrics above threshold</p>';
+      } else {
+        alerts.innerHTML = analysis.alerts.map(a =>
+          `<div class="alert-item">${a.message}</div>`
+        ).join("");
+      }
+
+      document.getElementById("videoOverlay").className =
+        "video-overlay" + (m.flagged_metrics?.length ? " alert" : "");
+
+      const face = analysis.face || {};
+      const box = document.getElementById("faceBox");
+      if (face.bbox && video.videoWidth) {
+        const [x, y, w, h] = face.bbox;
+        const sx = video.clientWidth / video.videoWidth;
+        const sy = video.clientHeight / video.videoHeight;
+        box.style.display = "block";
+        box.style.left = (video.clientWidth - (x + w) * sx) + "px";
+        box.style.top = y * sy + "px";
+        box.style.width = w * sx + "px";
+        box.style.height = h * sy + "px";
+        const fp = m.face_presence_pct ?? 0;
+        box.className = "face-box" + (fp >= threshold ? "" : fp >= threshold - 15 ? " warn" : " bad");
+      } else {
+        box.style.display = "none";
+      }
+    }
+
+    function captureFrame() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      return canvas.toDataURL("image/jpeg", 0.7);
+    }
+
+    async function connectWs() {
+      return new Promise((resolve, reject) => {
+        ws = new WebSocket(wsUrl());
+        ws.onopen = () => { setStatus(true, "Live"); resolve(); };
+        ws.onerror = reject;
+        ws.onclose = () => setStatus(false, "Disconnected");
+        ws.onmessage = (e) => {
+          const msg = JSON.parse(e.data);
+          if (msg.type === "analysis_result") updateUI(msg.payload);
+          if (msg.type === "enroll_result") {
+            setStatus(true, msg.success ? "Face enrolled" : "Enroll failed");
+          }
+        };
+      });
+    }
+
+    document.getElementById("btnStart").onclick = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        video.srcObject = stream;
+        await video.play();
+        await connectWs();
+        running = true;
+        document.getElementById("btnStart").disabled = true;
+        document.getElementById("btnStop").disabled = false;
+        const sid = document.getElementById("sessionId").value || "playground-001";
+        const fps = 4;
+        interval = setInterval(() => {
+          if (!ws || ws.readyState !== WebSocket.OPEN || !video.videoWidth) return;
+          const b64 = captureFrame();
+          ws.send(JSON.stringify({ type: "frame_stream", image: b64, session_id: sid }));
+        }, 1000 / fps);
+      } catch (err) {
+        setStatus(false, "Camera or server error");
+        console.error(err);
+      }
+    };
+
+    document.getElementById("btnEnroll").onclick = () => {
+      if (!ws || ws.readyState !== WebSocket.OPEN || !video.videoWidth) return;
+      ws.send(JSON.stringify({ type: "enroll", image: captureFrame() }));
+    };
+
+    document.getElementById("btnStop").onclick = () => {
+      running = false;
+      clearInterval(interval);
+      if (ws) ws.close();
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      document.getElementById("btnStart").disabled = false;
+      document.getElementById("btnStop").disabled = true;
+      setStatus(false, "Stopped");
+    };
+
+    fetch("/health").then(r => r.json()).then(() => setStatus(false, "Ready — start monitoring"))
+      .catch(() => setStatus(false, "API offline — run uvicorn"));
+  </script>
+</body>
+</html>

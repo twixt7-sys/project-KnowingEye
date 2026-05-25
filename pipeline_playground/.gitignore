@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.egg-info/
+.pytest_cache/
+
+# Models & data
+models/*.task
+*.pt
+!config/
+data/sessions/
+training/runs/
+training/raw/
+yolov8n.pt
+
+# IDE
+.idea/
+.vscode/

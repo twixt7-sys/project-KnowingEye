@@ -1,0 +1,17 @@
+# Knowing Eye — CV/AI playground (Python 3.10+)
+opencv-python>=4.9.0
+numpy>=1.26.0
+mediapipe>=0.10.14
+ultralytics>=8.3.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-multipart>=0.0.12
+pydantic>=2.9.0
+pydantic-settings>=2.6.0
+PyYAML>=6.0.2
+pillow>=10.4.0
+python-dotenv>=1.0.1
+
+# Training (optional — install when fine-tuning YOLO)
+# torch>=2.2.0
+# torchvision>=0.17.0

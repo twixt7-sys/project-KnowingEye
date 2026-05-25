@@ -1,0 +1,86 @@
+#=== tested: ✅ | untested: ✖ ====================================
+# (input/body) | [response] | {query params} | <access role> ===#
+
+✅ api
+├── ✅ auth                          # authentication module
+│   ├── ✅ POST /register                # register user
+│   │       (username, email, password)
+│   │       [user, access_token]
+│   │
+│   ├── ✅ POST /login                   # authenticate user
+│   │       (email, password)
+│   │       [user, access_token]
+│   │
+│   ├── ✅ POST /refresh                 # refresh token
+│   │       (refresh_token)
+│   │       [access_token]
+│   │
+│   └── ✅ GET /me                       # current user
+│           [user] <authenticated>
+│
+├── ✅ account_management           # account module
+│   ├── ✖ GET /profile                 # get profile
+│   │       [profile] <authenticated>
+│   │
+│   ├── ✖ PUT /profile                 # update profile
+│   │       (?username, ?email, ?avatar)
+│   │       [profile] <authenticated>
+│   │
+│   └── ✖ DELETE /account              # delete account
+│           <authenticated>
+│
+├── ✖ streaks                      # streak tracking module
+│   ├── ✖ GET /                       # get streaks
+│   │       [streaks] <authenticated>
+│   │
+│   └── ✖ POST /update                # update streak
+│           (entity_id, date, status)
+│           [streak] <authenticated>
+│
+├── ✖ notifications                # notifications module
+│   ├── ✖ GET /                       # list notifications
+│   │       {page, limit}
+│   │       [notifications] <authenticated>
+│   │
+│   ├── ✖ PUT {id}/read               # mark as read
+│   │       [notification] <authenticated>
+│   │
+│   └── ✖ DELETE {id}                 # delete notification
+│           <authenticated>
+│
+├── ✖ analysis                     # analytics module
+│   ├── ✖ GET /overview              # summary analytics
+│   │       {range}
+│   │       [metrics] <authenticated>
+│   │
+│   └── ✖ GET /trends                # trends over time
+│           {start_date, end_date}
+│           [data_points] <authenticated>
+│
+├── ✖ activity_logging             # activity logs module
+│   ├── ✖ GET /                       # list logs
+│   │       {page, limit}
+│   │       [logs] <authenticated>
+│   │
+│   └── ✖ POST /                       # log activity (internal)
+│           (action, metadata)
+│           [log]
+│
+└── 🧩 <feature_module_template>   # reusable pattern for future modules
+    ├── ✖ GET /                       # list resources
+    │       {filters, page, limit}
+    │       [items]
+    │
+    ├── ✖ GET {id}                    # get single resource
+    │       [item]
+    │
+    ├── ✖ POST /                      # create resource
+    │       (data)
+    │       [item]
+    │
+    ├── ✖ PUT {id}                    # update resource
+    │       (?data)
+    │       [item]
+    │
+    └── ✖ DELETE {id}                 # delete resource
+            [status]

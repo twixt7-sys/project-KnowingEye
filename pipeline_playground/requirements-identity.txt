@@ -1,0 +1,3 @@
+# Optional — identity matching (pulls in dlib; needs Visual C++ on Windows)
+# Install after core deps: pip install -r requirements-identity.txt
+face-recognition>=1.3.0

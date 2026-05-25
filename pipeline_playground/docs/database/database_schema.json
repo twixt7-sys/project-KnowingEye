@@ -1,0 +1,155 @@
+{
+  "database": {
+    "type": "PostgreSQL",
+    "naming_convention": "snake_case",
+    "id_strategy": "UUID (recommended) or AutoField"
+  },
+
+  "tables": {
+    "users": {
+      "description": "System users (admins and examinees)",
+      "fields": {
+        "id": "uuid (pk)",
+        "username": "string (unique)",
+        "email": "string (unique)",
+        "first_name": "string",
+        "last_name": "string",
+        "password": "string (hashed)",
+        "role": "enum [admin, examinee]",
+        "is_active": "boolean",
+        "created_at": "datetime",
+        "updated_at": "datetime"
+      }
+    },
+
+    "exams": {
+      "description": "Exam definitions",
+      "fields": {
+        "id": "uuid (pk)",
+        "title": "string",
+        "description": "text",
+        "instructions": "text",
+        "duration_minutes": "integer",
+        "passing_score": "integer",
+        "status": "enum [draft, published, archived]",
+        "created_by_id": "fk -> users.id",
+        "created_at": "datetime",
+        "updated_at": "datetime"
+      }
+    },
+
+    "questions": {
+      "description": "Questions belonging to exams",
+      "fields": {
+        "id": "uuid (pk)",
+        "exam_id": "fk -> exams.id",
+        "question_text": "text",
+        "question_type": "enum [multiple_choice, identification]",
+        "options": "jsonb",
+        "correct_answer": "text",
+        "points": "integer",
+        "order": "integer",
+        "created_at": "datetime",
+        "updated_at": "datetime"
+      }
+    },
+
+    "sessions": {
+      "description": "Exam session instances per user",
+      "fields": {
+        "id": "uuid (pk)",
+        "user_id": "fk -> users.id",
+        "exam_id": "fk -> exams.id",
+        "status": "enum [active, submitted, terminated]",
+        "started_at": "datetime",
+        "submitted_at": "datetime",
+        "time_remaining_seconds": "integer",
+        "ip_address": "string",
+        "user_agent": "string",
+        "total_score": "float",
+        "percentage_score": "float",
+        "passed": "boolean",
+        "created_at": "datetime",
+        "updated_at": "datetime"
+      }
+    },
+
+    "responses": {
+      "description": "Answers submitted by users during sessions",
+      "fields": {
+        "id": "uuid (pk)",
+        "session_id": "fk -> sessions.id",
+        "question_id": "fk -> questions.id",
+        "answer_text": "text",
+        "is_correct": "boolean",
+        "points": "integer",
+        "time_spent": "integer",
+        "flagged_for_review": "boolean",
+        "answered_at": "datetime"
+      }
+    },
+
+    "session_logs": {
+      "description": "General session activity logs (non-AI)",
+      "fields": {
+        "id": "uuid (pk)",
+        "session_id": "fk -> sessions.id",
+        "event_type": "string",
+        "event_display": "string",
+        "details": "jsonb",
+        "ip_address": "string",
+        "timestamp": "datetime"
+      }
+    },
+
+    "behavior_logs": {
+      "description": "AI-generated behavioral events",
+      "fields": {
+        "id": "uuid (pk)",
+        "session_id": "fk -> sessions.id",
+        "event_type": "enum [no_face, multiple_faces, looking_away, bad_posture, object_detected]",
+        "score": "float",
+        "confidence": "float",
+        "metadata": "jsonb",
+        "timestamp": "datetime"
+      }
+    },
+
+    "alerts": {
+      "description": "Flagged suspicious events",
+      "fields": {
+        "id": "uuid (pk)",
+        "session_id": "fk -> sessions.id",
+        "type": "string",
+        "severity": "enum [low, medium, high]",
+        "message": "string",
+        "resolved": "boolean",
+        "created_at": "datetime"
+      }
+    }
+  },
+
+  "relationships": [
+    "users 1---* exams (created_by)",
+    "exams 1---* questions",
+    "users 1---* sessions",
+    "exams 1---* sessions",
+    "sessions 1---* responses",
+    "questions 1---* responses",
+    "sessions 1---* session_logs",
+    "sessions 1---* behavior_logs",
+    "sessions 1---* alerts"
+  ],
+
+  "indexes": [
+    "users.email",
+    "users.username",
+    "exams.created_by_id",
+    "questions.exam_id",
+    "sessions.user_id",
+    "sessions.exam_id",
+    "responses.session_id",
+    "behavior_logs.session_id",
+    "alerts.session_id"
+  ]
+}
