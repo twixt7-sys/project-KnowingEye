@@ -1,6 +1,8 @@
 from django.urls import path
-from .views import receive_frame
+
+from .views import monitoring_health, receive_frame
 
 urlpatterns = [
-    path('frame/', receive_frame),
+    path("health/", monitoring_health, name="monitoring-health"),
+    path("frame/", receive_frame, name="monitoring-frame"),
 ]

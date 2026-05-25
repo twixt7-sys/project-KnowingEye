@@ -1,108 +1,80 @@
 # Knowing Eye
 
-A Full-Stack Session-Guided Web-Based Examination Platform with Integrated Behavior Monitoring System Using Facial and Postural Analysis via Computer Vision.
+A Full-Stack Session-Guided Web-Based Examination Platform with Integrated Behavior Monitoring (facial and postural analysis via computer vision).
 
-## 🎯 Project Overview
-
-Knowing Eye is a comprehensive examination platform designed to enhance the integrity and efficiency of online assessments through AI-powered behavioral monitoring. The system combines modern web technologies with computer vision to detect and analyze examinee behavior in real-time.
-
-### Key Features
-- **Web-Based Examinations**: Complete exam creation, administration, and taking platform
-- **Real-Time Monitoring**: AI-powered facial and posture analysis using computer vision
-- **Behavior Analytics**: Automated detection of suspicious activities during exams
-- **Administrative Dashboard**: Comprehensive monitoring and reporting tools
-- **Session Management**: Secure exam sessions with timer and submission tracking
-
-## 📁 Project Structure
+## Project layout
 
 ```
 project-KnowingEye/
-├── docs/                    # Project documentation
-│   ├── backend/            # Backend API specifications
-│   ├── database/           # Database schema and design
-│   ├── frontend/           # Frontend architecture docs
-│   └── general/            # Project overview and planning
-├── my-app/                 # Frontend React application
-│   ├── src/               # Source code
-│   ├── public/            # Static assets
-│   └── package.json       # Dependencies
-└── README.md              # This file
+├── backend/                 # Django REST API
+├── frontend/                # React + Vite UI
+├── pipeline_playground/     # CV/AI module (YOLO, MediaPipe, behavior scoring)
+├── docs/                    # Architecture, thesis, IEEE & UTAUT testing packs
+└── start-dev.cmd            # Windows: start API + UI
 ```
 
-## 🚀 Current Implementation Status
+## Quick start
 
-### ✅ Completed (Frontend Prototype)
-- Modern React/TypeScript user interface
-- Complete exam flow simulation
-- Responsive design with dark/light themes
-- Mock behavior monitoring alerts
-- All major pages and navigation
+### 1. Backend
 
-### 🔄 Planned (Backend & AI Integration)
-- Django REST API backend
-- PostgreSQL database
-- Real-time webcam capture
-- Computer vision analysis (YOLO, CNN, FaceNet)
-- WebSocket communication
-- User authentication and security
+```powershell
+cd backend
+$env:DB_ENGINE="django.db.backends.sqlite3"
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_db --noinput    # first run; skip if already seeded
+python manage.py runserver 127.0.0.1:8000
+```
 
-## 🛠️ Technology Stack
+### 2. Frontend
 
-### Frontend (Implemented)
-- **React 18** with TypeScript
-- **Vite** for build tooling
-- **Tailwind CSS** + **shadcn/ui** for styling
-- **React Router** for navigation
-- **Material-UI** for additional components
-
-### Backend (Planned)
-- **Django** with Python
-- **PostgreSQL** database
-- **Django REST Framework** for API
-- **WebSocket** for real-time features
-
-### AI/ML (Planned)
-- **YOLO** for object detection
-- **CNN** for feature extraction
-- **FaceNet/ArcFace** for facial recognition
-- **Computer Vision** libraries
-
-## 📖 Documentation
-
-Comprehensive documentation is available in the `docs/` folder:
-
-- **[System Overview](docs/general/Knowing Eye Overview.txt)** - Project vision and significance
-- **[Project Details](docs/general/Project.json)** - Technical specifications and requirements
-- **[Implementation Status](docs/general/Implementation_Status_Summary.md)** - Current vs planned features
-- **[API Specifications](docs/backend/)** - Backend API design
-- **[Database Schema](docs/database/)** - Data model design
-- **[Frontend Architecture](docs/frontend/)** - UI/UX implementation details
-
-## 🏃‍♂️ Quick Start
-
-### Frontend Development
-```bash
-cd my-app
+```powershell
+cd frontend
+copy .env.example .env.local   # optional
 npm install
 npm run dev
 ```
 
-Visit [http://localhost:5173](http://localhost:5173) to view the application.
+Open **http://127.0.0.1:5173/** — API base defaults to **http://127.0.0.1:8000/api**.
 
-## 🎓 Academic Context
+### Test accounts (after seed)
 
-This project is developed as a capstone thesis for the **Institute of Information Technology** at **Legacy College of Compostela**, Davao de Oro, Philippines.
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | `admin` | `adminpass` |
+| Examinee | `user02` | `pass002` |
 
-**Team Members:**
-- Saturnino C. Ancog III
-- Khrisha Marie O. Cavan
-- Kervy N. Cadiente
-- Twixt Jasley J. Tamera
+### Unit tests
 
-## 📄 License
+```powershell
+cd backend
+$env:DB_ENGINE="django.db.backends.sqlite3"
+python manage.py test features.authentication.tests.test_auth_api features.exams.tests.test_exams_api features.session.tests.test_session_api features.behavior.tests.test_behavior_api features.monitoring.tests.test_monitoring_api features.reports.tests.test_reports_api
+```
 
-This project is part of an academic capstone thesis. See individual component licenses for details.
+## Key API routes
 
-## 📞 Contact
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/monitoring/health/` | Health + pipeline mode |
+| POST | `/api/auth/token/` | JWT login |
+| GET | `/api/exams/` | List exams |
+| POST | `/api/sessions/start/` | Start exam session |
+| POST | `/api/monitoring/frame/` | Submit webcam frame + AI analysis |
+| GET | `/api/reports/summary/` | Admin dashboard stats |
 
-For questions about this project, please refer to the comprehensive documentation in the `docs/` folder or contact the development team. 
+## AI / monitoring
+
+- Production path: `backend/ai/adapter.py` loads `pipeline_playground/knowing_eye` when ML deps are installed; otherwise uses a deterministic **stub** analyzer.
+- Standalone playground UI: `cd pipeline_playground` → `uvicorn api.main:app --port 8090`
+
+## Documentation
+
+- **Status (canonical):** [docs/general/Implementation_Status_Summary.md](docs/general/Implementation_Status_Summary.md)
+- **WBS:** [pipeline_playground/docs/general/workflow.tree](pipeline_playground/docs/general/workflow.tree)
+- **IEEE testing:** [docs/testing/testing(IEEE)/](docs/testing/testing(IEEE)/)
+- **UTAUT (Ch. 7):** [docs/testing/testing(UTAUT)/](docs/testing/testing(UTAUT)/)
+
+## Team
+
+Legacy College of Compostela — Institute of Information Technology (capstone).

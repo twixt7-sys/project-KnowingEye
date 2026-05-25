@@ -31,5 +31,9 @@ urlpatterns = [
     
     # Monitoring endpoints
     path('api/monitoring/', include('features.monitoring.urls')),
+
+    # Behavior & reporting
+    path('api/behavior/', include('features.behavior.urls')),
+    path('api/reports/', include('features.reports.urls')),
 ]
 

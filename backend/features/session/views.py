@@ -2,13 +2,13 @@ from django.shortcuts import render
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.response import Response
+from rest_framework.response import Response as APIResponse
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from django.db import transaction
 
-from .models import ExamSession, Response, SessionLog
+from .models import ExamSession, Response as AnswerResponse, SessionLog
 from .serializers import (
     ExamSessionListSerializer,
     ExamSessionDetailSerializer,
@@ -62,7 +62,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
         # Return session with exam details
         detail_serializer = ExamSessionDetailSerializer(session)
-        return Response(
+        return APIResponse(
             {
                 'message': 'Exam session started successfully',
                 'session': detail_serializer.data
@@ -87,14 +87,14 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
         # Check permissions
         if session.user != request.user and not request.user.is_admin():
-            return Response(
+            return APIResponse(
                 {'error': 'You can only submit your own exam sessions'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
         # Check if session can be submitted
         if not session.can_submit():
-            return Response(
+            return APIResponse(
                 {'error': f'Session cannot be submitted (status: {session.get_status_display()})'},
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -110,7 +110,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
             time_remaining = serializer.validated_data['time_remaining']
 
             for response_data in responses_data:
-                Response.objects.create(
+                AnswerResponse.objects.create(
                     session=session,
                     **response_data
                 )
@@ -133,7 +133,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
         # Return final results
         detail_serializer = ExamSessionDetailSerializer(session)
-        return Response(
+        return APIResponse(
             {
                 'message': 'Exam submitted successfully',
                 'session': detail_serializer.data,
@@ -157,14 +157,14 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
         # Check permissions
         if session.user != request.user and not request.user.is_admin():
-            return Response(
+            return APIResponse(
                 {'error': 'You can only view logs for your own sessions'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
         logs = session.logs.all()
         serializer = SessionLogSerializer(logs, many=True)
-        return Response(serializer.data)
+        return APIResponse(serializer.data)
 
     @action(detail=True, methods=['post'])
     def terminate(self, request, pk=None):
@@ -173,7 +173,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         POST /api/sessions/{id}/terminate/
         """
         if not request.user.is_admin():
-            return Response(
+            return APIResponse(
                 {'error': 'Only administrators can terminate sessions'},
                 status=status.HTTP_403_FORBIDDEN
             )
@@ -181,7 +181,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         session = self.get_object()
 
         if session.status != ExamSession.Status.IN_PROGRESS:
-            return Response(
+            return APIResponse(
                 {'error': f'Cannot terminate session with status: {session.get_status_display()}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
@@ -198,7 +198,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
             details={'terminated_by': request.user.username}
         )
 
-        return Response(
+        return APIResponse(
             {'message': 'Session terminated successfully'},
             status=status.HTTP_200_OK
         )
@@ -223,6 +223,6 @@ class ResponseViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         """Filter responses based on user role."""
         if self.request.user.is_admin():
-            return Response.objects.all()
-        return Response.objects.filter(session__user=self.request.user)
+            return AnswerResponse.objects.all()
+        return AnswerResponse.objects.filter(session__user=self.request.user)
 

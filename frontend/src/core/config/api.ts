@@ -31,7 +31,7 @@ export interface ExamSession {
   id: string;
   user: number;
   exam: Exam;
-  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'SUBMITTED' | 'TERMINATED';
+  status: string;
   started_at?: string;
   submitted_at?: string;
   total_score?: number;
@@ -39,6 +39,7 @@ export interface ExamSession {
   passed?: boolean;
   duration?: number;
   time_remaining?: number;
+  time_remaining_seconds?: number;
 }
 
 export interface ResponseData {
@@ -142,7 +143,9 @@ class ApiClient {
 
   // Exam methods
   async getExams(): Promise<Exam[]> {
-    return this.request('/exams/');
+    const data = await this.request<{ results?: Exam[]; count?: number } | Exam[]>('/exams/');
+    if (Array.isArray(data)) return data;
+    return data.results ?? [];
   }
 
   async getExam(id: number): Promise<Exam> {
@@ -175,12 +178,23 @@ class ApiClient {
     return this.request(`/sessions/${sessionId}/`);
   }
 
-  // Monitoring methods (for future WebSocket integration)
-  async sendFrame(frameData: { image: string; timestamp: number }) {
+  // Monitoring
+  async sendFrame(frameData: { image: string; session_id: string }) {
     return this.request('/monitoring/frame/', {
       method: 'POST',
       body: JSON.stringify(frameData),
     });
+  }
+
+  async getReportSummary() {
+    return this.request<{
+      total_sessions: number;
+      active_sessions: number;
+      completed_sessions: number;
+      unresolved_alerts: number;
+      behavior_events: number;
+      average_score: number | null;
+    }>('/reports/summary/');
   }
 }
 
@@ -227,15 +241,14 @@ export const examAPI = {
   },
 
   // Send monitoring frame (for behavior analysis)
-  sendMonitoringFrame: async (imageData: string) => {
+  sendMonitoringFrame: async (imageData: string, sessionId: string) => {
     try {
       return await apiClient.sendFrame({
         image: imageData,
-        timestamp: Date.now(),
+        session_id: sessionId,
       });
     } catch (error) {
       console.error('Failed to send monitoring frame:', error);
-      // Don't throw here as monitoring failures shouldn't break the exam
     }
   },
 };

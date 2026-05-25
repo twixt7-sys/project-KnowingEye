@@ -37,8 +37,12 @@ export function ExamTakingWithBackend() {
     const loadExamSession = async () => {
       try {
         setLoading(true);
-        const examSession = await examAPI.startSession(parseInt(examId!));
-        setSession(examSession);
+        const examSession = await examAPI.startSession(parseInt(examId!, 10));
+        setSession({
+          ...examSession,
+          time_remaining: examSession.time_remaining_seconds ?? examSession.exam.duration_minutes * 60,
+          duration: examSession.exam.duration_minutes * 60,
+        } as ExamSession);
 
         // Initialize time spent tracking for each question
         const initialTimeSpent: { [key: number]: number } = {};
@@ -95,36 +99,51 @@ export function ExamTakingWithBackend() {
     return () => clearInterval(questionTimer);
   }, [currentQuestion]);
 
-  // Simulate behavior monitoring (would send frames to backend)
+  // Behavior monitoring — capture webcam frames and send to backend
   useEffect(() => {
-    if (!webcamActive) return;
+    if (!webcamActive || !session?.id) return;
+
+    let stream: MediaStream | null = null;
+    const video = document.createElement("video");
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const startCamera = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        video.srcObject = stream;
+        await video.play();
+      } catch (err) {
+        console.warn("Webcam unavailable:", err);
+      }
+    };
+
+    startCamera();
 
     const monitoringInterval = setInterval(async () => {
-      // Simulate capturing and sending frame to backend
-      // In real implementation, this would capture webcam frame
-      const mockFrameData = "base64-encoded-image-data";
+      if (!stream || !ctx || video.videoWidth === 0) return;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
 
       try {
-        await examAPI.sendMonitoringFrame(mockFrameData);
+        const result = await examAPI.sendMonitoringFrame(dataUrl, session.id);
+        const alerts = result?.analysis?.alerts ?? [];
+        if (alerts.length) {
+          const messages = alerts.map((a: { message?: string }) => a.message || "Compliance alert");
+          setBehaviorAlerts((prev) => [...messages, ...prev].slice(0, 3));
+        }
       } catch (err) {
-        console.warn('Monitoring frame failed:', err);
-      }
-
-      // Simulate random behavior alerts
-      if (Math.random() > 0.95) {
-        const alerts = [
-          "Face not detected",
-          "Multiple faces in frame",
-          "Looking away from screen",
-          "Posture change detected",
-        ];
-        const randomAlert = alerts[Math.floor(Math.random() * alerts.length)];
-        setBehaviorAlerts((prev) => [...prev, randomAlert].slice(-3));
+        console.warn("Monitoring frame failed:", err);
       }
     }, 5000);
 
-    return () => clearInterval(monitoringInterval);
-  }, [webcamActive]);
+    return () => {
+      clearInterval(monitoringInterval);
+      stream?.getTracks().forEach((t) => t.stop());
+    };
+  }, [webcamActive, session?.id]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -157,7 +176,7 @@ export function ExamTakingWithBackend() {
       // Prepare responses data for backend
       const responses: ResponseData[] = session.exam.questions.map((question: any, index: number) => ({
         question_id: question.id,
-        answer_text: answers[index] || '',
+        answer_text: answers[question.id] || '',
         time_spent: timeSpent[index] || 0,
       }));
 
@@ -185,7 +204,7 @@ export function ExamTakingWithBackend() {
     try {
       const responses: ResponseData[] = session.exam.questions.map((question: any, index: number) => ({
         question_id: question.id,
-        answer_text: answers[index] || '',
+        answer_text: answers[question.id] || '',
         time_spent: timeSpent[index] || 0,
       }));
 

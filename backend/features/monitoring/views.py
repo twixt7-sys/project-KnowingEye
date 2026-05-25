@@ -1,38 +1,61 @@
-from django.shortcuts import render
-
-# Create your views here.
-import base64
-import numpy as np
-import cv2
-
-from rest_framework.decorators import api_view
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from ai.adapter import analyze_frame_bgr, get_pipeline_mode
+from ai.frame_utils import decode_base64_image
+from features.behavior.services import persist_analysis
+from features.session.models import ExamSession
 
-@api_view(['POST'])
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def receive_frame(request):
+    """
+    POST /api/monitoring/frame/
+    Body: { "image": "<base64>", "session_id": "<uuid>" }
+    """
+    image_data = request.data.get("image")
+    session_id = request.data.get("session_id")
+
+    if not image_data:
+        return Response({"error": "No image provided"}, status=status.HTTP_400_BAD_REQUEST)
+    if not session_id:
+        return Response({"error": "session_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    frame = decode_base64_image(image_data)
+    if frame is None:
+        return Response({"error": "Invalid image"}, status=status.HTTP_400_BAD_REQUEST)
+
     try:
-        image_data = request.data.get('image')
+        session = ExamSession.objects.get(pk=session_id)
+    except ExamSession.DoesNotExist:
+        return Response({"error": "Session not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        if not image_data:
-            return Response({"error": "No image provided"}, status=400)
+    if not request.user.is_admin() and session.user_id != request.user.id:
+        return Response({"error": "Not allowed for this session"}, status=status.HTTP_403_FORBIDDEN)
 
-        header, encoded = image_data.split(";base64,")
-        decoded = base64.b64decode(encoded)
+    if session.status != ExamSession.Status.IN_PROGRESS:
+        return Response({"error": "Session is not active"}, status=status.HTTP_400_BAD_REQUEST)
 
-        np_arr = np.frombuffer(decoded, np.uint8)
-        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    analysis = analyze_frame_bgr(frame, session_id=str(session_id))
+    persisted = persist_analysis(session, analysis)
 
-        if frame is None:
-            return Response({"error": "Invalid image"}, status=400)
-
-        return Response({
+    return Response(
+        {
             "status": "ok",
-            "shape": frame.shape,
-            "message": "Frame received"
-        })
+            "session_id": str(session_id),
+            "pipeline_mode": get_pipeline_mode(),
+            "shape": list(frame.shape),
+            "analysis": analysis,
+            "persisted": persisted,
+        }
+    )
 
-    except Exception as e:
-        return Response({
-            "error": str(e)
-        }, status=500)
+
+@api_view(["GET"])
+@permission_classes([])  # public health check for dev / load balancers
+def monitoring_health(request):
+    """GET /api/monitoring/health/"""
+    return Response({"status": "ok", "pipeline_mode": get_pipeline_mode()})

@@ -1,5 +1,5 @@
-def analyze_frame(frame):
-    return {
-        "face_detected": True,
-        "confidence": 0.9
-    }
+"""Backward-compatible entry point — delegates to adapter."""
+
+from ai.adapter import analyze_frame_bgr as analyze_frame
+
+__all__ = ["analyze_frame"]

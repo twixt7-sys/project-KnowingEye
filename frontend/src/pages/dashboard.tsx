@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { apiClient } from "../core/config/api";
 import {
   Users,
   FileText,
@@ -34,27 +35,41 @@ export function Dashboard() {
     "2": "running",
   });
 
+  const [reportStats, setReportStats] = useState<{
+    total_sessions: number;
+    active_sessions: number;
+    unresolved_alerts: number;
+    behavior_events: number;
+  } | null>(null);
+
+  useEffect(() => {
+    apiClient
+      .getReportSummary()
+      .then((data) => setReportStats(data))
+      .catch(() => setReportStats(null));
+  }, []);
+
   const stats = [
     {
-      label: "Active Exams",
-      value: "12",
-      change: "+3 this week",
-      icon: FileText,
-      color: "from-blue-500 to-blue-600",
+      label: "Active Sessions",
+      value: reportStats ? String(reportStats.active_sessions) : "—",
+      change: reportStats ? `${reportStats.total_sessions} total` : "Loading…",
+      icon: Activity,
+      color: "from-green-500 to-green-600",
     },
     {
-      label: "Total Students",
-      value: "248",
-      change: "+12 this week",
-      icon: Users,
+      label: "Behavior Events",
+      value: reportStats ? String(reportStats.behavior_events) : "—",
+      change: "From monitoring pipeline",
+      icon: BarChart3,
       color: "from-violet-500 to-violet-600",
     },
     {
-      label: "Active Sessions",
-      value: "45",
-      change: "Live now",
-      icon: Activity,
-      color: "from-green-500 to-green-600",
+      label: "Unresolved Alerts",
+      value: reportStats ? String(reportStats.unresolved_alerts) : "—",
+      change: "Requires review",
+      icon: AlertTriangle,
+      color: "from-amber-500 to-amber-600",
     },
     {
       label: "Flagged Events",

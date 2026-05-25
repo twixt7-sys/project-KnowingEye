@@ -1,6 +1,9 @@
 from rest_framework.views import exception_handler
 
 
-def handle_api_exception(exc, context):
-    response = exception_handler(exc, context)
-    return response
+def custom_exception_handler(exc, context):
+    return exception_handler(exc, context)
+
+
+# Legacy alias
+handle_api_exception = custom_exception_handler

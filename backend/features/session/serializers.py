@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.utils import timezone
 
+from features.exams.serializers import ExamDetailSerializer
+
 from .models import ExamSession, Response, SessionLog
 
 
@@ -57,6 +59,7 @@ class ExamSessionListSerializer(serializers.ModelSerializer):
 class ExamSessionDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for exam sessions."""
 
+    exam = ExamDetailSerializer(read_only=True)
     exam_title = serializers.CharField(source='exam.title', read_only=True)
     exam_duration_minutes = serializers.IntegerField(source='exam.duration_minutes', read_only=True)
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)

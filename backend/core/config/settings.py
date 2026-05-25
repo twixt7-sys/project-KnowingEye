@@ -32,7 +32,7 @@ SECRET_KEY = 'django-insecure-qj2l9)qohcql5_h2s73mo3tn8k9c-x6biws@64k_5oc&l6gd5+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 
 # Application definition
@@ -94,7 +94,7 @@ WSGI_APPLICATION = 'core.config.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 # Use PostgreSQL for production, SQLite for development
-DB_ENGINE = config('DB_ENGINE', default='django.db.backends.postgresql')
+DB_ENGINE = config('DB_ENGINE', default='django.db.backends.sqlite3')
 
 if DB_ENGINE == 'django.db.backends.postgresql':
     DATABASES = {
@@ -173,7 +173,11 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+    'EXCEPTION_HANDLER': 'core.exceptions.handlers.custom_exception_handler',
 }
+
+# pipeline_playground integration (see backend/ai/adapter.py)
+PIPELINE_PLAYGROUND_DIR = BASE_DIR.parent / 'pipeline_playground'
 
 # JWT Settings
 SIMPLE_JWT = {
