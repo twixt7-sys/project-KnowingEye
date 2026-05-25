@@ -1,0 +1,173 @@
+{
+  "compiled_into": "docs/testing/document-data",
+  "suggested_filename": "[[Your Group Name]_WBSMS]_Doc7_DefectLog.xlsx",
+  "project": "OSAS WBSMS",
+  "group": "[Your Group Name]",
+  "instructions": "Course guide requires ≥8 defects with evidence. Update status and dates as fixes land.",
+  "columns": [
+    "Defect ID",
+    "Title",
+    "Module / Feature",
+    "Severity",
+    "Priority",
+    "Phase Found",
+    "Steps to Reproduce",
+    "Expected Result",
+    "Actual Result",
+    "Status",
+    "Assigned To",
+    "Date Reported",
+    "Date Resolved",
+    "Evidence (file name or link)"
+  ],
+  "defects": [
+    {
+      "defect_id": "DEF-001",
+      "title": "Profiling form does not scroll to first validation error",
+      "module_feature": "Student Profiling",
+      "severity": "Medium",
+      "priority": "P2",
+      "phase_found": "System",
+      "steps_to_reproduce": [
+        "Open profiling.",
+        "Leave required field blank.",
+        "Submit."
+      ],
+      "expected_result": "Viewport scrolls to first invalid field.",
+      "actual_result": "Error shown but user must scroll manually.",
+      "status": "Open",
+      "assigned_to": "[Developer]",
+      "date_reported": "2026-05-15",
+      "date_resolved": "",
+      "evidence": "evidence_DEF-001_profiling_scroll.png"
+    },
+    {
+      "defect_id": "DEF-002",
+      "title": "Dashboard chart legend clipped on narrow viewport",
+      "module_feature": "Faculty Dashboard",
+      "severity": "Low",
+      "priority": "P3",
+      "phase_found": "System",
+      "steps_to_reproduce": [
+        "Open faculty dashboard at 390px width."
+      ],
+      "expected_result": "Legend readable without overlap.",
+      "actual_result": "Legend partially clipped.",
+      "status": "Open",
+      "assigned_to": "[Developer]",
+      "date_reported": "2026-05-15",
+      "date_resolved": "",
+      "evidence": "evidence_DEF-002_chart_legend.png"
+    },
+    {
+      "defect_id": "DEF-003",
+      "title": "Double-submit on concern form creates duplicate records",
+      "module_feature": "Concerns",
+      "severity": "High",
+      "priority": "P1",
+      "phase_found": "UAT",
+      "steps_to_reproduce": [
+        "Submit concern.",
+        "Double-click submit quickly."
+      ],
+      "expected_result": "Single concern record.",
+      "actual_result": "Duplicate rows created.",
+      "status": "Resolved",
+      "assigned_to": "[Developer]",
+      "date_reported": "2026-05-15",
+      "date_resolved": "2026-05-15",
+      "evidence": "evidence_DEF-003_duplicate_concern.png"
+    },
+    {
+      "defect_id": "DEF-004",
+      "title": "PDF report blank page when no violations in period",
+      "module_feature": "Dashboard / DomPDF",
+      "severity": "Medium",
+      "priority": "P2",
+      "phase_found": "System",
+      "steps_to_reproduce": [
+        "Generate report with empty violation dataset."
+      ],
+      "expected_result": "Report states no data or omits section gracefully.",
+      "actual_result": "Blank page in PDF.",
+      "status": "In Progress",
+      "assigned_to": "[Developer]",
+      "date_reported": "2026-05-15",
+      "date_resolved": "",
+      "evidence": "evidence_DEF-004_blank_pdf.png"
+    },
+    {
+      "defect_id": "DEF-005",
+      "title": "Student search case-sensitive in violation module",
+      "module_feature": "Violations",
+      "severity": "Medium",
+      "priority": "P2",
+      "phase_found": "System",
+      "steps_to_reproduce": [
+        "Search student with lowercase name."
+      ],
+      "expected_result": "Case-insensitive match.",
+      "actual_result": "No results until exact case matched.",
+      "status": "Resolved",
+      "assigned_to": "[Developer]",
+      "date_reported": "2026-05-15",
+      "date_resolved": "2026-05-15",
+      "evidence": "evidence_DEF-005_search_case.png"
+    },
+    {
+      "defect_id": "DEF-006",
+      "title": "Notification not received when Reverb stopped",
+      "module_feature": "Notifications",
+      "severity": "Medium",
+      "priority": "P2",
+      "phase_found": "Integration",
+      "steps_to_reproduce": [
+        "Stop Reverb.",
+        "Approve profile."
+      ],
+      "expected_result": "Fallback or clear error; notification when service up.",
+      "actual_result": "No notification until Reverb restarted.",
+      "status": "Deferred",
+      "assigned_to": "[Developer]",
+      "date_reported": "2026-05-15",
+      "date_resolved": "",
+      "evidence": "evidence_DEF-006_reverb_down.txt"
+    },
+    {
+      "defect_id": "DEF-007",
+      "title": "Admin route typo in account status patch URL",
+      "module_feature": "Account Management",
+      "severity": "Low",
+      "priority": "P3",
+      "phase_found": "Integration",
+      "steps_to_reproduce": [
+        "PATCH account status via documented route."
+      ],
+      "expected_result": "Status updates.",
+      "actual_result": "404 on mistyped route name (account-mangement).",
+      "status": "Open",
+      "assigned_to": "[Developer]",
+      "date_reported": "2026-05-15",
+      "date_resolved": "",
+      "evidence": "evidence_DEF-007_route_typo.png"
+    },
+    {
+      "defect_id": "DEF-008",
+      "title": "Password reset email not sent in local .env",
+      "module_feature": "Authentication",
+      "severity": "Low",
+      "priority": "P3",
+      "phase_found": "System",
+      "steps_to_reproduce": [
+        "Request password reset without MAIL configured."
+      ],
+      "expected_result": "User informed mail cannot be sent or log driver shows link.",
+      "actual_result": "Silent failure / confusing UX.",
+      "status": "Open",
+      "assigned_to": "[Developer]",
+      "date_reported": "2026-05-15",
+      "date_resolved": "",
+      "evidence": "evidence_DEF-008_mail_config.png"
+    }
+  ]
+}

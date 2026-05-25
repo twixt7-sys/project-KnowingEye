@@ -1,0 +1,69 @@
+TEST EXECUTION LOG — PRODUCTION SMOKE
+Project: OSAS WBSMS (LCC-OSAS-SYSTEM)
+Site: https://lcc-osas.com
+Date: 2026-05-22
+Tester: Cursor IDE browser automation + endpoint probe
+Build: Production (Laravel + Inertia + React)
+
+SUMMARY
+- Browser smoke (authenticated): 13 Passed, 1 Failed, 0 Blocked
+- Public endpoint probe: See production_public_endpoints_2026-05-22.json
+- Local Pest (php artisan test): 2 Passed, 23 Failed — local SQLite schema out of sync with User factory (not used as production evidence)
+
+AUTHENTICATION (WBS-AUTH)
+TC-ID          Description                              Expected                    Actual                         Status  Evidence
+WBS-AUTH-001   Admin login (username)                   Dashboard redirect          /osas/admin/dashboard          Pass    WBS-AUTH-001_login_portal.png, WBS-AUTH-003_admin_login_dashboard.png
+WBS-AUTH-002   Invalid password                         Error message, stay guest   "These credentials do not match our records."  Pass  WBS-AUTH-002_invalid_login_error.png
+WBS-AUTH-003   Logout ends session                      Login required              Logout modal + redirect to login  Pass  (verified during session cycle)
+WBS-AUTH-004   Student login (email)                    Student profile             /osas/student/profile          Pass    WBS-STU-001_student_my_profile.png
+
+GENERAL / LANDING (WBS-GEN)
+WBS-GEN-001    Landing page loads                       200, hero + nav             Page rendered                  Pass    WBS-GEN-001_landing_page.png
+
+DASHBOARD (WBS-DSH)
+WBS-DSH-001    Admin dashboard data                     Charts + stats              Total Students 1110; API 200   Pass    WBS-DSH-001_admin_dashboard.png
+WBS-DSH-002    Dashboard JSON API                       200 JSON envelope           GET /admin/dashboard-data?... 200  Pass    production_integration_network_2026-05-22.json
+
+STUDENT RECORDS (WBS-STU)
+WBS-STU-001    Admin student list                       Paginated table             Showing 1–10 of 1111           Pass    WBS-STU-002_admin_student_records.png
+               Student my-profile                       Verified profile sections   Mark Russel Gamboa — BSIT      Pass    WBS-STU-001_student_my_profile.png
+
+PROFILE VALIDATION (WBS-VAL)
+WBS-VAL-001    Validation queue                         Pending/approved/rejected   141 pending, 1112 approved       Pass    WBS-VAL-001_profile_validation.png
+
+VIOLATIONS (WBS-VIO)
+WBS-VIO-001    Violations module                        Registry UI loads           Clean record (0 cases)         Pass    WBS-VIO-001_admin_violations.png
+
+CONCERNS (WBS-CON)
+WBS-CON-001    Student concerns tab                     Help desk UI                0 tickets (student view)       Pass    WBS-CON-001_student_concerns_tab.png
+WBS-CON-002    Admin concerns list                      Tickets visible             1 resolved (CON-2026-ONDWZ)    Pass    WBS-CON-002_admin_concerns.png
+
+ACCOUNT MANAGEMENT (WBS-ADM)
+WBS-ADM-001    Admin account directory                  User list + analytics       1115 total users               Pass    WBS-ADM-001_admin_account_management.png
+
+NOTIFICATIONS (WBS-NOT)
+WBS-NOT-001    Notifications panel                      List + real-time            15 notifications; WS 101       Pass    WBS-NOT-001_notifications_panel.png
+
+PROFILING (WBS-PROF)
+WBS-PROF-001   Guest profiling wizard GET               200 Inertia page            405 Method Not Allowed         Fail    WBS-PROF-001_profiling_route_note.png
+               Note: Investigate production route/method registration for profiling index.
+
+INTEGRATION OBSERVATIONS (admin session)
+- POST /login → 302 → /osas/admin/dashboard
+- GET /admin/dashboard-data?academic_year_id=5&semester_id=9 → 200
+- GET /admin/students/show (via tab) → 200
+- GET /osas/notifications/show → 200
+- POST /broadcasting/auth → 200
+- WebSocket wss://lcc-osas.com/app/... → 101 Switching Protocols (Reverb active)
+- GET /academic-years, /semesters?academic_year_id=5 → 200
+
+STUDENT SESSION OBSERVATIONS
+- POST /login (student email) → /osas/student/profile
+- Concerns tab ?tab=concerns loads Help Desk
+
+RECOMMENDATIONS
+1. Fix production GET route for /osas/student/profiling (405).
+2. Update local Pest tests / User factory to match users table (no `name` column).
+3. Rotate test account passwords after evidence capture (shared in chat).
+
+END OF LOG

@@ -1,0 +1,63 @@
+{
+  "base": "docs/testing",
+  "requirements_data": {
+    "path": "requirements-data",
+    "files": [
+      "01_prefinal_submission_requirements.json",
+      "02_uat_template_structure.json",
+      "03_test_plan_ieee829_template_structure.json",
+      "04_osas_project_context.json",
+      "05_suggested_uat_scenarios_osas.json",
+      "06_automated_verification_2026-05-15.json",
+      "07_test_cases_document.json"
+    ]
+  },
+  "document_data": {
+    "path": "document-data",
+    "files": [
+      "manifest.json",
+      "01_test_plan.json",
+      "02_test_cases_document.json",
+      "03_system_test_report.json",
+      "04_uat_plan_and_report.json",
+      "05_defect_bug_report_log.json",
+      "06_regression_test_report.json",
+      "07_test_summary_report.json",
+      "generate_documents.py"
+    ]
+  },
+  "documents": {
+    "path": "documents",
+    "note": "Generated Office files after running generate_documents.py",
+    "expected_artifacts": [
+      {
+        "filename": "[Your Group Name]_WBSMS_Doc1_TestPlan.docx",
+        "course_doc": "Doc 1"
+      },
+      {
+        "filename": "[Your Group Name]_WBSMS_Doc2_TestCases.xlsx",
+        "course_doc": "Doc 2"
+      },
+      {
+        "filename": "[Your Group Name]_WBSMS_Doc5_SystemTestReport.docx",
+        "course_doc": "Doc 5"
+      },
+      {
+        "filename": "[Your Group Name]_WBSMS_Doc6_UATPlanReport.docx",
+        "course_doc": "Doc 6"
+      },
+      {
+        "filename": "[Your Group Name]_WBSMS_Doc7_DefectLog.xlsx",
+        "course_doc": "Doc 7"
+      },
+      {
+        "filename": "[Your Group Name]_WBSMS_Doc8_RegressionTestReport.docx",
+        "course_doc": "Doc 8"
+      },
+      {
+        "filename": "[Your Group Name]_WBSMS_Doc9_TestSummaryReport.docx",
+        "course_doc": "Doc 9"
+      }
+    ]
+  }
+}

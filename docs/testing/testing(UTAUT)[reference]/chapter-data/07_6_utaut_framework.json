@@ -1,0 +1,131 @@
+{
+  "section_id": "7.6",
+  "title": "UTAUT Framework and User Acceptance Evaluation",
+  "paragraphs": [
+    "The researchers used the UTAUT model (Venkatesh et al., 2003) to evaluate acceptance of the OSAS Web-Based Student Management System (WBSMS) at Legacy College of Compostela.",
+    "User Acceptance Testing involved 50 respondents who were actual users of the deployed WBSMS."
+  ],
+  "table_7_6_constructs": {
+    "caption": "Table 7.6. UTAUT Constructs and Definitions",
+    "headers": [
+      "No.",
+      "Construct",
+      "Definition",
+      "Measurement Focus"
+    ],
+    "rows": [
+      [
+        1,
+        "Performance Expectancy (PE)",
+        "The degree to which the user believes that using the system will help them achieve gains in job performance.",
+        "Usefulness, efficiency, productivity improvement in OSAS tasks"
+      ],
+      [
+        2,
+        "Effort Expectancy (EE)",
+        "The degree of ease associated with the use of the system.",
+        "Ease of use, learnability, clarity of interface"
+      ],
+      [
+        3,
+        "Social Influence (SI)",
+        "The degree to which the user perceives that important others believe they should use the system.",
+        "Peer influence, supervisory support, institutional norms"
+      ],
+      [
+        4,
+        "Facilitating Conditions (FC)",
+        "The degree to which the user believes that organizational and technical infrastructure exists to support system use.",
+        "Technical support, device/internet availability, training"
+      ],
+      [
+        5,
+        "Behavioral Intention (BI)",
+        "The extent to which users intend to use the system in the future.",
+        "Willingness to recommend, continued use intention"
+      ]
+    ]
+  },
+  "table_7_7_respondents": {
+    "caption": "Table 7.7. Profile of UAT Respondents",
+    "headers": [
+      "Category",
+      "Group",
+      "Male",
+      "Female",
+      "Total"
+    ],
+    "rows": [
+      [
+        "User Role",
+        "Students (End-users)",
+        12,
+        13,
+        25
+      ],
+      [
+        "User Role",
+        "Student Assistants",
+        4,
+        3,
+        7
+      ],
+      [
+        "User Role",
+        "OSAS Faculty",
+        5,
+        5,
+        10
+      ],
+      [
+        "User Role",
+        "System Administrators",
+        4,
+        4,
+        8
+      ],
+      [
+        "Age Group",
+        "18–25 years old",
+        14,
+        16,
+        30
+      ],
+      [
+        "Age Group",
+        "26–35 years old",
+        7,
+        6,
+        13
+      ],
+      [
+        "Age Group",
+        "36 years old and above",
+        4,
+        3,
+        7
+      ],
+      [
+        "Tech Proficiency",
+        "Beginner",
+        5,
+        6,
+        11
+      ],
+      [
+        "Tech Proficiency",
+        "Intermediate",
+        12,
+        14,
+        26
+      ],
+      [
+        "Tech Proficiency",
+        "Advanced",
+        8,
+        5,
+        13
+      ]
+    ]
+  }
+}

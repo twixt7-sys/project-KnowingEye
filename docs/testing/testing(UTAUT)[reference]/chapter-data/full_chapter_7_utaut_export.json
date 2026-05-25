@@ -1,0 +1,10 @@
+{
+  "description": "Merged 7.6–7.8 for insertion into thesis or OSAS_chapters_7_10_content.json",
+  "source_pdf": "docs/overview/documents/UTAUT chap 7.pdf",
+  "sections": [
+    "07_6_utaut_framework.json",
+    "07_7_survey_questionnaire.json",
+    "07_8_data_analysis.json"
+  ],
+  "cross_reference": "docs/overview/documents/OSAS_chapters_7_10_content.json chapter 7 blocks 7.6–7.8"
+}

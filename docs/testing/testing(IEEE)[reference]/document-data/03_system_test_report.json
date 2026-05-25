@@ -1,0 +1,121 @@
+{
+  "compiled_into": "docs/testing/document-data",
+  "suggested_filename": "[[Your Group Name]_WBSMS]_Doc5_SystemTestReport.pdf",
+  "project": "OSAS WBSMS",
+  "group": "[Your Group Name]",
+  "report_date": "2026-05-15",
+  "executive_summary": "System testing validates the integrated WBSMS (Laravel + Inertia + React) against OSAS functional requirements. Record pass/fail in Doc 2 and sync via scripts/sync_results_to_document_data.py before submission.",
+  "test_environment": {
+    "frontend": "Vite dev (npm run dev) or production build (npm run build)",
+    "backend": "php artisan serve (default http://127.0.0.1:8000)",
+    "database": "MySQL per .env",
+    "browsers_tested": "[Chrome / Edge / Chromium]",
+    "build_versions": "Laravel 12; React 18; last verified 2026-05-15"
+  },
+  "functional_requirements_traceability": {
+    "title": "Functional results mapped to requirements",
+    "rows": [
+      {
+        "requirement": "Institutional portal login and RBAC dashboards",
+        "how_verified": "WBS-AUTH-001..003, WBS-SEC-*",
+        "result": "[Pass/Fail]",
+        "evidence": "Doc 2; Pest AuthenticationTest"
+      },
+      {
+        "requirement": "Student profiling with consent",
+        "how_verified": "WBS-PROF-*",
+        "result": "[Pass/Fail]",
+        "evidence": "Doc 2 screenshots"
+      },
+      {
+        "requirement": "Profile validation by faculty/assistant",
+        "how_verified": "WBS-VAL-*",
+        "result": "[Pass/Fail]",
+        "evidence": "Doc 2; UAT-WBS-002"
+      },
+      {
+        "requirement": "Violation management",
+        "how_verified": "WBS-VIO-*",
+        "result": "[Pass/Fail]",
+        "evidence": "Doc 2"
+      },
+      {
+        "requirement": "Concern submission and updates",
+        "how_verified": "WBS-CON-*",
+        "result": "[Pass/Fail]",
+        "evidence": "Doc 2; UAT-WBS-004"
+      },
+      {
+        "requirement": "Dashboard analytics and PDF export",
+        "how_verified": "WBS-DSH-*",
+        "result": "[Pass/Fail]",
+        "evidence": "Doc 2; downloaded PDF"
+      },
+      {
+        "requirement": "Account management (admin)",
+        "how_verified": "WBS-ADM-001",
+        "result": "[Pass/Fail]",
+        "evidence": "Doc 2"
+      },
+      {
+        "requirement": "In-app notifications",
+        "how_verified": "WBS-NOT-001",
+        "result": "[Pass/Fail/N/A]",
+        "evidence": "Reverb running; notification screenshot"
+      }
+    ]
+  },
+  "non_functional_results": {
+    "title": "Non-functional testing",
+    "rows": [
+      {
+        "category": "Security — authentication and RBAC",
+        "objective": "Four roles enforced; students cannot access admin modules.",
+        "method": "WBS-SEC-001..002 manual; Pest auth tests",
+        "result": "[Pass/Fail]",
+        "notes": "Session-based Breeze auth; document production HTTPS expectation."
+      },
+      {
+        "category": "Usability / responsiveness",
+        "objective": "Profiling and dashboards usable on ~390px viewport.",
+        "method": "WBS-GEN-002",
+        "result": "[Pass/Fail]",
+        "notes": ""
+      },
+      {
+        "category": "Performance (informal)",
+        "objective": "Dashboard and PDF generation acceptable on demo hardware.",
+        "method": "Stopwatch on WBS-DSH-001..002",
+        "result": "[Pass/Fail]",
+        "notes": "Target: dashboard < 3s; PDF < 5s on dev — adjust per environment."
+      }
+    ]
+  },
+  "automated_evidence": {
+    "title": "Automated verification (Pest / PHPUnit)",
+    "command": "php artisan test",
+    "last_run_date": "2026-05-15",
+    "outcome": "[Fill after run]",
+    "tests": [
+      "Tests\\Feature\\Auth\\AuthenticationTest",
+      "Tests\\Feature\\Auth\\RegistrationTest",
+      "Tests\\Feature\\ProfileTest",
+      "[Add OSAS module tests]"
+    ],
+    "instruction": "Attach terminal screenshot or pest log to the Word report."
+  },
+  "defects_during_system_test": {
+    "title": "Defects identified during system testing",
+    "text": "Cross-reference Doc 7.",
+    "placeholder_ids": [
+      "DEF-001 through DEF-008 (see Doc 7)"
+    ]
+  },
+  "overall_assessment": {
+    "title": "Overall pass/fail rate and readiness",
+    "planned_manual_cases": 22,
+    "executed_manual_cases": "[count]",
+    "passed_manual_cases": "[count]",
+    "readiness_statement": "[Ready / Not ready — justify]"
+  }
+}

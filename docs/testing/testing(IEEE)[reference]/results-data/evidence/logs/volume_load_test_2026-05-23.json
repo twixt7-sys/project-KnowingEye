@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "tool": "volume_load_test.py",
+    "captured_at_utc": "2026-05-23T06:13:14.529729+00:00",
+    "base_url": "https://lcc-osas.com",
+    "endpoints": [
+      "/",
+      "/osas/institutional-portal/login",
+      "/departments",
+      "/academic-years"
+    ],
+    "stages_virtual_users": [
+      100,
+      500,
+      1000,
+      2500,
+      5000
+    ],
+    "timeout_sec": 30.0,
+    "note": "Each virtual user issues one concurrent GET. Stages are sequential; not a sustained soak test."
+  },
+  "stages": [
+    {
+      "virtual_users": 100,
+      "total_requests": 100,
+      "successful": 100,
+      "failed": 0,
+      "success_rate_pct": 100.0,
+      "duration_sec": 1.054,
+      "requests_per_sec": 94.88,
+      "latency_ms": {
+        "min": 759.71,
+        "mean": 832.91,
+        "median": 781.14,
+        "p90": 941.53,
+        "p95": 956.72,
+        "p99": 1034.21,
+        "max": 1041.45
+      },
+      "status_codes": {
+        "200": 100
+      },
+      "errors_sample": []
+    },
+    {
+      "virtual_users": 500,
+      "total_requests": 500,
+      "successful": 500,
+      "failed": 0,
+      "success_rate_pct": 100.0,
+      "duration_sec": 15.558,
+      "requests_per_sec": 32.14,
+      "latency_ms": {
+        "min": 1056.36,
+        "mean": 4109.08,
+        "median": 3971.78,
+        "p90": 8300.52,
+        "p95": 8376.65,
+        "p99": 8456.54,
+        "max": 15524.36
+      },
+      "status_codes": {
+        "200": 500
+      },
+      "errors_sample": []
+    },
+    {
+      "virtual_users": 1000,
+      "total_requests": 1000,
+      "successful": 661,
+      "failed": 339,
+      "success_rate_pct": 66.1,
+      "duration_sec": 21.475,
+      "requests_per_sec": 46.57,
+      "latency_ms": {
+        "min": 1274.11,
+        "mean": 12056.82,
+        "median": 9298.87,
+        "p90": 21401.01,
+        "p95": 21424.12,
+        "p99": 21455.62,
+        "max": 21467.71
+      },
+      "status_codes": {
+        "error": 339,
+        "200": 661
+      },
+      "errors_sample": [
+        "ClientConnectorError: Cannot connect to host lcc-osas.com:443 ssl:default [The semaphore timeout period has expired]"
+      ]
+    },
+    {
+      "virtual_users": 2500,
+      "total_requests": 2500,
+      "successful": 590,
+      "failed": 1910,
+      "success_rate_pct": 23.6,
+      "duration_sec": 22.068,
+      "requests_per_sec": 113.29,
+      "latency_ms": {
+        "min": 1804.83,
+        "mean": 18425.15,
+        "median": 21599.72,
+        "p90": 21871.02,
+        "p95": 21909.51,
+        "p99": 22032.32,
+        "max": 22050.21
+      },
+      "status_codes": {
+        "error": 1910,
+        "200": 590
+      },
+      "errors_sample": [
+        "ClientConnectorError: Cannot connect to host lcc-osas.com:443 ssl:default [The semaphore timeout period has expired]"
+      ]
+    },
+    {
+      "virtual_users": 5000,
+      "total_requests": 5000,
+      "successful": 496,
+      "failed": 4504,
+      "success_rate_pct": 9.92,
+      "duration_sec": 23.537,
+      "requests_per_sec": 212.43,
+      "latency_ms": {
+        "min": 3057.56,
+        "mean": 20925.2,
+        "median": 22084.26,
+        "p90": 23036.05,
+        "p95": 23112.05,
+        "p99": 23266.61,
+        "max": 23492.73
+      },
+      "status_codes": {
+        "error": 4504,
+        "200": 496
+      },
+      "errors_sample": [
+        "ClientConnectorError: Cannot connect to host lcc-osas.com:443 ssl:default [The semaphore timeout period has expired]"
+      ]
+    }
+  ]
+}

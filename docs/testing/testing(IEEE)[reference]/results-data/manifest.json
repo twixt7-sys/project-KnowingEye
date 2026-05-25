@@ -1,0 +1,54 @@
+{
+  "title": "OSAS WBSMS testing — results-data hub",
+  "project": "OSAS WBSMS",
+  "group": "[Your Group Name]",
+  "purpose": "Record execution outcomes and evidence paths. Sync into document-data via scripts/sync_results_to_document_data.py.",
+  "directories": {
+    "requirements_data": "../requirements-data/",
+    "document_data": "../document-data/",
+    "office_documents": "../documents/",
+    "sync_script": "../scripts/sync_results_to_document_data.py"
+  },
+  "files_in_this_folder": [
+    {
+      "file": "manifest.json",
+      "role": "This index"
+    },
+    {
+      "file": "source_map.json",
+      "role": "Inputs and generated artifacts"
+    },
+    {
+      "file": "browser_smoke_run_2026-05-15.json",
+      "role": "Browser session narrative log"
+    },
+    {
+      "file": "doc2_execution_log_results.json",
+      "role": "Doc2 Sheet A execution results"
+    },
+    {
+      "file": "doc2_detailed_case_results.json",
+      "role": "Doc2 Sheet B actuals"
+    },
+    {
+      "file": "uat_execution_results.json",
+      "role": "UAT session results"
+    },
+    {
+      "file": "regression_run_results.json",
+      "role": "Regression pass results"
+    },
+    {
+      "file": "summary_metrics.json",
+      "role": "Metrics for Doc 9"
+    },
+    {
+      "file": "automated_runs.json",
+      "role": "php artisan test log"
+    },
+    {
+      "file": "office_artifacts_status.json",
+      "role": "Track .docx/.xlsx generation status"
+    }
+  ]
+}

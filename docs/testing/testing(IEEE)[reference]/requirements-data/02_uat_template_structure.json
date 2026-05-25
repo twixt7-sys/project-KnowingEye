@@ -1,0 +1,130 @@
+{
+  "source": "docs/resources/UAT Template.docx",
+  "documentTitle": "Document 6 - UAT Plan & Report",
+  "brandingInTemplateFile": "Replace template demo scenarios with OSAS WBSMS (see 05_suggested_uat_scenarios_osas.json).",
+  "cover_fields": [
+    "Project Name",
+    "Document Type",
+    "Document Status",
+    "System Basis",
+    "Prepared Date",
+    "Target Submission Date"
+  ],
+  "section_1_project_overview_and_uat_scope": {
+    "heading": "1. Project Overview and UAT Scope",
+    "major_modules_placeholder": [
+      "Institutional portal login and role-based dashboards",
+      "Student profiling (multi-section form with consent)",
+      "Profile validation (faculty / student assistant)",
+      "Violation recording and management",
+      "Concern submission and staff response",
+      "Dashboard analytics and PDF report export",
+      "Account management (administrator)",
+      "Role-based access: student, student_assistant, faculty, admin"
+    ],
+    "out_of_scope_boilerplate": "UAT scope does not include: source-code unit testing, automated API testing, load testing, production penetration testing, live payment gateway certification, or third-party integrations not in the submitted build."
+  },
+  "section_2_uat_objectives": {
+    "heading": "2. UAT Objectives",
+    "table_columns": ["Objective Type", "Objectives"],
+    "rows": [
+      {"objectiveType": "Primary Objective", "objectives": "Confirm OSAS workflows (profiling, validation, violations, concerns, dashboards) meet institutional needs."},
+      {"objectiveType": "Secondary Objectives", "objectives": "[Fill: usability, mobile layout, error messaging clarity, basic security expectations for roles.]"}
+    ]
+  },
+  "section_3_methodology_phases": {
+    "heading": "3. Test Methodology and Phases",
+    "narrative": "Manual, scenario-based UAT using the real UI; record outcomes in execution tables.",
+    "table_columns": ["Phase", "Description", "Output"],
+    "phases": [
+      {"phase": "Phase 1 - Planning", "description": "[Dates, scenarios, accounts]", "output": "Approved UAT plan"},
+      {"phase": "Phase 2 - Environment Setup", "description": "[URL, browsers, seed data]", "output": "Ready environment"},
+      {"phase": "Phase 3 - Test Execution", "description": "[Run scenarios]", "output": "Filled execution table"},
+      {"phase": "Phase 4 - Defect Logging", "description": "[Log in defect log]", "output": "Defect IDs"},
+      {"phase": "Phase 5 - Retesting", "description": "[After fixes]", "output": "Updated status"},
+      {"phase": "Phase 6 - Sign-off", "description": "[User/evaluator]", "output": "Signed UAT report"}
+    ]
+  },
+  "section_4_environment": {
+    "heading": "4. UAT Environment Details",
+    "table_columns": ["Item", "Details"],
+    "items": [
+      {"item": "System Name", "details": "OSAS Web-Based Student Management System (WBSMS)"},
+      {"item": "Application Type", "details": "Laravel + Inertia.js + React web application"},
+      {"item": "Frontend", "details": "React 18 + TypeScript + Vite + Tailwind"},
+      {"item": "Backend", "details": "Laravel 12 (PHP 8.3); php artisan serve"},
+      {"item": "Database", "details": "MySQL (per .env)"},
+      {"item": "Browser", "details": "[List tested browsers/versions]"},
+      {"item": "Test URL / Server", "details": "http://127.0.0.1:8000 — login: /osas/institutional-portal/login"},
+      {"item": "Test Accounts", "details": "Seeded roles: student, student_assistant, faculty, admin — use synthetic data only"}
+    ]
+  },
+  "section_5_roles": {
+    "heading": "5. Roles and Responsibilities",
+    "table_columns": ["Role", "Assigned Person / User Type", "Responsibilities"],
+    "roles": [
+      "UAT Coordinator / Developer",
+      "Customer Tester (non-developer)",
+      "Admin/Staff Tester (non-developer)",
+      "Evaluator / Faculty",
+      "Documentation Recorder"
+    ]
+  },
+  "section_6_summary": {
+    "heading": "6. UAT Test Cases Summary",
+    "note": "Map UAT IDs to OSAS scenarios in requirements-data/05_suggested_uat_scenarios_osas.json.",
+    "table_columns": ["UAT ID", "Module / Feature", "Business Scenario Title", "Assigned User Role", "Priority"]
+  },
+  "section_7_defect_severity": {
+    "heading": "7. Defect Prioritization Scheme",
+    "table_columns": ["Severity", "Definition", "Required Action"]
+  },
+  "section_8_schedule": {
+    "heading": "8. UAT Schedule",
+    "table_columns": ["Date", "Activity", "Responsible Person / Role", "Expected Output"]
+  },
+  "section_9_entry_exit": {
+    "heading": "9. Entry and Exit Criteria",
+    "entry_table_columns": ["Entry Criteria", "Description"],
+    "exit_table_columns": ["Exit Criteria", "Description"]
+  },
+  "section_10_assumptions_risks": {
+    "heading": "10. Assumptions and Risks",
+    "table_columns": ["Assumption / Risk", "Details", "Mitigation"]
+  },
+  "section_11_execution_results": {
+    "heading": "11. Execution Results for All UAT Test Cases",
+    "table_columns": [
+      "UAT ID",
+      "Scenario",
+      "Tester / Role",
+      "Date Executed",
+      "Expected Business Result",
+      "Actual Result",
+      "Pass / Fail",
+      "Remarks"
+    ]
+  },
+  "section_12_defects": {
+    "heading": "12. Defects Found During UAT",
+    "table_columns": [
+      "Defect ID",
+      "Related UAT ID",
+      "Defect Description",
+      "Severity",
+      "Status",
+      "Reported By",
+      "Date Reported",
+      "Resolution / Remarks"
+    ],
+    "status_values_hint": "Open, In Progress, Resolved, Retested, Closed, Deferred"
+  },
+  "section_13_feedback": {
+    "heading": "13. User Feedback and Observations",
+    "table_columns": ["User / Role", "Feedback or Observation", "Recommended Action", "Status / Remarks"]
+  },
+  "section_14_signoff": {
+    "heading": "14. UAT Sign-off",
+    "note": "Template text was truncated in source as 'UAT Sign-off Sec'; complete signatures, names, roles, dates in final .docx."
+  }
+}

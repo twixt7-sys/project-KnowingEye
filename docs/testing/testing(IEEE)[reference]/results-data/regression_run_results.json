@@ -1,0 +1,9 @@
+{
+  "description": "Regression after fixes.",
+  "related_defects": [
+    "DEF-003",
+    "DEF-005"
+  ],
+  "rows": [],
+  "last_sync": null
+}

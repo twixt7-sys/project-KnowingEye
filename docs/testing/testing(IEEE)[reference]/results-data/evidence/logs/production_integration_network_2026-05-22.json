@@ -1,0 +1,30 @@
+{
+  "description": "Network activity observed during admin dashboard session on production lcc-osas.com",
+  "captured_at": "2026-05-22",
+  "environment": "production",
+  "base_url": "https://lcc-osas.com",
+  "session_role": "admin",
+  "websocket": {
+    "url": "wss://lcc-osas.com/app/otlrm8iuehzbbvhl0eya",
+    "status": 101,
+    "result": "Passed",
+    "note": "Laravel Reverb / Pusher protocol — real-time notifications active"
+  },
+  "requests": [
+    {"method": "GET", "path": "/osas/admin/dashboard", "status": 200, "result": "Passed"},
+    {"method": "POST", "path": "/login", "status": 302, "result": "Passed", "note": "Admin authentication"},
+    {"method": "POST", "path": "/broadcasting/auth", "status": 200, "result": "Passed"},
+    {"method": "GET", "path": "/osas/notifications/show", "status": 200, "result": "Passed"},
+    {"method": "GET", "path": "/academic-years", "status": 200, "result": "Passed"},
+    {"method": "GET", "path": "/semesters?academic_year_id=5", "status": 200, "result": "Passed"},
+    {"method": "GET", "path": "/admin/dashboard-data?academic_year_id=5&semester_id=9", "status": 200, "result": "Passed", "note": "Dashboard analytics JSON"},
+    {"method": "GET", "path": "/osas/admin/dashboard?tab=student-records", "status": 200, "result": "Passed"},
+    {"method": "GET", "path": "/osas/admin/dashboard?tab=violations", "status": 200, "result": "Passed"},
+    {"method": "GET", "path": "/osas/admin/dashboard?tab=concerns", "status": 200, "result": "Passed"},
+    {"method": "GET", "path": "/osas/admin/dashboard?tab=account-management", "status": 200, "result": "Passed"},
+    {"method": "GET", "path": "/osas/admin/dashboard?tab=student-profile-validation", "status": 200, "result": "Passed"}
+  ],
+  "failed_or_anomaly": [
+    {"method": "GET", "path": "/osas/student/profiling", "status": 405, "result": "Failed", "test_case_id": "WBS-PROF-001"}
+  ]
+}

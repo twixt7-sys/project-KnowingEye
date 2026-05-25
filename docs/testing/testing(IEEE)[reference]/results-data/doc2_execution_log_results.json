@@ -1,0 +1,213 @@
+{
+  "description": "Execution log synced from sync script.",
+  "columns": [
+    "Test Case ID",
+    "Pass/Fail",
+    "Test Execution Date",
+    "Responsible Developer",
+    "Responsible Tester",
+    "Comment",
+    "Additional Comments (other than QA team)"
+  ],
+  "rows": [
+    {
+      "test_case_id": "WBS-AUTH-001",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Valid institutional portal login redirects to role dashboard.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-AUTH-002",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Invalid password shows safe error; no session created.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-AUTH-003",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Logout ends session; protected routes require login.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-AUTH-004",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Forgot-password flow sends reset link (if mail configured).",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-PROF-001",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Student completes profiling wizard and submits.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-PROF-002",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Required fields and consent checkboxes enforced.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-PROF-003",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Duplicate student number rejected on registration.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-VAL-001",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Faculty approves pending profile; status updates.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-VAL-002",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Student assistant can access profiling validation list.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-STU-001",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Faculty searches and views student record.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-VIO-001",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Staff records violation for searched student.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-VIO-002",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Violation list and update status work correctly.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-CON-001",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Student submits concern with title and description.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-CON-002",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Staff updates concern status.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-DSH-001",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Dashboard loads analytics charts for faculty.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-DSH-002",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "PDF report generates from dashboard data.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-NOT-001",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "User receives notification on profile status change.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-ADM-001",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Admin creates user with faculty role.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-SEC-001",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Student cannot access /admin/account-management.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-SEC-002",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Guest cannot access authenticated OSAS routes.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-GEN-001",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Landing page and lookup endpoints load.",
+      "additional_comments_non_qa": ""
+    },
+    {
+      "test_case_id": "WBS-GEN-002",
+      "pass_fail": "[Pass/Fail]",
+      "test_execution_date": "[YYYY-MM-DD]",
+      "responsible_developer": "[Developer]",
+      "responsible_tester": "[Tester]",
+      "comment": "Profiling and dashboard usable at mobile viewport (~390px).",
+      "additional_comments_non_qa": ""
+    }
+  ],
+  "last_sync": "2026-05-15"
+}

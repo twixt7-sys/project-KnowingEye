@@ -1,0 +1,23 @@
+{
+  "descriptive": {
+    "metrics": [
+      "weighted_mean",
+      "standard_deviation"
+    ],
+    "interpretation": "Table 7.8 legend (Reyes & Santos, 2022; Dumaliang & Ramos, 2021)"
+  },
+  "inferential": {
+    "test": "Pearson product-moment correlation",
+    "pairs": "Each of PE, EE, SI, FC vs overall BI construct mean per respondent",
+    "alpha": 0.05,
+    "null_hypothesis": "No significant relationship between construct and Behavioral Intention"
+  },
+  "tools": {
+    "recommended": [
+      "Microsoft Excel",
+      "SPSS",
+      "Python (scripts/compute_utaut_statistics.py)"
+    ],
+    "formula_weighted_mean": "WM = Σ(value × count) / n for each item or construct"
+  }
+}

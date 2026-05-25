@@ -1,0 +1,83 @@
+{
+  "compiled_into": "docs/final-data",
+  "suggested_filename": "[Group6_FrinStore]_Doc8_RegressionTestReport.pdf",
+  "project": "OSAS WBSMS",
+  "group": "[Your Group Name]",
+  "report_date": "2026-05-15",
+  "introduction": {
+    "title": "Introduction",
+    "text": "Regression after fixes for DEF-003 (duplicate concerns), DEF-005 (search case), and related items."
+  },
+  "regression_scope": {
+    "title": "Regression scope",
+    "full_suite_re_run": false,
+    "selected_test_case_ids": [
+      "WBS-CON-001",
+      "WBS-VIO-001",
+      "WBS-AUTH-001",
+      "WBS-SEC-001",
+      "WBS-PROF-001",
+      "WBS-GEN-001"
+    ],
+    "related_defect_ids": [
+      "DEF-003",
+      "DEF-005",
+      "DEF-007"
+    ]
+  },
+  "results_table": {
+    "title": "Regression results",
+    "columns": [
+      "Test Case ID",
+      "Previous result",
+      "New result",
+      "Pass/Fail",
+      "Tester",
+      "Date",
+      "Notes"
+    ],
+    "rows": [
+      {
+        "test_case_id": "WBS-CON-001",
+        "previous_result": "Fail",
+        "new_result": "[Fill]",
+        "pass_fail": "[Pass/Fail]",
+        "tester": "[Tester]",
+        "date": "2026-05-15",
+        "notes": "DEF-003 duplicate submit"
+      },
+      {
+        "test_case_id": "WBS-VIO-001",
+        "previous_result": "Fail",
+        "new_result": "[Fill]",
+        "pass_fail": "[Pass/Fail]",
+        "tester": "[Tester]",
+        "date": "2026-05-15",
+        "notes": "DEF-005 search case"
+      },
+      {
+        "test_case_id": "WBS-AUTH-001",
+        "previous_result": "Pass",
+        "new_result": "[Fill]",
+        "pass_fail": "[Pass/Fail]",
+        "tester": "[Tester]",
+        "date": "2026-05-15",
+        "notes": "Smoke"
+      }
+    ]
+  },
+  "automated_regression": {
+    "title": "Automated regression (API)",
+    "command": "php artisan test",
+    "last_result": "[Fill after run]",
+    "note": "Attach screenshot if instructor requires evidence of automated run."
+  },
+  "new_defects": {
+    "title": "New defects uncovered during regression",
+    "rows": []
+  },
+  "summary": {
+    "title": "Summary",
+    "text": "[Fill after regression execution]"
+  }
+}

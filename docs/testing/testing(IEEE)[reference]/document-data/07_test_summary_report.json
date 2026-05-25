@@ -1,0 +1,127 @@
+{
+  "compiled_into": "docs/testing/document-data",
+  "suggested_filename": "[Group6_FrinStore]_Doc9_TestSummaryReport.pdf",
+  "project": "OSAS WBSMS",
+  "group": "[Your Group Name]",
+  "report_date": "2026-05-15",
+  "executive_summary": "OSAS WBSMS pre-final testing combines Pest/PHPUnit, manual Doc 2 execution, UAT with OSAS stakeholders, and regression after defect fixes. Update metrics after all runs complete.",
+  "scope_and_objectives": {
+    "title": "Test scope and objectives",
+    "text": "Validate OSAS workflows: profiling, validation, violations, concerns, dashboards, RBAC per WBSMS requirements."
+  },
+  "metrics": {
+    "title": "Testing metrics",
+    "test_cases_planned": 22,
+    "test_cases_executed": "[count]",
+    "overall_pass_rate_percent": "[percent]",
+    "by_phase": [
+      {
+        "phase": "System (manual Doc 2)",
+        "executed": "19",
+        "passed": "19",
+        "pass_rate": "100"
+      },
+      {
+        "phase": "System (automated API)",
+        "executed": "7",
+        "passed": "7",
+        "pass_rate": "100"
+      },
+      {
+        "phase": "UAT",
+        "executed": "7",
+        "passed": "7",
+        "pass_rate": "100"
+      },
+      {
+        "phase": "Regression",
+        "executed": "6",
+        "passed": "6",
+        "pass_rate": "100"
+      }
+    ],
+    "defects": {
+      "total_logged": 8,
+      "fixed": "5",
+      "deferred": "1",
+      "remaining_open": "2",
+      "severity_breakdown": {
+        "Critical": "1",
+        "High": "1",
+        "Medium": "3",
+        "Low": "3"
+      }
+    }
+  },
+  "phase_summary": {
+    "title": "Phase-by-phase summary",
+    "rows": [
+      {
+        "phase": "Planning",
+        "outcome": "Doc 1 approved for submission",
+        "notes": "IEEE 829 plan in 01_test_plan.json"
+      },
+      {
+        "phase": "System testing",
+        "outcome": "Pass",
+        "notes": "See 03_system_test_report.json"
+      },
+      {
+        "phase": "UAT",
+        "outcome": "Pass",
+        "notes": "See 04_uat_plan_and_report.json Section 11"
+      },
+      {
+        "phase": "Regression",
+        "outcome": "Pass",
+        "notes": "See 06_regression_test_report.json"
+      }
+    ]
+  },
+  "outstanding_issues": {
+    "title": "Outstanding issues",
+    "rows": [
+      {
+        "defect_id": "DEF-002, DEF-005",
+        "justification_if_deferred": "Low priority UX; tracked for post-submission polish.",
+        "risk": "Low"
+      }
+    ]
+  },
+  "lessons_learned": {
+    "title": "Lessons learned",
+    "bullets": [
+      "Automated API tests caught RBAC and checkout regressions quickly.",
+      "Coordinating UAT early avoided environment mismatches between Vite proxy and API host.",
+      "Keeping results-data JSON in sync with document-data avoided Excel drift."
+    ]
+  },
+  "recommendation": {
+    "title": "Recommendation",
+    "selection": "Conditional approval",
+    "rationale": "Core flows verified by pytest and browser smoke. Live payments and formal load testing remain out of scope per project README."
+  },
+  "sign_off": {
+    "title": "Sign-off",
+    "rows": [
+      {
+        "role": "Lead tester / coordinator",
+        "name": "________________",
+        "signature": "________________",
+        "date": "________"
+      },
+      {
+        "role": "Project lead",
+        "name": "Omadley (update if different)",
+        "signature": "________________",
+        "date": "________"
+      },
+      {
+        "role": "Instructor (if required)",
+        "name": "________________",
+        "signature": "________________",
+        "date": "________"
+      }
+    ]
+  }
+}

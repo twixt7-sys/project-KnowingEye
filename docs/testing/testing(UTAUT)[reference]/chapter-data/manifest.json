@@ -1,0 +1,11 @@
+{
+  "title": "Thesis Chapter 7 — UTAUT sections (7.6–7.8)",
+  "target": "docs/overview/documents/OSAS_sys_document(WBSMS).docx",
+  "related_pack": "docs/testing/ (functional test cases)",
+  "files": [
+    "07_6_utaut_framework.json",
+    "07_7_survey_questionnaire.json",
+    "07_8_data_analysis.json",
+    "full_chapter_7_utaut_export.json"
+  ]
+}

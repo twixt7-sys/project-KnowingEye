@@ -1,0 +1,9 @@
+{
+  "base": "docs/testing(UTAUT)",
+  "source_pdf": "docs/overview/documents/UTAUT chap 7.pdf",
+  "framework_data": "framework-data/",
+  "instrument_data": "instrument-data/",
+  "chapter_data": "chapter-data/",
+  "functional_testing_pack": "docs/testing/",
+  "thesis_chapter_json": "docs/overview/documents/OSAS_chapters_7_10_content.json"
+}

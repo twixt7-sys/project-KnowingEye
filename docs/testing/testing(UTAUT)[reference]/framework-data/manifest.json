@@ -1,0 +1,9 @@
+{
+  "title": "UTAUT framework reference data",
+  "source": "docs/overview/documents/UTAUT chap 7.pdf",
+  "files": [
+    "01_utaut_theory_reference.json",
+    "02_likert_scale_legend.json",
+    "03_analysis_methods.json"
+  ]
+}

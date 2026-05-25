@@ -1,0 +1,61 @@
+{
+  "purpose": "Business-scenario UAT for OSAS WBSMS (minimum 5 required; 7 listed).",
+  "uat_cases": [
+    {
+      "uat_id": "UAT-WBS-001",
+      "module": "Student Profiling",
+      "scenario_title": "New student completes multi-section profiling and submits for review",
+      "role": "Student (non-developer UAT tester)",
+      "priority": "Critical",
+      "expected_business_result": "Profile saved with consent acknowledgements; status shows pending validation; student can view submitted profile."
+    },
+    {
+      "uat_id": "UAT-WBS-002",
+      "module": "Profile Validation",
+      "scenario_title": "OSAS faculty reviews and approves a pending student profile",
+      "role": "Faculty",
+      "priority": "Critical",
+      "expected_business_result": "Profile status updated to approved; student receives notification; profile visible as current."
+    },
+    {
+      "uat_id": "UAT-WBS-003",
+      "module": "Violations",
+      "scenario_title": "Student assistant searches student and records a violation",
+      "role": "Student Assistant",
+      "priority": "High",
+      "expected_business_result": "Violation stored with correct student link; appears in violations list and dashboard metrics."
+    },
+    {
+      "uat_id": "UAT-WBS-004",
+      "module": "Concerns",
+      "scenario_title": "Student submits a concern; staff updates status",
+      "role": "Student + Faculty/Assistant",
+      "priority": "High",
+      "expected_business_result": "Concern visible to staff; status change reflected for student; no duplicate records on single submit."
+    },
+    {
+      "uat_id": "UAT-WBS-005",
+      "module": "Account Management",
+      "scenario_title": "Administrator creates faculty account and assigns role",
+      "role": "Administrator",
+      "priority": "High",
+      "expected_business_result": "New user can log in via institutional portal and access faculty dashboard only."
+    },
+    {
+      "uat_id": "UAT-WBS-006",
+      "module": "Dashboard & Reporting",
+      "scenario_title": "Faculty generates dashboard PDF report",
+      "role": "Faculty / Admin",
+      "priority": "Medium",
+      "expected_business_result": "PDF downloads with current analytics; data matches on-screen dashboard."
+    },
+    {
+      "uat_id": "UAT-WBS-007",
+      "module": "Access Control",
+      "scenario_title": "Each role cannot access unauthorized modules",
+      "role": "Student, Assistant, Faculty, Admin",
+      "priority": "Critical",
+      "expected_business_result": "403 or redirect for unauthorized routes; student cannot access account management."
+    }
+  ]
+}

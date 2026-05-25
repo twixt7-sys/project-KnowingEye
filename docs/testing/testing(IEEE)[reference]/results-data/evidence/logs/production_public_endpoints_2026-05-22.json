@@ -1,0 +1,26 @@
+﻿[
+    {
+        "endpoint":  "/",
+        "method":  "GET",
+        "status":  200,
+        "result":  "Passed"
+    },
+    {
+        "endpoint":  "/osas/institutional-portal/login",
+        "method":  "GET",
+        "status":  200,
+        "result":  "Passed"
+    },
+    {
+        "endpoint":  "/departments",
+        "method":  "GET",
+        "status":  200,
+        "result":  "Passed"
+    },
+    {
+        "endpoint":  "/academic-years",
+        "method":  "GET",
+        "status":  200,
+        "result":  "Passed"
+    }
+]

@@ -1,0 +1,67 @@
+{
+  "model": "Unified Theory of Acceptance and Use of Technology (UTAUT)",
+  "citation": "Venkatesh, V., Morris, M. G., Davis, G. B., & Davis, F. D. (2003). User acceptance of information technology: Toward a unified view. MIS Quarterly, 27(3), 425–478.",
+  "application": "User acceptance evaluation of OSAS Web-Based Student Management System (WBSMS) at Legacy College of Compostela",
+  "constructs": [
+    {
+      "no": 1,
+      "code": "PE",
+      "name": "Performance Expectancy",
+      "definition": "The degree to which the user believes that using the system will help them achieve gains in job performance.",
+      "measurement_focus": "Usefulness, efficiency, productivity improvement in OSAS tasks"
+    },
+    {
+      "no": 2,
+      "code": "EE",
+      "name": "Effort Expectancy",
+      "definition": "The degree of ease associated with the use of the system.",
+      "measurement_focus": "Ease of use, learnability, clarity of interface"
+    },
+    {
+      "no": 3,
+      "code": "SI",
+      "name": "Social Influence",
+      "definition": "The degree to which the user perceives that important others believe they should use the system.",
+      "measurement_focus": "Peer influence, supervisory support, institutional norms"
+    },
+    {
+      "no": 4,
+      "code": "FC",
+      "name": "Facilitating Conditions",
+      "definition": "The degree to which the user believes that organizational and technical infrastructure exists to support system use.",
+      "measurement_focus": "Technical support, device/internet availability, training"
+    },
+    {
+      "no": 5,
+      "code": "BI",
+      "name": "Behavioral Intention",
+      "definition": "The extent to which users intend to use the system in the future.",
+      "measurement_focus": "Willingness to recommend, continued use intention"
+    }
+  ],
+  "dependent_variable_for_correlation": "Behavioral Intention (BI)",
+  "independent_variables_for_correlation": [
+    "PE",
+    "EE",
+    "SI",
+    "FC"
+  ],
+  "hypotheses": [
+    {
+      "id": "H1",
+      "text": "Performance Expectancy is positively correlated with Behavioral Intention."
+    },
+    {
+      "id": "H2",
+      "text": "Effort Expectancy is positively correlated with Behavioral Intention."
+    },
+    {
+      "id": "H3",
+      "text": "Social Influence is positively correlated with Behavioral Intention."
+    },
+    {
+      "id": "H4",
+      "text": "Facilitating Conditions is positively correlated with Behavioral Intention."
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "title": "UTAUT results-data hub",
+  "workflow": [
+    "1. Collect accomplished questionnaires → scan to evidence/",
+    "2. Encode Likert scores in raw_responses.json",
+    "3. Run compute_utaut_statistics.py",
+    "4. Run sync_results_to_chapter_data.py",
+    "5. Optional: generate_documents.py for Word exports"
+  ],
+  "files": [
+    "raw_responses.json",
+    "computed_descriptive_stats.json",
+    "computed_pearson_correlation.json",
+    "summary_for_thesis.json"
+  ]
+}

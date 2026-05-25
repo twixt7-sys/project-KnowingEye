@@ -1,0 +1,184 @@
+{
+  "source": "docs/resources/WebApp_Testing_Documents_Requirements_Prefinal.pdf",
+  "course": "Software Development — Pre-Final Testing Documentation",
+  "due": "2026-05-13T23:59:00",
+  "submission": {
+    "format": "Single ZIP (or PDF portfolio) named with group members' full names",
+    "namingExample": "[GroupName_Project]_DocN_<DocumentName>.pdf|.xlsx"
+  },
+  "note_excluded_from_this_json_pack": "Per your request, this pack does not include fill-in skeletons for Document 3 (Unit Test Report) or Document 4 (Integration Test Report). The course PDF still lists them as required deliverables for the full pre-final ZIP.",
+  "required_documents_overview": [
+    {
+      "doc": 1,
+      "name": "Test Plan",
+      "format": [
+        ".docx",
+        ".pdf"
+      ],
+      "minPages": "5–8",
+      "standard": "IEEE 829-1998"
+    },
+    {
+      "doc": 2,
+      "name": "Test Cases Document",
+      "format": [
+        ".xlsx",
+        ".docx"
+      ],
+      "minPages": "3–5",
+      "minTestCases": 15
+    },
+    {
+      "doc": 3,
+      "name": "Unit Test Report",
+      "format": [
+        ".docx",
+        ".pdf"
+      ],
+      "minPages": "2–4",
+      "excludedFromPack": true
+    },
+    {
+      "doc": 4,
+      "name": "Integration Test Report",
+      "format": [
+        ".docx",
+        ".pdf"
+      ],
+      "minPages": "2–4",
+      "excludedFromPack": true
+    },
+    {
+      "doc": 5,
+      "name": "System Test Report",
+      "format": [
+        ".docx",
+        ".pdf"
+      ],
+      "minPages": "3–5"
+    },
+    {
+      "doc": 6,
+      "name": "UAT Plan & Report",
+      "format": [
+        ".docx",
+        ".pdf"
+      ],
+      "minPages": "5–8"
+    },
+    {
+      "doc": 7,
+      "name": "Defect / Bug Report Log",
+      "format": [
+        ".xlsx",
+        ".docx"
+      ],
+      "minPages": "1–2",
+      "minDefectEntries": 8
+    },
+    {
+      "doc": 8,
+      "name": "Regression Test Report",
+      "format": [
+        ".docx",
+        ".pdf"
+      ],
+      "minPages": "2–3"
+    },
+    {
+      "doc": 9,
+      "name": "Test Summary Report",
+      "format": [
+        ".docx",
+        ".pdf"
+      ],
+      "minPages": "3–5"
+    }
+  ],
+  "test_plan_required_sections": [
+    "Test Plan Identifier",
+    "Introduction",
+    "Scope",
+    "Test Items",
+    "Features to Be Tested (with H/M/L risk)",
+    "Features Not to Be Tested (with justification)",
+    "Approach / Strategy",
+    "Item Pass/Fail Criteria",
+    "Test Deliverables",
+    "Test Tasks and Schedule",
+    "Environmental Needs",
+    "Responsibilities",
+    "Risks and Contingencies",
+    "Approvals"
+  ],
+  "test_case_row_fields": [
+    "Test Case ID",
+    "Module / Feature",
+    "Test Case Title",
+    "Preconditions",
+    "Test Steps",
+    "Test Data",
+    "Expected Result",
+    "Actual Result",
+    "Pass / Fail",
+    "Priority",
+    "Tester Name",
+    "Date Executed"
+  ],
+  "system_test_report_must_include": [
+    "Scope: all functional requirements validated",
+    "Test environment setup",
+    "Functional results mapped to requirements",
+    "Non-functional: at least two of performance, security, usability, compatibility",
+    "Defects with severity",
+    "Overall pass/fail and readiness"
+  ],
+  "uat_plan_must_include": [
+    "Project overview and UAT scope",
+    "UAT objectives (primary and secondary)",
+    "Test methodology and phases",
+    "UAT environment details",
+    "Roles and responsibilities",
+    "At least 5 business-scenario UAT test cases",
+    "Defect prioritization (Critical / High / Low)",
+    "UAT schedule with dates",
+    "Entry and exit criteria",
+    "Assumptions and risks"
+  ],
+  "uat_report_must_include": [
+    "Execution results for all UAT cases",
+    "Defects during UAT (severity, status)",
+    "User feedback and observations",
+    "UAT sign-off (actual users, not developers only)"
+  ],
+  "defect_log_entry_fields": [
+    "Defect ID",
+    "Title",
+    "Module / Feature",
+    "Severity",
+    "Priority",
+    "Phase found (Unit / Integration / System / UAT)",
+    "Steps to reproduce",
+    "Expected vs Actual",
+    "Status",
+    "Assigned to",
+    "Date reported",
+    "Date resolved",
+    "Screenshots or evidence"
+  ],
+  "submission_checklist_highlights": [
+    "No placeholder/generic text; use real OSAS WBSMS data",
+    "Consistent version numbers, dates, group name across files",
+    "Defect log: minimum 8 entries, each with evidence",
+    "UAT performed and documented by named non-developer users where required",
+    "Test Summary Report completed last"
+  ],
+  "phase_flow": [
+    "PHASE 0: Doc1 Test Plan + Doc2 Test Cases",
+    "PHASE 1: Doc3 Unit Test Report + update Doc7",
+    "PHASE 2: Doc4 Integration Test Report + update Doc7",
+    "PHASE 3: Doc5 System Test Report + update Doc7",
+    "PHASE 4: Doc6 UAT + update Doc7",
+    "PHASE 5: Doc8 Regression + Doc9 Test Summary"
+  ]
+}

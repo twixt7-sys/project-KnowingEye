@@ -1,0 +1,15 @@
+{
+  "uat_context": "Conducted after WBSMS deployment; respondents use system then complete UTAUT survey",
+  "target_n": 50,
+  "role_distribution_target": {
+    "students": 25,
+    "student_assistants": 7,
+    "faculty": 10,
+    "administrators": 8
+  },
+  "eligibility": [
+    "Used WBSMS at least once in assigned role",
+    "Completed Parts I–VI of survey",
+    "Synthetic/test accounts allowed for course demo if disclosed"
+  ]
+}

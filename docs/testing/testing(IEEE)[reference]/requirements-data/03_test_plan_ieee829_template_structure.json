@@ -1,0 +1,115 @@
+{
+  "source": "docs/resources/TestPlanTemplate.docx",
+  "standard": "IEEE 829-1998",
+  "projectTitleInFile": "Frinstore: Ice Cream",
+  "sections": [
+    {
+      "id": "test_plan_identifier",
+      "title": "Test Plan Identifier",
+      "guidance": "Unique ID, level (master/system/UAT), version date/number, author contact; revision history.",
+      "encode_for_frinstore": "[Group6_FrinStore_TP_001 v1.0 2026-05-13]"
+    },
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "guidance": "Purpose of plan; executive summary; references to SRS/README/Project.json/API OpenAPI.",
+      "encode_for_frinstore": "FrinStore: Vue SPA + FastAPI marketplace for local ice cream — validate catalog, cart/checkout, orders, admin, auth/RBAC per requirements."
+    },
+    {
+      "id": "test_items",
+      "title": "Test Items",
+      "guidance": "What will be tested with versions: frontend build, backend API, DB schema, deployment config.",
+      "encode_for_frinstore": ["frinstore_frontend (Vue 3)", "frinstore_backend (FastAPI)", "SQLite frinstore.db", "JWT auth flows"]
+    },
+    {
+      "id": "features_to_test",
+      "title": "Features To Be Tested",
+      "guidance": "User-visible capabilities with risk H/M/L; link to test design/case IDs.",
+      "encode_for_frinstore": [
+        {"feature": "Customer auth (register/login/me)", "risk": "H"},
+        {"feature": "Catalog browse + product APIs", "risk": "H"},
+        {"feature": "Cart + checkout order creation", "risk": "H"},
+        {"feature": "Order history + status", "risk": "M"},
+        {"feature": "Admin products CRUD", "risk": "H"},
+        {"feature": "Admin order status updates", "risk": "H"},
+        {"feature": "Payment method capture (no live gateway)", "risk": "M"}
+      ]
+    },
+    {
+      "id": "features_not_to_test",
+      "title": "Features Not To Be Tested",
+      "guidance": "User view + justification (out of scope, stable COTS, deferred).",
+      "encode_for_frinstore": [
+        {"feature": "Live GCash/card payment capture", "reason": "Out of scope per project; method stored only."},
+        {"feature": "Third-party delivery integration", "reason": "Excluded in Project.json scope."},
+        {"feature": "Load testing to 500 concurrent users", "reason": "Not performed in pre-final window; document as risk."}
+      ]
+    },
+    {
+      "id": "approach",
+      "title": "Approach",
+      "guidance": "Methods, tools, metrics, CM, regression rules, constraints.",
+      "encode_for_frinstore": "Automated API checks via pytest TestClient; manual system/UAT in browser; defect log in spreadsheet; regression after fixes on linked TCs."
+    },
+    {
+      "id": "pass_fail_criteria",
+      "title": "Item Pass/Fail Criteria",
+      "guidance": "Per-level completion rules; defect thresholds.",
+      "encode_for_frinstore": "TC passes if expected UI/API outcome matches; critical auth/checkout/admin breaks block release."
+    },
+    {
+      "id": "suspension_resumption",
+      "title": "Suspension Criteria and Resumption Requirements",
+      "guidance": "When to stop testing; what must happen to resume.",
+      "encode_for_frinstore": "Suspend if API down or DB corrupted; resume after clean seed or service restore + smoke tests."
+    },
+    {
+      "id": "test_deliverables",
+      "title": "Test Deliverables",
+      "guidance": "Plans, designs, cases, logs, incident reports, summary — align with course Doc1–Doc9 naming.",
+      "encode_for_frinstore": "Match PDF checklist file names for Group 6 / FrinStore."
+    },
+    {
+      "id": "test_tasks",
+      "title": "Test Tasks",
+      "guidance": "Tasks per deliverable; dependencies; skills.",
+      "encode_for_frinstore": "Assign owners from docs/Project.json team.members"
+    },
+    {
+      "id": "environmental_needs",
+      "title": "Environmental Needs",
+      "guidance": "Hardware, OS, browsers, network, tools.",
+      "encode_for_frinstore": "Windows 10/11, Node 18+, Python 3.12+, Chrome/Edge; local uvicorn+Vite or deployed URLs."
+    },
+    {
+      "id": "responsibilities",
+      "title": "Responsibilities",
+      "guidance": "Named owners for strategy, environment, execution, approvals.",
+      "encode_for_frinstore": "[Map Omadley (TL), Moleta, Butad, Tamera, Ancog to testing roles]"
+    },
+    {
+      "id": "staffing_training",
+      "title": "Staffing and Training Needs",
+      "guidance": "Product training, tool training.",
+      "encode_for_frinstore": "Brief UAT testers on demo accounts and expected happy paths."
+    },
+    {
+      "id": "schedule",
+      "title": "Schedule",
+      "guidance": "Milestones tied to dev delivery.",
+      "encode_for_frinstore": "Align to pre-final due 2026-05-13"
+    },
+    {
+      "id": "risks_contingencies",
+      "title": "Risks and Contingencies",
+      "guidance": "People, hardware, late delivery, requirement churn.",
+      "encode_for_frinstore": "Single machine demo risk; proxy misconfig; SQLite file locks."
+    },
+    {
+      "id": "approvals",
+      "title": "Approvals",
+      "guidance": "Who signs at this plan level.",
+      "encode_for_frinstore": "TL + instructor slots per course"
+    }
+  ]
+}

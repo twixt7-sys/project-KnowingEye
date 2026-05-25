@@ -1,0 +1,9 @@
+{
+  "section_id": "7.7",
+  "title": "UTAUT Survey Questionnaire",
+  "reference_instrument": "instrument-data/01_survey_questionnaire.json",
+  "paragraphs": [
+    "The survey instrument follows UTAUT chap 7.pdf with OSAS-specific deployment context.",
+    "Twenty-five Likert items and five open-ended questions were administered after hands-on system use."
+  ]
+}

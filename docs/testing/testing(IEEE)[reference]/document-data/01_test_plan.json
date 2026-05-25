@@ -1,0 +1,258 @@
+{
+  "compiled_into": "docs/testing/document-data",
+  "suggested_filename": "[[Your Group Name]_WBSMS]_Doc1_TestPlan.pdf",
+  "standard": "IEEE 829-1998",
+  "project": {
+    "name": "OSAS WBSMS",
+    "description": "Web-Based Student Management System for OSAS at Legacy College of Compostela: Laravel 12 + Inertia.js + React 18 + MySQL, with student profiling, validation, violations, concerns, dashboards, and admin account management.",
+    "group": "[Your Group Name]"
+  },
+  "sections": {
+    "test_plan_identifier": {
+      "title": "Test Plan Identifier",
+      "unique_id": "LCC-OSAS-WBSMS-TP-2026-001",
+      "level": "Master / System test plan (pre-final)",
+      "version": "1.0",
+      "date": "2026-05-15",
+      "authors": "[Team members]",
+      "revision_history": [
+        {
+          "version": "1.0",
+          "date": "2026-05-15",
+          "change": "Initial test plan for OSAS WBSMS."
+        }
+      ]
+    },
+    "introduction": {
+      "title": "Introduction",
+      "purpose": "Define how the team will verify that the WBSMS meets documented functional and non-functional requirements before pre-final submission.",
+      "references": [
+        "docs/overview/documents/OSAS_sys_document(WBSMS).docx",
+        "docs/backend/API_structure.json",
+        "docs/overview/documents/OSAS_chapters_7_10_content.json",
+        "docs/testing/requirements-data/01_prefinal_submission_requirements.json",
+        "routes/auth.php, routes/roles.php, routes/student.php"
+      ]
+    },
+    "scope": {
+      "title": "Scope",
+      "in_scope": [
+        "Institutional portal authentication and role-based dashboards",
+        "Student profiling (create, update, consent)",
+        "Profile validation workflow (faculty, student assistant)",
+        "Violation management",
+        "Concern submission and staff updates",
+        "Dashboard analytics and PDF report export",
+        "Notifications (in-app)",
+        "Administrator account and lookup management",
+        "RBAC across student, student_assistant, faculty, admin"
+      ],
+      "out_of_scope_for_this_test_cycle": [
+        "Document request / clearance modules not yet in build",
+        "SMS/email notification delivery end-to-end (if not configured)",
+        "Formal load testing beyond course demo scale",
+        "Production penetration testing"
+      ]
+    },
+    "test_items": {
+      "title": "Test Items",
+      "items": [
+        {
+          "name": "LCC-OSAS-SYSTEM",
+          "version": "As built",
+          "role": "Laravel monolith + Inertia React UI"
+        },
+        {
+          "name": "MySQL database",
+          "path": "Configured in .env",
+          "role": "Persistence"
+        },
+        {
+          "name": "Automated tests",
+          "path": "tests/ (Pest)",
+          "role": "Auth regression; extend for OSAS modules"
+        },
+        {
+          "name": "Laravel Reverb",
+          "version": "As configured",
+          "role": "Real-time notifications"
+        }
+      ]
+    },
+    "features_to_be_tested": {
+      "title": "Features To Be Tested (user view + risk)",
+      "rows": [
+        {
+          "id": "F-AUTH",
+          "feature": "Login, logout, password reset",
+          "risk": "H",
+          "linked_cases": "WBS-AUTH-001..004"
+        },
+        {
+          "id": "F-PROF",
+          "feature": "Student profiling wizard",
+          "risk": "H",
+          "linked_cases": "WBS-PROF-001..003"
+        },
+        {
+          "id": "F-VAL",
+          "feature": "Profile validation/approval",
+          "risk": "H",
+          "linked_cases": "WBS-VAL-001..002"
+        },
+        {
+          "id": "F-VIO",
+          "feature": "Violations",
+          "risk": "H",
+          "linked_cases": "WBS-VIO-001..002"
+        },
+        {
+          "id": "F-CON",
+          "feature": "Concerns",
+          "risk": "M",
+          "linked_cases": "WBS-CON-001..002"
+        },
+        {
+          "id": "F-DSH",
+          "feature": "Dashboard and PDF reports",
+          "risk": "M",
+          "linked_cases": "WBS-DSH-001..002"
+        },
+        {
+          "id": "F-ADM",
+          "feature": "Account management",
+          "risk": "H",
+          "linked_cases": "WBS-ADM-001"
+        },
+        {
+          "id": "F-RBAC",
+          "feature": "Role-based access control",
+          "risk": "H",
+          "linked_cases": "WBS-SEC-001..002"
+        }
+      ]
+    },
+    "features_not_to_be_tested": {
+      "title": "Features Not To Be Tested",
+      "rows": [
+        {
+          "feature": "External registrar/LMS integration",
+          "reason": "Not implemented in current build."
+        },
+        {
+          "feature": "Live SMS gateway",
+          "reason": "Out of scope; in-app notifications only."
+        },
+        {
+          "feature": "Document request / clearance modules",
+          "reason": "Not yet in WBSMS build."
+        }
+      ]
+    },
+    "approach": {
+      "title": "Approach / Strategy",
+      "methods": [
+        "Unit: Pest/PHPUnit on controllers, form requests, and repositories.",
+        "Integration: Inertia routes, middleware, and MySQL persistence.",
+        "System: manual execution of Doc 2 cases in browser.",
+        "UAT: OSAS stakeholder scenarios (see 04_uat_plan_and_report.json)."
+      ],
+      "tools": [
+        "php artisan test (Pest)",
+        "npm run build",
+        "Chrome/Edge devtools"
+      ],
+      "metrics": [
+        "Test case pass rate by module",
+        "Defect counts by severity",
+        "UTAUT survey weighted means (thesis Ch. 7)"
+      ]
+    },
+    "item_pass_fail_criteria": {
+      "title": "Item Pass/Fail Criteria",
+      "criteria": [
+        "A test case passes when observed UI/behavior matches expected result with no blocking defect.",
+        "Critical failures in authentication, profiling, or RBAC block conditional sign-off.",
+        "Cosmetic issues alone do not fail critical paths if data remains correct."
+      ]
+    },
+    "suspension_and_resumption": {
+      "title": "Suspension Criteria and Resumption Requirements",
+      "suspend_if": [
+        "Application or database unreachable",
+        "Blocking defect stops profiling or login for all roles"
+      ],
+      "resume_after": [
+        "Environment restored",
+        "Smoke tests pass (login, profiling page load, one dashboard view)"
+      ]
+    },
+    "test_deliverables": {
+      "title": "Test Deliverables",
+      "list": [
+        "Test plan (Doc 1)",
+        "Test cases + execution log (Doc 2)",
+        "System test report (Doc 5)",
+        "UAT plan & report (Doc 6)",
+        "Defect log (Doc 7)",
+        "Regression report (Doc 8)",
+        "Test summary report (Doc 9)"
+      ]
+    },
+    "test_tasks_and_schedule": {
+      "title": "Test Tasks and Schedule",
+      "tasks": [
+        {"task": "Finalize test plan and Doc 2 cases", "owner": "[Lead]", "due": "Week 1"},
+        {"task": "Run Pest + manual system tests", "owner": "[QA]", "due": "Week 2"},
+        {"task": "UAT with OSAS users + UTAUT survey", "owner": "[Coordinator]", "due": "Week 3"},
+        {"task": "Regression and test summary", "owner": "[Lead]", "due": "Week 4"}
+      ]
+    },
+    "environmental_needs": {
+      "title": "Environmental Needs",
+      "hardware_os": "Windows 10/11 PC with 8 GB+ RAM recommended",
+      "software": "PHP 8.3+, Composer, Node 18+, MySQL 8.x, Chrome or Edge",
+      "network": "localhost (php artisan serve) or HTTPS deployment",
+      "test_data": "Synthetic student/staff accounts only; do not use real PII."
+    },
+    "responsibilities": {
+      "title": "Responsibilities",
+      "assignments": [
+        {"role": "Test lead", "person": "[Assign]", "duty": "Plan approval, schedule, final summary"},
+        {"role": "Automated verification", "person": "[Assign]", "duty": "php artisan test runs and logs"},
+        {"role": "Manual system execution", "person": "[Assign]", "duty": "Doc 2 execution log"},
+        {"role": "UAT coordination", "person": "[Assign]", "duty": "Recruit testers, collect sign-off"},
+        {"role": "Defect triage", "person": "[Assign]", "duty": "Maintain Doc 7 statuses"}
+      ]
+    },
+    "staffing_and_training": {
+      "title": "Staffing and Training Needs",
+      "text": "UAT testers receive a one-page script: institutional portal URL, role accounts, and expected happy paths for profiling, validation, and concerns."
+    },
+    "risks_and_contingencies": {
+      "title": "Risks and Contingencies",
+      "rows": [
+        {
+          "risk": "Incomplete automated coverage",
+          "mitigation": "Prioritize manual Doc 2 execution for critical WBS-* cases."
+        },
+        {
+          "risk": "Reverb not running during UAT",
+          "mitigation": "Start Laravel Reverb before notification scenarios; document fallback."
+        },
+        {
+          "risk": "Time compression before deadline",
+          "mitigation": "Execute Critical/High cases first."
+        }
+      ]
+    },
+    "approvals": {
+      "title": "Approvals",
+      "sign_off_rows": [
+        {"role": "Project / Test Lead", "name": "________________", "signature": "________________", "date": "________"},
+        {"role": "OSAS representative (UAT)", "name": "________________", "signature": "________________", "date": "________"},
+        {"role": "Instructor / Evaluator", "name": "________________", "signature": "________________", "date": "________"}
+      ]
+    }
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "description": "Computed from UTAUT results.png frequency tallies",
+  "source": "docs/generative_outputs/utaut questionnaires/UTAUT results.png",
+  "sample_size": 46,
+  "status": "computed",
+  "program_distribution": {
+    "BSIT": 10,
+    "BSTM": 8,
+    "BSBA": 9,
+    "BSED": 10,
+    "BSCrim": 9
+  },
+  "by_item": {
+    "PE1": {
+      "weighted_mean": 4.37,
+      "std_dev": 0.87,
+      "interpretation": "Very Satisfactory"
+    },
+    "PE2": {
+      "weighted_mean": 4.28,
+      "std_dev": 0.88,
+      "interpretation": "Very Satisfactory"
+    },
+    "PE3": {
+      "weighted_mean": 4.26,
+      "std_dev": 0.92,
+      "interpretation": "Very Satisfactory"
+    },
+    "PE4": {
+      "weighted_mean": 4.41,
+      "std_dev": 0.85,
+      "interpretation": "Very Satisfactory"
+    },
+    "PE5": {
+      "weighted_mean": 4.46,
+      "std_dev": 0.83,
+      "interpretation": "Very Satisfactory"
+    },
+    "EE6": {
+      "weighted_mean": 4.35,
+      "std_dev": 0.84,
+      "interpretation": "Very Satisfactory"
+    },
+    "EE7": {
+      "weighted_mean": 4.46,
+      "std_dev": 0.65,
+      "interpretation": "Very Satisfactory"
+    },
+    "EE8": {
+      "weighted_mean": 4.43,
+      "std_dev": 0.74,
+      "interpretation": "Very Satisfactory"
+    },
+    "EE9": {
+      "weighted_mean": 4.43,
+      "std_dev": 0.74,
+      "interpretation": "Very Satisfactory"
+    },
+    "EE10": {
+      "weighted_mean": 4.39,
+      "std_dev": 0.67,
+      "interpretation": "Very Satisfactory"
+    },
+    "SI11": {
+      "weighted_mean": 4.57,
+      "std_dev": 0.61,
+      "interpretation": "Excellent"
+    },
+    "SI12": {
+      "weighted_mean": 4.3,
+      "std_dev": 0.75,
+      "interpretation": "Very Satisfactory"
+    },
+    "SI13": {
+      "weighted_mean": 4.5,
+      "std_dev": 0.71,
+      "interpretation": "Excellent"
+    },
+    "SI14": {
+      "weighted_mean": 4.41,
+      "std_dev": 0.71,
+      "interpretation": "Very Satisfactory"
+    },
+    "SI15": {
+      "weighted_mean": 4.5,
+      "std_dev": 0.71,
+      "interpretation": "Excellent"
+    },
+    "FC16": {
+      "weighted_mean": 4.48,
+      "std_dev": 0.74,
+      "interpretation": "Very Satisfactory"
+    },
+    "FC17": {
+      "weighted_mean": 4.26,
+      "std_dev": 0.87,
+      "interpretation": "Very Satisfactory"
+    },
+    "FC18": {
+      "weighted_mean": 4.46,
+      "std_dev": 0.68,
+      "interpretation": "Very Satisfactory"
+    },
+    "FC19": {
+      "weighted_mean": 4.22,
+      "std_dev": 0.93,
+      "interpretation": "Very Satisfactory"
+    },
+    "FC20": {
+      "weighted_mean": 4.35,
+      "std_dev": 0.84,
+      "interpretation": "Very Satisfactory"
+    },
+    "BI21": {
+      "weighted_mean": 4.52,
+      "std_dev": 0.71,
+      "interpretation": "Excellent"
+    },
+    "BI22": {
+      "weighted_mean": 4.54,
+      "std_dev": 0.71,
+      "interpretation": "Excellent"
+    },
+    "BI23": {
+      "weighted_mean": 4.52,
+      "std_dev": 0.71,
+      "interpretation": "Excellent"
+    },
+    "BI24": {
+      "weighted_mean": 4.3,
+      "std_dev": 0.83,
+      "interpretation": "Very Satisfactory"
+    },
+    "BI25": {
+      "weighted_mean": 4.54,
+      "std_dev": 0.65,
+      "interpretation": "Excellent"
+    },
+    "US1": {
+      "weighted_mean": 4.59,
+      "std_dev": 0.61,
+      "interpretation": "Excellent"
+    },
+    "US2": {
+      "weighted_mean": 4.43,
+      "std_dev": 0.71,
+      "interpretation": "Very Satisfactory"
+    },
+    "US3": {
+      "weighted_mean": 4.28,
+      "std_dev": 0.92,
+      "interpretation": "Very Satisfactory"
+    },
+    "US4": {
+      "weighted_mean": 4.54,
+      "std_dev": 0.65,
+      "interpretation": "Excellent"
+    },
+    "US5": {
+      "weighted_mean": 4.57,
+      "std_dev": 0.71,
+      "interpretation": "Excellent"
+    }
+  },
+  "by_construct": {
+    "PE": {
+      "weighted_mean": 4.36,
+      "std_dev": 0.87,
+      "interpretation": "Very Satisfactory"
+    },
+    "EE": {
+      "weighted_mean": 4.41,
+      "std_dev": 0.73,
+      "interpretation": "Very Satisfactory"
+    },
+    "SI": {
+      "weighted_mean": 4.46,
+      "std_dev": 0.7,
+      "interpretation": "Very Satisfactory"
+    },
+    "FC": {
+      "weighted_mean": 4.35,
+      "std_dev": 0.81,
+      "interpretation": "Very Satisfactory"
+    },
+    "BI": {
+      "weighted_mean": 4.48,
+      "std_dev": 0.72,
+      "interpretation": "Very Satisfactory"
+    },
+    "US": {
+      "weighted_mean": 4.48,
+      "std_dev": 0.72,
+      "interpretation": "Very Satisfactory"
+    },
+    "OVERALL": {
+      "weighted_mean": 4.41,
+      "std_dev": 0.77,
+      "interpretation": "VERY SATISFACTORY"
+    }
+  },
+  "cronbach_alpha": {
+    "PE": 0.984,
+    "EE": 0.98,
+    "SI": 0.975,
+    "FC": 0.977,
+    "BI": 0.983,
+    "US": 0.967
+  }
+}

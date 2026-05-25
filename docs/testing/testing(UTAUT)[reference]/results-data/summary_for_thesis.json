@@ -1,0 +1,15 @@
+{
+  "overall_weighted_mean": 4.41,
+  "overall_interpretation": "VERY SATISFACTORY",
+  "user_satisfaction_wm": 4.48,
+  "highest_construct": "BI",
+  "highest_construct_wm": 4.48,
+  "sample_size": 46,
+  "program_distribution": {
+    "BSIT": 10,
+    "BSTM": 8,
+    "BSBA": 9,
+    "BSED": 10,
+    "BSCrim": 9
+  }
+}

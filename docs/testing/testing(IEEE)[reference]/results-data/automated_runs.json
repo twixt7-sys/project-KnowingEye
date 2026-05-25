@@ -1,0 +1,14 @@
+{
+  "runs": [
+    {
+      "date": "2026-05-15",
+      "tool": "Pest / PHPUnit",
+      "command": "php artisan test",
+      "backend": {
+        "path": "tests/",
+        "evidence_path": "docs/testing/results-data/evidence/pest-log.txt"
+      },
+      "result": "[Fill: e.g. 10 passed]"
+    }
+  ]
+}

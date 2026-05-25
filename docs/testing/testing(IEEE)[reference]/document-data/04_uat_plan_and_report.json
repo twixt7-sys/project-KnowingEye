@@ -1,0 +1,434 @@
+{
+  "compiled_into": "docs/final-data",
+  "suggested_filename": "[[Your Group Name]_WBSMS]_Doc6_UATPlanReport.pdf",
+  "project": "OSAS WBSMS",
+  "group": "[Your Group Name]",
+  "cover": {
+    "project_name": "OSAS Web-Based Student Management System — Legacy College of Compostela",
+    "document_type": "User Acceptance Test (UAT) Plan & Report",
+    "document_status": "Draft — execute and fill Section 11",
+    "system_basis": "Laravel 12 + Inertia.js + React 18 + MySQL",
+    "prepared_date": "2026-05-15",
+    "target_submission_date": "[Due date]"
+  },
+  "section_1_overview_scope": {
+    "title": "1. Project overview and UAT scope",
+    "overview_paragraph": "The WBSMS supports OSAS operations including student profiling, profile validation, violation tracking, concern handling, analytics dashboards, and administrative account management. UAT confirms these workflows meet day-to-day OSAS needs with participation from students, student assistants, faculty, and administrators.",
+    "in_scope_modules": [
+      "Student profiling and consent capture",
+      "Profile validation (faculty / student assistant)",
+      "Violation recording",
+      "Concern submission and staff response",
+      "Dashboard and PDF reporting",
+      "Account management (admin)",
+      "Role-based access control"
+    ],
+    "out_of_scope": "Document/clearance modules not in build; formal load testing; penetration testing."
+  },
+  "section_2_objectives": {
+    "title": "2. UAT objectives",
+    "primary": "Confirm that representative OSAS users can complete profiling, validation, violations, and concerns workflows without developer assistance.",
+    "secondary": [
+      "Validate clarity of validation errors on profiling forms",
+      "Confirm mobile-friendly layout for student profiling",
+      "Collect UTAUT survey feedback (see thesis Chapter 7)"
+    ]
+  },
+  "section_3_methodology_phases": {
+    "title": "3. Test methodology and phases",
+    "methodology": "Manual scenario-driven UAT using institutional portal test accounts.",
+    "phases": [
+      {
+        "phase": "Planning",
+        "output": "Approved UAT scenarios (requirements-data/05_suggested_uat_scenarios_osas.json)"
+      },
+      {
+        "phase": "Environment setup",
+        "output": "Running Laravel app + database seed"
+      },
+      {
+        "phase": "Execution",
+        "output": "Completed Section 11"
+      },
+      {
+        "phase": "Defect logging",
+        "output": "Doc 7 entries with screenshots"
+      },
+      {
+        "phase": "Retest",
+        "output": "Updated pass/fail"
+      },
+      {
+        "phase": "Sign-off",
+        "output": "Section 14 signatures"
+      }
+    ]
+  },
+  "section_4_environment": {
+    "title": "4. UAT environment details",
+    "rows": [
+      {
+        "item": "System name",
+        "details": "OSAS WBSMS"
+      },
+      {
+        "item": "Application type",
+        "details": "Laravel + Inertia.js + React"
+      },
+      {
+        "item": "Application URL",
+        "details": "http://127.0.0.1:8000"
+      },
+      {
+        "item": "Login URL",
+        "details": "/osas/institutional-portal/login"
+      },
+      {
+        "item": "Browser",
+        "details": "[Chrome / Edge]"
+      },
+      {
+        "item": "Test accounts",
+        "details": "Synthetic student, assistant, faculty, admin roles"
+      }
+    ]
+  },
+  "section_5_roles": {
+    "title": "5. Roles and responsibilities",
+    "rows": [
+      {
+        "role": "UAT coordinator",
+        "person": "[Assign]",
+        "responsibilities": "Schedule, environment, Doc 7"
+      },
+      {
+        "role": "Student UAT tester",
+        "person": "[Non-developer]",
+        "responsibilities": "UAT-WBS-001, UAT-WBS-004"
+      },
+      {
+        "role": "Faculty tester",
+        "person": "[Non-developer]",
+        "responsibilities": "UAT-WBS-002, UAT-WBS-006"
+      },
+      {
+        "role": "Student assistant tester",
+        "person": "[Non-developer]",
+        "responsibilities": "UAT-WBS-003"
+      },
+      {
+        "role": "Administrator tester",
+        "person": "[Non-developer]",
+        "responsibilities": "UAT-WBS-005, UAT-WBS-007"
+      }
+    ]
+  },
+  "section_6_test_cases_summary": {
+    "title": "6. UAT test cases summary",
+    "columns": [
+      "UAT ID",
+      "Module / Feature",
+      "Business scenario title",
+      "Assigned user role",
+      "Priority"
+    ],
+    "rows": [
+      {
+        "uat_id": "UAT-WBS-001",
+        "module": "Student Profiling",
+        "scenario_title": "New student completes multi-section profiling and submits for review",
+        "role": "Student (non-developer UAT tester)",
+        "priority": "Critical"
+      },
+      {
+        "uat_id": "UAT-WBS-002",
+        "module": "Profile Validation",
+        "scenario_title": "OSAS faculty reviews and approves a pending student profile",
+        "role": "Faculty",
+        "priority": "Critical"
+      },
+      {
+        "uat_id": "UAT-WBS-003",
+        "module": "Violations",
+        "scenario_title": "Student assistant searches student and records a violation",
+        "role": "Student Assistant",
+        "priority": "High"
+      },
+      {
+        "uat_id": "UAT-WBS-004",
+        "module": "Concerns",
+        "scenario_title": "Student submits a concern; staff updates status",
+        "role": "Student + Faculty/Assistant",
+        "priority": "High"
+      },
+      {
+        "uat_id": "UAT-WBS-005",
+        "module": "Account Management",
+        "scenario_title": "Administrator creates faculty account and assigns role",
+        "role": "Administrator",
+        "priority": "High"
+      },
+      {
+        "uat_id": "UAT-WBS-006",
+        "module": "Dashboard & Reporting",
+        "scenario_title": "Faculty generates dashboard PDF report",
+        "role": "Faculty / Admin",
+        "priority": "Medium"
+      },
+      {
+        "uat_id": "UAT-WBS-007",
+        "module": "Access Control",
+        "scenario_title": "Each role cannot access unauthorized modules",
+        "role": "Student, Assistant, Faculty, Admin",
+        "priority": "Critical"
+      }
+    ]
+  },
+  "section_7_defect_severity": {
+    "title": "7. Defect prioritization scheme",
+    "rows": [
+      {
+        "severity": "Critical",
+        "definition": "Cannot complete purchase or compromises data across users",
+        "action": "Stop UAT on affected flow until fixed or formally waived"
+      },
+      {
+        "severity": "High",
+        "definition": "Major feature broken but workaround exists",
+        "action": "Fix before final sign-off unless accepted in writing"
+      },
+      {
+        "severity": "Low",
+        "definition": "Cosmetic or minor wording issues",
+        "action": "Log and schedule after submission if needed"
+      }
+    ]
+  },
+  "section_8_schedule": {
+    "title": "8. UAT schedule",
+    "rows": [
+      {
+        "date": "2026-05-13",
+        "activity": "Dry run + environment check",
+        "responsible": "Coordinator",
+        "output": "Green health check"
+      },
+      {
+        "date": "2026-05-13",
+        "activity": "Customer scenarios",
+        "responsible": "Customer tester",
+        "output": "Rows UAT-FS-001..004 filled"
+      },
+      {
+        "date": "2026-05-13",
+        "activity": "Staff scenarios + access control",
+        "responsible": "Staff tester",
+        "output": "Rows UAT-FS-005..007 filled"
+      },
+      {
+        "date": "2026-05-13",
+        "activity": "Sign-off",
+        "responsible": "Tester(s) + TL",
+        "output": "Section 14 complete"
+      }
+    ]
+  },
+  "section_9_entry_exit": {
+    "title": "9. Entry and exit criteria",
+    "entry": [
+      {
+        "criterion": "Build availability",
+        "description": "Frontend and backend reachable"
+      },
+      {
+        "criterion": "Accounts",
+        "description": "Dedicated tester accounts created"
+      },
+      {
+        "criterion": "Data",
+        "description": "Catalog seeded or restored"
+      }
+    ],
+    "exit": [
+      {
+        "criterion": "Scenario coverage",
+        "description": "All UAT-FS scenarios executed"
+      },
+      {
+        "criterion": "Critical defects",
+        "description": "None open without written waiver"
+      },
+      {
+        "criterion": "Documentation",
+        "description": "Execution table + feedback + signatures complete"
+      }
+    ]
+  },
+  "section_10_assumptions_risks": {
+    "title": "10. Assumptions and risks",
+    "rows": [
+      {
+        "type": "Assumption",
+        "detail": "Testers use demo data only",
+        "mitigation": "Reset DB if contaminated"
+      },
+      {
+        "type": "Risk",
+        "detail": "Local network instability",
+        "mitigation": "Retry session; capture screenshots early"
+      },
+      {
+        "type": "Risk",
+        "detail": "Tester unfamiliarity with profiling sections",
+        "mitigation": "Provide short walkthrough script"
+      }
+    ]
+  },
+  "section_11_execution_results": {
+    "title": "11. UAT execution results (fill during session)",
+    "columns": [
+      "UAT ID",
+      "Scenario",
+      "Tester / role",
+      "Date executed",
+      "Expected business result",
+      "Actual result",
+      "Pass/Fail",
+      "Remarks"
+    ],
+    "rows": [
+      {
+        "uat_id": "UAT-WBS-001",
+        "scenario": "New student completes multi-section profiling and submits for review",
+        "tester_role": "Student (non-developer UAT tester)",
+        "date_executed": "[YYYY-MM-DD]",
+        "expected": "Profile saved with consent acknowledgements; status shows pending validation; student can view submitted profile.",
+        "actual": "[Fill after UAT]",
+        "pass_fail": "[Pass/Fail]",
+        "remarks": ""
+      },
+      {
+        "uat_id": "UAT-WBS-002",
+        "scenario": "OSAS faculty reviews and approves a pending student profile",
+        "tester_role": "Faculty",
+        "date_executed": "[YYYY-MM-DD]",
+        "expected": "Profile status updated to approved; student receives notification; profile visible as current.",
+        "actual": "[Fill after UAT]",
+        "pass_fail": "[Pass/Fail]",
+        "remarks": ""
+      },
+      {
+        "uat_id": "UAT-WBS-003",
+        "scenario": "Student assistant searches student and records a violation",
+        "tester_role": "Student Assistant",
+        "date_executed": "[YYYY-MM-DD]",
+        "expected": "Violation stored with correct student link; appears in violations list and dashboard metrics.",
+        "actual": "[Fill after UAT]",
+        "pass_fail": "[Pass/Fail]",
+        "remarks": ""
+      },
+      {
+        "uat_id": "UAT-WBS-004",
+        "scenario": "Student submits a concern; staff updates status",
+        "tester_role": "Student + Faculty/Assistant",
+        "date_executed": "[YYYY-MM-DD]",
+        "expected": "Concern visible to staff; status change reflected for student; no duplicate records on single submit.",
+        "actual": "[Fill after UAT]",
+        "pass_fail": "[Pass/Fail]",
+        "remarks": ""
+      },
+      {
+        "uat_id": "UAT-WBS-005",
+        "scenario": "Administrator creates faculty account and assigns role",
+        "tester_role": "Administrator",
+        "date_executed": "[YYYY-MM-DD]",
+        "expected": "New user can log in via institutional portal and access faculty dashboard only.",
+        "actual": "[Fill after UAT]",
+        "pass_fail": "[Pass/Fail]",
+        "remarks": ""
+      },
+      {
+        "uat_id": "UAT-WBS-006",
+        "scenario": "Faculty generates dashboard PDF report",
+        "tester_role": "Faculty / Admin",
+        "date_executed": "[YYYY-MM-DD]",
+        "expected": "PDF downloads with current analytics; data matches on-screen dashboard.",
+        "actual": "[Fill after UAT]",
+        "pass_fail": "[Pass/Fail]",
+        "remarks": ""
+      },
+      {
+        "uat_id": "UAT-WBS-007",
+        "scenario": "Each role cannot access unauthorized modules",
+        "tester_role": "Student, Assistant, Faculty, Admin",
+        "date_executed": "[YYYY-MM-DD]",
+        "expected": "403 or redirect for unauthorized routes; student cannot access account management.",
+        "actual": "[Fill after UAT]",
+        "pass_fail": "[Pass/Fail]",
+        "remarks": ""
+      }
+    ]
+  },
+  "section_12_uat_defects": {
+    "title": "12. Defects found during UAT",
+    "instruction": "Mirror or reference Doc 7 rows discovered in UAT phase.",
+    "columns": [
+      "Defect ID",
+      "Related UAT ID",
+      "Description",
+      "Severity",
+      "Status",
+      "Reported by",
+      "Date",
+      "Resolution"
+    ],
+    "rows": []
+  },
+  "section_13_feedback": {
+    "title": "13. User feedback and observations",
+    "columns": [
+      "User / role",
+      "Feedback",
+      "Recommended action",
+      "Status"
+    ],
+    "rows": [
+      {
+        "user_role": "Customer tester",
+        "feedback": "",
+        "recommended_action": "",
+        "status": ""
+      },
+      {
+        "user_role": "Staff tester",
+        "feedback": "",
+        "recommended_action": "",
+        "status": ""
+      }
+    ]
+  },
+  "section_14_signoff": {
+    "title": "14. UAT sign-off",
+    "statement": "By signing below, testers confirm scenarios were executed as described and the noted defects are acceptable for this academic submission context.",
+    "signatures": [
+      {
+        "role": "Customer UAT tester",
+        "name_print": "________________",
+        "signature": "________________",
+        "date": "________"
+      },
+      {
+        "role": "Staff UAT tester",
+        "name_print": "________________",
+        "signature": "________________",
+        "date": "________"
+      },
+      {
+        "role": "Project test lead",
+        "name_print": "Omadley (update if different)",
+        "signature": "________________",
+        "date": "________"
+      }
+    ]
+  }
+}

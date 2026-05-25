@@ -1,0 +1,46 @@
+{
+  "artifacts": [
+    {
+      "path": "docs/testing/documents/[Your Group Name]_WBSMS_Doc1_TestPlan.docx",
+      "course_doc": "Doc 1",
+      "results_status": "not_generated",
+      "notes": "Run generate_documents.py after filling JSON"
+    },
+    {
+      "path": "docs/testing/documents/[Your Group Name]_WBSMS_Doc2_TestCases.xlsx",
+      "course_doc": "Doc 2",
+      "results_status": "not_generated",
+      "notes": ""
+    },
+    {
+      "path": "docs/testing/documents/[Your Group Name]_WBSMS_Doc5_SystemTestReport.docx",
+      "course_doc": "Doc 5",
+      "results_status": "not_generated",
+      "notes": ""
+    },
+    {
+      "path": "docs/testing/documents/[Your Group Name]_WBSMS_Doc6_UATPlanReport.docx",
+      "course_doc": "Doc 6",
+      "results_status": "not_generated",
+      "notes": ""
+    },
+    {
+      "path": "docs/testing/documents/[Your Group Name]_WBSMS_Doc7_DefectLog.xlsx",
+      "course_doc": "Doc 7",
+      "results_status": "not_generated",
+      "notes": ""
+    },
+    {
+      "path": "docs/testing/documents/[Your Group Name]_WBSMS_Doc8_RegressionTestReport.docx",
+      "course_doc": "Doc 8",
+      "results_status": "not_generated",
+      "notes": ""
+    },
+    {
+      "path": "docs/testing/documents/[Your Group Name]_WBSMS_Doc9_TestSummaryReport.docx",
+      "course_doc": "Doc 9",
+      "results_status": "not_generated",
+      "notes": ""
+    }
+  ]
+}

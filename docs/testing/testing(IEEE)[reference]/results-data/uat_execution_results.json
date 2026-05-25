@@ -1,0 +1,6 @@
+{
+  "description": "UAT execution results.",
+  "source_scenarios": "../requirements-data/05_suggested_uat_scenarios_osas.json",
+  "rows": [],
+  "last_sync": null
+}

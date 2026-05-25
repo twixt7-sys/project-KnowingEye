@@ -1,0 +1,36 @@
+{
+  "description": "Pearson r (construct mean vs BI); natural-order paired n=46",
+  "method_note": "Inferential stats use enumeration-order pairing from frequency tallies; replace with SPSS output if individual sheets are encoded.",
+  "sample_size": 46,
+  "alpha": 0.05,
+  "rows": [
+    {
+      "construct": "Performance Expectancy (PE)",
+      "pearson_r": 0.96,
+      "p_value": 0.001,
+      "significance": "p < 0.05",
+      "decision": "Reject H\u2080"
+    },
+    {
+      "construct": "Effort Expectancy (EE)",
+      "pearson_r": 0.947,
+      "p_value": 0.001,
+      "significance": "p < 0.05",
+      "decision": "Reject H\u2080"
+    },
+    {
+      "construct": "Social Influence (SI)",
+      "pearson_r": 0.983,
+      "p_value": 0.001,
+      "significance": "p < 0.05",
+      "decision": "Reject H\u2080"
+    },
+    {
+      "construct": "Facilitating Conditions (FC)",
+      "pearson_r": 0.96,
+      "p_value": 0.001,
+      "significance": "p < 0.05",
+      "decision": "Reject H\u2080"
+    }
+  ]
+}

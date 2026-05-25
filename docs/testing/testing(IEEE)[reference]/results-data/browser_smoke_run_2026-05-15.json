@@ -1,0 +1,15 @@
+{
+  "project": "OSAS WBSMS",
+  "date": "2026-05-15",
+  "base_url": "http://127.0.0.1:8000",
+  "sessions": [
+    {
+      "note": "Template session log — replace with real browser smoke steps and screenshots.",
+      "routes_checked": [
+        "/",
+        "/osas/institutional-portal/login",
+        "/osas/student/profiling"
+      ]
+    }
+  ]
+}

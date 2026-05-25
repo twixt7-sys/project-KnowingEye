@@ -1,0 +1,14 @@
+{
+  "project": "OSAS WBSMS",
+  "date": "2026-05-15",
+  "automated_suite": "tests/ (Pest / PHPUnit — Laravel Breeze auth tests present)",
+  "command": "php artisan test",
+  "note": "Expand Feature tests for profiling, violations, and RBAC; record output in results-data/automated_runs.json",
+  "planned_coverage": [
+    "AuthenticationTest",
+    "ProfileTest",
+    "[Add] StudentProfilingTest",
+    "[Add] RoleMiddlewareTest",
+    "[Add] ViolationControllerTest"
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "source": "LCC-OSAS-SYSTEM codebase + docs/overview/documents/OSAS_sys_document(WBSMS).docx",
+  "project": {
+    "name": "Web-Based Student Management System (WBSMS)",
+    "subtitle": "Office of Student Affairs and Services — Legacy College of Compostela",
+    "group": "[Your Group Name]",
+    "repositoryLayout": "monorepo (Laravel application root)",
+    "packages": [
+      {
+        "name": "LCC-OSAS-SYSTEM",
+        "path": ".",
+        "role": "Laravel 12 + Inertia.js + React 18 + MySQL"
+      }
+    ]
+  },
+  "functional_requirements_for_traceability": [
+    "Institutional portal login and role-based dashboards (student, student_assistant, faculty, admin)",
+    "Student self-service profiling (multi-section profile with consent)",
+    "Faculty/student-assistant review and approval of student profiles",
+    "Student record search and management for faculty/admin",
+    "Violation recording and status updates",
+    "Student concern submission and staff response",
+    "Role-based dashboards with analytics and PDF report export",
+    "In-app notifications (Laravel Reverb / Echo)",
+    "Administrator account and lookup management (departments, programs, academic years)"
+  ],
+  "non_functional_for_system_report": [
+    {
+      "nfr": "Secure authentication and RBAC across four roles",
+      "how_to_test_brief": "Middleware role checks; student cannot access /admin/account-management"
+    },
+    {
+      "nfr": "Data privacy for sensitive profiling fields",
+      "how_to_test_brief": "Verify consent capture; unauthorized users cannot view other students' profiles"
+    },
+    {
+      "nfr": "Responsive web interface",
+      "how_to_test_brief": "Test profiling and dashboards at ~390px viewport"
+    },
+    {
+      "nfr": "Performance of dashboard and report generation",
+      "how_to_test_brief": "Measure dashboard load and DomPDF generation time"
+    }
+  ],
+  "demo_environment": {
+    "login_url": "/osas/institutional-portal/login",
+    "student_profiling_url": "/osas/student/profiling",
+    "note": "Use seeded or test accounts per team policy; do not commit real passwords."
+  },
+  "key_routes_for_docs": {
+    "auth": [
+      "GET /osas/institutional-portal/login",
+      "POST /login",
+      "POST /logout"
+    ],
+    "student": [
+      "GET/POST /osas/student/profiling",
+      "GET /student/my-profile",
+      "POST /student/concerns"
+    ],
+    "staff": [
+      "GET /admin/students-profiling",
+      "PATCH /admin/student-profiling/update-profile-status",
+      "POST /admin/violation/store",
+      "GET /admin/dashboard-data",
+      "POST /admin/dashboard-data-generate-report"
+    ],
+    "lookups": [
+      "GET /departments",
+      "GET /programs",
+      "GET /academic-years",
+      "GET /barangays"
+    ]
+  },
+  "team_members": [
+    {
+      "name": "[Team Leader]",
+      "role": "Team Leader"
+    },
+    {
+      "name": "[Member 2]",
+      "role": "Backend / Laravel"
+    },
+    {
+      "name": "[Member 3]",
+      "role": "Frontend / React"
+    },
+    {
+      "name": "[Member 4]",
+      "role": "QA / Documentation"
+    }
+  ]
+}

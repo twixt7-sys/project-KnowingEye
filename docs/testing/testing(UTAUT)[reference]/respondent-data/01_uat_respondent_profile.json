@@ -1,0 +1,84 @@
+{
+  "caption": "Table 7.7. Profile of UAT Respondents",
+  "sample_size": 50,
+  "headers": [
+    "Category",
+    "Group",
+    "Male",
+    "Female",
+    "Total"
+  ],
+  "rows": [
+    {
+      "category": "User Role",
+      "group": "Students (End-users)",
+      "male": 12,
+      "female": 13,
+      "total": 25
+    },
+    {
+      "category": "User Role",
+      "group": "Student Assistants",
+      "male": 4,
+      "female": 3,
+      "total": 7
+    },
+    {
+      "category": "User Role",
+      "group": "OSAS Faculty",
+      "male": 5,
+      "female": 5,
+      "total": 10
+    },
+    {
+      "category": "User Role",
+      "group": "System Administrators",
+      "male": 4,
+      "female": 4,
+      "total": 8
+    },
+    {
+      "category": "Age Group",
+      "group": "18–25 years old",
+      "male": 14,
+      "female": 16,
+      "total": 30
+    },
+    {
+      "category": "Age Group",
+      "group": "26–35 years old",
+      "male": 7,
+      "female": 6,
+      "total": 13
+    },
+    {
+      "category": "Age Group",
+      "group": "36 years old and above",
+      "male": 4,
+      "female": 3,
+      "total": 7
+    },
+    {
+      "category": "Tech Proficiency",
+      "group": "Beginner",
+      "male": 5,
+      "female": 6,
+      "total": 11
+    },
+    {
+      "category": "Tech Proficiency",
+      "group": "Intermediate",
+      "male": 12,
+      "female": 14,
+      "total": 26
+    },
+    {
+      "category": "Tech Proficiency",
+      "group": "Advanced",
+      "male": 8,
+      "female": 5,
+      "total": 13
+    }
+  ],
+  "note": "Update counts from actual survey distribution before final thesis submission."
+}
