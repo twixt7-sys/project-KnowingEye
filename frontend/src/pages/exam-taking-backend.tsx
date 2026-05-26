@@ -10,6 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { examAPI, type ExamSession, type ResponseData } from "../core/config/api";
+import { useMonitoring } from "../shared/hooks/use-monitoring";
 
 export function ExamTakingWithBackend() {
   const { examId } = useParams();
@@ -30,7 +31,12 @@ export function ExamTakingWithBackend() {
   );
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [behaviorAlerts, setBehaviorAlerts] = useState<string[]>([]);
-  const [webcamActive] = useState(true);
+  const monitoring = useMonitoring({
+    sessionId: session?.id,
+    intervalMs: 3000,
+  });
+  const webcamActive =
+    monitoring.status === "live" || monitoring.status === "fallback-rest";
 
   // Load exam session on component mount
   useEffect(() => {
@@ -99,51 +105,21 @@ export function ExamTakingWithBackend() {
     return () => clearInterval(questionTimer);
   }, [currentQuestion]);
 
-  // Behavior monitoring — capture webcam frames and send to backend
+  // Start monitoring as soon as the session is ready.
   useEffect(() => {
-    if (!webcamActive || !session?.id) return;
+    if (!session?.id) return;
+    monitoring.start();
+    return () => monitoring.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.id]);
 
-    let stream: MediaStream | null = null;
-    const video = document.createElement("video");
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    const startCamera = async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        video.srcObject = stream;
-        await video.play();
-      } catch (err) {
-        console.warn("Webcam unavailable:", err);
-      }
-    };
-
-    startCamera();
-
-    const monitoringInterval = setInterval(async () => {
-      if (!stream || !ctx || video.videoWidth === 0) return;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
-
-      try {
-        const result = await examAPI.sendMonitoringFrame(dataUrl, session.id);
-        const alerts = result?.analysis?.alerts ?? [];
-        if (alerts.length) {
-          const messages = alerts.map((a: { message?: string }) => a.message || "Compliance alert");
-          setBehaviorAlerts((prev) => [...messages, ...prev].slice(0, 3));
-        }
-      } catch (err) {
-        console.warn("Monitoring frame failed:", err);
-      }
-    }, 5000);
-
-    return () => {
-      clearInterval(monitoringInterval);
-      stream?.getTracks().forEach((t) => t.stop());
-    };
-  }, [webcamActive, session?.id]);
+  // Surface any alerts coming from the monitoring hook to the UI banner.
+  useEffect(() => {
+    if (!monitoring.alerts.length) return;
+    setBehaviorAlerts(
+      monitoring.alerts.slice(0, 3).map((a) => a.message || "Compliance alert")
+    );
+  }, [monitoring.alerts]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -396,15 +372,35 @@ export function ExamTakingWithBackend() {
 
             {/* Webcam feed */}
             <div className="bg-card rounded-xl border border-border p-6">
-              <h3 className="font-semibold mb-4">Monitoring Feed</h3>
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center relative overflow-hidden">
-                <Camera className="w-16 h-16 text-muted-foreground" />
-                <div className="absolute top-3 left-3 px-3 py-1 bg-red-500 text-white text-xs rounded-full flex items-center gap-1.5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold">Monitoring feed</h3>
+                <span className="text-xs text-muted-foreground">
+                  {monitoring.analysis
+                    ? `compliance ${monitoring.analysis.overall_compliance_pct.toFixed(0)}%`
+                    : "warming up…"}
+                </span>
+              </div>
+              <div className="aspect-video bg-black rounded-lg flex items-center justify-center relative overflow-hidden">
+                <video
+                  ref={monitoring.videoRef}
+                  className="w-full h-full object-cover"
+                  muted
+                  playsInline
+                />
+                {!webcamActive && (
+                  <Camera className="absolute w-16 h-16 text-muted-foreground" />
+                )}
+                <div
+                  className={`absolute top-3 left-3 px-3 py-1 text-xs rounded-full flex items-center gap-1.5 ${
+                    webcamActive ? "bg-red-500 text-white" : "bg-gray-700 text-gray-200"
+                  }`}
+                >
                   <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                  Recording
-                </div>
-                <div className="absolute bottom-3 left-3 text-xs text-muted-foreground">
-                  Backend monitoring active
+                  {monitoring.status === "live"
+                    ? "Recording (WebSocket)"
+                    : monitoring.status === "fallback-rest"
+                    ? "Recording (REST)"
+                    : monitoring.status}
                 </div>
               </div>
             </div>

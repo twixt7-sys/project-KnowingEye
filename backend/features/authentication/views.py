@@ -1,143 +1,192 @@
+"""Authentication & profile management endpoints."""
+
+from __future__ import annotations
+
+from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.response import Response
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
-from django.contrib.auth import get_user_model
 
 from .serializers import (
+    AvatarUploadSerializer,
+    CustomTokenObtainPairSerializer,
+    PasswordChangeSerializer,
     RegisterSerializer,
-    UserSerializer,
     UserDetailSerializer,
-    CustomTokenObtainPairSerializer
+    UserSerializer,
 )
+
 
 User = get_user_model()
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
-    """
-    Custom token endpoint that returns user info along with tokens.
-    """
+    """JWT login that returns user info alongside the access/refresh pair."""
+
     serializer_class = CustomTokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            username = request.data.get("username")
+            if username:
+                User.objects.filter(username=username).update(last_seen_at=timezone.now())
+        return response
 
 
 class RegisterView(viewsets.ModelViewSet):
-    """
-    Endpoint for user registration.
-    POST /api/auth/register/ - Create a new user account
-    """
+    """POST /api/auth/register/ — public account creation."""
+
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
+    http_method_names = ["post"]
 
     def create(self, request, *args, **kwargs):
-        """Handle user registration."""
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-
         return Response(
             {
-                'message': 'User registered successfully',
-                'user': UserSerializer(user).data
+                "message": "User registered successfully",
+                "user": UserSerializer(user, context={"request": request}).data,
             },
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_201_CREATED,
         )
 
 
-class UserProfileViewSet(viewsets.ModelViewSet):
-    """
-    Endpoints for user profile management.
-    GET /api/auth/profile/ - Get current user profile
-    PUT /api/auth/profile/ - Update current user profile
-    """
-    serializer_class = UserDetailSerializer
+class UserProfileViewSet(viewsets.ViewSet):
+    """Endpoints for the currently authenticated user's profile."""
+
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
-    def get_queryset(self):
-        """Only return the current user."""
-        return User.objects.filter(id=self.request.user.id)
-
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=["get"])
     def me(self, request):
-        """
-        Get current authenticated user's profile.
-        GET /api/auth/profile/me/
-        """
-        user = request.user
-        serializer = self.get_serializer(user)
+        serializer = UserDetailSerializer(request.user, context={"request": request})
         return Response(serializer.data)
 
-    @action(detail=False, methods=['put', 'patch'])
+    @action(detail=False, methods=["put", "patch"])
     def update_profile(self, request):
-        """
-        Update current user's profile.
-        PUT/PATCH /api/auth/profile/update_profile/
-        """
-        user = request.user
-        serializer = self.get_serializer(user, data=request.data, partial=True)
+        serializer = UserDetailSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(
-            {
-                'message': 'Profile updated successfully',
-                'user': serializer.data
-            }
+            {"message": "Profile updated successfully", "user": serializer.data}
         )
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=["post"], url_path="change-password")
     def change_password(self, request):
-        """
-        Change user password.
-        POST /api/auth/profile/change_password/
-        Body: { "old_password": "...", "new_password": "...", "new_password2": "..." }
-        """
-        user = request.user
-        old_password = request.data.get('old_password')
-        new_password = request.data.get('new_password')
-        new_password2 = request.data.get('new_password2')
-
-        if not user.check_password(old_password):
+        serializer = PasswordChangeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not request.user.check_password(serializer.validated_data["old_password"]):
             return Response(
-                {'error': 'Old password is incorrect'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"old_password": "Current password is incorrect."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
+        request.user.set_password(serializer.validated_data["new_password"])
+        request.user.save()
+        return Response({"message": "Password changed successfully"})
 
-        if new_password != new_password2:
-            return Response(
-                {'error': 'New passwords do not match'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if len(new_password) < 8:
-            return Response(
-                {'error': 'Password must be at least 8 characters long'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        user.set_password(new_password)
-        user.save()
-
+    @action(detail=False, methods=["post"], url_path="avatar")
+    def upload_avatar(self, request):
+        serializer = AvatarUploadSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(
-            {'message': 'Password changed successfully'},
-            status=status.HTTP_200_OK
+            UserDetailSerializer(request.user, context={"request": request}).data
         )
 
 
 class UserListViewSet(viewsets.ReadOnlyModelViewSet):
+    """Admin-scoped user listing + lightweight admin actions.
+
+    Non-admins only ever see their own record. Admins can additionally
+    toggle activation and change roles via dedicated POST actions.
     """
-    Endpoint for retrieving user lists (admin only).
-    GET /api/users/ - List all users
-    GET /api/users/{id}/ - Get user details
-    """
-    queryset = User.objects.all()
+
+    queryset = User.objects.all().order_by("-date_joined")
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """Only allow admins to list all users."""
         if not self.request.user.is_admin():
             return User.objects.filter(id=self.request.user.id)
-        return User.objects.all()
+        qs = User.objects.all().order_by("-date_joined")
+        role = self.request.query_params.get("role")
+        if role:
+            qs = qs.filter(role=role)
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(username__icontains=search) | qs.filter(
+                email__icontains=search
+            )
+        return qs
 
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["request"] = self.request
+        return ctx
+
+    def _require_admin(self):
+        if not self.request.user.is_admin():
+            return Response(
+                {"detail": "Admin only."}, status=status.HTTP_403_FORBIDDEN
+            )
+        return None
+
+    @action(detail=True, methods=["post"])
+    def activate(self, request, pk=None):
+        denied = self._require_admin()
+        if denied:
+            return denied
+        user = self.get_object()
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+        return Response(UserSerializer(user, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"])
+    def deactivate(self, request, pk=None):
+        denied = self._require_admin()
+        if denied:
+            return denied
+        user = self.get_object()
+        if user == request.user:
+            return Response(
+                {"detail": "Refusing to deactivate the current admin account."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+        return Response(UserSerializer(user, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"], url_path="set-role")
+    def set_role(self, request, pk=None):
+        denied = self._require_admin()
+        if denied:
+            return denied
+        new_role = (request.data or {}).get("role")
+        valid = {choice for choice, _ in User.Role.choices}
+        if new_role not in valid:
+            return Response(
+                {"detail": f"Invalid role. Choose one of {sorted(valid)}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user = self.get_object()
+        user.role = new_role
+        user.save(update_fields=["role"])
+        return Response(UserSerializer(user, context={"request": request}).data)

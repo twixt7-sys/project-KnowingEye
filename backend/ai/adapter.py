@@ -1,22 +1,34 @@
 """
-Bridge Django backend to pipeline_playground/knowing_eye.
+Bridge from the Django backend to ``pipeline_playground/knowing_eye``.
 
-When CV dependencies are unavailable (CI, minimal install), falls back to a
-deterministic stub that still returns the contract expected by monitoring APIs.
+Behavior
+--------
+* Lazily imports the heavy ML stack (mediapipe / opencv / ultralytics).
+* When ML dependencies aren't installed, transparently falls back to a
+  deterministic stub so the monitoring API contract is always honored.
+* Threadsafe initialization — used from both DRF views and Channels consumers.
 """
 
 from __future__ import annotations
 
+import logging
 import sys
+import threading
 from pathlib import Path
 from typing import Any
 
+from django.conf import settings
+
+logger = logging.getLogger("knowing_eye.ai.adapter")
+
 _PIPELINE = None
-_PIPELINE_MODE = "uninitialized"
+_PIPELINE_MODE: str = "uninitialized"
+_LOCK = threading.Lock()
 
 
 def _repo_root() -> Path:
-    return Path(__file__).resolve().parents[2]
+    """Returns the project root (parent of ``backend/``)."""
+    return Path(settings.BASE_DIR).parent
 
 
 def _ensure_playground_on_path() -> None:
@@ -26,7 +38,7 @@ def _ensure_playground_on_path() -> None:
 
 
 def get_pipeline_mode() -> str:
-    """Returns 'playground', 'stub', or 'uninitialized'."""
+    """Returns one of ``"playground"``, ``"stub"``, ``"disabled"``."""
     _get_pipeline()
     return _PIPELINE_MODE
 
@@ -36,25 +48,48 @@ def _get_pipeline():
     if _PIPELINE is not None:
         return _PIPELINE
 
-    _ensure_playground_on_path()
-    try:
-        from knowing_eye.pipeline import BehaviorPipeline
+    with _LOCK:
+        if _PIPELINE is not None:
+            return _PIPELINE
 
-        config = _repo_root() / "pipeline_playground" / "config" / "pipeline.yaml"
-        _PIPELINE = BehaviorPipeline(config_path=config if config.exists() else None)
-        _PIPELINE_MODE = "playground"
-    except Exception:
-        _PIPELINE = _StubPipeline()
-        _PIPELINE_MODE = "stub"
-    return _PIPELINE
+        ke_settings = getattr(settings, "KNOWING_EYE", {})
+        if not ke_settings.get("ENABLE_PIPELINE", True):
+            _PIPELINE = _StubPipeline()
+            _PIPELINE_MODE = "disabled"
+            logger.info("AI pipeline disabled via settings; using stub.")
+            return _PIPELINE
+
+        _ensure_playground_on_path()
+        try:
+            from knowing_eye.pipeline import BehaviorPipeline  # type: ignore
+
+            config_path = Path(ke_settings.get("PIPELINE_CONFIG", ""))
+            _PIPELINE = BehaviorPipeline(
+                config_path=config_path if config_path.exists() else None
+            )
+            _PIPELINE_MODE = "playground"
+            logger.info("Loaded pipeline_playground BehaviorPipeline.")
+        except Exception as exc:  # noqa: BLE001 - we always want to degrade gracefully
+            logger.warning(
+                "Falling back to stub analyzer (pipeline_playground not loadable): %s",
+                exc,
+            )
+            _PIPELINE = _StubPipeline()
+            _PIPELINE_MODE = "stub"
+        return _PIPELINE
 
 
 class _StubPipeline:
-    """Lightweight analyzer when ML stack is not installed."""
+    """Lightweight deterministic analyzer used when the ML stack is missing."""
+
+    enrolled = False
 
     def analyze_frame(self, frame_bgr, session_id: str | None = None) -> dict[str, Any]:
-        h, w = frame_bgr.shape[:2]
-        brightness = float(frame_bgr.mean()) if frame_bgr.size else 0.0
+        h, w = (frame_bgr.shape[:2] if hasattr(frame_bgr, "shape") else (0, 0))
+        try:
+            brightness = float(frame_bgr.mean()) if hasattr(frame_bgr, "mean") else 0.0
+        except Exception:
+            brightness = 0.0
         face_ok = brightness > 40
         overall = 92.0 if face_ok else 55.0
         metrics = {
@@ -68,8 +103,8 @@ class _StubPipeline:
             "flagged_metrics": [] if overall >= 80 else ["face_presence"],
             "all_compliant": overall >= 80,
         }
-        events = []
-        alerts = []
+        events: list[dict[str, Any]] = []
+        alerts: list[dict[str, Any]] = []
         if not face_ok:
             events.append(
                 {
@@ -100,13 +135,35 @@ class _StubPipeline:
             "pipeline_mode": "stub",
         }
 
+    def enroll_reference(self, frame_bgr) -> bool:
+        self.enrolled = True
+        return True
+
 
 def analyze_frame_bgr(frame_bgr, session_id: str | None = None) -> dict[str, Any]:
+    """Analyze a single BGR frame and return the canonical contract dict."""
     pipeline = _get_pipeline()
     result = pipeline.analyze_frame(frame_bgr, session_id=session_id)
-    if hasattr(result, "to_dict"):
-        payload = result.to_dict()
-    else:
-        payload = result
+    payload = result.to_dict() if hasattr(result, "to_dict") else result
     payload["pipeline_mode"] = get_pipeline_mode()
     return payload
+
+
+def enroll_reference(frame_bgr) -> bool:
+    """Register a reference face for identity verification (best-effort)."""
+    pipeline = _get_pipeline()
+    if hasattr(pipeline, "enroll_reference"):
+        try:
+            return bool(pipeline.enroll_reference(frame_bgr))
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("enroll_reference failed: %s", exc)
+            return False
+    return False
+
+
+def reset_pipeline() -> None:
+    """Force re-initialization on the next call (useful for tests)."""
+    global _PIPELINE, _PIPELINE_MODE
+    with _LOCK:
+        _PIPELINE = None
+        _PIPELINE_MODE = "uninitialized"

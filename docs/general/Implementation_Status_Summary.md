@@ -1,82 +1,98 @@
 # Knowing Eye — Implementation Status Summary
 
-*Last updated: 2026-05-25. Prefer this file over the root README when docs conflict.*
+*Last updated: 2026-05-25. This is the canonical status doc — prefer it over the
+root README when in conflict.*
 
 ## Stack
 
-| Layer | Technology | Status |
-|-------|------------|--------|
-| Frontend | React 18, Vite, TypeScript, Tailwind, shadcn/ui | `npm run dev` → `http://127.0.0.1:5173` |
-| Backend | Django 6, DRF, SimpleJWT | `backend/run-api.cmd` or `runserver` → `http://127.0.0.1:8000` |
-| Database | SQLite (dev), PostgreSQL (prod target) | SQLite default via `DB_ENGINE` |
-| AI / CV | `pipeline_playground/knowing_eye` | Integrated via `backend/ai/adapter.py` (stub fallback without ML deps) |
+| Layer    | Technology                                            | Status                                                                                    |
+|----------|-------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| Frontend | React 18, Vite, TypeScript, Tailwind, shadcn, Recharts | `npm run dev` → `http://127.0.0.1:5173`                                                   |
+| Backend  | Django 6, DRF, SimpleJWT, **Channels (ASGI)**, Daphne  | `start-dev.cmd` or `backend/run-api.cmd` → `http://127.0.0.1:8000` (HTTP + WebSocket)     |
+| Database | SQLite (dev), PostgreSQL (prod)                        | Set `DB_ENGINE` env var                                                                   |
+| AI / CV  | `pipeline_playground/knowing_eye` (YOLO + MediaPipe)   | Integrated via `backend/ai/adapter.py` — auto-fallback to a stub when ML deps are absent |
 
 ## Module completion
 
-| Module | Backend API | Unit tests | Frontend wired |
-|--------|-------------|------------|----------------|
-| Authentication | JWT login, register, profile | Yes | Login page |
-| Exams | CRUD, publish/archive | Yes | Student dashboard list |
-| Sessions | Start, submit, scoring | Yes | Exam-taking (backend page) |
-| Monitoring | Frame POST + health | Yes | Webcam frames during exam |
-| Behavior | Logs + alerts persistence | Yes | Via monitoring response |
-| Reports | Summary + session report | Yes | Pending dashboard polish |
-| AI pipeline | Stub or playground | Playground separate (`:8090`) | N/A |
+| Module          | Backend API                                            | Tests       | Frontend                                              |
+|-----------------|--------------------------------------------------------|-------------|-------------------------------------------------------|
+| Authentication  | JWT (access + refresh + verify), register, profile, avatar, password change | ✓           | Login + profile pages, auto-refresh tokens             |
+| Exams           | CRUD, publish/archive, nested questions                | ✓           | Dashboard list + create-exam modal                     |
+| Sessions        | Start, submit, terminate, scoring, logs               | ✓           | Exam-taking page (with monitoring)                     |
+| Monitoring      | REST `/frame/`, `/enroll/`, **`ws://ws/monitoring/`** | ✓ (incl. WS) | Live-monitoring dashboard + per-session inspector       |
+| Behavior        | Logs + alerts persistence, resolve / resolve_all       | ✓           | Visualised in session inspector + dashboard            |
+| Reports         | Summary, sessions list, detail, **CSV export**, **timeseries** | ✓           | Reports page with Recharts charts                      |
+| Profile         | GET/PATCH/avatar upload/change-password               | ✓           | Profile page with avatar upload + security             |
+
+## What is new in this revision
+
+* **ASGI + WebSocket monitoring.** Daphne serves both HTTP and `ws://ws/monitoring/{session}/` with JWT auth via query-string token, JSON message protocol, group broadcast for alerts.
+* **Pipeline integration hardened.** Thread-safe lazy loader, graceful degradation to a stub analyzer, `enroll_reference` exposed, `pipeline_playground` installable as a Python package (`pyproject.toml`).
+* **Production-grade settings.** Decouple-based env config, structured logging to file + stdout, conditional production hardening (HSTS, secure cookies, SSL proxy), Redis-ready Channels layer.
+* **Reports & analytics.** Pass-rate, severity histogram, behavior-event histogram, day-by-day timeseries, downloadable CSV.
+* **Profile & avatars.** ImageField avatar, phone, institution, student-id; multipart upload endpoint; signed media via `MEDIA_URL`.
+* **Tests.** Now 23 unit tests including 3 WebSocket-consumer integration tests through the full ASGI stack.
 
 ## Quick run (Windows)
 
 ```powershell
-# Terminal 1 — API
-cd backend
-$env:DB_ENGINE="django.db.backends.sqlite3"
-python manage.py migrate
-python manage.py seed_db --noinput   # first time only
-python manage.py runserver 127.0.0.1:8000
+# One-click
+start-dev.cmd
 
-# Terminal 2 — UI
-cd frontend
+# OR manual:
+cd backend
+$env:DB_ENGINE = "django.db.backends.sqlite3"
+$env:OPENBLAS_NUM_THREADS = "1"
+python manage.py migrate
+python manage.py seed_db --noinput        # first run only
+python -m daphne -b 127.0.0.1 -p 8000 core.config.asgi:application
+
+# Frontend
+cd ../frontend
+npm install
 npm run dev
 ```
 
-Or double-click `start-dev.cmd` at the repo root.
-
-**Low memory?** Close other apps first. Run API alone via `backend/run-api.cmd`. If Vite fails with heap OOM, open a fresh terminal and run `cd frontend && set NODE_OPTIONS=--max-old-space-size=8192 && npm run dev`.
+Open <http://127.0.0.1:5173/>. API base defaults to <http://127.0.0.1:8000/api>.
 
 ## Test accounts (after `seed_db`)
 
-| Role | Username | Password |
-|------|----------|----------|
-| Admin | `admin` | `adminpass` |
-| Examinee | `user02` | `pass002` |
+| Role     | Username | Password    |
+|----------|----------|-------------|
+| Admin    | `admin`  | `adminpass` |
+| Examinee | `user02` | `pass002`   |
 
-## API smoke checks
+## Smoke checks
 
-- Health: `GET http://127.0.0.1:8000/api/monitoring/health/`
-- Login: `POST http://127.0.0.1:8000/api/auth/token/` with `username` / `password`
+```powershell
+# REST
+curl http://127.0.0.1:8000/api/monitoring/health/
+# WebSocket (requires wscat or similar)
+wscat -c "ws://127.0.0.1:8000/ws/monitoring/<session-uuid>/?token=<access-token>"
+```
 
-## Unit tests
+## Tests
 
 ```powershell
 cd backend
-$env:DB_ENGINE="django.db.backends.sqlite3"
-python manage.py test features.authentication.tests.test_auth_api features.exams.tests.test_exams_api features.session.tests.test_session_api features.behavior.tests.test_behavior_api features.monitoring.tests.test_monitoring_api features.reports.tests.test_reports_api
+$env:DB_ENGINE = "django.db.backends.sqlite3"
+$env:OPENBLAS_NUM_THREADS = "1"
+python manage.py test features
 ```
 
-## Testing documentation
+All 23 tests pass.
 
-- **IEEE pack (Knowing Eye):** `docs/testing/testing(IEEE)/`
-- **UTAUT pack (Knowing Eye):** `docs/testing/testing(UTAUT)/`
-- **OSAS reference (frozen):** `docs/testing/testing(IEEE)[reference]/`, `testing(UTAUT)[reference]/`
+## Documentation
 
-## Remaining work
+* **Production deployment:** [docs/deployment.md](../deployment.md)
+* **Pipeline integration:** [pipeline_playground/README.md](../../pipeline_playground/README.md)
+* **WBS:** [docs/general/workflow.tree](./workflow.tree)
+* **IEEE testing:** [docs/testing/testing(IEEE)/](../testing/testing\(IEEE\)/)
+* **UTAUT testing:** [docs/testing/testing(UTAUT)/](../testing/testing\(UTAUT\)/)
 
-- WebSocket monitoring (Channels consumer)
-- Full `pipeline_playground` ML stack in production (optional `pip install` of playground requirements)
-- Admin dashboard wired to `/api/reports/summary/`
-- PostgreSQL production deployment
+## Remaining work (post-MVP)
 
-## Related docs
-
-- WBS: `pipeline_playground/docs/general/workflow.tree`
-- Architecture: `docs/backend/backend_structure.json`, `docs/database/database_schema.json`
-- Main thesis doc: `docs/general/MAIN_DOCUMENT.docx`
+* Replace `face_recognition` with FaceNet/ArcFace embeddings for production identity verification.
+* End-to-end Playwright/Cypress test suite covering the SPA flows.
+* Per-exam analytics: question-level difficulty + cheating-pattern correlations.
+* Multi-tenant deployment (institutions × exam sets).

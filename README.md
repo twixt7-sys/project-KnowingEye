@@ -1,79 +1,169 @@
 # Knowing Eye
 
-A Full-Stack Session-Guided Web-Based Examination Platform with Integrated Behavior Monitoring (facial and postural analysis via computer vision).
+**Full-Stack Session-Guided Web Examination Platform with Behavior Monitoring**
+
+A production-ready platform that combines a centralized exam delivery system
+with real-time computer-vision behavior analysis for examination integrity.
+
+| Layer    | Stack |
+|----------|-------|
+| Frontend | React 18, Vite, TypeScript, Tailwind, Recharts |
+| Backend  | Django 6, DRF, SimpleJWT, Channels (Daphne ASGI) |
+| Realtime | WebSocket (Channels) for live monitoring |
+| AI / CV  | YOLOv8, MediaPipe, FaceNet-compatible identity verification |
+| Database | SQLite (dev), PostgreSQL (prod) |
 
 ## Project layout
 
-```
+```text
 project-KnowingEye/
-├── backend/                 # Django REST API
-├── frontend/                # React + Vite UI
-├── pipeline_playground/     # CV/AI module (YOLO, MediaPipe, behavior scoring)
-├── docs/                    # Architecture, thesis, IEEE & UTAUT testing packs
-└── start-dev.cmd            # Windows: start API + UI
+├── backend/                 Django REST + Channels API
+│   ├── ai/                  Adapter bridging Django ↔ pipeline_playground
+│   ├── core/                Settings, ASGI/WSGI, exceptions, management
+│   └── features/            authentication, exams, session, monitoring, behavior, reports
+├── frontend/                React + Vite UI
+│   └── src/
+│       ├── core/            providers, router, api client, env
+│       ├── pages/           home, login, dashboard, monitoring, reports, profile, …
+│       └── shared/          components, hooks (use-monitoring), utilities
+├── pipeline_playground/     Installable CV/AI module (YOLO + MediaPipe + scoring)
+│   ├── knowing_eye/         preprocessing/detection/recognition/behavior packages
+│   ├── api/                 FastAPI standalone playground (optional)
+│   └── config/pipeline.yaml Thresholds & model paths
+├── docs/                    Architecture, WBS, IEEE / UTAUT testing packs
+└── start-dev.cmd            One-click dev bootstrap (Windows)
 ```
 
-## Quick start
+## Quick start (Windows)
 
-### 1. Backend
+Double-click `start-dev.cmd` at the repo root. This boots:
+
+* `http://127.0.0.1:8000/`     → Django ASGI (HTTP + WebSocket)
+* `http://127.0.0.1:5173/`     → Vite dev server with HMR
+
+### Manual
 
 ```powershell
+# --- 1. Backend ---
 cd backend
-$env:DB_ENGINE="django.db.backends.sqlite3"
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+$env:DB_ENGINE = "django.db.backends.sqlite3"
 python manage.py migrate
-python manage.py seed_db --noinput    # first run; skip if already seeded
-python manage.py runserver 127.0.0.1:8000
-```
+python manage.py seed_db --noinput      # first run only
+python -m daphne -b 127.0.0.1 -p 8000 core.config.asgi:application
 
-### 2. Frontend
-
-```powershell
-cd frontend
-copy .env.example .env.local   # optional
+# --- 2. Frontend ---
+cd ../frontend
 npm install
+copy .env.example .env.local           # optional
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173/** — API base defaults to **http://127.0.0.1:8000/api**.
+### Seed accounts
 
-### Test accounts (after seed)
+| Role     | Username | Password    |
+|----------|----------|-------------|
+| Admin    | `admin`  | `adminpass` |
+| Examinee | `user02` | `pass002`   |
 
-| Role | Username | Password |
-|------|----------|----------|
-| Admin | `admin` | `adminpass` |
-| Examinee | `user02` | `pass002` |
+## API surface
 
-### Unit tests
+| Method | Path                                                  | Purpose                                  |
+|--------|-------------------------------------------------------|------------------------------------------|
+| GET    | `/api/monitoring/health/`                             | Health + pipeline mode                   |
+| POST   | `/api/auth/token/`                                    | JWT login (access + refresh)             |
+| POST   | `/api/auth/token/refresh/`                            | Rotate JWT                               |
+| POST   | `/api/auth/register/`                                 | Create a user                            |
+| GET    | `/api/auth/profile/me/`                               | Current user profile                    |
+| PATCH  | `/api/auth/profile/update_profile/`                   | Edit profile                             |
+| POST   | `/api/auth/profile/avatar/`                           | Upload avatar (`multipart/form-data`)    |
+| POST   | `/api/auth/profile/change-password/`                  | Change password                          |
+| GET    | `/api/exams/`                                         | List exams (paginated)                   |
+| POST   | `/api/exams/`                                         | Create exam (admin)                      |
+| POST   | `/api/exams/{id}/publish/`                            | Publish a draft exam                     |
+| POST   | `/api/sessions/start/`                                | Start an exam session                    |
+| POST   | `/api/sessions/{uuid}/submit/`                        | Submit answers                           |
+| POST   | `/api/monitoring/frame/`                              | Analyze a single base64 frame            |
+| POST   | `/api/monitoring/enroll/`                             | Enroll a reference face                  |
+| GET    | `/api/behavior/logs/?session={uuid}`                  | Behavior events                          |
+| GET    | `/api/behavior/alerts/?resolved=false`                | Unresolved alerts                        |
+| POST   | `/api/behavior/alerts/{id}/resolve/`                  | Resolve an alert (admin)                 |
+| GET    | `/api/reports/summary/`                               | Dashboard KPIs                           |
+| GET    | `/api/reports/sessions/`                              | Paginated session reports               |
+| GET    | `/api/reports/sessions/{uuid}/`                       | Full session report                      |
+| GET    | `/api/reports/timeseries/`                            | Per-day activity                         |
+| GET    | `/api/reports/export/csv/`                            | CSV download                             |
+| WS     | `/ws/monitoring/{uuid}/?token={jwt-access}`           | Live monitoring (frame stream + alerts)  |
+
+The WebSocket protocol is documented in `backend/features/monitoring/consumers.py`.
+
+## Computer-Vision pipeline
+
+`backend/ai/adapter.py` lazily loads `pipeline_playground/knowing_eye`. If the
+ML dependencies aren't present it falls back to a deterministic stub so the
+monitoring API contract is always honoured.
+
+```text
+Webcam ► JPEG/base64 ► /api/monitoring/frame/ (REST) or /ws/monitoring/* (WebSocket)
+       ► ai.adapter.analyze_frame_bgr()  ← pipeline_playground.BehaviorPipeline
+       ► metrics + events + alerts ► persisted via features.behavior.services
+```
+
+### Install the full ML stack
 
 ```powershell
 cd backend
-$env:DB_ENGINE="django.db.backends.sqlite3"
-python manage.py test features.authentication.tests.test_auth_api features.exams.tests.test_exams_api features.session.tests.test_session_api features.behavior.tests.test_behavior_api features.monitoring.tests.test_monitoring_api features.reports.tests.test_reports_api
+.\venv\Scripts\Activate.ps1
+pip install mediapipe ultralytics PyYAML
+# optional identity verification (Windows requires Visual C++ build tools):
+pip install -r ../pipeline_playground/requirements-identity.txt
 ```
 
-## Key API routes
+When all three are present the adapter switches from `stub` → `playground`.
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/api/monitoring/health/` | Health + pipeline mode |
-| POST | `/api/auth/token/` | JWT login |
-| GET | `/api/exams/` | List exams |
-| POST | `/api/sessions/start/` | Start exam session |
-| POST | `/api/monitoring/frame/` | Submit webcam frame + AI analysis |
-| GET | `/api/reports/summary/` | Admin dashboard stats |
+### Tune thresholds
 
-## AI / monitoring
+Edit `pipeline_playground/config/pipeline.yaml` — values control compliance
+thresholds, alert severities, and metric weights. The adapter picks the file up
+automatically on next process start.
 
-- Production path: `backend/ai/adapter.py` loads `pipeline_playground/knowing_eye` when ML deps are installed; otherwise uses a deterministic **stub** analyzer.
-- Standalone playground UI: `cd pipeline_playground` → `uvicorn api.main:app --port 8090`
+## Tests
+
+```powershell
+cd backend
+$env:DB_ENGINE = "django.db.backends.sqlite3"
+$env:OPENBLAS_NUM_THREADS = "1"
+python manage.py test features
+```
+
+Currently 23 tests across:
+
+* `features.authentication` — JWT, registration, profile, password change, refresh
+* `features.exams` — CRUD, publish/archive
+* `features.session` — start, submit, lifecycle
+* `features.monitoring` — REST frame, enroll, **WebSocket consumer**, RBAC
+* `features.behavior` — logs + alerts persistence
+* `features.reports` — summary, detail, CSV export, timeseries
+
+## Production deployment
+
+See [docs/deployment.md](docs/deployment.md) for the full guide. Highlights:
+
+1. Set `DJANGO_DEBUG=False`, generate a strong `DJANGO_SECRET_KEY`.
+2. Switch the database with `DB_ENGINE=django.db.backends.postgresql` + creds.
+3. (Optional but recommended) point `REDIS_URL` to a Redis cluster for the
+   Channels layer so multiple Daphne workers can broadcast alerts to each other.
+4. Run with Daphne or Uvicorn behind Nginx as a reverse proxy.
+5. Serve the React app from `frontend/dist/` (built via `npm run build`).
 
 ## Documentation
 
-- **Status (canonical):** [docs/general/Implementation_Status_Summary.md](docs/general/Implementation_Status_Summary.md)
-- **WBS:** [pipeline_playground/docs/general/workflow.tree](pipeline_playground/docs/general/workflow.tree)
-- **IEEE testing:** [docs/testing/testing(IEEE)/](docs/testing/testing(IEEE)/)
-- **UTAUT (Ch. 7):** [docs/testing/testing(UTAUT)/](docs/testing/testing(UTAUT)/)
+* **Implementation status:** [docs/general/Implementation_Status_Summary.md](docs/general/Implementation_Status_Summary.md)
+* **WBS:** [docs/general/workflow.tree](docs/general/workflow.tree)
+* **Deployment:** [docs/deployment.md](docs/deployment.md)
+* **Pipeline integration:** [pipeline_playground/README.md](pipeline_playground/README.md)
 
 ## Team
 

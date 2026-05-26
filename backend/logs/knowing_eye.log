@@ -1,0 +1,43 @@
+2026-05-25 20:04:29,219 [WARNING] knowing_eye.ai.adapter: Falling back to stub analyzer (pipeline_playground not loadable): No module named 'yaml'
+2026-05-25 20:04:36,606 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-05-25 20:06:54,397 [INFO] knowing_eye.ai.adapter: Loaded pipeline_playground BehaviorPipeline.
+2026-05-25 20:08:21,894 [INFO] knowing_eye.ai.adapter: Loaded pipeline_playground BehaviorPipeline.
+2026-05-25 20:08:28,984 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-05-25 20:41:22,660 [INFO] knowing_eye.ai.adapter: Loaded pipeline_playground BehaviorPipeline.
+2026-05-25 20:41:29,043 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-05-25 21:35:51,475 [INFO] knowing_eye.ai.adapter: Loaded pipeline_playground BehaviorPipeline.
+2026-05-25 21:35:57,224 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-05-25 21:39:10,369 [INFO] knowing_eye.ai.adapter: Loaded pipeline_playground BehaviorPipeline.
+2026-05-25 21:39:16,343 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-05-25 21:43:31,799 [INFO] knowing_eye.ai.adapter: Loaded pipeline_playground BehaviorPipeline.
+2026-05-25 21:43:38,633 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-05-25 21:44:14,491 [ERROR] django.security.DisallowedHost: Invalid HTTP_HOST header: 'testserver'. You may need to add 'testserver' to ALLOWED_HOSTS.
+Traceback (most recent call last):
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\utils\deprecation.py", line 308, in __call__
+    response = self.process_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\middleware\common.py", line 48, in process_request
+    host = request.get_host()
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\http\request.py", line 205, in get_host
+    raise DisallowedHost(msg)
+django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: 'testserver'. You may need to add 'testserver' to ALLOWED_HOSTS.
+2026-05-25 21:44:27,729 [ERROR] django.security.DisallowedHost: Invalid HTTP_HOST header: 'testserver'. You may need to add 'testserver' to ALLOWED_HOSTS.
+Traceback (most recent call last):
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\utils\deprecation.py", line 308, in __call__
+    response = self.process_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\middleware\common.py", line 48, in process_request
+    host = request.get_host()
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\http\request.py", line 205, in get_host
+    raise DisallowedHost(msg)
+django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: 'testserver'. You may need to add 'testserver' to ALLOWED_HOSTS.
+2026-05-26 09:32:41,451 [INFO] knowing_eye.ai.adapter: Loaded pipeline_playground BehaviorPipeline.
+2026-05-26 09:32:48,091 [WARNING] django.request: Forbidden: /api/monitoring/frame/

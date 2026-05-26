@@ -1,44 +1,76 @@
-// API Service for Knowing Eye Backend Integration
-// This demonstrates how the frontend would connect to the Django REST API
+/**
+ * Knowing Eye — typed API client for the Django REST backend.
+ *
+ * Features
+ * --------
+ *  • JWT login + auto-refresh of the access token on 401.
+ *  • Strongly-typed request helpers per feature (auth, exams, sessions,
+ *    monitoring, behavior, reports, profile).
+ *  • WebSocket helper that injects the access token via query string.
+ */
 
-import { API_BASE_URL } from './env';
+import { API_BASE_URL } from "./env";
 
-// Types for API responses
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export type Role = "ADMIN" | "EXAMINEE";
+
+export interface AuthUser {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: Role;
+}
+
+export interface ProfileUser extends AuthUser {
+  avatar_url: string | null;
+  phone: string;
+  institution: string;
+  student_id: string;
+  is_active: boolean;
+  last_seen_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Exam {
   id: number;
   title: string;
   description: string;
+  instructions?: string;
   duration_minutes: number;
   total_questions: number;
   passing_score: number;
-  status: 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+  status: "draft" | "active" | "archived";
   created_at: string;
-  questions: Question[];
+  questions?: Question[];
 }
 
 export interface Question {
   id: number;
   exam: number;
   question_text: string;
-  question_type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER';
+  question_type: "multiple_choice" | "true_false" | "short_answer" | "essay";
   options: string[];
-  correct_answer: string;
+  correct_answer?: string;
   points: number;
-  explanation?: string;
+  order: number;
 }
 
 export interface ExamSession {
   id: string;
   user: number;
   exam: Exam;
-  status: string;
+  status: "in_progress" | "completed" | "terminated" | "expired";
   started_at?: string;
   submitted_at?: string;
   total_score?: number;
   percentage_score?: number;
   passed?: boolean;
-  duration?: number;
-  time_remaining?: number;
   time_remaining_seconds?: number;
 }
 
@@ -53,67 +85,199 @@ export interface SubmitSessionData {
   time_remaining: number;
 }
 
-// Generic API client
-class ApiClient {
-  private baseURL: string;
-  private token: string | null = null;
+export interface FrameMetrics {
+  face_presence_pct: number;
+  gaze_focus_pct: number;
+  posture_compliance_pct: number;
+  identity_match_pct: number | null;
+  object_clear_pct: number;
+  overall_compliance_pct: number;
+  alert_threshold_pct: number;
+  flagged_metrics: string[];
+  all_compliant: boolean;
+}
 
-  constructor(baseURL: string) {
-    this.baseURL = baseURL;
-    // Get token from localStorage (would be set after login)
-    this.token = localStorage.getItem('auth_token');
+export interface FrameAnalysis {
+  session_id: string | null;
+  timestamp: string | null;
+  frame_index: number | null;
+  metrics: FrameMetrics;
+  overall_compliance_pct: number;
+  behavior_score: number;
+  events: FrameEvent[];
+  alerts: FrameAlert[];
+  pipeline_mode: string;
+}
+
+export interface FrameEvent {
+  event_type: string;
+  score_pct: number;
+  confidence_pct: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface FrameAlert {
+  type: string;
+  severity: "low" | "medium" | "high";
+  message: string;
+  metric_pct?: number;
+  resolved?: boolean;
+}
+
+export interface BehaviorLogRow {
+  id: string;
+  session: string;
+  session_user?: string;
+  exam_title?: string;
+  event_type: string;
+  score: number;
+  confidence: number;
+  metadata: Record<string, unknown>;
+  timestamp: string;
+}
+
+export interface AlertRow {
+  id: string;
+  session: string;
+  session_user?: string;
+  exam_title?: string;
+  alert_type: string;
+  severity: "low" | "medium" | "high";
+  message: string;
+  metric_pct: number | null;
+  resolved: boolean;
+  created_at: string;
+}
+
+export interface ReportSummary {
+  total_sessions: number;
+  active_sessions: number;
+  completed_sessions: number;
+  terminated_sessions: number;
+  unresolved_alerts: number;
+  resolved_alerts: number;
+  behavior_events: number;
+  average_score: number | null;
+  pass_rate: number | null;
+  alerts_by_severity: { severity: string; count: number }[];
+  events_by_type: { event_type: string; count: number }[];
+  generated_at: string;
+}
+
+export interface SessionReportRow {
+  id: string;
+  exam_id: number;
+  exam_title: string;
+  user: string;
+  user_full_name: string;
+  status: string;
+  started_at: string;
+  submitted_at: string | null;
+  percentage_score: number | null;
+  passed: boolean | null;
+  alert_count: number;
+  unresolved_alert_count: number;
+  behavior_event_count: number;
+}
+
+// ---------------------------------------------------------------------------
+// Token storage
+// ---------------------------------------------------------------------------
+
+const TOKEN_KEY = "auth_token";
+const REFRESH_KEY = "refresh_token";
+
+export const tokenStore = {
+  get access() {
+    return localStorage.getItem(TOKEN_KEY);
+  },
+  get refresh() {
+    return localStorage.getItem(REFRESH_KEY);
+  },
+  set(access: string, refresh?: string) {
+    localStorage.setItem(TOKEN_KEY, access);
+    if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
+  },
+  clear() {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+  },
+};
+
+// ---------------------------------------------------------------------------
+// HTTP client with refresh
+// ---------------------------------------------------------------------------
+
+class ApiClient {
+  constructor(public baseURL: string) {}
+
+  private async refresh(): Promise<boolean> {
+    const refresh = tokenStore.refresh;
+    if (!refresh) return false;
+    const res = await fetch(`${this.baseURL}/auth/token/refresh/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+    });
+    if (!res.ok) {
+      tokenStore.clear();
+      return false;
+    }
+    const data = await res.json();
+    tokenStore.set(data.access, data.refresh ?? refresh);
+    return true;
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  async request<T>(endpoint: string, options: RequestInit = {}, retry = true): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(this.token && { Authorization: `Bearer ${this.token}` }),
-        ...options.headers,
-      },
-      ...options,
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+      ...((options.headers as Record<string, string>) ?? {}),
     };
-
-    const response = await fetch(url, config);
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`API Error: ${response.status} - ${error}`);
+    if (!(options.body instanceof FormData) && options.body && !headers["Content-Type"]) {
+      headers["Content-Type"] = "application/json";
+    }
+    if (tokenStore.access) {
+      headers.Authorization = `Bearer ${tokenStore.access}`;
     }
 
-    return response.json();
+    const res = await fetch(url, { ...options, headers });
+
+    if (res.status === 401 && retry && tokenStore.refresh) {
+      const ok = await this.refresh();
+      if (ok) return this.request<T>(endpoint, options, false);
+    }
+
+    if (!res.ok) {
+      let body: unknown;
+      try {
+        body = await res.json();
+      } catch {
+        body = await res.text();
+      }
+      const err = new ApiError(res.status, body);
+      throw err;
+    }
+
+    const ctype = res.headers.get("content-type") ?? "";
+    if (ctype.includes("application/json")) {
+      return (await res.json()) as T;
+    }
+    return (await res.text()) as unknown as T;
   }
 
-  // Authentication methods
+  // ----- Auth -----
   async login(credentials: { username: string; password: string }) {
-    const response = await this.request<{
+    const data = await this.request<{
       access: string;
       refresh: string;
-      user: {
-        id: number;
-        username: string;
-        email: string;
-        role: string;
-        first_name: string;
-        last_name: string;
-      };
-    }>(
-      '/auth/token/',
-      {
-        method: 'POST',
-        body: JSON.stringify(credentials),
-      }
-    );
-
-    this.token = response.access;
-    localStorage.setItem('auth_token', response.access);
-    localStorage.setItem('refresh_token', response.refresh);
-
-    return response;
+      user: AuthUser;
+    }>("/auth/token/", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+    });
+    tokenStore.set(data.access, data.refresh);
+    return data;
   }
 
   async register(userData: {
@@ -121,134 +285,316 @@ class ApiClient {
     email: string;
     password: string;
     password2: string;
-    role?: 'ADMIN' | 'EXAMINEE';
+    first_name?: string;
+    last_name?: string;
+    role?: Role;
   }) {
-    const response = await this.request<{
-      message: string;
-      user: {
-        id: number;
-        username: string;
-        email: string;
-        first_name: string;
-        last_name: string;
-        role: string;
-      };
-    }>('/auth/register/', {
-      method: 'POST',
+    return this.request<{ message: string; user: AuthUser }>("/auth/register/", {
+      method: "POST",
       body: JSON.stringify(userData),
     });
-
-    return response;
   }
 
-  // Exam methods
-  async getExams(): Promise<Exam[]> {
-    const data = await this.request<{ results?: Exam[]; count?: number } | Exam[]>('/exams/');
-    if (Array.isArray(data)) return data;
-    return data.results ?? [];
+  async getProfile() {
+    return this.request<ProfileUser>("/auth/profile/me/");
   }
 
-  async getExam(id: number): Promise<Exam> {
-    return this.request(`/exams/${id}/`);
-  }
-
-  // Session methods
-  async startExamSession(examId: number): Promise<ExamSession> {
-    const response = await this.request<{ session: ExamSession }>(
-      '/sessions/start/',
+  async updateProfile(patch: Partial<ProfileUser>) {
+    return this.request<{ message: string; user: ProfileUser }>(
+      "/auth/profile/update_profile/",
       {
-        method: 'POST',
-        body: JSON.stringify({ exam: examId }),
+        method: "PATCH",
+        body: JSON.stringify(patch),
       }
     );
-    return response.session;
   }
 
-  async submitExamSession(
-    sessionId: string,
-    data: SubmitSessionData
-  ): Promise<{ session: ExamSession; results: any }> {
-    return this.request(`/sessions/${sessionId}/submit/`, {
-      method: 'POST',
-      body: JSON.stringify(data),
+  async changePassword(body: {
+    old_password: string;
+    new_password: string;
+    new_password2: string;
+  }) {
+    return this.request<{ message: string }>("/auth/profile/change-password/", {
+      method: "POST",
+      body: JSON.stringify(body),
     });
   }
 
-  async getSession(sessionId: string): Promise<ExamSession> {
-    return this.request(`/sessions/${sessionId}/`);
-  }
-
-  // Monitoring
-  async sendFrame(frameData: { image: string; session_id: string }) {
-    return this.request('/monitoring/frame/', {
-      method: 'POST',
-      body: JSON.stringify(frameData),
+  async uploadAvatar(file: File) {
+    const form = new FormData();
+    form.append("avatar", file);
+    return this.request<ProfileUser>("/auth/profile/avatar/", {
+      method: "POST",
+      body: form,
     });
   }
 
-  async getReportSummary() {
+  // ----- Admin user management -----
+  async listUsers(params?: { role?: string; search?: string }) {
+    const qs = params
+      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
+      : "";
+    const data = await this.request<
+      { results?: ProfileUser[]; count?: number } | ProfileUser[]
+    >(`/auth/users/${qs}`);
+    return Array.isArray(data) ? data : data.results ?? [];
+  }
+
+  async activateUser(id: number) {
+    return this.request<ProfileUser>(`/auth/users/${id}/activate/`, {
+      method: "POST",
+    });
+  }
+
+  async deactivateUser(id: number) {
+    return this.request<ProfileUser>(`/auth/users/${id}/deactivate/`, {
+      method: "POST",
+    });
+  }
+
+  async setUserRole(id: number, role: string) {
+    return this.request<ProfileUser>(`/auth/users/${id}/set-role/`, {
+      method: "POST",
+      body: JSON.stringify({ role }),
+    });
+  }
+
+  // ----- Exams -----
+  async getExams(params?: { status?: string; search?: string }) {
+    const qs = params
+      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
+      : "";
+    const data = await this.request<{ results?: Exam[]; count?: number } | Exam[]>(
+      `/exams/${qs}`
+    );
+    return Array.isArray(data) ? data : data.results ?? [];
+  }
+
+  async getExam(id: number) {
+    return this.request<Exam>(`/exams/${id}/`);
+  }
+
+  async createExam(payload: Partial<Exam>) {
+    return this.request<Exam>("/exams/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateExam(id: number, payload: Partial<Exam>) {
+    return this.request<Exam>(`/exams/${id}/`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteExam(id: number) {
+    return this.request<void>(`/exams/${id}/`, { method: "DELETE" });
+  }
+
+  async publishExam(id: number) {
+    return this.request<{ message: string; exam: Exam }>(`/exams/${id}/publish/`, {
+      method: "POST",
+    });
+  }
+
+  async archiveExam(id: number) {
+    return this.request<{ message: string }>(`/exams/${id}/archive/`, {
+      method: "POST",
+    });
+  }
+
+  async listQuestions(examId: number) {
+    return this.request<Question[]>(`/exams/${examId}/questions/`);
+  }
+
+  async createQuestion(examId: number, payload: Partial<Question>) {
+    return this.request<Question>(`/exams/${examId}/questions/`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // ----- Sessions -----
+  async startExamSession(examId: number) {
+    const res = await this.request<{ session: ExamSession }>("/sessions/start/", {
+      method: "POST",
+      body: JSON.stringify({ exam: examId }),
+    });
+    return res.session;
+  }
+
+  async submitExamSession(sessionId: string, data: SubmitSessionData) {
+    return this.request<{ session: ExamSession; results: Record<string, unknown> }>(
+      `/sessions/${sessionId}/submit/`,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+  }
+
+  async getSession(sessionId: string) {
+    return this.request<ExamSession>(`/sessions/${sessionId}/`);
+  }
+
+  async listSessions(params?: { status?: string; exam?: number; user?: number }) {
+    const qs = params
+      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
+      : "";
+    const data = await this.request<{ results?: ExamSession[] } | ExamSession[]>(
+      `/sessions/${qs}`
+    );
+    return Array.isArray(data) ? data : data.results ?? [];
+  }
+
+  async terminateSession(sessionId: string) {
+    return this.request<{ message: string }>(`/sessions/${sessionId}/terminate/`, {
+      method: "POST",
+    });
+  }
+
+  // ----- Monitoring -----
+  async sendFrame(body: { image: string; session_id: string }) {
     return this.request<{
-      total_sessions: number;
-      active_sessions: number;
-      completed_sessions: number;
-      unresolved_alerts: number;
-      behavior_events: number;
-      average_score: number | null;
-    }>('/reports/summary/');
+      status: string;
+      session_id: string;
+      pipeline_mode: string;
+      analysis: FrameAnalysis;
+      persisted: { behavior_logs: number; alerts: number };
+    }>("/monitoring/frame/", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async enrollReference(body: { image: string; session_id: string }) {
+    return this.request<{ ok: boolean; pipeline_mode: string }>("/monitoring/enroll/", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  }
+
+  async getMonitoringHealth() {
+    return this.request<{ status: string; pipeline_mode: string; service: string }>(
+      "/monitoring/health/"
+    );
+  }
+
+  // ----- Behavior -----
+  async listBehaviorLogs(params?: { session?: string; event_type?: string }) {
+    const qs = params
+      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
+      : "";
+    const data = await this.request<{ results?: BehaviorLogRow[] } | BehaviorLogRow[]>(
+      `/behavior/logs/${qs}`
+    );
+    return Array.isArray(data) ? data : data.results ?? [];
+  }
+
+  async listAlerts(params?: { session?: string; resolved?: boolean; severity?: string }) {
+    const qs = params
+      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
+      : "";
+    const data = await this.request<{ results?: AlertRow[] } | AlertRow[]>(
+      `/behavior/alerts/${qs}`
+    );
+    return Array.isArray(data) ? data : data.results ?? [];
+  }
+
+  async resolveAlert(alertId: string) {
+    return this.request<AlertRow>(`/behavior/alerts/${alertId}/resolve/`, {
+      method: "POST",
+    });
+  }
+
+  // ----- Reports -----
+  async getReportSummary() {
+    return this.request<ReportSummary>("/reports/summary/");
+  }
+
+  async listSessionReports(params?: { status?: string; exam?: number }) {
+    const qs = params
+      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
+      : "";
+    return this.request<{ results: SessionReportRow[]; count: number }>(
+      `/reports/sessions/${qs}`
+    );
+  }
+
+  async getSessionReport(sessionId: string) {
+    return this.request<{
+      session: ExamSession;
+      behavior_summary: { event_type: string; count: number; avg_score: number }[];
+      behavior_logs: BehaviorLogRow[];
+      alerts: AlertRow[];
+    }>(`/reports/sessions/${sessionId}/`);
+  }
+
+  async getTimeseries() {
+    return this.request<{
+      sessions: { day: string; count: number }[];
+      alerts: { day: string; count: number }[];
+      behaviors: { day: string; count: number }[];
+    }>("/reports/timeseries/");
+  }
+
+  exportSessionsCSV() {
+    // Returns a download URL with the current token; caller can <a href> it.
+    return `${this.baseURL}/reports/export/csv/`;
   }
 }
 
-// Create singleton instance
+export class ApiError extends Error {
+  constructor(public status: number, public payload: unknown) {
+    super(`API ${status}`);
+  }
+  detail(): string {
+    if (typeof this.payload === "string") return this.payload;
+    if (this.payload && typeof this.payload === "object") {
+      const p = this.payload as Record<string, unknown>;
+      if (typeof p.detail === "string") return p.detail;
+      if (typeof p.error === "string") return p.error;
+      return JSON.stringify(this.payload);
+    }
+    return String(this.payload);
+  }
+}
+
 export const apiClient = new ApiClient(API_BASE_URL);
 
-// Utility functions for exam taking
+// ---------------------------------------------------------------------------
+// WebSocket helper
+// ---------------------------------------------------------------------------
+
+export function buildMonitoringWsUrl(sessionId: string): string {
+  const base = API_BASE_URL.replace(/^http/, "ws").replace(/\/api\/?$/, "");
+  const token = tokenStore.access;
+  const q = token ? `?token=${encodeURIComponent(token)}` : "";
+  return `${base}/ws/monitoring/${sessionId}/${q}`;
+}
+
+export function buildAdminAlertsWsUrl(): string {
+  const base = API_BASE_URL.replace(/^http/, "ws").replace(/\/api\/?$/, "");
+  const token = tokenStore.access;
+  const q = token ? `?token=${encodeURIComponent(token)}` : "";
+  return `${base}/ws/monitoring/alerts/${q}`;
+}
+
+// ---------------------------------------------------------------------------
+// Legacy compatibility (old `examAPI` namespace expected by some pages)
+// ---------------------------------------------------------------------------
+
 export const examAPI = {
-  // Start a new exam session
-  startSession: async (examId: number): Promise<ExamSession> => {
+  startSession: (examId: number) => apiClient.startExamSession(examId),
+  submitSession: (sessionId: string, responses: ResponseData[], timeRemaining: number) =>
+    apiClient.submitExamSession(sessionId, {
+      responses,
+      time_remaining: timeRemaining,
+    }),
+  getSession: (sessionId: string) => apiClient.getSession(sessionId),
+  sendMonitoringFrame: async (image: string, sessionId: string) => {
     try {
-      return await apiClient.startExamSession(examId);
-    } catch (error) {
-      console.error('Failed to start exam session:', error);
-      throw error;
-    }
-  },
-
-  // Submit exam responses
-  submitSession: async (
-    sessionId: string,
-    responses: ResponseData[],
-    timeRemaining: number
-  ) => {
-    try {
-      return await apiClient.submitExamSession(sessionId, {
-        responses,
-        time_remaining: timeRemaining,
-      });
-    } catch (error) {
-      console.error('Failed to submit exam session:', error);
-      throw error;
-    }
-  },
-
-  // Get session details
-  getSession: async (sessionId: string): Promise<ExamSession> => {
-    try {
-      return await apiClient.getSession(sessionId);
-    } catch (error) {
-      console.error('Failed to get session:', error);
-      throw error;
-    }
-  },
-
-  // Send monitoring frame (for behavior analysis)
-  sendMonitoringFrame: async (imageData: string, sessionId: string) => {
-    try {
-      return await apiClient.sendFrame({
-        image: imageData,
-        session_id: sessionId,
-      });
-    } catch (error) {
-      console.error('Failed to send monitoring frame:', error);
+      return await apiClient.sendFrame({ image, session_id: sessionId });
+    } catch (e) {
+      console.warn("monitoring frame send failed", e);
     }
   },
 };

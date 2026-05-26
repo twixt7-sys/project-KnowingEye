@@ -8,10 +8,21 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from features.exams.models import Exam, Question
 from features.session.models import ExamSession, Response
+
+
+def models_q_in_exams_or_users(exam_ids, user_ids):
+    """Build a Q for sessions belonging to any seeded exam or user."""
+    q = Q(pk__in=[])
+    if exam_ids:
+        q |= Q(exam_id__in=exam_ids)
+    if user_ids:
+        q |= Q(user_id__in=user_ids)
+    return q
 
 
 class Command(BaseCommand):
@@ -184,6 +195,17 @@ class Command(BaseCommand):
                     'passed': self.parse_bool(row['passed']),
                 }
                 session_id = UUID(row['id'])
+
+                # Resolve any pre-existing conflicting in-progress session that
+                # would trip the (exam, user, status='in_progress') unique
+                # constraint when this row is inserted/updated.
+                if defaults.get('status') == 'in_progress':
+                    ExamSession.objects.filter(
+                        exam_id=defaults['exam_id'],
+                        user_id=defaults['user_id'],
+                        status='in_progress',
+                    ).exclude(id=session_id).update(status='abandoned')
+
                 session, created = ExamSession.objects.get_or_create(
                     id=session_id,
                     defaults=defaults,
@@ -236,16 +258,22 @@ class Command(BaseCommand):
         data_dir = self.get_data_dir()
         self.stdout.write('Removing seeded CSV test data...')
 
-        response_ids = self.read_csv_ids(data_dir / 'responses.csv', id_field='id', cls=int)
-        session_ids = self.read_csv_ids(data_dir / 'exam_sessions.csv', id_field='id', cls=UUID)
         question_ids = self.read_csv_ids(data_dir / 'questions.csv', id_field='id', cls=int)
         exam_ids = self.read_csv_ids(data_dir / 'exams.csv', id_field='id', cls=int)
         user_ids = self.read_csv_ids(data_dir / 'users.csv', id_field='id', cls=int)
 
-        if response_ids:
-            Response.objects.filter(id__in=response_ids).delete()
-        if session_ids:
-            ExamSession.objects.filter(id__in=session_ids).delete()
+        # Cascade: drop every session that references a seed exam or seed user,
+        # not just the ones present in the CSV. This is needed because dev work
+        # often creates extra sessions which would otherwise block exam deletion
+        # (Exam -> ExamSession is PROTECT).
+        sessions = ExamSession.objects.filter(
+            models_q_in_exams_or_users(exam_ids, user_ids)
+        )
+        deleted_sessions = sessions.count()
+        sessions.delete()
+        if deleted_sessions:
+            self.stdout.write(f'Deleted {deleted_sessions} session(s).')
+
         if question_ids:
             Question.objects.filter(id__in=question_ids).delete()
         if exam_ids:

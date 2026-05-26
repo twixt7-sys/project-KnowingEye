@@ -60,3 +60,27 @@ class MonitoringAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "ok")
         self.assertIn("analysis", response.data)
+
+    def test_receive_frame_rejects_other_examinee(self):
+        other = User.objects.create_user(
+            username="other_student",
+            email="other@test.local",
+            password="TestPass123!",
+            role=User.Role.EXAMINEE,
+        )
+        self.client.force_authenticate(user=other)
+        response = self.client.post(
+            "/api/monitoring/frame/",
+            {"image": _tiny_jpeg_b64(), "session_id": str(self.session.id)},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_enroll_reference_endpoint(self):
+        response = self.client.post(
+            "/api/monitoring/enroll/",
+            {"image": _tiny_jpeg_b64(), "session_id": str(self.session.id)},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("pipeline_mode", response.data)

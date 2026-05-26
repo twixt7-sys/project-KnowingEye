@@ -115,7 +115,6 @@ Example: process a labeled video and compare predicted `events` to ground-truth 
 ## Integration with main Django backend
 
 After training:
-
 1. Copy `best.pt` into main repo `ai/models/`.
 2. Import `BehaviorPipeline` from this package (or vendor the `knowing_eye/` folder into `backend/ai/`).
 3. In monitoring service: decode frame → `pipeline.analyze_frame()` → persist `behavior_logs` + `alerts`.

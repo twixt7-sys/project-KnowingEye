@@ -38,34 +38,39 @@ export function Login() {
 
     try {
       const role = userType === "admin" ? "ADMIN" : "EXAMINEE";
+      const goHome = (signedInRole: "ADMIN" | "EXAMINEE") => {
+        if (from !== "/" && from !== "/login") {
+          navigate(from, { replace: true });
+        } else if (signedInRole === "ADMIN") {
+          navigate("/dashboard", { replace: true });
+        } else {
+          navigate("/student/dashboard", { replace: true });
+        }
+      };
+
       if (isLogin) {
-        // Login with selected account type hint for client-side role resolution
-        await login(formData.username, formData.password);
-        navigate(from, { replace: true });
+        const user = await login(formData.username, formData.password);
+        goHome(user.role);
       } else {
-        // Registration with selected account type
         if (formData.password !== formData.confirmPassword) {
           setError("Passwords do not match");
           return;
         }
-
-        if (formData.password.length < 6) {
-          setError("Password must be at least 6 characters long");
+        if (formData.password.length < 8) {
+          setError("Password must be at least 8 characters long");
           return;
         }
-
-        await register({
+        const user = await register({
           username: formData.username,
           email: formData.email,
           password: formData.password,
           password2: formData.confirmPassword,
           role,
         });
-
-        navigate(from, { replace: true });
+        goHome(user.role);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
+    } catch (err: any) {
+      setError(err?.detail?.() ?? err?.message ?? "An error occurred");
     } finally {
       setIsSubmitting(false);
     }

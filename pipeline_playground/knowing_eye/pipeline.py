@@ -44,6 +44,10 @@ class BehaviorPipeline:
         self._scorer = BehaviorScorer(self.config)
         self._frame_index = 0
 
+    @property
+    def enrolled(self) -> bool:
+        return bool(getattr(self._identity, "enrolled", False))
+
     def enroll_reference(self, frame_bgr: np.ndarray) -> bool:
         frame = resize_frame(frame_bgr)
         faces = self._face.detect(frame)

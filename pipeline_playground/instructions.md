@@ -1,15 +1,51 @@
-# Knowing Eye — Startup Instructions
+# Knowing Eye — Pipeline playground startup
 
-This guide gets the **web monitoring dashboard** and API running on your Windows machine.
+This module is the **computer-vision pipeline** that powers behavior monitoring
+for the Knowing Eye platform. Two usage modes are supported:
 
-## What you need first
+| Mode | Use when |
+|------|----------|
+| **Integrated (recommended)** | You're running the full Django + React stack — the backend imports this package automatically through `backend/ai/adapter.py`. Nothing else to do. |
+| **Standalone playground**    | You want to iterate on CV thresholds, train YOLO, or test webcam analysis in isolation. Boots a tiny FastAPI server with a live dashboard. |
 
-| Requirement | Notes |
-|-------------|--------|
-| **Windows 10/11** | Tested on PowerShell |
-| **Python 3.10+** | [python.org/downloads](https://www.python.org/downloads/) — check **“Add python.exe to PATH”** during install |
-| **Webcam** (optional) | Only needed for live monitoring in the browser |
-| **~2 GB disk** | Virtual environment + ML dependencies (YOLO may download weights on first run) |
+---
+
+## Mode A — integrated (default)
+
+When the main stack starts (`start-dev.cmd` at the repo root), the Django
+backend imports `knowing_eye.pipeline.BehaviorPipeline` from this folder. If
+the heavy ML dependencies aren't installed the adapter degrades gracefully to
+a deterministic stub and the rest of the system keeps working.
+
+### Activate the full ML pipeline
+
+```powershell
+cd backend
+.\venv\Scripts\Activate.ps1
+pip install mediapipe ultralytics PyYAML
+# optional facial identity verification (needs Visual C++ build tools)
+pip install -r ..\pipeline_playground\requirements-identity.txt
+```
+
+The pipeline mode reported by `GET /api/monitoring/health/` will flip from
+`stub` → `playground` after the next backend restart. Tune thresholds in
+`pipeline_playground/config/pipeline.yaml`.
+
+---
+
+## Mode B — standalone playground
+
+Useful for offline CV iteration. Brings up a FastAPI server with a live
+webcam dashboard at <http://127.0.0.1:8090>.
+
+### Prerequisites
+
+| Requirement      | Notes                                                                                  |
+|------------------|----------------------------------------------------------------------------------------|
+| **Windows 10/11**| Tested in PowerShell                                                                   |
+| **Python 3.10+** | Tick "Add python.exe to PATH" during install                                           |
+| **Webcam**       | Needed for the live dashboard; image/video scripts work without one                    |
+| **~2 GB disk**   | Virtual environment + ML deps; YOLO downloads weights on first run                     |
 
 Verify Python:
 
@@ -17,100 +53,55 @@ Verify Python:
 python --version
 ```
 
-You should see something like `Python 3.12.x`.
-
----
-
-## Quick start (recommended)
-
-1. Open **PowerShell** or **Windows Terminal**.
-2. Go to the project folder:
-
-   ```powershell
-   cd C:\Users\Twixt\Desktop\knowing-eye-pipeline
-   ```
-
-3. Start the app (**note the `.\` prefix** — required in PowerShell):
-
-   ```powershell
-   .\start.ps1
-   ```
-
-4. Wait until you see **“Application startup complete”** (first launch can take 30–90 seconds while models load).
-5. Open in your browser: **http://127.0.0.1:8090**
-6. Stop the server with **Ctrl+C** in the terminal.
-
-### Alternative: double-click or Command Prompt
-
-- **Double-click** `start.cmd` in File Explorer, or
-- From **cmd.exe**:
-
-  ```cmd
-  cd C:\Users\Twixt\Desktop\knowing-eye-pipeline
-  start.cmd
-  ```
-
-`start.cmd` runs `start.ps1` with the correct path and execution policy.
-
----
-
-## Why `start.ps1` alone does not work
-
-In PowerShell, typing:
+### Quick start
 
 ```powershell
-start.ps1
-```
-
-fails with *“The term 'start.ps1' is not recognized”* even when you are in the project folder.
-
-PowerShell does **not** run scripts from the current directory unless you prefix them:
-
-```powershell
+cd pipeline_playground
 .\start.ps1
 ```
 
-Use `.\` (backslash-dot), not just the filename.
+Wait for `Application startup complete` (30–90 s the first time while YOLO and
+MediaPipe initialize), then open <http://127.0.0.1:8090>. Stop with `Ctrl+C`.
 
----
+Or **double-click `start.cmd`** in File Explorer.
 
-## First-time manual setup (optional)
-
-If you prefer to set things up yourself instead of using `start.ps1`:
+### Manual setup (alternative)
 
 ```powershell
-cd C:\Users\Twixt\Desktop\knowing-eye-pipeline
+cd pipeline_playground
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 python -m uvicorn api.main:app --host 127.0.0.1 --port 8090
 ```
 
-Then open **http://127.0.0.1:8090**.
+### Why `start.ps1` alone won't work
+
+PowerShell doesn't execute scripts from the current directory unless you
+prefix them. Use:
+
+```powershell
+.\start.ps1   # backslash-dot
+```
 
 ---
 
 ## Troubleshooting
 
-### “Running scripts is disabled on this system”
-
-Use one of these:
+### `Running scripts is disabled on this system`
 
 ```powershell
 .\start.cmd
-```
-
-or:
-
-```powershell
+# or:
 powershell -ExecutionPolicy Bypass -File .\start.ps1
 ```
 
-### `dlib` / `face-recognition` build error (Visual C++)
+### `dlib` / `face-recognition` build error
 
-**You can ignore this and still run the app.** Core deps no longer include `face-recognition`. `.\start.ps1` installs it only if possible; otherwise it continues with a yellow warning and `identity_match` stays empty.
-
-To enable identity matching later, install **Visual Studio Build Tools** with the **“Desktop development with C++”** workload, then:
+Ignore it — the core deps don't include `face-recognition`. The pipeline still
+runs; `identity_match` simply stays `null`. To enable identity matching later,
+install the [Visual Studio C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+and then:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -118,39 +109,28 @@ pip install cmake
 pip install -r requirements-identity.txt
 ```
 
-Or install [Build Tools for Visual Studio](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (free), restart the terminal, and run `pip install -r requirements-identity.txt` again.
-
 ### Port 8090 already in use
 
-Another terminal may still be running the server. Either:
+```powershell
+netstat -ano | findstr :8090
+taskkill /PID <pid> /F
+```
 
-- Use the existing server: open **http://127.0.0.1:8090**, or
-- Find and stop the process:
+### Browser shows nothing
 
-  ```powershell
-  netstat -ano | findstr :8090
-  taskkill /PID <pid_from_last_column> /F
-  ```
-
-Then run `.\start.ps1` again.
-
-### Browser shows nothing / “connection refused”
-
-- Confirm the terminal still shows the server running (no traceback).
-- Wait for startup to finish after the first run (MediaPipe / YOLO initialization).
-- Check health: in PowerShell,
+* Confirm the terminal still shows the server running.
+* Wait for startup — first launch downloads YOLO weights.
+* Health check:
 
   ```powershell
   Invoke-RestMethod http://127.0.0.1:8090/health
   ```
 
-  Expected: `status: ok`.
+### Webcam not working
 
-### Webcam not working in the dashboard
-
-- Allow camera access when the browser prompts.
-- Use **Chrome** or **Edge** (recommended).
-- Close other apps using the camera (Zoom, Teams, etc.).
+* Allow camera access in the browser prompt.
+* Use Chrome or Edge.
+* Close other apps using the camera (Zoom, Teams, Discord).
 
 ---
 
@@ -160,19 +140,20 @@ Then run `.\start.ps1` again.
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-python scripts/run_webcam.py --session-id demo-001
+python scripts\run_webcam.py --session-id demo-001
 ```
 
 Press **Q** to quit.
 
-### Analyze a single image
+### Analyze a single image or video
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-python scripts/analyze_image.py path\to\photo.jpg --session-id test-1
+python scripts\analyze_image.py path\to\photo.jpg --session-id test-1
+python scripts\analyze_image.py path\to\clip.mp4 --every-n 10 --reference enroll.jpg
 ```
 
-### Run tests
+### Tests
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -184,11 +165,12 @@ pytest tests/ -q
 
 ## What `start.ps1` does
 
-1. Changes to the project directory.
+1. `cd` into this folder.
 2. Creates `.venv` if missing.
-3. Installs packages from `requirements.txt`.
-4. Starts **Uvicorn** serving `api.main:app` on **http://127.0.0.1:8090**.
+3. Installs `requirements.txt`.
+4. Launches Uvicorn serving `api.main:app` on <http://127.0.0.1:8090>.
 
-The dashboard lives at `/`; API health is at `/health`.
+The dashboard lives at `/`; health is at `/health`.
 
-For architecture, API contracts, and integration with the main Django app, see **README.md**.
+For architecture, API contracts, and integration with the Django app, see the
+top-level [README.md](../README.md) and [docs/deployment.md](../docs/deployment.md).

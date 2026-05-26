@@ -11,19 +11,22 @@ export function Header() {
   const navigate = useNavigate();
   const { user, logout, isAuthenticated, isAdmin, isExaminee } = useAuth();
 
-  const navItems = [
+  const navItems: { name: string; path: string }[] = [
     { name: "Home", path: "/" },
     { name: "Features", path: "/features" },
     { name: "About", path: "/about" },
   ];
 
-  // Add role-specific navigation
   if (isAuthenticated) {
     if (isAdmin) {
       navItems.push({ name: "Dashboard", path: "/dashboard" });
+      navItems.push({ name: "Reports", path: "/reports" });
+      navItems.push({ name: "Monitoring", path: "/monitoring" });
+      navItems.push({ name: "Users", path: "/users" });
     } else if (isExaminee) {
       navItems.push({ name: "Dashboard", path: "/student/dashboard" });
     }
+    navItems.push({ name: "Profile", path: "/profile" });
   }
 
   const isActive = (path: string) => location.pathname === path;

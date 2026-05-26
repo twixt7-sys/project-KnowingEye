@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "knowing-eye-pipeline"
+version = "0.1.0"
+description = "Knowing Eye computer-vision pipeline (face / pose / object / behavior scoring)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Knowing Eye Capstone Group" },
+]
+dependencies = [
+  "opencv-python>=4.9",
+  "numpy>=1.26",
+  "PyYAML>=6.0",
+  "pillow>=10.0",
+]
+
+[project.optional-dependencies]
+ml = [
+  "mediapipe>=0.10.14",
+  "ultralytics>=8.3.0",
+]
+api = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "python-multipart>=0.0.12",
+  "pydantic>=2.9",
+]
+identity = [
+  "face-recognition>=1.3.0",
+  "dlib>=19.24",
+]
+
+[tool.setuptools]
+packages = ["knowing_eye", "knowing_eye.preprocessing", "knowing_eye.detection", "knowing_eye.recognition", "knowing_eye.behavior"]
+
+[tool.setuptools.package-data]
+knowing_eye = ["../config/pipeline.yaml"]
