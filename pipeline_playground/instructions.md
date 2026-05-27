@@ -174,3 +174,7 @@ The dashboard lives at `/`; health is at `/health`.
 
 For architecture, API contracts, and integration with the Django app, see the
 top-level [README.md](../README.md) and [docs/deployment.md](../docs/deployment.md).
+
+
+backend:
+.\venv\Scripts\python.exe -m daphne -b 127.0.0.1 -p 8000 core.config.asgi:application
