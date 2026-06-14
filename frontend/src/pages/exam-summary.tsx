@@ -152,7 +152,7 @@ export function ExamSummary() {
         {/* Header */}
         <div className="mb-8">
           <Link
-            to="/dashboard"
+            to="/examiner"
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -176,7 +176,7 @@ export function ExamSummary() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="p-6 rounded-xl border border-border bg-card">
             <div className="flex items-center gap-4 mb-2">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center">
                 <Users className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -211,7 +211,7 @@ export function ExamSummary() {
 
           <div className="p-6 rounded-xl border border-border bg-card">
             <div className="flex items-center gap-4 mb-2">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                 <Activity className="w-6 h-6 text-white" />
               </div>
               <div>

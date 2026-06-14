@@ -107,14 +107,8 @@ def enroll_reference_view(request):
     if frame is None:
         return Response({"error": "invalid image"}, status=status.HTTP_400_BAD_REQUEST)
 
-    ok = _enroll_reference(frame)
-    return Response(
-        {
-            "ok": bool(ok),
-            "pipeline_mode": get_pipeline_mode(),
-            "session_id": str(session_id),
-        }
-    )
+    result = _enroll_reference(frame, session=session)
+    return Response({**result, "session_id": str(session_id)})
 
 
 @api_view(["GET"])

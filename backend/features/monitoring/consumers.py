@@ -138,8 +138,8 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
             await self.send_json({"type": "enroll_result", "ok": False, "message": "invalid image"})
             return
 
-        ok = await database_sync_to_async(enroll_reference)(frame)
-        await self.send_json({"type": "enroll_result", "ok": bool(ok)})
+        result = await database_sync_to_async(enroll_reference)(frame, self._session)
+        await self.send_json({"type": "enroll_result", **result})
 
     async def alert_broadcast(self, event: dict[str, Any]) -> None:
         await self.send_json({"type": "alert", "payload": event.get("payload", {})})

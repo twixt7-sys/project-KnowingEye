@@ -4,32 +4,37 @@ import { Menu, X, User, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../../../core/providers/auth-provider";
+import { brand } from "../../../core/config/brand";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout, isAuthenticated, isAdmin, isExaminee } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin } = useAuth();
 
   const navItems: { name: string; path: string }[] = [
     { name: "Home", path: "/" },
+    { name: "Examiner", path: "/examiner" },
+    { name: "Examinee", path: "/examinee" },
     { name: "Features", path: "/features" },
     { name: "About", path: "/about" },
   ];
 
   if (isAuthenticated) {
     if (isAdmin) {
-      navItems.push({ name: "Dashboard", path: "/dashboard" });
-      navItems.push({ name: "Reports", path: "/reports" });
       navItems.push({ name: "Monitoring", path: "/monitoring" });
+      navItems.push({ name: "Reports", path: "/reports" });
       navItems.push({ name: "Users", path: "/users" });
-    } else if (isExaminee) {
-      navItems.push({ name: "Dashboard", path: "/student/dashboard" });
     }
     navItems.push({ name: "Profile", path: "/profile" });
   }
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path === "/examiner" || path === "/examinee") {
+      return location.pathname === path || location.pathname.startsWith(`${path}/`);
+    }
+    return location.pathname === path;
+  };
 
   const handleLogout = () => {
     logout();
@@ -45,7 +50,7 @@ export function Header() {
           <Link to="/" className="flex items-center gap-3">
             <Logo className="w-8 h-8 text-primary" />
             <span className="text-xl font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Knowing Eye
+              {brand.appName}
             </span>
           </Link>
 

@@ -1,88 +1,97 @@
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Knowing Eye theme tokens.
+ * Palette: academic green for an educational-institution feel.
+ * Every color below is consumed through @theme inline -> Tailwind utilities
+ * (bg-primary, text-secondary, from-primary, etc.), so adjusting a value here
+ * restyles the whole application. To rebrand to a different color, change the
+ * --primary / --secondary / --accent / --ring values in both :root and .dark.
+ */
 :root {
   --font-size: 16px;
-  --background: rgb(255, 255, 255);
-  --grid-bg: rgb(246, 252, 255);
-  --foreground: #1a1a2e;
+  --background: #ffffff;
+  --grid-bg: #f3faf5;
+  --foreground: #14241b;
   --card: #ffffff;
-  --card-foreground: #1a1a2e;
+  --card-foreground: #14241b;
   --popover: #ffffff;
-  --popover-foreground: #1a1a2e;
-  --primary: #5b6fe8;
+  --popover-foreground: #14241b;
+  --primary: #15803d;
   --primary-foreground: #ffffff;
-  --secondary: #8b5cf6;
+  --secondary: #0d9488;
   --secondary-foreground: #ffffff;
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
-  --accent: #e0e7ff;
-  --accent-foreground: #4338ca;
-  --destructive: #ef4444;
+  --muted: #eef4f0;
+  --muted-foreground: #5b6b62;
+  --accent: #dcfce7;
+  --accent-foreground: #166534;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: #e5e7eb;
-  --input-background: #f9fafb;
-  --switch-background: #d1d5db;
+  --border: #dde7e1;
+  --input: #dde7e1;
+  --input-background: #f6faf7;
+  --switch-background: #c4d3cb;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #5b6fe8;
-  --chart-1: #5b6fe8;
-  --chart-2: #8b5cf6;
-  --chart-3: #a78bfa;
-  --chart-4: #c4b5fd;
-  --chart-5: #ddd6fe;
+  --ring: #15803d;
+  --chart-1: #15803d;
+  --chart-2: #0d9488;
+  --chart-3: #22c55e;
+  --chart-4: #65a30d;
+  --chart-5: #14b8a6;
   --radius: 0.75rem;
-  --sidebar: #fafafa;
-  --sidebar-foreground: #1a1a2e;
-  --sidebar-primary: #5b6fe8;
+  --sidebar: #f6faf7;
+  --sidebar-foreground: #14241b;
+  --sidebar-primary: #15803d;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f3f4f6;
-  --sidebar-accent-foreground: #1a1a2e;
-  --sidebar-border: #e5e7eb;
-  --sidebar-ring: #5b6fe8;
-  --grid-line-color: rgba(30, 144, 255, 0.2);
-  --grid-radial-gradient: radial-gradient(circle at 20% 50%, rgba(30, 144, 255, 0.02) 0%, transparent 50%);
-  --soft-light: rgba(30, 161, 255, 0.15);
+  --sidebar-accent: #dcfce7;
+  --sidebar-accent-foreground: #166534;
+  --sidebar-border: #dde7e1;
+  --sidebar-ring: #15803d;
+  --grid-line-color: rgba(21, 128, 61, 0.12);
+  --grid-radial-gradient: radial-gradient(circle at 20% 50%, rgba(21, 128, 61, 0.04) 0%, transparent 50%);
+  --soft-light: rgba(34, 197, 94, 0.12);
 }
 
 .dark {
-  --background: #0f0f1e;
-  --grid-bg: #0f0f1e;
-  --foreground: #e5e7eb;
-  --card: #1a1a2e;
-  --card-foreground: #e5e7eb;
-  --popover: #1a1a2e;
-  --popover-foreground: #e5e7eb;
-  --primary: #6d7ff5;
-  --primary-foreground: #ffffff;
-  --secondary: #9b6fff;
-  --secondary-foreground: #ffffff;
-  --muted: #2a2a3e;
-  --muted-foreground: #9ca3af;
-  --accent: #2d2d4a;
-  --accent-foreground: #a5b4fc;
+  --background: #0a1710;
+  --grid-bg: #0a1710;
+  --foreground: #e7f0ea;
+  --card: #11241a;
+  --card-foreground: #e7f0ea;
+  --popover: #11241a;
+  --popover-foreground: #e7f0ea;
+  --primary: #22c55e;
+  --primary-foreground: #052e16;
+  --secondary: #2dd4bf;
+  --secondary-foreground: #042f2e;
+  --muted: #16301f;
+  --muted-foreground: #9fb3a8;
+  --accent: #163a28;
+  --accent-foreground: #86efac;
   --destructive: #f87171;
   --destructive-foreground: #ffffff;
-  --border: #2a2a3e;
-  --input: #2a2a3e;
-  --ring: #6d7ff5;
-  --chart-1: #6d7ff5;
-  --chart-2: #9b6fff;
-  --chart-3: #a78bfa;
-  --chart-4: #c4b5fd;
-  --chart-5: #ddd6fe;
-  --sidebar: #1a1a2e;
-  --sidebar-foreground: #e5e7eb;
-  --sidebar-primary: #6d7ff5;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #2a2a3e;
-  --sidebar-accent-foreground: #e5e7eb;
-  --sidebar-border: #2a2a3e;
-  --sidebar-ring: #6d7ff5;
-  --grid-line-color: rgba(30, 144, 255, 0.08);
-  --grid-line-color: rgba(30, 144, 255, 0.08);
-  --grid-radial-gradient: radial-gradient(circle at 20% 50%, rgba(30, 144, 255, 0.06) 0%, transparent 50%);
-  --soft-light: rgba(168, 213, 255, 0.1)
+  --border: #1f3a2a;
+  --input: #1f3a2a;
+  --input-background: #11241a;
+  --switch-background: #2a4636;
+  --ring: #22c55e;
+  --chart-1: #22c55e;
+  --chart-2: #2dd4bf;
+  --chart-3: #4ade80;
+  --chart-4: #a3e635;
+  --chart-5: #5eead4;
+  --sidebar: #11241a;
+  --sidebar-foreground: #e7f0ea;
+  --sidebar-primary: #22c55e;
+  --sidebar-primary-foreground: #052e16;
+  --sidebar-accent: #163a28;
+  --sidebar-accent-foreground: #86efac;
+  --sidebar-border: #1f3a2a;
+  --sidebar-ring: #22c55e;
+  --grid-line-color: rgba(34, 197, 94, 0.08);
+  --grid-radial-gradient: radial-gradient(circle at 20% 50%, rgba(34, 197, 94, 0.06) 0%, transparent 50%);
+  --soft-light: rgba(45, 212, 191, 0.10);
 }
 
 @theme inline {
@@ -317,9 +326,9 @@
 
 .particle {
   position: absolute;
-  background: radial-gradient(circle, rgba(255, 211, 105, 0.8), rgba(255, 211, 105, 0.1));
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.8), rgba(34, 197, 94, 0.1));
   border-radius: 50%;
-  box-shadow: 0 0 10px rgba(255, 211, 105, 0.6);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
   animation: float 1s ease-in-out forwards;
 }
 

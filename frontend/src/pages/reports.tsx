@@ -23,7 +23,7 @@ import {
   type SessionReportRow,
 } from "../core/config/api";
 
-const PIE_COLORS = ["#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#ef4444"];
+const PIE_COLORS = ["#15803d", "#0d9488", "#22c55e", "#84cc16", "#14b8a6", "#f59e0b"];
 
 export function Reports() {
   const [summary, setSummary] = useState<ReportSummary | null>(null);
@@ -150,7 +150,7 @@ export function Reports() {
                   <YAxis fontSize={11} />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="sessions" stroke="#8b5cf6" strokeWidth={2} />
+                  <Line type="monotone" dataKey="sessions" stroke="#15803d" strokeWidth={2} />
                   <Line type="monotone" dataKey="alerts" stroke="#ef4444" strokeWidth={2} />
                   <Line type="monotone" dataKey="behaviors" stroke="#f59e0b" strokeWidth={2} />
                 </LineChart>
@@ -191,7 +191,7 @@ export function Reports() {
                 <XAxis dataKey="severity" fontSize={11} />
                 <YAxis fontSize={11} />
                 <Tooltip />
-                <Bar dataKey="count" fill="#8b5cf6" />
+                <Bar dataKey="count" fill="#15803d" />
               </BarChart>
             </ResponsiveContainer>
           </div>

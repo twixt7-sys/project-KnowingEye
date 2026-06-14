@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   Camera,
@@ -6,11 +6,43 @@ import {
   Clock,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Flag,
   Loader2,
+  ScanFace,
+  UserCheck,
+  Eye,
+  PersonStanding,
+  Smartphone,
+  type LucideIcon,
 } from "lucide-react";
-import { examAPI, type ExamSession, type ResponseData } from "../core/config/api";
+import {
+  examAPI,
+  type ExamSession,
+  type ResponseData,
+  type FrameMetrics,
+} from "../core/config/api";
 import { useMonitoring } from "../shared/hooks/use-monitoring";
+
+/**
+ * Behavioral parameters detected on the examinee side, mapped to the study
+ * objectives (Objective 3: real-time CV analysis; Objective 4: deep learning).
+ *  - metricKey: numeric value field on FrameMetrics
+ *  - flagKey:   matching entry inside metrics.flagged_metrics
+ */
+const DETECTION_PARAMS: {
+  metricKey: keyof FrameMetrics;
+  flagKey: string;
+  label: string;
+  icon: LucideIcon;
+}[] = [
+  { metricKey: "face_presence_pct", flagKey: "face_presence", label: "Face presence", icon: ScanFace },
+  { metricKey: "identity_match_pct", flagKey: "identity", label: "Identity match", icon: UserCheck },
+  { metricKey: "gaze_focus_pct", flagKey: "gaze_focus", label: "Eye gaze focus", icon: Eye },
+  { metricKey: "posture_compliance_pct", flagKey: "posture", label: "Posture", icon: PersonStanding },
+  { metricKey: "object_clear_pct", flagKey: "object_clear", label: "No prohibited objects", icon: Smartphone },
+];
 
 export function ExamTakingWithBackend() {
   const { examId } = useParams();
@@ -31,6 +63,11 @@ export function ExamTakingWithBackend() {
   );
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [behaviorAlerts, setBehaviorAlerts] = useState<string[]>([]);
+  const [feedOpen, setFeedOpen] = useState(true);
+  const [identityStatus, setIdentityStatus] = useState<
+    "pending" | "enrolling" | "enrolled" | "failed"
+  >("pending");
+  const identityEnrolledRef = useRef(false);
   const monitoring = useMonitoring({
     sessionId: session?.id,
     intervalMs: 3000,
@@ -113,6 +150,30 @@ export function ExamTakingWithBackend() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.id]);
 
+  // Identity enrollment: once the camera is live, capture a single reference
+  // frame for this session. Every later frame is then verified against it so
+  // the examinee's identity stays consistent (Objective 3.1 / 4.3).
+  useEffect(() => {
+    if (identityEnrolledRef.current) return;
+    if (!webcamActive) return;
+
+    let cancelled = false;
+    setIdentityStatus("enrolling");
+    // Small delay lets the webcam expose/auto-focus before we snapshot.
+    const timer = window.setTimeout(async () => {
+      const ok = await monitoring.enrollReference();
+      if (cancelled) return;
+      identityEnrolledRef.current = ok;
+      setIdentityStatus(ok ? "enrolled" : "failed");
+    }, 2500);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [webcamActive]);
+
   // Surface any alerts coming from the monitoring hook to the UI banner.
   useEffect(() => {
     if (!monitoring.alerts.length) return;
@@ -120,6 +181,13 @@ export function ExamTakingWithBackend() {
       monitoring.alerts.slice(0, 3).map((a) => a.message || "Compliance alert")
     );
   }, [monitoring.alerts]);
+
+  const retryEnroll = async () => {
+    setIdentityStatus("enrolling");
+    const ok = await monitoring.enrollReference();
+    identityEnrolledRef.current = ok;
+    setIdentityStatus(ok ? "enrolled" : "failed");
+  };
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -163,7 +231,7 @@ export function ExamTakingWithBackend() {
       );
 
       // Navigate to results page with session data
-      navigate(`/student/exam/${examId}/submitted`, {
+      navigate(`/examinee/exam/${examId}/submitted`, {
         state: { session: result.session, results: result.results }
       });
     } catch (err) {
@@ -186,13 +254,13 @@ export function ExamTakingWithBackend() {
 
       await examAPI.submitSession(session.id, responses, 0);
 
-      navigate(`/student/exam/${examId}/submitted`, {
+      navigate(`/examinee/exam/${examId}/submitted`, {
         state: { autoSubmitted: true }
       });
     } catch (err) {
       console.error('Auto-submit failed:', err);
       // Still navigate even if auto-submit fails
-      navigate(`/student/exam/${examId}/submitted`, {
+      navigate(`/examinee/exam/${examId}/submitted`, {
         state: { autoSubmitted: true, error: true }
       });
     }
@@ -217,7 +285,7 @@ export function ExamTakingWithBackend() {
           <h2 className="text-2xl font-semibold mb-2">Error Loading Exam</h2>
           <p className="text-muted-foreground mb-4">{error}</p>
           <button
-            onClick={() => navigate('/student/dashboard')}
+            onClick={() => navigate('/examinee')}
             className="px-6 py-2 bg-primary text-white rounded-lg hover:opacity-90"
           >
             Return to Dashboard
@@ -369,41 +437,6 @@ export function ExamTakingWithBackend() {
                 </button>
               </div>
             </div>
-
-            {/* Webcam feed */}
-            <div className="bg-card rounded-xl border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">Monitoring feed</h3>
-                <span className="text-xs text-muted-foreground">
-                  {monitoring.analysis
-                    ? `compliance ${monitoring.analysis.overall_compliance_pct.toFixed(0)}%`
-                    : "warming up…"}
-                </span>
-              </div>
-              <div className="aspect-video bg-black rounded-lg flex items-center justify-center relative overflow-hidden">
-                <video
-                  ref={monitoring.videoRef}
-                  className="w-full h-full object-cover"
-                  muted
-                  playsInline
-                />
-                {!webcamActive && (
-                  <Camera className="absolute w-16 h-16 text-muted-foreground" />
-                )}
-                <div
-                  className={`absolute top-3 left-3 px-3 py-1 text-xs rounded-full flex items-center gap-1.5 ${
-                    webcamActive ? "bg-red-500 text-white" : "bg-gray-700 text-gray-200"
-                  }`}
-                >
-                  <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                  {monitoring.status === "live"
-                    ? "Recording (WebSocket)"
-                    : monitoring.status === "fallback-rest"
-                    ? "Recording (REST)"
-                    : monitoring.status}
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Sidebar */}
@@ -457,6 +490,151 @@ export function ExamTakingWithBackend() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Floating monitoring feed with live detection parameters */}
+      <div className="fixed bottom-4 right-4 z-40 w-72 max-w-[calc(100vw-2rem)]">
+        <div className="bg-card/95 backdrop-blur border border-border rounded-xl shadow-xl shadow-black/20 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setFeedOpen((v) => !v)}
+            className="w-full flex items-center justify-between gap-2 px-4 py-3 hover:bg-accent/50 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <Camera className="w-4 h-4 text-primary" />
+              <span className="font-semibold text-sm">Monitoring feed</span>
+            </span>
+            <span className="flex items-center gap-2">
+              <span
+                className={`text-xs font-medium ${
+                  monitoring.analysis && monitoring.analysis.overall_compliance_pct < 80
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {monitoring.analysis
+                  ? `${monitoring.analysis.overall_compliance_pct.toFixed(0)}%`
+                  : "…"}
+              </span>
+              {feedOpen ? (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              )}
+            </span>
+          </button>
+
+          {feedOpen && (
+            <div className="px-3 pb-3 space-y-3 border-t border-border pt-3">
+              {/* Live camera */}
+              <div className="aspect-video bg-black rounded-lg relative overflow-hidden">
+                <video
+                  ref={monitoring.videoRef}
+                  className="w-full h-full object-cover"
+                  muted
+                  playsInline
+                />
+                {!webcamActive && (
+                  <Camera className="absolute inset-0 m-auto w-10 h-10 text-muted-foreground" />
+                )}
+                <div
+                  className={`absolute top-2 left-2 px-2 py-0.5 text-[10px] rounded-full flex items-center gap-1 ${
+                    webcamActive ? "bg-red-500 text-white" : "bg-gray-700 text-gray-200"
+                  }`}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                  {monitoring.status === "live"
+                    ? "Recording (WebSocket)"
+                    : monitoring.status === "fallback-rest"
+                    ? "Recording (REST)"
+                    : monitoring.status}
+                </div>
+              </div>
+
+              {/* Detection parameters (study objectives 3 & 4) */}
+              <div>
+                <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
+                  Detected parameters
+                </p>
+                <div className="space-y-2">
+                  {DETECTION_PARAMS.map((param) => {
+                    const metrics = monitoring.analysis?.metrics;
+                    const raw = metrics ? metrics[param.metricKey] : null;
+                    const value = typeof raw === "number" ? raw : null;
+                    const flagged = metrics?.flagged_metrics?.includes(param.flagKey);
+                    return (
+                      <div key={param.metricKey}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <param.icon className="w-3.5 h-3.5" />
+                            {param.label}
+                          </span>
+                          <span
+                            className={`font-medium ${
+                              flagged
+                                ? "text-red-600 dark:text-red-400"
+                                : value === null
+                                ? "text-muted-foreground"
+                                : "text-foreground"
+                            }`}
+                          >
+                            {value === null ? "n/a" : `${value.toFixed(0)}%`}
+                          </span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              flagged
+                                ? "bg-red-500"
+                                : "bg-gradient-to-r from-primary to-secondary"
+                            }`}
+                            style={{ width: `${value ?? 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-3 flex items-center gap-2 text-[11px]">
+                  <UserCheck
+                    className={`w-3.5 h-3.5 ${
+                      identityStatus === "enrolled"
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : identityStatus === "failed"
+                        ? "text-red-600 dark:text-red-400"
+                        : "text-muted-foreground"
+                    }`}
+                  />
+                  {identityStatus === "enrolling" && (
+                    <span className="text-muted-foreground">Enrolling reference face…</span>
+                  )}
+                  {identityStatus === "pending" && (
+                    <span className="text-muted-foreground">Waiting for camera…</span>
+                  )}
+                  {identityStatus === "enrolled" && (
+                    <span className="text-emerald-600 dark:text-emerald-400">
+                      Identity reference enrolled
+                    </span>
+                  )}
+                  {identityStatus === "failed" && (
+                    <>
+                      <span className="text-red-600 dark:text-red-400">
+                        No face captured
+                      </span>
+                      <button
+                        type="button"
+                        onClick={retryEnroll}
+                        className="ml-auto underline hover:no-underline text-muted-foreground"
+                      >
+                        Retry
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

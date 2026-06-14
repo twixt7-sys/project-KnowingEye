@@ -173,7 +173,7 @@ export function ExamTaking() {
   };
 
   const handleSubmit = () => {
-    navigate(`/student/exam/${examId}/submitted`);
+    navigate(`/examinee/exam/${examId}/submitted`);
   };
 
   const answeredCount = Object.keys(answers).length;

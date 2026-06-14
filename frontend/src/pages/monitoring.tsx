@@ -259,7 +259,7 @@ export function Monitoring() {
               )}
               {sessions.map((s) => (
                 <div key={s.id} className="p-5 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                     <Eye className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">

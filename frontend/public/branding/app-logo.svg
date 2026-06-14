@@ -1,0 +1,12 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Knowing Eye logo">
+  <defs>
+    <linearGradient id="ke-grad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#15803d"/>
+      <stop offset="1" stop-color="#0d9488"/>
+    </linearGradient>
+  </defs>
+  <path d="M50 25C30 25 15 40 5 50C15 60 30 75 50 75C70 75 85 60 95 50C85 40 70 25 50 25Z" fill="url(#ke-grad)" fill-opacity="0.12" stroke="url(#ke-grad)" stroke-width="3"/>
+  <circle cx="50" cy="50" r="15" fill="url(#ke-grad)" fill-opacity="0.25" stroke="url(#ke-grad)" stroke-width="3"/>
+  <circle cx="50" cy="50" r="8" fill="url(#ke-grad)"/>
+  <circle cx="54" cy="46" r="3" fill="#ffffff" fill-opacity="0.85"/>
+</svg>

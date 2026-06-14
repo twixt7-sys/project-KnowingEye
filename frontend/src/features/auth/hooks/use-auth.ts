@@ -1,19 +1,6 @@
-import { useState } from 'react';
-
-type AuthUser = {
-  id: number;
-  username: string;
-  role: 'ADMIN' | 'EXAMINEE';
-} | null;
-
-export function useAuth() {
-  const [user, setUser] = useState<AuthUser>(null);
-
-  return {
-    user,
-    login: async () => {
-      setUser({ id: 0, username: 'guest', role: 'EXAMINEE' });
-    },
-    logout: () => setUser(null),
-  };
-}
+/**
+ * Re-export the canonical auth hook. The single implementation lives in the
+ * app-wide AuthProvider so there is exactly one source of session truth.
+ */
+export { useAuth } from "../../../core/providers/auth-provider";
+export type { User } from "../../../core/providers/auth-provider";

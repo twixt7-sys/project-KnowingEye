@@ -14,6 +14,7 @@ class BehaviorLog(models.Model):
         LOOKING_AWAY = "looking_away", "Looking Away"
         BAD_POSTURE = "bad_posture", "Bad Posture"
         OBJECT_DETECTED = "object_detected", "Object Detected"
+        IDENTITY_MISMATCH = "identity_mismatch", "Identity Mismatch"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     session = models.ForeignKey(

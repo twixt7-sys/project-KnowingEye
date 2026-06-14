@@ -14,6 +14,7 @@ class BehaviorEventType(str, Enum):
     LOOKING_AWAY = "looking_away"
     BAD_POSTURE = "bad_posture"
     OBJECT_DETECTED = "object_detected"
+    IDENTITY_MISMATCH = "identity_mismatch"
 
 
 class AlertSeverity(str, Enum):

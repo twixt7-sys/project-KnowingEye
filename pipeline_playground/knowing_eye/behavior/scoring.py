@@ -118,6 +118,7 @@ class BehaviorScorer:
             etype: BehaviorEventType,
             pct: float,
             metadata: dict | None = None,
+            severity_override: str | None = None,
         ) -> None:
             if pct >= t:
                 return
@@ -131,7 +132,9 @@ class BehaviorScorer:
                     metadata={**(metadata or {}), "metric_pct": pct, "threshold_pct": t},
                 )
             )
-            sev = AlertSeverity(self._severity_map.get(etype.value, "medium"))
+            sev = AlertSeverity(
+                severity_override or self._severity_map.get(etype.value, "medium")
+            )
             alerts.append(
                 Alert(
                     type=etype.value,
@@ -171,6 +174,17 @@ class BehaviorScorer:
             {"objects": [o.label for o in objects]},
         )
 
+        # Identity is only scored once a reference has been enrolled for the
+        # session (otherwise identity_match_pct is None). A mismatch is a
+        # high-severity integrity signal.
+        if metrics.identity_match_pct is not None:
+            maybe_flag(
+                BehaviorEventType.IDENTITY_MISMATCH,
+                metrics.identity_match_pct,
+                {"identity_distance": face.identity_distance},
+                severity_override="high",
+            )
+
         return metrics, events, alerts
 
 
@@ -181,5 +195,8 @@ def _alert_message(etype: BehaviorEventType, pct: float) -> str:
         BehaviorEventType.LOOKING_AWAY: f"Gaze focus below threshold ({pct:.0f}%)",
         BehaviorEventType.BAD_POSTURE: f"Posture compliance below threshold ({pct:.0f}%)",
         BehaviorEventType.OBJECT_DETECTED: f"Clear frame score below threshold ({pct:.0f}%)",
+        BehaviorEventType.IDENTITY_MISMATCH: (
+            f"Identity match below threshold ({pct:.0f}%) — face differs from enrolled reference"
+        ),
     }
     return messages.get(etype, f"Metric below {pct:.0f}%")

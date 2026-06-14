@@ -1,4 +1,23 @@
+import { brand } from "../../../core/config/brand";
+
+/**
+ * App / product mark.
+ *
+ * By default this renders the built-in vector "eye" (which follows the green
+ * theme via `currentColor`). To use an image instead, set `useImageAppLogo: true`
+ * in `core/config/brand.ts` and drop your file at the configured path.
+ */
 export function Logo({ className = "w-10 h-10" }: { className?: string }) {
+  if (brand.useImageAppLogo) {
+    return (
+      <img
+        src={brand.appLogo}
+        alt={`${brand.appName} logo`}
+        className={`object-contain ${className}`}
+      />
+    );
+  }
+
   return (
     <svg
       className={className}
@@ -29,5 +48,21 @@ export function Logo({ className = "w-10 h-10" }: { className?: string }) {
       {/* Highlight */}
       <circle cx="55" cy="45" r="3" fill="white" fillOpacity="0.8" />
     </svg>
+  );
+}
+
+/**
+ * Institution / school logo placeholder.
+ *
+ * Swap the image by replacing `frontend/public/branding/institution-logo.svg`
+ * or updating `institutionLogo` in `core/config/brand.ts`.
+ */
+export function InstitutionLogo({ className = "w-10 h-10" }: { className?: string }) {
+  return (
+    <img
+      src={brand.institutionLogo}
+      alt={`${brand.institutionName} logo`}
+      className={`object-contain ${className}`}
+    />
   );
 }

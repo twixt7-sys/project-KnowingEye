@@ -200,3 +200,147 @@ django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: 'testserver'. Y
 2026-05-26 20:47:31,178 [WARNING] django.request: Bad Request: /api/sessions/start/
 2026-05-26 20:57:00,993 [WARNING] django.request: Bad Request: /api/sessions/start/
 2026-05-26 21:01:22,589 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 15:52:42,174 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-14 15:52:42,177 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-14 15:52:42,179 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-14 15:52:42,184 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-14 15:52:46,533 [INFO] knowing_eye.ai.adapter: Loaded pipeline_playground BehaviorPipeline.
+2026-06-14 15:55:27,835 [WARNING] django.request: Unauthorized: /api/auth/profile/me/
+2026-06-14 15:55:27,918 [WARNING] django.request: Unauthorized: /api/auth/token/refresh/
+2026-06-14 15:56:17,590 [WARNING] django.request: Unauthorized: /api/auth/token/
+2026-06-14 15:56:24,196 [WARNING] django.request: Unauthorized: /api/auth/token/
+2026-06-14 15:56:39,213 [WARNING] django.request: Bad Request: /api/auth/register/
+2026-06-14 15:57:47,514 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:14:56,625 [WARNING] django.request: Unauthorized: /api/auth/token/
+2026-06-14 16:15:22,640 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:15:25,405 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:19:24,333 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:19:31,458 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:21:45,268 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:29:06,146 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:33:41,015 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:33:45,763 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:33:51,369 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:33:55,488 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:34:04,065 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:34:11,785 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:34:26,809 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:34:33,145 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:34:38,498 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:34:45,379 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:34:59,598 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:35:10,700 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:35:20,825 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:35:32,995 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:35:40,324 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:35:47,953 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:47:06,659 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-14 16:58:04,091 [INFO] knowing_eye.ai.adapter: Loaded pipeline_playground BehaviorPipeline.
+2026-06-14 16:58:22,358 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-14 17:02:34,673 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-14 17:02:39,402 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-14 17:02:44,334 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-14 17:02:48,195 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-14 17:02:51,654 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-14 17:02:55,027 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-14 17:02:58,846 [INFO] knowing_eye.ai.adapter: Loaded pipeline_playground BehaviorPipeline.
+2026-06-14 17:03:13,293 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-14 17:05:57,888 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-14 17:06:02,418 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-14 17:06:06,152 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-14 17:06:10,722 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-14 17:06:14,725 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-14 17:06:18,540 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-14 17:06:24,860 [INFO] knowing_eye.ai.adapter: Loaded pipeline_playground BehaviorPipeline.
+2026-06-14 17:06:46,178 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-14 17:34:37,578 [ERROR] django.request: Internal Server Error: /api/exams/
+Traceback (most recent call last):
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\utils.py", line 101, in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: database is locked
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\asgiref\sync.py", line 557, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\asgiref\sync.py", line 557, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\core\handlers\base.py", line 254, in _get_response_async
+    response = await wrapped_callback(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\asgiref\sync.py", line 506, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\concurrent\futures\thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\asgiref\sync.py", line 561, in thread_handler
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\rest_framework\viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\rest_framework\mixins.py", line 19, in create
+    self.perform_create(serializer)
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\features\exams\views.py", line 72, in perform_create
+    serializer.save(created_by=self.request.user)
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 210, in save
+    self.instance = self.create(validated_data)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\rest_framework\serializers.py", line 1011, in create
+    instance = ModelClass._default_manager.create(**validated_data)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\models\query.py", line 669, in create
+    obj.save(force_insert=True, using=self.db)
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\models\base.py", line 874, in save
+    self.save_base(
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\models\base.py", line 966, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\models\base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\models\base.py", line 1220, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\models\query.py", line 1918, in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1935, in execute_sql
+    rows = self.connection.ops.fetch_returned_rows(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\backends\base\operations.py", line 378, in fetch_returned_rows
+    return cursor.fetchall()
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\utils.py", line 100, in inner
+    with self:
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\utils.py", line 94, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\django\db\utils.py", line 101, in inner
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.OperationalError: database is locked

@@ -124,7 +124,7 @@ export function Dashboard() {
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Admin Dashboard</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Examiner Dashboard</h1>
           <p className="text-muted-foreground">
             Manage examinations, monitor live sessions, and review behavioural analytics.
           </p>
@@ -149,7 +149,7 @@ export function Dashboard() {
             value={summary ? String(summary.behavior_events) : "—"}
             hint="From CV pipeline"
             icon={BarChart3}
-            color="from-violet-500 to-violet-600"
+            color="from-teal-500 to-teal-600"
           />
           <StatCard
             label="Unresolved alerts"
@@ -171,7 +171,7 @@ export function Dashboard() {
                 : "Across completed sessions"
             }
             icon={TrendingUp}
-            color="from-blue-500 to-blue-600"
+            color="from-green-600 to-green-700"
           />
         </div>
 
@@ -271,7 +271,7 @@ export function Dashboard() {
                 )}
                 {activeSessions.map((s) => (
                   <div key={s.id} className="p-4 flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                       <Users className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">

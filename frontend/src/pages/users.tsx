@@ -13,8 +13,8 @@ import { apiClient, type ProfileUser, type Role } from "../core/config/api";
 
 const ROLE_BADGE: Record<Role, string> = {
   ADMIN:
-    "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
-  EXAMINEE: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20",
+    "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+  EXAMINEE: "bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20",
 };
 
 export function UsersAdmin() {
@@ -153,7 +153,7 @@ export function UsersAdmin() {
                   <tr key={u.id} className="hover:bg-accent/30 transition-colors">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 flex items-center justify-center text-white text-xs font-semibold overflow-hidden">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xs font-semibold overflow-hidden">
                           {u.avatar_url ? (
                             <img
                               src={u.avatar_url}
@@ -262,9 +262,9 @@ function Stat({
   tone: "violet" | "indigo" | "sky" | "rose";
 }) {
   const tones: Record<typeof tone, string> = {
-    violet: "from-violet-500 to-fuchsia-600",
-    indigo: "from-indigo-500 to-blue-600",
-    sky: "from-sky-500 to-cyan-600",
+    violet: "from-green-600 to-green-700",
+    indigo: "from-emerald-500 to-emerald-600",
+    sky: "from-teal-500 to-teal-600",
     rose: "from-rose-500 to-orange-600",
   };
   return (

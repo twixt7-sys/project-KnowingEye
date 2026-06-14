@@ -58,22 +58,39 @@ class BehaviorPipeline:
     def enroll_reference_path(self, path: str | Path) -> bool:
         return self._identity.enroll_from_path(path)
 
+    def compute_embedding(self, frame_bgr: np.ndarray) -> list[float] | None:
+        """Detect the primary face and return its embedding (or ``None``).
+
+        Callers use this to enrol a reference that is then stored *per exam
+        session* and supplied back via ``reference_embedding``.
+        """
+        frame = resize_frame(frame_bgr)
+        faces = self._face.detect(frame)
+        if not faces:
+            return None
+        return self._identity.embed(frame, faces[0].bbox)
+
     def analyze_frame(
         self,
         frame_bgr: np.ndarray,
         session_id: str | None = None,
+        reference_embedding: list[float] | None = None,
     ) -> FrameAnalysisResult:
         frame = resize_frame(frame_bgr)
         faces = self._face.detect(frame)
         pose = self._pose.detect(frame)
         yolo_dets = self._yolo.detect(frame)
 
+        # Identity is verified against the reference enrolled for *this*
+        # session. We never silently auto-enrol: until a reference exists the
+        # identity metric stays unknown (None) rather than locking onto
+        # whoever happens to appear first.
         identity_match: bool | None = None
         identity_distance: float | None = None
-        if faces and self._identity.enrolled:
-            identity_match, identity_distance = self._identity.verify(frame, faces[0].bbox)
-        elif faces and not self._identity.enrolled:
-            self._identity.enroll_from_frame(frame, faces[0].bbox)
+        if faces and reference_embedding is not None:
+            identity_match, identity_distance = self._identity.verify_against(
+                frame, faces[0].bbox, reference_embedding
+            )
 
         face_analysis = self._scorer.build_face_analysis(faces, identity_match, identity_distance)
         posture_analysis = self._scorer.build_posture_analysis(pose)

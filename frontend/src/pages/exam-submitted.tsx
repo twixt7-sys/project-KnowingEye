@@ -63,14 +63,14 @@ export function ExamSubmitted() {
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
-                to={`/student/exam/${examId}/results`}
+                to={`/examinee/exam/${examId}/results`}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-medium hover:opacity-90 transition-opacity"
               >
                 <FileText className="w-5 h-5" />
                 View Results
               </Link>
               <Link
-                to="/student/dashboard"
+                to="/examinee"
                 className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-border hover:bg-accent transition-colors"
               >
                 <Home className="w-5 h-5" />

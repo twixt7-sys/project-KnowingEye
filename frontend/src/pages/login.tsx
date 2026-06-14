@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
-import { Logo } from "../shared/components/layout/logo";
+import { Logo, InstitutionLogo } from "../shared/components/layout/logo";
 import { Eye, EyeOff, User, Lock, AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "../core/providers/auth-provider";
+import { brand } from "../core/config/brand";
 
 export function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -42,9 +43,9 @@ export function Login() {
         if (from !== "/" && from !== "/login") {
           navigate(from, { replace: true });
         } else if (signedInRole === "ADMIN") {
-          navigate("/dashboard", { replace: true });
+          navigate("/examiner", { replace: true });
         } else {
-          navigate("/student/dashboard", { replace: true });
+          navigate("/examinee", { replace: true });
         }
       };
 
@@ -81,12 +82,18 @@ export function Login() {
       <div className="max-w-md w-full">
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
+          {/* App mark + institution logo placeholder.
+              Change both in core/config/brand.ts */}
+          <div className="flex items-center justify-center gap-4 mb-4">
             <Logo className="w-16 h-16 text-primary" />
+            <InstitutionLogo className="w-16 h-16 rounded-lg border border-border bg-card p-1" />
           </div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
-            Knowing Eye
+            {brand.appName}
           </h1>
+          <p className="text-sm text-muted-foreground mb-1">
+            {brand.institutionName}
+          </p>
           <p className="text-muted-foreground">
             {isLogin ? "Sign in to your account" : "Create your account"}
           </p>

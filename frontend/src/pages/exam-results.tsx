@@ -127,7 +127,7 @@ export function ExamResults() {
         {/* Header */}
         <div className="mb-8">
           <Link
-            to="/student/dashboard"
+            to="/examinee"
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -180,7 +180,7 @@ export function ExamResults() {
           <div className="p-6 rounded-xl border border-border bg-card">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-muted-foreground">Time Spent</span>
-              <Clock className="w-4 h-4 text-blue-500" />
+              <Clock className="w-4 h-4 text-primary" />
             </div>
             <div className="text-3xl font-bold mb-1">{examData.timeSpent}</div>
             <div className="text-xs text-muted-foreground">

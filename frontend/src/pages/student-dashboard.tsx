@@ -77,7 +77,7 @@ export function StudentDashboard() {
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Student Dashboard</h1>
+          <h1 className="text-3xl font-bold text-foreground">Examinee Dashboard</h1>
           <p className="text-muted-foreground mt-2">
             View available exams and your completed attempts
           </p>
@@ -174,7 +174,7 @@ export function StudentDashboard() {
                     )}
                   </div>
                   <Link
-                    to={`/student/exam/${exam.id}/results`}
+                    to={`/examinee/exam/${exam.id}/results`}
                     className="mt-4 inline-flex items-center gap-2 text-sm text-primary hover:underline"
                   >
                     <Eye className="h-4 w-4" />
@@ -217,7 +217,7 @@ export function StudentDashboard() {
                   Cancel
                 </button>
                 <Link
-                  to={`/student/exam/${selectedExam.id}`}
+                  to={`/examinee/exam/${selectedExam.id}`}
                   className="flex-1 py-2 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-center"
                   onClick={() => setShowExamInstructions(false)}
                 >

@@ -1,5 +1,6 @@
-import { Logo } from "./logo";
+import { Logo, InstitutionLogo } from "./logo";
 import { Link } from "react-router";
+import { brand } from "../../../core/config/brand";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -13,18 +14,23 @@ export function Footer() {
             <div className="flex items-center gap-3 mb-4">
               <Logo className="w-8 h-8 text-primary" />
               <span className="text-lg font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Knowing Eye
+                {brand.appName}
               </span>
             </div>
             <p className="text-sm text-muted-foreground max-w-md">
               A Web-Based Examination Platform with Behavior Monitoring Using
               Facial and Postural Analysis
             </p>
-            <p className="text-xs text-muted-foreground mt-4">
-              Legacy College of Compostela
-              <br />
-              Institute of Information Technology
-            </p>
+            {/* Institution logo placeholder. Swap the image in
+                public/branding/institution-logo.svg or core/config/brand.ts */}
+            <div className="flex items-center gap-3 mt-6">
+              <InstitutionLogo className="w-12 h-12 rounded-md border border-border bg-card p-1" />
+              <p className="text-xs text-muted-foreground">
+                {brand.institutionName}
+                <br />
+                {brand.institutionUnit}
+              </p>
+            </div>
           </div>
 
           {/* Quick Links */}
@@ -46,10 +52,18 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  to="/dashboard"
+                  to="/examiner"
                   className="hover:text-primary transition-colors"
                 >
-                  Dashboard
+                  Examiner
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/examinee"
+                  className="hover:text-primary transition-colors"
+                >
+                  Examinee
                 </Link>
               </li>
               <li>
@@ -82,7 +96,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-          <p>© {currentYear} Knowing Eye. All rights reserved.</p>
+          <p>© {currentYear} {brand.appName}. All rights reserved.</p>
           <p className="mt-2">
             Developed by Saturnino C. Ancog III, Khrisha Marie O. Cavan, Kervy
             N. Cadiente, and Twixt Jasley J. Tamera

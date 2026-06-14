@@ -33,10 +33,10 @@ export function ProtectedRoute({
   // If user is authenticated but trying to access wrong role route
   if (isAuthenticated && requiredRole) {
     if (requiredRole === 'ADMIN' && !isAdmin) {
-      return <Navigate to="/student/dashboard" replace />;
+      return <Navigate to="/examinee" replace />;
     }
     if (requiredRole === 'EXAMINEE' && !isExaminee) {
-      return <Navigate to="/dashboard" replace />;
+      return <Navigate to="/examiner" replace />;
     }
   }
 
