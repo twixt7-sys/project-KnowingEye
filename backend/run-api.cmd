@@ -1,7 +1,6 @@
 @echo off
 REM Run the Django backend with full ASGI (WebSockets enabled via Daphne).
 cd /d "%~dp0"
-set DB_ENGINE=django.db.backends.sqlite3
 set OPENBLAS_NUM_THREADS=1
 set OMP_NUM_THREADS=1
 set MKL_NUM_THREADS=1

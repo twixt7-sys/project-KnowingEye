@@ -255,6 +255,8 @@ class ExamDetailSerializer(serializers.ModelSerializer):
 class ExamCreateUpdateSerializer(serializers.ModelSerializer):
     """Serializer for creating and updating exams."""
 
+    max_attempts = serializers.IntegerField(required=False, default=1, min_value=1)
+
     class Meta:
         model = Exam
         fields = [
@@ -298,7 +300,15 @@ class ExamCreateUpdateSerializer(serializers.ModelSerializer):
         code = attrs.get("exam_code")
         if code == "":
             attrs["exam_code"] = None
+        if attrs.get("max_attempts") in (None, ""):
+            attrs["max_attempts"] = 1
         return attrs
+
+    def create(self, validated_data):
+        validated_data.setdefault("max_attempts", 1)
+        validated_data.setdefault("description", "")
+        validated_data.setdefault("instructions", "")
+        return super().create(validated_data)
 
 
 class QuestionImportSerializer(serializers.Serializer):

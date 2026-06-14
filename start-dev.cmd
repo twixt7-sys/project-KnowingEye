@@ -8,7 +8,6 @@ REM ---------------------------------------------------------------------------
 
 setlocal
 set "ROOT=%~dp0"
-set DB_ENGINE=django.db.backends.sqlite3
 set OPENBLAS_NUM_THREADS=1
 set OMP_NUM_THREADS=1
 set MKL_NUM_THREADS=1

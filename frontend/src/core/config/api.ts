@@ -264,21 +264,25 @@ class ApiClient {
     }
 
     if (!res.ok) {
-      let body: unknown;
+      const raw = await res.text();
+      let body: unknown = raw;
       try {
-        body = await res.json();
+        body = raw ? JSON.parse(raw) : null;
       } catch {
-        body = await res.text();
+        /* keep plain-text/HTML error body */
       }
-      const err = new ApiError(res.status, body);
-      throw err;
+      throw new ApiError(res.status, body);
     }
 
+    const raw = await res.text();
+    if (!raw) {
+      return undefined as T;
+    }
     const ctype = res.headers.get("content-type") ?? "";
     if (ctype.includes("application/json")) {
-      return (await res.json()) as T;
+      return JSON.parse(raw) as T;
     }
-    return (await res.text()) as unknown as T;
+    return raw as unknown as T;
   }
 
   // ----- Auth -----
