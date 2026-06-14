@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from django.utils import timezone
 
-from features.exams.serializers import ExamDetailSerializer
+from features.exams import services as exam_services
+from features.exams.serializers import ExamDetailSerializer, ExamTakeSerializer
 
 from .models import ExamSession, Response, SessionLog
 
@@ -59,11 +60,13 @@ class ExamSessionListSerializer(serializers.ModelSerializer):
 class ExamSessionDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for exam sessions."""
 
-    exam = ExamDetailSerializer(read_only=True)
-    exam_title = serializers.CharField(source='exam.title', read_only=True)
-    exam_duration_minutes = serializers.IntegerField(source='exam.duration_minutes', read_only=True)
-    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
-    user_email = serializers.CharField(source='user.email', read_only=True)
+    exam = serializers.SerializerMethodField()
+    exam_title = serializers.CharField(source="exam.title", read_only=True)
+    exam_duration_minutes = serializers.IntegerField(
+        source="exam.duration_minutes", read_only=True
+    )
+    user_name = serializers.CharField(source="user.get_full_name", read_only=True)
+    user_email = serializers.CharField(source="user.email", read_only=True)
     responses = ResponseSerializer(many=True, read_only=True)
     time_elapsed_seconds = serializers.SerializerMethodField()
     time_remaining_seconds = serializers.SerializerMethodField()
@@ -71,14 +74,40 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExamSession
         fields = [
-            'id', 'exam', 'exam_title', 'exam_duration_minutes', 'user', 'user_name', 'user_email',
-            'started_at', 'submitted_at', 'time_remaining', 'status', 'ip_address', 'user_agent',
-            'total_score', 'percentage_score', 'passed', 'responses',
-            'time_elapsed_seconds', 'time_remaining_seconds'
+            "id",
+            "exam",
+            "exam_title",
+            "exam_duration_minutes",
+            "user",
+            "user_name",
+            "user_email",
+            "started_at",
+            "submitted_at",
+            "time_remaining",
+            "status",
+            "ip_address",
+            "user_agent",
+            "total_score",
+            "percentage_score",
+            "passed",
+            "responses",
+            "time_elapsed_seconds",
+            "time_remaining_seconds",
         ]
         read_only_fields = [
-            'id', 'started_at', 'submitted_at', 'total_score', 'percentage_score', 'passed'
+            "id",
+            "started_at",
+            "submitted_at",
+            "total_score",
+            "percentage_score",
+            "passed",
         ]
+
+    def get_exam(self, obj):
+        request = self.context.get("request")
+        if request and getattr(request.user, "is_admin", lambda: False)():
+            return ExamDetailSerializer(obj.exam, context=self.context).data
+        return ExamTakeSerializer(obj.exam, context=self.context).data
 
     def get_time_elapsed_seconds(self, obj):
         return int(obj.time_elapsed)
@@ -96,17 +125,13 @@ class ExamSessionStartSerializer(serializers.ModelSerializer):
 
     def validate_exam(self, value):
         """Validate that exam is active and user can take it."""
-        user = self.context['request'].user
+        user = self.context["request"].user
+        exam_services.assert_exam_available_for_user(value, user)
 
-        # Check if exam is active
-        if value.status != 'active':
-            raise serializers.ValidationError("Exam is not available for taking.")
-
-        # Check if user already has an active session for this exam
         active_session = ExamSession.objects.filter(
             exam=value,
             user=user,
-            status='in_progress'
+            status="in_progress",
         ).first()
 
         if active_session:

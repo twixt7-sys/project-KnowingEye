@@ -13,8 +13,10 @@ class BehaviorEventType(str, Enum):
     MULTIPLE_FACES = "multiple_faces"
     LOOKING_AWAY = "looking_away"
     BAD_POSTURE = "bad_posture"
+    LEAVING_SEAT = "leaving_seat"
     OBJECT_DETECTED = "object_detected"
     IDENTITY_MISMATCH = "identity_mismatch"
+    SUSPICIOUS_PATTERN = "suspicious_pattern"
 
 
 class AlertSeverity(str, Enum):
@@ -121,11 +123,13 @@ class FaceAnalysis:
 
 @dataclass
 class PostureAnalysis:
+    detected: bool
     shoulder_tilt_ratio: float | None
     spine_lean_ratio: float | None
 
     def to_dict(self, metrics: MetricScores) -> dict[str, Any]:
         return {
+            "detected": self.detected,
             "shoulder_tilt_ratio": self.shoulder_tilt_ratio,
             "spine_lean_ratio": self.spine_lean_ratio,
             "posture_compliance_pct": metrics.posture_compliance_pct,

@@ -43,6 +43,28 @@ class Exam(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         help_text='Minimum passing percentage'
     )
+    exam_code = models.CharField(
+        max_length=32,
+        blank=True,
+        null=True,
+        unique=True,
+        help_text='Institutional exam code (e.g. ENT-2026-A)',
+    )
+    available_from = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When examinees may start the exam (null = immediately when active)',
+    )
+    available_until = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Last moment examinees may start the exam',
+    )
+    max_attempts = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1)],
+        help_text='Maximum completed attempts per examinee',
+    )
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -66,6 +88,8 @@ class Exam(models.Model):
         indexes = [
             models.Index(fields=['status', '-created_at']),
             models.Index(fields=['created_by']),
+            models.Index(fields=['exam_code']),
+            models.Index(fields=['available_from', 'available_until']),
         ]
 
     def __str__(self):

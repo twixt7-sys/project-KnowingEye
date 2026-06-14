@@ -92,14 +92,29 @@ Edit `config/pipeline.yaml`:
 
 Validate with mock sessions and compare logs in `data/sessions/<session_id>/behavior_log.jsonl`.
 
-## 7. Identity model (FaceNet / ArcFace — main system)
+## 7. Identity model (ArcFace)
 
-The playground uses `face_recognition` (128-D embeddings) for speed. For capstone alignment:
+The pipeline uses **InsightFace ArcFace** (`buffalo_l` by default) for 512-D identity
+embeddings. Install optional deps:
 
-1. Collect 5–10 reference photos per examinee at enrollment.
-2. Train or use pretrained **FaceNet** or **ArcFace** (e.g. `insightface` Python package).
-3. Replace `knowing_eye/recognition/identity.py` with your embedding backend.
-4. Keep the same `verify()` return shape: `(match: bool, distance: float)`.
+```bash
+pip install -r requirements-identity.txt
+```
+
+Configure in `config/pipeline.yaml`:
+
+```yaml
+recognition:
+  embedding_backend: arcface
+  arcface_model: buffalo_l
+pipeline:
+  identity_match_threshold: 0.42  # cosine distance; lower = stricter
+```
+
+Legacy `face_recognition` (128-D) remains available via `embedding_backend: face_recognition`
+and `pip install -e ".[identity-legacy]"`.
+
+The `verify()` / `verify_against()` contract is unchanged: `(match: bool, distance: float)`.
 
 ## 8. Evaluation metrics (for capstone reporting)
 

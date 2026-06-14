@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   Activity,
   AlertTriangle,
@@ -29,22 +29,28 @@ interface CreateExamForm {
   duration_minutes: number;
   passing_score: number;
   instructions?: string;
+  exam_code?: string;
+  max_attempts: number;
 }
 
 const EMPTY_FORM: CreateExamForm = {
   title: "",
   description: "",
-  duration_minutes: 60,
+  duration_minutes: 120,
   passing_score: 50,
   instructions: "",
+  exam_code: "",
+  max_attempts: 1,
 };
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [exams, setExams] = useState<Exam[]>([]);
   const [recentAlerts, setRecentAlerts] = useState<AlertRow[]>([]);
   const [activeSessions, setActiveSessions] = useState<SessionReportRow[]>([]);
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<CreateExamForm>(EMPTY_FORM);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -76,8 +82,15 @@ export function Dashboard() {
   }, []);
 
   const filteredExams = useMemo(
-    () => exams.filter((e) => e.title.toLowerCase().includes(query.toLowerCase())),
-    [exams, query]
+    () =>
+      exams.filter((e) => {
+        const matchesQuery =
+          e.title.toLowerCase().includes(query.toLowerCase()) ||
+          (e.exam_code ?? "").toLowerCase().includes(query.toLowerCase());
+        const matchesStatus = statusFilter === "all" || e.status === statusFilter;
+        return matchesQuery && matchesStatus;
+      }),
+    [exams, query, statusFilter]
   );
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -85,16 +98,18 @@ export function Dashboard() {
     setCreateError(null);
     setCreateBusy(true);
     try {
-      await apiClient.createExam({
+      const created = await apiClient.createExam({
         title: form.title,
         description: form.description,
         instructions: form.instructions,
+        exam_code: form.exam_code || undefined,
         duration_minutes: form.duration_minutes,
         passing_score: form.passing_score,
+        max_attempts: form.max_attempts,
       });
       setForm(EMPTY_FORM);
       setShowCreate(false);
-      await reload();
+      navigate(`/examiner/exams/${created.id}/edit`);
     } catch (err: any) {
       setCreateError(err?.detail?.() ?? err?.message ?? "Could not create exam");
     } finally {
@@ -195,9 +210,25 @@ export function Dashboard() {
                   <input
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search exams…"
+                    placeholder="Search by title or exam code…"
                     className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                   />
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {(["all", "draft", "active", "archived"] as const).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setStatusFilter(s)}
+                      className={`text-xs px-3 py-1 rounded-full border capitalize ${
+                        statusFilter === s
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:bg-accent"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -213,6 +244,9 @@ export function Dashboard() {
                       <div className="flex-1">
                         <h3 className="font-semibold mb-1">{exam.title}</h3>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                          {exam.exam_code && (
+                            <span className="font-mono text-primary">{exam.exam_code}</span>
+                          )}
                           <span className="flex items-center gap-1">
                             <FileText className="w-4 h-4" /> {exam.total_questions} questions
                           </span>
@@ -245,10 +279,10 @@ export function Dashboard() {
                         </button>
                       )}
                       <Link
-                        to={`/exams/${exam.id}`}
-                        className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm border border-border hover:bg-accent"
+                        to={`/examiner/exams/${exam.id}/edit`}
+                        className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90"
                       >
-                        <Eye className="w-4 h-4" /> Details
+                        <Eye className="w-4 h-4" /> Manage
                       </Link>
                     </div>
                   </div>
@@ -373,6 +407,17 @@ export function Dashboard() {
                   required
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  placeholder="Legacy College Entrance Exam 2026"
+                  className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm mb-1">Exam code (optional)</label>
+                <input
+                  value={form.exam_code}
+                  onChange={(e) => setForm({ ...form, exam_code: e.target.value })}
+                  placeholder="ENT-2026-A"
                   className="w-full px-4 py-2 rounded-lg border border-border bg-background"
                 />
               </div>
@@ -423,6 +468,17 @@ export function Dashboard() {
                 </div>
               </div>
 
+              <div>
+                <label className="block text-sm mb-1">Max attempts per examinee</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={form.max_attempts}
+                  onChange={(e) => setForm({ ...form, max_attempts: Number(e.target.value) })}
+                  className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                />
+              </div>
+
               {createError && (
                 <p className="text-sm text-red-500">{createError}</p>
               )}
@@ -440,7 +496,7 @@ export function Dashboard() {
                   disabled={createBusy}
                   className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
                 >
-                  {createBusy ? "Creating…" : "Create exam"}
+                  {createBusy ? "Creating…" : "Create & add questions"}
                 </button>
               </div>
             </form>

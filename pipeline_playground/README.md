@@ -6,7 +6,7 @@ Aligned with project docs:
 
 - **YOLO** — object / phone detection (fine-tunable)
 - **MediaPipe** — face mesh, head pose, posture (playground stand-in for CNN feature paths)
-- **face_recognition** — identity consistency (swap to FaceNet/ArcFace in production)
+- **ArcFace (InsightFace)** — 512-D identity embeddings (`buffalo_l` model)
 - **Behavior scoring** — outputs `behavior_logs` and `alerts` event types from `docs/database/database_schema.json`
 
 ## Quick start
@@ -20,13 +20,13 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-**Windows note:** Identity matching (`face-recognition` / `dlib`) is optional — not in `requirements.txt`. After core install:
+**Windows note:** ArcFace identity matching is optional — not in `requirements.txt`. After core install:
 
 ```powershell
 pip install -r requirements-identity.txt
 ```
 
-Requires Visual C++ build tools on Windows. If install fails, the pipeline still runs; `identity_match` stays `null`.
+Installs InsightFace + ONNX Runtime. If install fails, the pipeline falls back to a lightweight appearance signature; `identity_match` may stay `null` without a usable backend.
 
 ### 2. Web UI (recommended)
 

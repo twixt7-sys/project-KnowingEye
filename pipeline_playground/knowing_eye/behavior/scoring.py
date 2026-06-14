@@ -36,7 +36,10 @@ class BehaviorScorer:
         self._gaze_pitch = rec.get("gaze_pitch_threshold_deg", 20)
         self._tilt_max = rec.get("posture_shoulder_tilt_max", 0.12)
         self._lean_max = rec.get("posture_spine_lean_max", 0.55)
-        self._identity_threshold = pipe.get("identity_match_threshold", 0.6)
+        self._identity_threshold = rec.get(
+            "identity_match_threshold",
+            pipe.get("identity_match_threshold", 0.6),
+        )
         self._weights = beh.get("weights", {})
         self._severity_map = beh.get("alert_severity", {})
         self._alert_threshold_pct = float(pipe.get("alert_threshold_pct", 80))
@@ -59,6 +62,7 @@ class BehaviorScorer:
 
     def build_posture_analysis(self, pose: PoseResult) -> PostureAnalysis:
         return PostureAnalysis(
+            detected=pose.detected,
             shoulder_tilt_ratio=pose.shoulder_tilt_ratio,
             spine_lean_ratio=pose.spine_lean_ratio,
         )
@@ -165,6 +169,7 @@ class BehaviorScorer:
             {
                 "shoulder_tilt": posture.shoulder_tilt_ratio,
                 "spine_lean": posture.spine_lean_ratio,
+                "pose_detected": pose_detected,
             },
         )
 
@@ -190,13 +195,15 @@ class BehaviorScorer:
 
 def _alert_message(etype: BehaviorEventType, pct: float) -> str:
     messages = {
-        BehaviorEventType.NO_FACE: f"Face presence below threshold ({pct:.0f}%)",
-        BehaviorEventType.MULTIPLE_FACES: f"Face/identity compliance below threshold ({pct:.0f}%)",
-        BehaviorEventType.LOOKING_AWAY: f"Gaze focus below threshold ({pct:.0f}%)",
-        BehaviorEventType.BAD_POSTURE: f"Posture compliance below threshold ({pct:.0f}%)",
-        BehaviorEventType.OBJECT_DETECTED: f"Clear frame score below threshold ({pct:.0f}%)",
+        BehaviorEventType.NO_FACE: f"Face missing (presence {pct:.0f}%)",
+        BehaviorEventType.MULTIPLE_FACES: f"Multiple faces detected ({pct:.0f}% compliance)",
+        BehaviorEventType.LOOKING_AWAY: f"Head/gaze angle exceeds threshold ({pct:.0f}%)",
+        BehaviorEventType.BAD_POSTURE: f"Upper-body posture abnormal ({pct:.0f}%)",
+        BehaviorEventType.LEAVING_SEAT: f"Upper body not visible ({pct:.0f}%)",
+        BehaviorEventType.OBJECT_DETECTED: f"Prohibited object detected ({pct:.0f}%)",
         BehaviorEventType.IDENTITY_MISMATCH: (
-            f"Identity match below threshold ({pct:.0f}%) — face differs from enrolled reference"
+            f"Different person — face embedding mismatch ({pct:.0f}%)"
         ),
+        BehaviorEventType.SUSPICIOUS_PATTERN: f"Repeated behavior flags ({pct:.0f}%)",
     }
     return messages.get(etype, f"Metric below {pct:.0f}%")

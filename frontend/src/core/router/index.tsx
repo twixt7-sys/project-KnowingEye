@@ -11,6 +11,7 @@ import { ExamTakingWithBackend } from "../../pages/exam-taking-backend";
 import { ExamSubmitted } from "../../pages/exam-submitted";
 import { ExamResults } from "../../pages/exam-results";
 import { ExamSummary } from "../../pages/exam-summary";
+import { ExamBuilder } from "../../pages/exam-builder";
 import { Monitoring } from "../../pages/monitoring";
 import { SessionMonitor } from "../../pages/session-monitor";
 import { Reports } from "../../pages/reports";
@@ -121,6 +122,15 @@ export const router = createBrowserRouter([
       {
         path: "student/exam/:examId/results",
         element: <LegacyExamineeExamRedirect suffix="/results" />,
+      },
+
+      {
+        path: "examiner/exams/:examId/edit",
+        element: (
+          <ProtectedRoute requiredRole="ADMIN">
+            <ExamBuilder />
+          </ProtectedRoute>
+        ),
       },
 
       // Shared

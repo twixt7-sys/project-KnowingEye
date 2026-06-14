@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from typing import Iterable, Optional
 
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
+from django.utils import timezone
 
 from shared.repositories.base_repository import BaseRepository
 
@@ -29,7 +30,12 @@ class ExamRepository(BaseRepository[Exam]):
         """Return the exams a particular user is allowed to see."""
         if getattr(user, "is_admin", lambda: False)():
             return self.all()
-        return self.active()
+        now = timezone.now()
+        return (
+            self.active()
+            .filter(Q(available_from__isnull=True) | Q(available_from__lte=now))
+            .filter(Q(available_until__isnull=True) | Q(available_until__gte=now))
+        )
 
     def by_id(self, exam_id: int) -> Optional[Exam]:
         return Exam.objects.filter(pk=exam_id).first()

@@ -1,3 +1,6 @@
-# Optional — identity matching (pulls in dlib; needs Visual C++ on Windows)
+# ArcFace identity matching (InsightFace + ONNX Runtime)
 # Install after core deps: pip install -r requirements-identity.txt
-face-recognition>=1.3.0
+insightface>=0.7.3
+onnxruntime>=1.16.0
+
+# Legacy dlib backend (optional): pip install face-recognition

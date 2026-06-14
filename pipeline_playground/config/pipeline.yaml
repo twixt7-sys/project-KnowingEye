@@ -6,8 +6,9 @@ pipeline:
   target_fps: 5
   # Alert when any compliance metric falls below this % (0–100)
   alert_threshold_pct: 80
-  # Identity match threshold (lower = stricter), face_recognition uses L2 distance
-  identity_match_threshold: 0.6
+  # Identity match threshold (lower = stricter)
+  # ArcFace: cosine distance (~0.42 typical). face_recognition: L2 (~0.6).
+  identity_match_threshold: 0.42
 
 detection:
   # mediapipe | yolo (face uses mediapipe; yolo adds object/phone detection)
@@ -19,8 +20,9 @@ detection:
   yolo_target_classes: [0, 67]
 
 recognition:
-  # face_recognition (playground) — swap to facenet | arcface in production
-  embedding_backend: face_recognition
+  # arcface | face_recognition | appearance (auto-fallback when deps missing)
+  embedding_backend: arcface
+  arcface_model: buffalo_l
   # Head pose / gaze thresholds (degrees)
   gaze_yaw_threshold_deg: 25
   gaze_pitch_threshold_deg: 20
@@ -31,6 +33,12 @@ recognition:
   no_face_grace_seconds: 2.0
 
 behavior:
+  # Seconds with face visible but no upper-body keypoints before leaving_seat
+  leaving_seat_grace_seconds: 3.0
+  suspicious_pattern:
+    window_seconds: 60
+    min_flags: 3
+    cooldown_seconds: 120
   metric_weights:
     face: 0.25
     gaze: 0.25
@@ -42,13 +50,19 @@ behavior:
     multiple_faces: 0.9
     looking_away: 0.7
     bad_posture: 0.6
+    leaving_seat: 0.75
     object_detected: 0.85
+    identity_mismatch: 0.95
+    suspicious_pattern: 0.9
   alert_severity:
     no_face: high
     multiple_faces: high
     looking_away: medium
     bad_posture: low
+    leaving_seat: medium
     object_detected: high
+    identity_mismatch: high
+    suspicious_pattern: high
 
 paths:
   reference_faces_dir: data/reference_faces

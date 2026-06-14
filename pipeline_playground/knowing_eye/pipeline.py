@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 
 from knowing_eye.behavior.scoring import BehaviorScorer
+from knowing_eye.behavior.temporal import BehaviorTemporalTracker
 from knowing_eye.config import load_config, resolve_path
 from knowing_eye.detection.face_detector import FaceDetector
 from knowing_eye.detection.pose_detector import PoseDetector
@@ -38,10 +39,15 @@ class BehaviorPipeline:
             confidence=det.get("yolo_confidence", 0.45),
             target_classes=det.get("yolo_target_classes", [0, 67]),
         )
+        pipe = self.config.get("pipeline", {})
+        identity_threshold = rec.get("identity_match_threshold", pipe.get("identity_match_threshold"))
         self._identity = IdentityVerifier(
-            match_threshold=self.config.get("pipeline", {}).get("identity_match_threshold", 0.6),
+            match_threshold=identity_threshold,
+            backend=rec.get("embedding_backend", "arcface"),
+            arcface_model=rec.get("arcface_model", "buffalo_l"),
         )
         self._scorer = BehaviorScorer(self.config)
+        self._temporal = BehaviorTemporalTracker(self.config)
         self._frame_index = 0
 
     @property
@@ -105,7 +111,7 @@ class BehaviorPipeline:
         )
 
         self._frame_index += 1
-        return FrameAnalysisResult(
+        result = FrameAnalysisResult(
             session_id=session_id,
             timestamp=utc_now_iso(),
             face=face_analysis,
@@ -116,6 +122,9 @@ class BehaviorPipeline:
             alerts=alerts,
             frame_index=self._frame_index,
         )
+        if session_id:
+            result = self._temporal.apply(str(session_id), result, pose_detected=pose.detected)
+        return result
 
     def analyze_and_save(
         self,

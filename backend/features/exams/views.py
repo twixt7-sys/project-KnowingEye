@@ -1,9 +1,4 @@
-"""HTTP controller layer for the exams feature.
-
-These viewsets translate REST requests into calls into the service/repository
-layers. All non-trivial business logic (ownership checks, lifecycle
-transitions, integrity constraints) lives in :mod:`services`.
-"""
+"""HTTP controller layer for the exams feature."""
 
 from __future__ import annotations
 
@@ -23,8 +18,11 @@ from .serializers import (
     ExamCreateUpdateSerializer,
     ExamDetailSerializer,
     ExamListSerializer,
+    ExamTakeSerializer,
     QuestionCreateUpdateSerializer,
     QuestionDetailSerializer,
+    QuestionImportSerializer,
+    QuestionReorderSerializer,
     QuestionSerializer,
 )
 
@@ -32,26 +30,10 @@ User = get_user_model()
 
 
 class ExamViewSet(viewsets.ModelViewSet):
-    """REST surface for exams.
-
-    ============  ==========================================
-    Endpoint      Description
-    ============  ==========================================
-    GET    /     List exams (admins see all, others active)
-    POST   /     Create exam (admin only)
-    GET    /:id   Detail
-    PUT    /:id   Update (owner or superuser)
-    DELETE /:id   Delete (owner or superuser)
-    POST   /:id/publish   DRAFT -> ACTIVE
-    POST   /:id/archive   * -> ARCHIVED
-    GET    /:id/questions List questions
-    ============  ==========================================
-    """
-
     permission_classes = [IsAuthenticated, IsAdminOrReadOnly, IsExamOwnerOrAdmin]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["status", "created_by"]
-    search_fields = ["title", "description"]
+    search_fields = ["title", "description", "exam_code"]
     ordering_fields = ["created_at", "title"]
     ordering = ["-created_at"]
     exam_repo = ExamRepository()
@@ -62,7 +44,9 @@ class ExamViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == "retrieve":
-            return ExamDetailSerializer
+            if getattr(self.request.user, "is_admin", lambda: False)():
+                return ExamDetailSerializer
+            return ExamTakeSerializer
         if self.action in {"create", "update", "partial_update"}:
             return ExamCreateUpdateSerializer
         return ExamListSerializer
@@ -83,7 +67,19 @@ class ExamViewSet(viewsets.ModelViewSet):
     def questions(self, request, pk=None):
         exam = self.get_object()
         qs = self.question_repo.for_exam(exam.id)
-        return Response(QuestionDetailSerializer(qs, many=True).data)
+        if getattr(request.user, "is_admin", lambda: False)():
+            data = QuestionDetailSerializer(qs, many=True).data
+        else:
+            from .serializers import QuestionTakeSerializer
+
+            data = QuestionTakeSerializer(qs, many=True).data
+        return Response(data)
+
+    @action(detail=True, methods=["get"])
+    def readiness(self, request, pk=None):
+        exam = self.get_object()
+        services.assert_can_modify_exam(exam, request.user)
+        return Response(services.exam_publish_readiness(exam))
 
     @action(detail=True, methods=["post"])
     def publish(self, request, pk=None):
@@ -107,11 +103,39 @@ class ExamViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
+    @action(detail=True, methods=["post"], url_path="questions/import")
+    def import_questions(self, request, pk=None):
+        exam = self.get_object()
+        ser = QuestionImportSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        created = services.import_questions(
+            exam,
+            request.user,
+            csv_text=ser.validated_data.get("csv"),
+            items=ser.validated_data.get("questions"),
+        )
+        return Response(
+            {
+                "imported": len(created),
+                "questions": QuestionDetailSerializer(created, many=True).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["post"], url_path="questions/reorder")
+    def reorder_questions(self, request, pk=None):
+        exam = self.get_object()
+        ser = QuestionReorderSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        ordered = services.reorder_questions(
+            exam, request.user, ser.validated_data["question_ids"]
+        )
+        return Response(QuestionDetailSerializer(ordered, many=True).data)
+
 
 class QuestionViewSet(viewsets.ModelViewSet):
-    """CRUD for questions nested under an exam (``/api/exams/<exam_id>/questions/``)."""
-
     permission_classes = [IsAuthenticated]
+
     question_repo = QuestionRepository()
 
     def get_queryset(self):

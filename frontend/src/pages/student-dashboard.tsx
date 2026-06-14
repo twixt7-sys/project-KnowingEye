@@ -26,14 +26,19 @@ type DashboardExam = {
 };
 
 function mapExamToCard(exam: Exam, type: "upcoming" | "completed"): DashboardExam {
+  const openLabel = exam.is_open === false ? "Not yet open" : "Ready to Start";
   return {
     id: String(exam.id),
     title: exam.title,
-    course: `Exam #${exam.id}`,
-    date: new Date(exam.created_at).toLocaleDateString(),
-    time: "—",
+    course: exam.exam_code ?? `Exam #${exam.id}`,
+    date: exam.available_from
+      ? new Date(exam.available_from).toLocaleDateString()
+      : new Date(exam.created_at).toLocaleDateString(),
+    time: exam.available_until
+      ? `Until ${new Date(exam.available_until).toLocaleString()}`
+      : "Open schedule",
     duration: `${exam.duration_minutes} mins`,
-    status: type === "upcoming" ? "Ready to Start" : "Completed",
+    status: type === "upcoming" ? openLabel : "Completed",
     type,
   };
 }

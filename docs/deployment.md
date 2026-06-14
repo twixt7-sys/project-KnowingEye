@@ -76,7 +76,7 @@ pip install mediapipe ultralytics PyYAML
 # optional: production Channels backend
 pip install channels-redis
 
-# optional: identity verification (Linux only ships pre-built dlib wheels)
+# optional: ArcFace identity verification (InsightFace + ONNX Runtime)
 pip install -r ../pipeline_playground/requirements-identity.txt
 ```
 
@@ -230,5 +230,5 @@ curl https://exam.example.com/api/monitoring/health/
 2. Update `pipeline_playground/config/pipeline.yaml` → `detection.yolo_model`.
 3. Restart the API processes — the adapter reloads the pipeline on next call.
 
-For migrations from `face_recognition` → FaceNet/ArcFace see
-`pipeline_playground/training/TRAINING.md`.
+ArcFace is configured in `pipeline_playground/config/pipeline.yaml` (`recognition.embedding_backend: arcface`).
+See `pipeline_playground/training/TRAINING.md` for thresholds and legacy `face_recognition`.

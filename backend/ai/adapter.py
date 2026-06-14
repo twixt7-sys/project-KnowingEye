@@ -23,6 +23,7 @@ logger = logging.getLogger("knowing_eye.ai.adapter")
 
 _PIPELINE = None
 _PIPELINE_MODE: str = "uninitialized"
+_TEMPORAL_TRACKER = None
 _LOCK = threading.Lock()
 
 
@@ -77,6 +78,110 @@ def _get_pipeline():
             _PIPELINE = _StubPipeline()
             _PIPELINE_MODE = "stub"
         return _PIPELINE
+
+
+def _get_temporal_tracker():
+    global _TEMPORAL_TRACKER
+    if _TEMPORAL_TRACKER is not None:
+        return _TEMPORAL_TRACKER
+    _ensure_playground_on_path()
+    try:
+        from knowing_eye.behavior.temporal import BehaviorTemporalTracker
+        from knowing_eye.config import load_config
+
+        ke_settings = getattr(settings, "KNOWING_EYE", {})
+        config_path = Path(ke_settings.get("PIPELINE_CONFIG", ""))
+        config = load_config(config_path if config_path.exists() else None)
+        _TEMPORAL_TRACKER = BehaviorTemporalTracker(config)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Temporal behavior tracker unavailable: %s", exc)
+        _TEMPORAL_TRACKER = None
+    return _TEMPORAL_TRACKER
+
+
+def _apply_temporal_stub(session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """Apply grace / pattern rules to stub analyzer output."""
+    tracker = _get_temporal_tracker()
+    if tracker is None:
+        return payload
+
+    from knowing_eye.types import (
+        Alert,
+        AlertSeverity,
+        BehaviorEvent,
+        BehaviorEventType,
+        FaceAnalysis,
+        FrameAnalysisResult,
+        MetricScores,
+        ObjectDetection,
+        PostureAnalysis,
+    )
+
+    metrics_raw = payload.get("metrics", {})
+    face_raw = payload.get("face", {})
+    posture_raw = payload.get("posture", {})
+
+    metrics = MetricScores(
+        face_presence_pct=float(metrics_raw.get("face_presence_pct", 0)),
+        gaze_focus_pct=float(metrics_raw.get("gaze_focus_pct", 0)),
+        posture_compliance_pct=float(metrics_raw.get("posture_compliance_pct", 0)),
+        identity_match_pct=metrics_raw.get("identity_match_pct"),
+        object_clear_pct=float(metrics_raw.get("object_clear_pct", 100)),
+        overall_compliance_pct=float(metrics_raw.get("overall_compliance_pct", 0)),
+        alert_threshold_pct=float(metrics_raw.get("alert_threshold_pct", 80)),
+    )
+    face = FaceAnalysis(
+        count=int(face_raw.get("count", 0)),
+        head_yaw_deg=face_raw.get("head_yaw_deg"),
+        head_pitch_deg=face_raw.get("head_pitch_deg"),
+        identity_distance=face_raw.get("identity_distance"),
+    )
+    posture = PostureAnalysis(
+        detected=bool(posture_raw.get("detected", False)),
+        shoulder_tilt_ratio=posture_raw.get("shoulder_tilt_ratio"),
+        spine_lean_ratio=posture_raw.get("spine_lean_ratio"),
+    )
+    events = [
+        BehaviorEvent(
+            BehaviorEventType(e["event_type"]),
+            float(e.get("score_pct", 0)) / 100.0,
+            float(e.get("confidence_pct", 0)) / 100.0,
+            e.get("metadata") or {},
+        )
+        for e in payload.get("events", [])
+        if e.get("event_type") in {t.value for t in BehaviorEventType}
+    ]
+    alerts = [
+        Alert(
+            a["type"],
+            AlertSeverity(a.get("severity", "medium")),
+            a.get("message", ""),
+            a.get("metric_pct"),
+        )
+        for a in payload.get("alerts", [])
+    ]
+    objects = [
+        ObjectDetection(o["label"], o.get("confidence_pct", 0) / 100.0, o.get("bbox", []))
+        for o in payload.get("objects", [])
+    ]
+
+    result = FrameAnalysisResult(
+        session_id=session_id,
+        timestamp=payload.get("timestamp"),
+        face=face,
+        posture=posture,
+        objects=objects,
+        metrics=metrics,
+        events=events,
+        alerts=alerts,
+        frame_index=payload.get("frame_index"),
+    )
+    pose_detected = posture.detected
+    out = tracker.apply(session_id, result, pose_detected=pose_detected)
+    merged = out.to_dict()
+    merged["pipeline_mode"] = payload.get("pipeline_mode")
+    merged["behavior_score"] = payload.get("behavior_score", merged.get("behavior_score"))
+    return merged
 
 
 # Stub identity tuning: distance = 1 - cosine(reference, current); a fully
@@ -215,6 +320,18 @@ class _StubPipeline:
             "session_id": session_id,
             "timestamp": None,
             "frame_index": None,
+            "face": {
+                "count": 1 if face_ok else 0,
+                "head_yaw_deg": 0.0 if face_ok else None,
+                "head_pitch_deg": 0.0 if face_ok else None,
+                "identity_distance": identity_distance,
+            },
+            "posture": {
+                "detected": face_ok,
+                "shoulder_tilt_ratio": 0.05 if face_ok else None,
+                "spine_lean_ratio": 0.1 if face_ok else None,
+            },
+            "objects": [],
             "metrics": metrics,
             "overall_compliance_pct": overall,
             "behavior_score": round(overall / 100.0, 4),
@@ -284,7 +401,10 @@ def analyze_frame_bgr(frame_bgr, session_id: str | None = None) -> dict[str, Any
         frame_bgr, session_id=session_id, reference_embedding=reference
     )
     payload = result.to_dict() if hasattr(result, "to_dict") else result
-    payload["pipeline_mode"] = get_pipeline_mode()
+    mode = get_pipeline_mode()
+    if session_id is not None and mode in ("stub", "disabled") and isinstance(payload, dict):
+        payload = _apply_temporal_stub(str(session_id), payload)
+    payload["pipeline_mode"] = mode
     return payload
 
 
@@ -331,7 +451,8 @@ def enroll_reference(frame_bgr, session=None) -> dict[str, Any]:
 
 def reset_pipeline() -> None:
     """Force re-initialization on the next call (useful for tests)."""
-    global _PIPELINE, _PIPELINE_MODE
+    global _PIPELINE, _PIPELINE_MODE, _TEMPORAL_TRACKER
     with _LOCK:
         _PIPELINE = None
         _PIPELINE_MODE = "uninitialized"
+        _TEMPORAL_TRACKER = None

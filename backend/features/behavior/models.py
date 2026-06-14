@@ -13,8 +13,10 @@ class BehaviorLog(models.Model):
         MULTIPLE_FACES = "multiple_faces", "Multiple Faces"
         LOOKING_AWAY = "looking_away", "Looking Away"
         BAD_POSTURE = "bad_posture", "Bad Posture"
+        LEAVING_SEAT = "leaving_seat", "Leaving Seat"
         OBJECT_DETECTED = "object_detected", "Object Detected"
         IDENTITY_MISMATCH = "identity_mismatch", "Identity Mismatch"
+        SUSPICIOUS_PATTERN = "suspicious_pattern", "Suspicious Pattern"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     session = models.ForeignKey(
