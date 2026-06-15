@@ -1,146 +1,78 @@
-# Knowing Eye - Frontend Prototype
+# Knowing Eye — Frontend
 
-A full-stack session-guided web-based examination platform with integrated behavior monitoring system using facial and postural analysis via computer vision.
+React + TypeScript SPA for the Knowing Eye examination platform. Connects to the Django API for auth, exams, live monitoring, and reports.
 
-## Current Status
+## Stack
 
-This is a **frontend prototype** implementing the user interface and user experience for the Knowing Eye examination platform. The backend, database, and AI monitoring features are planned but not yet implemented.
+| Layer | Choice |
+|-------|--------|
+| Framework | React 18, TypeScript |
+| Build | Vite 6 |
+| Routing | React Router 7 |
+| Styling | Tailwind CSS 4, shadcn/Radix UI |
+| Charts | Recharts |
 
-### ✅ Implemented Features
-- Modern React/TypeScript frontend with Vite
-- Responsive UI using shadcn/ui and Material-UI components
-- Complete exam flow simulation (taking, submission, results)
-- Mock behavior monitoring with simulated alerts
-- Multiple user roles (admin dashboard, student dashboard)
-- Dark/light theme support
+## Quick start
 
-### ❌ Planned Features (Backend Required)
-- Real-time webcam capture and frame streaming
-- AI-powered facial and posture analysis
-- User authentication and session management
-- Database persistence for exams and results
-- WebSocket communication for live monitoring
-- Administrative exam management interface
+From the repo root, use `start-dev.cmd` (starts API + UI), or run the frontend alone:
 
-## Tech Stack
-
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS + shadcn/ui + Material-UI
-- **Routing**: React Router v6
-- **Icons**: Lucide React
-- **State Management**: React hooks
-- **Package Manager**: npm
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- npm or yarn
-
-### Installation
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd my-app
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-4. Open [http://localhost:5173](http://localhost:5173) in your browser
-
-### Build for Production
-
-```bash
-npm run build
+```powershell
+cd frontend
+npm install
+copy .env.example .env.local   # optional — defaults to http://127.0.0.1:8000/api
+npm run dev
 ```
 
-## Project Structure
+Open [http://127.0.0.1:5173](http://127.0.0.1:5173). The API must be running on port 8000.
 
-```
-src/
-├── app/
-│   ├── components/     # Reusable UI components
-│   ├── pages/         # Page components
-│   ├── routes.ts      # Application routing
-│   ├── root.tsx       # Root layout
-│   └── App.tsx        # Main app component
-├── styles/            # CSS files and themes
-└── main.tsx           # Application entry point
+## Project structure
+
+```text
+frontend/src/
+├── core/           App shell: router, API client, auth/theme providers, env
+├── features/       Feature-scoped hooks and API wrappers (auth, exams, reports, …)
+├── pages/          Route-level screens
+└── shared/         Reusable UI (shadcn), layout, hooks (e.g. use-monitoring)
 ```
 
-## Available Scripts
+### Key routes
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
+| Path | Role | Purpose |
+|------|------|---------|
+| `/login` | — | JWT login |
+| `/examiner` | Admin | Exam management dashboard |
+| `/examinee` | Student | Available / completed exams |
+| `/examinee/exam/:id` | Student | Live exam + monitoring |
+| `/monitoring` | Admin | Active session list |
+| `/monitoring/:sessionId` | Admin | Session inspector |
+| `/reports` | Admin | Analytics + CSV export |
+| `/profile` | Any | Profile & password |
 
-## Key Pages
+Legacy paths (`/dashboard`, `/student/*`) redirect to the routes above.
 
-- `/` - Landing page
-- `/features` - System features showcase
-- `/login` - Authentication page
-- `/dashboard` - Admin dashboard
-- `/student/dashboard` - Student exam access
-- `/student/exam/:id` - Exam taking interface
-- `/student/exam/:id/submitted` - Post-submission page
-- `/student/exam/:id/results` - Results display
+## API client
 
-## Mock Features
+All HTTP calls go through `src/core/config/api.ts` (`apiClient`). JWT tokens are stored in `localStorage` and attached automatically; refresh is handled on 401.
 
-The current implementation includes simulated features for demonstration:
-- Random behavior monitoring alerts
-- Mock exam questions and answers
-- Simulated timer functionality
-- Placeholder user authentication
+WebSocket monitoring URLs are built with `buildMonitoringWsUrl(sessionId)`.
 
-## Next Steps
+## Scripts
 
-1. **Backend Development**: Implement Django REST API
-2. **Database Integration**: Set up PostgreSQL with full schema
-3. **Real Monitoring**: Integrate computer vision for actual webcam analysis
-4. **Authentication**: Add secure user management
-5. **WebSocket**: Enable real-time communication
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Vite dev server (HMR) |
+| `npm run build` | Production bundle → `dist/` |
+| `npm run preview` | Serve production build locally |
 
-## Documentation
+## Environment
 
-See the `docs/` folder in the project root for comprehensive project documentation including:
-- System architecture and requirements
-- API specifications
-- Database schema
-- Implementation status
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `VITE_API_BASE_URL` | `http://127.0.0.1:8000/api` | REST base URL |
+| `VITE_APP_NAME` | `Knowing Eye` | Display name |
 
-## License
+## Further reading
 
-This project is part of a capstone thesis for Legacy College of Compostela.
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- Root [README.md](../README.md) — full stack overview
+- [REPOSITORY_GUIDE.md](../REPOSITORY_GUIDE.md) — repo map for new contributors
+- [docs/deployment.md](../docs/deployment.md) — production build & deploy

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Search,
   ShieldCheck,
@@ -9,7 +9,16 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-import { apiClient, type ProfileUser, type Role } from "../core/config/api";
+import { apiClient, type ProfileUser, type Role, type UserStats } from "../core/config/api";
+import { DataTablePagination } from "../shared/components/common/data-table-pagination";
+import { ScrollableDataTable } from "../shared/components/common/scrollable-data-table";
+import { PageHeader } from "../shared/components/layout/page-header";
+import { PageShell } from "../shared/components/layout/page-shell";
+import { SectionPanel } from "../shared/components/layout/section-panel";
+import { StatCard } from "../shared/components/layout/stat-card";
+import { Button } from "../shared/components/ui/button";
+import { useDebounce } from "../shared/hooks/use-debounce";
+import { usePagination } from "../shared/hooks/use-pagination";
 
 const ROLE_BADGE: Record<Role, string> = {
   ADMIN:
@@ -17,23 +26,36 @@ const ROLE_BADGE: Record<Role, string> = {
   EXAMINEE: "bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20",
 };
 
+const EMPTY_STATS: UserStats = { total: 0, admins: 0, examinees: 0, inactive: 0 };
+
 export function UsersAdmin() {
   const [users, setUsers] = useState<ProfileUser[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [stats, setStats] = useState<UserStats>(EMPTY_STATS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"" | Role>("");
   const [acting, setActing] = useState<number | null>(null);
+  const debouncedSearch = useDebounce(search, 300);
+  const { page, pageSize, setPage, setPageSize } = usePagination(10);
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiClient.listUsers({
-        ...(roleFilter ? { role: roleFilter } : {}),
-        ...(search ? { search } : {}),
-      });
-      setUsers(res);
+      const [res, userStats] = await Promise.all([
+        apiClient.listUsers({
+          ...(roleFilter ? { role: roleFilter } : {}),
+          ...(debouncedSearch ? { search: debouncedSearch } : {}),
+          page,
+          page_size: pageSize,
+        }),
+        apiClient.getUserStats(),
+      ]);
+      setUsers(res.results);
+      setTotalCount(res.count);
+      setStats(userStats);
     } catch (e: any) {
       setError(e?.detail?.() ?? e?.message ?? "Failed to load users");
     } finally {
@@ -44,26 +66,15 @@ export function UsersAdmin() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roleFilter]);
+  }, [roleFilter, debouncedSearch, page, pageSize]);
 
-  const totals = useMemo(
-    () => ({
-      total: users.length,
-      admins: users.filter((u) => u.role === "ADMIN").length,
-      examinees: users.filter((u) => u.role === "EXAMINEE").length,
-      inactive: users.filter((u) => !u.is_active).length,
-    }),
-    [users]
-  );
-
-  const handleAction = async (
-    id: number,
-    fn: () => Promise<ProfileUser>
-  ) => {
+  const handleAction = async (id: number, fn: () => Promise<ProfileUser>) => {
     setActing(id);
     try {
       const updated = await fn();
       setUsers((prev) => prev.map((u) => (u.id === id ? updated : u)));
+      const userStats = await apiClient.getUserStats();
+      setStats(userStats);
     } catch (e: any) {
       setError(e?.detail?.() ?? e?.message ?? "Action failed");
     } finally {
@@ -72,212 +83,194 @@ export function UsersAdmin() {
   };
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-1">Users</h1>
-            <p className="text-muted-foreground">
-              Manage examinee and administrator accounts.
-            </p>
-          </div>
-          <button
-            onClick={load}
-            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm border border-border hover:bg-accent transition-colors self-start sm:self-auto"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+    <PageShell>
+      <PageHeader
+        eyebrow="Examiner"
+        title="Users"
+        description="Manage examinee and administrator accounts."
+        actions={
+          <Button variant="outline" onClick={load} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
-          </button>
-        </header>
+          </Button>
+        }
+      />
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Stat label="Total users" value={totals.total} tone="violet" />
-          <Stat label="Admins" value={totals.admins} tone="indigo" />
-          <Stat label="Examinees" value={totals.examinees} tone="sky" />
-          <Stat label="Inactive" value={totals.inactive} tone="rose" />
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
         </div>
+      )}
 
-        <div className="bg-card rounded-xl border border-border">
-          <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 flex-1 max-w-md">
-              <Search className="w-4 h-4 text-muted-foreground" />
+      <div className="page-metrics grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard label="Total users" value={String(stats.total)} icon={UsersIcon} />
+        <StatCard
+          label="Admins"
+          value={String(stats.admins)}
+          icon={ShieldCheck}
+          tone="success"
+        />
+        <StatCard
+          label="Examinees"
+          value={String(stats.examinees)}
+          icon={UserCog}
+        />
+        <StatCard
+          label="Inactive"
+          value={String(stats.inactive)}
+          icon={ShieldOff}
+          tone="danger"
+        />
+      </div>
+
+      <SectionPanel
+        title="Directory"
+        description="Search, filter, and manage workspace accounts."
+        toolbar={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative min-w-0 flex-1 sm:max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && load()}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 placeholder="Search username or email…"
-                className="flex-1 bg-transparent text-sm focus:outline-none placeholder:text-muted-foreground"
+                className="form-field w-full py-2 pl-9 pr-3 text-sm"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value as "" | Role)}
-                className="text-sm rounded-md px-3 py-1.5 border border-border bg-background"
-              >
-                <option value="">All roles</option>
-                <option value="ADMIN">Admins</option>
-                <option value="EXAMINEE">Examinees</option>
-              </select>
-            </div>
+            <select
+              value={roleFilter}
+              onChange={(e) => {
+                setRoleFilter(e.target.value as "" | Role);
+                setPage(1);
+              }}
+              className="form-field text-sm"
+            >
+              <option value="">All roles</option>
+              <option value="ADMIN">Admins</option>
+              <option value="EXAMINEE">Examinees</option>
+            </select>
           </div>
-
-          {error && (
-            <div className="m-4 px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" />
-              {error}
-            </div>
-          )}
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase tracking-wide text-muted-foreground bg-muted/40">
+        }
+      >
+        <ScrollableDataTable>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th className="hidden md:table-cell">Last seen</th>
+                <th className="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.length === 0 && !loading && (
                 <tr>
-                  <th className="px-5 py-3">User</th>
-                  <th className="px-5 py-3">Role</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3">Last seen</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
+                  <td colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
+                    <UsersIcon className="mx-auto mb-2 h-8 w-8 opacity-50" />
+                    No users match those filters.
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {users.length === 0 && !loading && (
-                  <tr>
-                    <td colSpan={5} className="px-5 py-10 text-center text-muted-foreground">
-                      <UsersIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                      No users match those filters.
-                    </td>
-                  </tr>
-                )}
-                {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-accent/30 transition-colors">
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-xs font-semibold overflow-hidden">
-                          {u.avatar_url ? (
-                            <img
-                              src={u.avatar_url}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            (u.first_name?.[0] ?? u.username[0] ?? "?").toUpperCase()
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium leading-tight">
-                            {u.first_name || u.username}{" "}
-                            {u.last_name && (
-                              <span className="text-muted-foreground">{u.last_name}</span>
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{u.email}</p>
-                        </div>
+              )}
+              {users.map((u) => (
+                <tr key={u.id}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary to-secondary text-xs font-semibold text-white">
+                        {u.avatar_url ? (
+                          <img src={u.avatar_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          (u.first_name?.[0] ?? u.username[0] ?? "?").toUpperCase()
+                        )}
                       </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`text-[11px] uppercase tracking-wide px-2 py-0.5 rounded-full border ${
-                          ROLE_BADGE[u.role]
-                        }`}
-                      >
-                        {u.role}
+                      <div>
+                        <p className="font-medium leading-tight">
+                          {u.first_name || u.username}{" "}
+                          {u.last_name && (
+                            <span className="text-muted-foreground">{u.last_name}</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`status-pill border ${ROLE_BADGE[u.role]}`}>{u.role}</span>
+                  </td>
+                  <td>
+                    {u.is_active ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                        <ShieldCheck className="h-3.5 w-3.5" /> active
                       </span>
-                    </td>
-                    <td className="px-5 py-3">
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs text-rose-600 dark:text-rose-400">
+                        <ShieldOff className="h-3.5 w-3.5" /> inactive
+                      </span>
+                    )}
+                  </td>
+                  <td className="hidden text-sm text-muted-foreground md:table-cell">
+                    {u.last_seen_at ? new Date(u.last_seen_at).toLocaleString() : "never"}
+                  </td>
+                  <td>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        disabled={acting === u.id}
+                        onClick={() =>
+                          handleAction(u.id, () =>
+                            apiClient.setUserRole(
+                              u.id,
+                              u.role === "ADMIN" ? "EXAMINEE" : "ADMIN"
+                            )
+                          )
+                        }
+                        className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent"
+                        title="Toggle role"
+                      >
+                        <UserCog className="h-3.5 w-3.5" />
+                        {u.role === "ADMIN" ? "Make examinee" : "Make admin"}
+                      </button>
                       {u.is_active ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs">
-                          <ShieldCheck className="w-3.5 h-3.5" /> active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 text-xs">
-                          <ShieldOff className="w-3.5 h-3.5" /> inactive
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-xs text-muted-foreground">
-                      {u.last_seen_at
-                        ? new Date(u.last_seen_at).toLocaleString()
-                        : "never"}
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center justify-end gap-2">
                         <button
                           disabled={acting === u.id}
                           onClick={() =>
-                            handleAction(u.id, () =>
-                              apiClient.setUserRole(
-                                u.id,
-                                u.role === "ADMIN" ? "EXAMINEE" : "ADMIN"
-                              )
-                            )
+                            handleAction(u.id, () => apiClient.deactivateUser(u.id))
                           }
-                          className="text-xs px-2 py-1 rounded-md border border-border hover:bg-accent inline-flex items-center gap-1"
-                          title="Toggle role"
+                          className="rounded-md bg-rose-500/10 px-2 py-1 text-xs text-rose-700 hover:bg-rose-500/20 dark:text-rose-300"
                         >
-                          <UserCog className="w-3.5 h-3.5" />
-                          {u.role === "ADMIN" ? "Make examinee" : "Make admin"}
+                          Deactivate
                         </button>
-                        {u.is_active ? (
-                          <button
-                            disabled={acting === u.id}
-                            onClick={() =>
-                              handleAction(u.id, () => apiClient.deactivateUser(u.id))
-                            }
-                            className="text-xs px-2 py-1 rounded-md text-rose-700 dark:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20"
-                          >
-                            Deactivate
-                          </button>
-                        ) : (
-                          <button
-                            disabled={acting === u.id}
-                            onClick={() =>
-                              handleAction(u.id, () => apiClient.activateUser(u.id))
-                            }
-                            className="text-xs px-2 py-1 rounded-md text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20"
-                          >
-                            Activate
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+                      ) : (
+                        <button
+                          disabled={acting === u.id}
+                          onClick={() =>
+                            handleAction(u.id, () => apiClient.activateUser(u.id))
+                          }
+                          className="rounded-md bg-emerald-500/10 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300"
+                        >
+                          Activate
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ScrollableDataTable>
 
-function Stat({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: "violet" | "indigo" | "sky" | "rose";
-}) {
-  const tones: Record<typeof tone, string> = {
-    violet: "from-green-600 to-green-700",
-    indigo: "from-emerald-500 to-emerald-600",
-    sky: "from-teal-500 to-teal-600",
-    rose: "from-rose-500 to-orange-600",
-  };
-  return (
-    <div className="p-5 rounded-xl border border-border bg-card flex items-center gap-4">
-      <div
-        className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tones[tone]} flex items-center justify-center`}
-      >
-        <UsersIcon className="w-5 h-5 text-white" />
-      </div>
-      <div>
-        <p className="text-xl font-bold leading-tight">{value}</p>
-        <p className="text-xs text-muted-foreground">{label}</p>
-      </div>
-    </div>
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          loading={loading}
+        />
+      </SectionPanel>
+    </PageShell>
   );
 }

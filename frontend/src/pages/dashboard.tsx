@@ -4,24 +4,25 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
-  Calendar,
-  Clock,
   Eye,
-  FileText,
   Plus,
   Search,
   TrendingUp,
-  Users,
   X,
 } from "lucide-react";
 
 import {
   apiClient,
-  type AlertRow,
   type Exam,
   type ReportSummary,
   type SessionReportRow,
 } from "../core/config/api";
+import { PageHeader } from "../shared/components/layout/page-header";
+import { PageShell } from "../shared/components/layout/page-shell";
+import { SectionPanel } from "../shared/components/layout/section-panel";
+import { StatCard } from "../shared/components/layout/stat-card";
+import { ScrollableDataTable } from "../shared/components/common/scrollable-data-table";
+import { Button } from "../shared/components/ui/button";
 
 interface CreateExamForm {
   title: string;
@@ -47,7 +48,6 @@ export function Dashboard() {
   const navigate = useNavigate();
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [exams, setExams] = useState<Exam[]>([]);
-  const [recentAlerts, setRecentAlerts] = useState<AlertRow[]>([]);
   const [activeSessions, setActiveSessions] = useState<SessionReportRow[]>([]);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -60,15 +60,13 @@ export function Dashboard() {
   const reload = async () => {
     setError(null);
     try {
-      const [s, list, alerts, sessions] = await Promise.all([
+      const [s, list, sessions] = await Promise.all([
         apiClient.getReportSummary(),
         apiClient.getExams(),
-        apiClient.listAlerts({ resolved: false }),
-        apiClient.listSessionReports({ status: "in_progress" }),
+        apiClient.listSessionReports({ status: "in_progress", page_size: 50 }),
       ]);
       setSummary(s);
       setExams(list);
-      setRecentAlerts(alerts.slice(0, 8));
       setActiveSessions(sessions.results);
     } catch (e: any) {
       setError(e?.detail?.() ?? e?.message ?? "Failed to load dashboard");
@@ -136,326 +134,279 @@ export function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Examiner Dashboard</h1>
-          <p className="text-muted-foreground">
-            Manage examinations, monitor live sessions, and review behavioural analytics.
-          </p>
+    <PageShell fill>
+      <PageHeader
+        eyebrow="Examiner"
+        title="Overview"
+        description="Manage examinations and monitor live activity at a glance."
+        actions={
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4" />
+            Create exam
+          </Button>
+        }
+      />
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-2.5 text-sm text-destructive">
+          {error}
         </div>
+      )}
 
-        {error && (
-          <div className="mb-6 px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/5 text-red-600 text-sm">
-            {error}
-          </div>
-        )}
+      <div className="page-metrics mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          label="Active sessions"
+          value={summary ? String(summary.active_sessions) : "—"}
+          hint={summary ? `${summary.total_sessions} total` : undefined}
+          icon={Activity}
+        />
+        <StatCard
+          label="Behavior events"
+          value={summary ? String(summary.behavior_events) : "—"}
+          hint="CV pipeline"
+          icon={BarChart3}
+        />
+        <StatCard
+          label="Unresolved alerts"
+          value={summary ? String(summary.unresolved_alerts) : "—"}
+          hint="Needs review"
+          icon={AlertTriangle}
+          tone="warning"
+        />
+        <StatCard
+          label="Average score"
+          value={
+            summary?.average_score != null
+              ? `${summary.average_score.toFixed(1)}%`
+              : "—"
+          }
+          hint={
+            summary?.pass_rate != null
+              ? `Pass rate ${summary.pass_rate.toFixed(0)}%`
+              : undefined
+          }
+          icon={TrendingUp}
+          tone="success"
+        />
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            label="Active sessions"
-            value={summary ? String(summary.active_sessions) : "—"}
-            hint={summary ? `${summary.total_sessions} total` : "Loading…"}
-            icon={Activity}
-            color="from-emerald-500 to-emerald-600"
-          />
-          <StatCard
-            label="Behavior events"
-            value={summary ? String(summary.behavior_events) : "—"}
-            hint="From CV pipeline"
-            icon={BarChart3}
-            color="from-teal-500 to-teal-600"
-          />
-          <StatCard
-            label="Unresolved alerts"
-            value={summary ? String(summary.unresolved_alerts) : "—"}
-            hint="Requires review"
-            icon={AlertTriangle}
-            color="from-amber-500 to-amber-600"
-          />
-          <StatCard
-            label="Average score"
-            value={
-              summary?.average_score != null
-                ? `${summary.average_score.toFixed(1)}%`
-                : "—"
-            }
-            hint={
-              summary?.pass_rate != null
-                ? `pass rate ${summary.pass_rate.toFixed(0)}%`
-                : "Across completed sessions"
-            }
-            icon={TrendingUp}
-            color="from-green-600 to-green-700"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-card rounded-xl border border-border">
-              <div className="p-6 border-b border-border">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <h2 className="text-xl font-semibold">Examinations</h2>
-                  <button
-                    onClick={() => setShowCreate(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create exam
-                  </button>
-                </div>
-
-                <div className="mt-4 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <input
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Search by title or exam code…"
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {(["all", "draft", "active", "archived"] as const).map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setStatusFilter(s)}
-                      className={`text-xs px-3 py-1 rounded-full border capitalize ${
-                        statusFilter === s
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "border-border hover:bg-accent"
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
+      <div className="page-body page-body-grid page-body-grid--2-1 min-h-0">
+        <SectionPanel
+          fill
+          title="Examinations"
+          description="Draft, publish, and manage your exam catalog."
+          toolbar={
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative min-w-0 flex-1 sm:max-w-sm">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search by title or code…"
+                  className="form-field w-full py-2 pl-9 pr-3 text-sm"
+                />
               </div>
-
-              <div className="divide-y divide-border">
+              <div className="flex flex-wrap gap-1.5">
+                {(["all", "draft", "active", "archived"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStatusFilter(s)}
+                    className={`filter-chip ${statusFilter === s ? "filter-chip--active" : ""}`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          }
+        >
+          <ScrollableDataTable fill>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Exam</th>
+                  <th className="hidden sm:table-cell">Code</th>
+                  <th>Status</th>
+                  <th className="hidden md:table-cell">Details</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
                 {filteredExams.length === 0 && (
-                  <div className="p-10 text-center text-muted-foreground text-sm">
-                    No exams found. Click "Create exam" to add your first one.
-                  </div>
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-sm text-muted-foreground">
+                      No exams match your filters.
+                    </td>
+                  </tr>
                 )}
                 {filteredExams.map((exam) => (
-                  <div key={exam.id} className="p-6 hover:bg-accent/40 transition-colors">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="font-semibold mb-1">{exam.title}</h3>
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          {exam.exam_code && (
-                            <span className="font-mono text-primary">{exam.exam_code}</span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <FileText className="w-4 h-4" /> {exam.total_questions} questions
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" /> {exam.duration_minutes}m
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" /> {new Date(exam.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3">
+                  <tr key={exam.id}>
+                    <td className="max-w-[14rem] font-medium sm:max-w-md">
+                      <span className="line-clamp-2">{exam.title}</span>
+                    </td>
+                    <td className="hidden font-mono text-sm text-primary sm:table-cell">
+                      {exam.exam_code ?? "—"}
+                    </td>
+                    <td>
                       <StatusPill status={exam.status} />
-                      {exam.status === "draft" && (
-                        <button
-                          onClick={() => publish(exam)}
-                          className="text-xs px-3 py-1 rounded-md border border-border hover:bg-accent"
-                        >
-                          Publish
-                        </button>
-                      )}
-                      {exam.status !== "archived" && (
-                        <button
-                          onClick={() => archive(exam)}
-                          className="text-xs px-3 py-1 rounded-md border border-border hover:bg-accent"
-                        >
-                          Archive
-                        </button>
-                      )}
-                      <Link
-                        to={`/examiner/exams/${exam.id}/edit`}
-                        className="ml-auto inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-primary text-primary-foreground hover:bg-primary/90"
-                      >
-                        <Eye className="w-4 h-4" /> Manage
-                      </Link>
-                    </div>
-                  </div>
+                    </td>
+                    <td className="hidden text-sm text-muted-foreground md:table-cell">
+                      {exam.total_questions} questions · {exam.duration_minutes} min
+                    </td>
+                    <td>
+                      <div className="flex items-center justify-end gap-2">
+                        {exam.status === "draft" && (
+                          <Button variant="outline" size="sm" onClick={() => publish(exam)}>
+                            Publish
+                          </Button>
+                        )}
+                        {exam.status !== "archived" && (
+                          <Button variant="outline" size="sm" onClick={() => archive(exam)}>
+                            Archive
+                          </Button>
+                        )}
+                        <Button asChild size="sm">
+                          <Link to={`/examiner/exams/${exam.id}/edit`}>
+                            <Eye className="h-4 w-4" />
+                            Manage
+                          </Link>
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
                 ))}
-              </div>
-            </div>
+              </tbody>
+            </table>
+          </ScrollableDataTable>
+        </SectionPanel>
 
-            <div className="bg-card rounded-xl border border-border">
-              <div className="p-6 border-b border-border flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Live sessions</h2>
-                <Link to="/monitoring" className="text-sm text-primary hover:underline">
-                  Open full monitoring
-                </Link>
-              </div>
-              <div className="divide-y divide-border max-h-96 overflow-y-auto">
+        <SectionPanel
+          fill
+          title="Live sessions"
+          description="Examinees currently in progress."
+          actionHref="/monitoring"
+          actionLabel="Open monitoring"
+        >
+          <ScrollableDataTable fill>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Examinee</th>
+                  <th className="hidden lg:table-cell">Exam</th>
+                  <th className="text-right"> </th>
+                </tr>
+              </thead>
+              <tbody>
                 {activeSessions.length === 0 && (
-                  <div className="p-10 text-center text-sm text-muted-foreground">
-                    No live sessions right now.
-                  </div>
+                  <tr>
+                    <td colSpan={3} className="py-12 text-center text-sm text-muted-foreground">
+                      No live sessions right now.
+                    </td>
+                  </tr>
                 )}
                 {activeSessions.map((s) => (
-                  <div key={s.id} className="p-4 flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                      <Users className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{s.user_full_name || s.user}</p>
-                      <p className="text-xs text-muted-foreground truncate">{s.exam_title}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {s.behavior_event_count} events
-                    </span>
-                    <Link
-                      to={`/monitoring/${s.id}`}
-                      className="text-sm rounded-md px-3 py-1 border border-border hover:bg-accent"
-                    >
-                      Inspect
-                    </Link>
-                  </div>
+                  <tr key={s.id}>
+                    <td>
+                      <p className="font-medium">{s.user_full_name || s.user}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground lg:hidden">
+                        {s.exam_title}
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {s.behavior_event_count} behavior events
+                      </p>
+                    </td>
+                    <td className="hidden max-w-[10rem] text-sm text-muted-foreground lg:table-cell">
+                      <span className="line-clamp-2">{s.exam_title}</span>
+                    </td>
+                    <td className="text-right">
+                      <Button asChild variant="outline" size="sm">
+                        <Link to={`/monitoring/${s.id}`}>Inspect</Link>
+                      </Button>
+                    </td>
+                  </tr>
                 ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-1">
-            <div className="bg-card rounded-xl border border-border sticky top-20">
-              <div className="p-6 border-b border-border">
-                <h2 className="text-xl font-semibold">Recent alerts</h2>
-              </div>
-
-              <div className="divide-y divide-border max-h-[600px] overflow-y-auto">
-                {recentAlerts.length === 0 && (
-                  <div className="p-10 text-center text-sm text-muted-foreground">
-                    No alerts to review.
-                  </div>
-                )}
-                {recentAlerts.map((alert) => (
-                  <div key={alert.id} className="p-4 hover:bg-accent/40 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                          alert.severity === "high"
-                            ? "bg-red-500"
-                            : alert.severity === "medium"
-                            ? "bg-amber-500"
-                            : "bg-blue-500"
-                        }`}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm mb-1 truncate">
-                          {alert.session_user ?? "Examinee"}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {alert.exam_title}
-                        </p>
-                        <p className="text-sm mb-1">{alert.alert_type}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(alert.created_at).toLocaleTimeString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="p-4 border-t border-border">
-                <Link
-                  to="/monitoring"
-                  className="block w-full text-center text-sm text-primary hover:underline"
-                >
-                  View all alerts
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
+              </tbody>
+            </table>
+          </ScrollableDataTable>
+        </SectionPanel>
       </div>
 
       {showCreate && (
         <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
           onClick={() => setShowCreate(false)}
         >
           <div
-            className="bg-card rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            className="surface-panel max-h-[90vh] w-full max-w-2xl overflow-y-auto p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-6">
+            <div className="mb-6 flex items-center justify-between">
               <h3 className="text-2xl font-semibold">Create new exam</h3>
               <button
                 onClick={() => setShowCreate(false)}
-                className="p-2 hover:bg-accent rounded-lg"
+                className="rounded-lg p-2 hover:bg-accent"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-sm mb-1">Title</label>
+                <label className="mb-1 block text-sm">Title</label>
                 <input
                   required
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   placeholder="Legacy College Entrance Exam 2026"
-                  className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                  className="form-field"
                 />
               </div>
 
               <div>
-                <label className="block text-sm mb-1">Exam code (optional)</label>
+                <label className="mb-1 block text-sm">Exam code (optional)</label>
                 <input
                   value={form.exam_code}
                   onChange={(e) => setForm({ ...form, exam_code: e.target.value })}
                   placeholder="ENT-2026-A"
-                  className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                  className="form-field"
                 />
               </div>
 
               <div>
-                <label className="block text-sm mb-1">Description</label>
+                <label className="mb-1 block text-sm">Description</label>
                 <textarea
                   rows={3}
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                  className="form-field"
                 />
               </div>
 
               <div>
-                <label className="block text-sm mb-1">Instructions</label>
+                <label className="mb-1 block text-sm">Instructions</label>
                 <textarea
                   rows={3}
                   value={form.instructions}
                   onChange={(e) => setForm({ ...form, instructions: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                  className="form-field"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm mb-1">Duration (minutes)</label>
+                  <label className="mb-1 block text-sm">Duration (minutes)</label>
                   <input
                     type="number"
                     min={1}
                     required
                     value={form.duration_minutes}
                     onChange={(e) => setForm({ ...form, duration_minutes: Number(e.target.value) })}
-                    className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                    className="form-field"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm mb-1">Passing score (%)</label>
+                  <label className="mb-1 block text-sm">Passing score (%)</label>
                   <input
                     type="number"
                     min={0}
@@ -463,91 +414,52 @@ export function Dashboard() {
                     required
                     value={form.passing_score}
                     onChange={(e) => setForm({ ...form, passing_score: Number(e.target.value) })}
-                    className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                    className="form-field"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm mb-1">Max attempts per examinee</label>
+                <label className="mb-1 block text-sm">Max attempts per examinee</label>
                 <input
                   type="number"
                   min={1}
                   value={form.max_attempts}
                   onChange={(e) => setForm({ ...form, max_attempts: Number(e.target.value) })}
-                  className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                  className="form-field"
                 />
               </div>
 
-              {createError && (
-                <p className="text-sm text-red-500">{createError}</p>
-              )}
+              {createError && <p className="text-sm text-red-500">{createError}</p>}
 
               <div className="flex gap-3 pt-4">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  className="flex-1"
                   onClick={() => setShowCreate(false)}
-                  className="flex-1 px-4 py-2 rounded-lg border border-border hover:bg-accent"
                 >
                   Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createBusy}
-                  className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-                >
+                </Button>
+                <Button type="submit" disabled={createBusy} className="flex-1">
                   {createBusy ? "Creating…" : "Create & add questions"}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  color,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  icon: typeof Activity;
-  color: string;
-}) {
-  return (
-    <div className="p-6 rounded-xl border border-border bg-card">
-      <div className="flex items-start justify-between mb-4">
-        <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${color} flex items-center justify-center`}>
-          <Icon className="w-6 h-6 text-white" />
-        </div>
-        <TrendingUp className="w-4 h-4 text-emerald-500" />
-      </div>
-      <div className="text-3xl font-bold mb-1">{value}</div>
-      <div className="text-sm text-muted-foreground mb-1">{label}</div>
-      <div className="text-xs text-muted-foreground">{hint}</div>
-    </div>
+    </PageShell>
   );
 }
 
 function StatusPill({ status }: { status: string }) {
   const styles: Record<string, string> = {
-    active: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-    draft: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    archived: "bg-gray-500/10 text-gray-600 dark:text-gray-400",
+    active: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400",
+    draft: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
+    archived: "bg-muted text-muted-foreground",
   };
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs font-medium ${
-        styles[status] ?? styles.archived
-      }`}
-    >
-      {status}
-    </span>
+    <span className={`status-pill ${styles[status] ?? styles.archived}`}>{status}</span>
   );
 }

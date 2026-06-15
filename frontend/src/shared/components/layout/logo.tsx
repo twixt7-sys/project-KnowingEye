@@ -1,11 +1,7 @@
 import { brand } from "../../../core/config/brand";
 
 /**
- * App / product mark.
- *
- * By default this renders the built-in vector "eye" (which follows the green
- * theme via `currentColor`). To use an image instead, set `useImageAppLogo: true`
- * in `core/config/brand.ts` and drop your file at the configured path.
+ * App / product mark — LCC-inspired palette: green dominant, white, subtle blue & yellow.
  */
 export function Logo({ className = "w-10 h-10" }: { className?: string }) {
   if (brand.useImageAppLogo) {
@@ -24,38 +20,43 @@ export function Logo({ className = "w-10 h-10" }: { className?: string }) {
       viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
     >
-      {/* Outer eye shape */}
+      <circle cx="50" cy="50" r="46" fill="#166534" />
+      <circle cx="50" cy="50" r="38" fill="#f8fffa" />
       <path
-        d="M50 25C30 25 15 40 5 50C15 60 30 75 50 75C70 75 85 60 95 50C85 40 70 25 50 25Z"
-        fill="currentColor"
-        fillOpacity="0.1"
-        stroke="currentColor"
+        d="M50 28C32 28 18 42 10 50C18 58 32 72 50 72C68 72 82 58 90 50C82 42 68 28 50 28Z"
+        fill="#166534"
+        fillOpacity="0.12"
+        stroke="#166534"
         strokeWidth="2"
       />
-      {/* Iris */}
-      <circle
-        cx="50"
-        cy="50"
-        r="15"
-        fill="currentColor"
-        fillOpacity="0.2"
-        stroke="currentColor"
-        strokeWidth="2"
+      <circle cx="50" cy="50" r="14" fill="#22c55e" stroke="#166534" strokeWidth="2" />
+      <circle cx="50" cy="50" r="7" fill="#166534" />
+      <circle cx="54" cy="46" r="2.5" fill="#f8fffa" />
+      {/* Subtle LCC accent arcs */}
+      <path
+        d="M50 8 A42 42 0 0 1 78 22"
+        stroke="#1d4ed8"
+        strokeWidth="3"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.85"
       />
-      {/* Pupil */}
-      <circle cx="50" cy="50" r="8" fill="currentColor" />
-      {/* Highlight */}
-      <circle cx="55" cy="45" r="3" fill="white" fillOpacity="0.8" />
+      <path
+        d="M78 78 A42 42 0 0 1 50 92"
+        stroke="#eab308"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        fill="none"
+        opacity="0.9"
+      />
     </svg>
   );
 }
 
 /**
- * Institution / school logo placeholder.
- *
- * Swap the image by replacing `frontend/public/branding/institution-logo.svg`
- * or updating `institutionLogo` in `core/config/brand.ts`.
+ * Institution / school logo — LCC green & white with minimal blue/yellow accents.
  */
 export function InstitutionLogo({ className = "w-10 h-10" }: { className?: string }) {
   return (

@@ -1,0 +1,15 @@
+Frontend
+
+Backend
+
+pipeline
+
+| Behavior                   | MVP Detection                       |
+| -------------------------- | ----------------------------------- |
+| No face                    | face missing for X seconds          |
+| Different person           | face embedding mismatch             |
+| Looking away               | head/gaze angle exceeds threshold   |
+| Bad posture / leaving seat | upper body/keypoints abnormal       |
+| Multiple faces             | more than one face detected         |
+| Suspicious pattern         | repeated flags within a time window |
+

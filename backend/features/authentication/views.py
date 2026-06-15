@@ -190,3 +190,19 @@ class UserListViewSet(viewsets.ReadOnlyModelViewSet):
         user.role = new_role
         user.save(update_fields=["role"])
         return Response(UserSerializer(user, context={"request": request}).data)
+
+    @action(detail=False, methods=["get"])
+    def stats(self, request):
+        """Aggregate user counts for admin dashboards (not affected by search)."""
+        denied = self._require_admin()
+        if denied:
+            return denied
+        qs = User.objects.all()
+        return Response(
+            {
+                "total": qs.count(),
+                "admins": qs.filter(role=User.Role.ADMIN).count(),
+                "examinees": qs.filter(role=User.Role.EXAMINEE).count(),
+                "inactive": qs.filter(is_active=False).count(),
+            }
+        )

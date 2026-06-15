@@ -195,6 +195,33 @@ export interface SessionReportRow {
   behavior_event_count: number;
 }
 
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+export interface UserStats {
+  total: number;
+  admins: number;
+  examinees: number;
+  inactive: number;
+}
+
+type QueryParamValue = string | number | boolean | undefined | null;
+
+function toQuery(params?: Record<string, QueryParamValue>): string {
+  if (!params) return "";
+  const sp = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    sp.set(key, String(value));
+  }
+  const qs = sp.toString();
+  return qs ? `?${qs}` : "";
+}
+
 // ---------------------------------------------------------------------------
 // Token storage
 // ---------------------------------------------------------------------------
@@ -349,14 +376,19 @@ class ApiClient {
   }
 
   // ----- Admin user management -----
-  async listUsers(params?: { role?: string; search?: string }) {
-    const qs = params
-      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
-      : "";
-    const data = await this.request<
-      { results?: ProfileUser[]; count?: number } | ProfileUser[]
-    >(`/auth/users/${qs}`);
-    return Array.isArray(data) ? data : data.results ?? [];
+  async listUsers(params?: {
+    role?: string;
+    search?: string;
+    page?: number;
+    page_size?: number;
+  }) {
+    return this.request<PaginatedResponse<ProfileUser>>(
+      `/auth/users/${toQuery(params)}`
+    );
+  }
+
+  async getUserStats() {
+    return this.request<UserStats>("/auth/users/stats/");
   }
 
   async activateUser(id: number) {
@@ -560,12 +592,15 @@ class ApiClient {
     return this.request<ReportSummary>("/reports/summary/");
   }
 
-  async listSessionReports(params?: { status?: string; exam?: number }) {
-    const qs = params
-      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
-      : "";
-    return this.request<{ results: SessionReportRow[]; count: number }>(
-      `/reports/sessions/${qs}`
+  async listSessionReports(params?: {
+    status?: string;
+    exam?: number;
+    search?: string;
+    page?: number;
+    page_size?: number;
+  }) {
+    return this.request<PaginatedResponse<SessionReportRow>>(
+      `/reports/sessions/${toQuery(params)}`
     );
   }
 
@@ -586,9 +621,23 @@ class ApiClient {
     }>("/reports/timeseries/");
   }
 
-  exportSessionsCSV() {
-    // Returns a download URL with the current token; caller can <a href> it.
-    return `${this.baseURL}/reports/export/csv/`;
+  async downloadSessionsCSV(): Promise<void> {
+    const url = `${this.baseURL}/reports/export/csv/`;
+    const headers: Record<string, string> = { Accept: "text/csv" };
+    if (tokenStore.access) {
+      headers.Authorization = `Bearer ${tokenStore.access}`;
+    }
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      throw new ApiError(res.status, await res.text());
+    }
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = "knowing-eye-sessions.csv";
+    anchor.click();
+    URL.revokeObjectURL(objectUrl);
   }
 }
 

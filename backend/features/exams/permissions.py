@@ -26,6 +26,8 @@ class IsExamOwnerOrAdmin(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method in SAFE_METHODS:
             return True
+        if getattr(request.user, "is_admin", lambda: False)():
+            return True
         owner_id = getattr(obj, "created_by_id", None) or getattr(
             getattr(obj, "exam", None), "created_by_id", None
         )

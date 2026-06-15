@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+*.sqlite3
+
+# Node
+node_modules/
+dist/
+.env.local
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Runtime / build artifacts
+backend/logs/
+backend/media/
+backend/staticfiles/
+*.log
+
+# ML caches (optional local models)
+*.pt
+*.onnx
+runs/

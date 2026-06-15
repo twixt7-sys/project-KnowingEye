@@ -1,78 +1,57 @@
 import { Link, Navigate } from "react-router";
-import {
-  Activity,
-  ArrowRight,
-  Camera,
-  CheckCircle,
-  FileText,
-  ShieldCheck,
-} from "lucide-react";
+import { Activity, ArrowRight, Camera, CheckCircle, FileText } from "lucide-react";
 import { useAuth } from "../core/providers/auth-provider";
 import { StudentDashboard } from "./student-dashboard";
+import { Button } from "../shared/components/ui/button";
 
 const highlights = [
   {
     icon: FileText,
     title: "Available exams",
-    text: "View scheduled exams and start your attempt when you are ready.",
+    text: "See what is scheduled and start when ready.",
   },
   {
     icon: Camera,
     title: "Monitored sessions",
-    text: "Your webcam stays active so behavior can be reviewed fairly.",
+    text: "Your webcam helps keep the process fair.",
   },
   {
     icon: CheckCircle,
-    title: "Results & history",
-    text: "Review completed attempts and scores after submission.",
+    title: "Results",
+    text: "Review scores and session history after submission.",
   },
 ];
 
 function ExamineeLanding() {
   return (
-    <section className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-16">
-      <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 via-primary/5 to-transparent" />
-
-      <div className="relative w-full max-w-3xl text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent text-accent-foreground text-sm mb-6">
-          <ShieldCheck className="w-4 h-4 text-secondary" />
-          Examinee portal
-        </div>
-
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">Examinee Workspace</h1>
-        <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-8">
-          Access your exams, follow session instructions, and submit answers in a
-          monitored online environment.
+    <section className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-4xl flex-col justify-center px-4 py-16">
+      <div className="surface-panel p-8 sm:p-10">
+        <p className="text-xs font-medium uppercase tracking-wider text-secondary">Examinee portal</p>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+          Take your exam in a clear, guided flow
+        </h1>
+        <p className="mt-3 max-w-2xl text-muted-foreground">
+          Access assigned exams, follow simple instructions, and submit answers in a monitored environment.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mb-12">
-          <Link
-            to="/login"
-            state={{ from: { pathname: "/examinee" } }}
-            className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            Sign in as examinee
-            <ArrowRight className="w-5 h-5" />
-          </Link>
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-lg border border-border bg-card hover:bg-accent transition-colors"
-          >
-            Back to home
-          </Link>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <Button asChild size="lg">
+            <Link to="/login" state={{ from: { pathname: "/examinee" } }}>
+              Sign in as examinee
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="lg">
+            <Link to="/">Back to home</Link>
+          </Button>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3 text-left">
+        <div className="mt-10 grid gap-4 sm:grid-cols-3">
           {highlights.map((item) => (
-            <div
-              key={item.title}
-              className="p-5 rounded-xl border border-border bg-card"
-            >
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-secondary to-primary flex items-center justify-center mb-3">
-                <item.icon className="w-5 h-5 text-white" />
-              </div>
-              <h3 className="font-semibold mb-1">{item.title}</h3>
-              <p className="text-sm text-muted-foreground">{item.text}</p>
+            <div key={item.title} className="rounded-lg border border-border/70 bg-background/50 p-4">
+              <item.icon className="mb-3 h-5 w-5 text-secondary" />
+              <h3 className="font-medium">{item.title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{item.text}</p>
             </div>
           ))}
         </div>
@@ -86,8 +65,8 @@ export function Examinee() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Activity className="w-8 h-8 animate-pulse text-primary" />
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Activity className="h-8 w-8 animate-pulse text-primary" />
       </div>
     );
   }

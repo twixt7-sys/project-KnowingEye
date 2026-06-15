@@ -55,6 +55,13 @@ class ReportsAPITests(APITestCase):
         self.assertEqual(row["alert_count"], 1)
         self.assertEqual(row["unresolved_alert_count"], 1)
 
+    def test_list_session_reports_pagination(self):
+        response = self.client.get("/api/reports/sessions/?page=1&page_size=1")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertIsNone(response.data["previous"])
+
     def test_export_csv(self):
         response = self.client.get("/api/reports/export/csv/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)

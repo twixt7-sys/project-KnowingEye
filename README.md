@@ -30,7 +30,9 @@ project-KnowingEye/
 │   ├── knowing_eye/         preprocessing/detection/recognition/behavior packages
 │   ├── api/                 FastAPI standalone playground (optional)
 │   └── config/pipeline.yaml Thresholds & model paths
-├── docs/                    Architecture, WBS, IEEE / UTAUT testing packs
+├── docs/                    Architecture, deployment, IEEE / UTAUT testing (Knowing Eye)
+├── misc/                    Archived artifacts & dead code (see misc/README.md)
+├── REPOSITORY_GUIDE.md      Contributor map — start here if new to the repo
 └── start-dev.cmd            One-click dev bootstrap (Windows)
 ```
 
@@ -43,12 +45,17 @@ Double-click `start-dev.cmd` at the repo root. This boots:
 
 ### Manual
 
+**First time only** — install Python dependencies (creates `backend/venv/`):
+
+```powershell
+cd backend
+.\setup-venv.cmd
+```
+
 ```powershell
 # --- 1. Backend ---
 cd backend
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+.\venv\Scripts\Activate.ps1          # skip if you used setup-venv.cmd
 $env:DB_ENGINE = "django.db.backends.sqlite3"
 python manage.py migrate
 python manage.py seed_db --noinput      # first run only
@@ -138,7 +145,7 @@ $env:OPENBLAS_NUM_THREADS = "1"
 python manage.py test features
 ```
 
-Currently 23 tests across:
+Currently **32 tests** across:
 
 * `features.authentication` — JWT, registration, profile, password change, refresh
 * `features.exams` — CRUD, publish/archive
@@ -160,6 +167,7 @@ See [docs/deployment.md](docs/deployment.md) for the full guide. Highlights:
 
 ## Documentation
 
+* **Repository guide:** [REPOSITORY_GUIDE.md](REPOSITORY_GUIDE.md)
 * **Implementation status:** [docs/general/Implementation_Status_Summary.md](docs/general/Implementation_Status_Summary.md)
 * **WBS:** [docs/general/workflow.tree](docs/general/workflow.tree)
 * **Deployment:** [docs/deployment.md](docs/deployment.md)

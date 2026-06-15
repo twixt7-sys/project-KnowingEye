@@ -174,7 +174,7 @@ export function Login() {
                   value={formData.username}
                   onChange={handleInputChange}
                   placeholder="Enter your username"
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="form-field w-full pl-10 pr-4 py-3"
                   required
                 />
               </div>
@@ -194,7 +194,7 @@ export function Login() {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="Enter your email"
-                    className="w-full pl-4 pr-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="form-field w-full px-4 py-3"
                     required
                   />
                 </div>
@@ -215,7 +215,7 @@ export function Login() {
                   value={formData.password}
                   onChange={handleInputChange}
                   placeholder="Enter your password"
-                  className="w-full pl-10 pr-12 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="form-field w-full pl-10 pr-12 py-3"
                   required
                 />
                 <button
@@ -247,7 +247,7 @@ export function Login() {
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     placeholder="Confirm your password"
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="form-field w-full pl-10 pr-4 py-3"
                     required
                   />
                 </div>

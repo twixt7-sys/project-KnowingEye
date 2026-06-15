@@ -17,6 +17,11 @@ import {
   type AlertRow,
   type SessionReportRow,
 } from "../core/config/api";
+import { PageHeader } from "../shared/components/layout/page-header";
+import { PageShell } from "../shared/components/layout/page-shell";
+import { SectionPanel } from "../shared/components/layout/section-panel";
+import { StatCard } from "../shared/components/layout/stat-card";
+import { Button } from "../shared/components/ui/button";
 
 type LiveAlert = {
   ts: number;
@@ -48,7 +53,7 @@ export function Monitoring() {
     setError(null);
     try {
       const [sessionsRes, alertsRes, health] = await Promise.all([
-        apiClient.listSessionReports({ status: "in_progress" }),
+        apiClient.listSessionReports({ status: "in_progress", page_size: 50 }),
         apiClient.listAlerts({ resolved: false }),
         apiClient.getMonitoringHealth().catch(() => null),
       ]);
@@ -139,119 +144,107 @@ export function Monitoring() {
   );
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold mb-1">Live Monitoring</h1>
-            <p className="text-muted-foreground">
-              Real-time behavior analytics across every active exam session.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
+    <PageShell>
+      <PageHeader
+        eyebrow="Examiner"
+        title="Live monitoring"
+        description="Real-time behavior analytics across every active exam session."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
             <span
-              className={`text-xs px-3 py-1.5 rounded-full border inline-flex items-center gap-1.5 ${
+              className={`status-pill inline-flex items-center gap-1.5 border ${
                 wsConnected
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                   : "border-border bg-muted text-muted-foreground"
               }`}
               title={wsConnected ? "Live WebSocket connected" : "Reconnecting…"}
             >
-              <Radio className={`w-3 h-3 ${wsConnected ? "animate-pulse" : ""}`} />
+              <Radio className={`h-3 w-3 ${wsConnected ? "animate-pulse" : ""}`} />
               {wsConnected ? "Live" : "Offline"}
             </span>
-            <span className="text-xs px-3 py-1.5 rounded-full bg-muted">
+            <span className="status-pill bg-muted text-muted-foreground">
               Pipeline: <strong className="ml-1">{pipelineMode}</strong>
             </span>
-            <button
-              onClick={load}
-              className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm border border-border hover:bg-accent transition-colors"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <Button variant="outline" onClick={load} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               Refresh
+            </Button>
+          </div>
+        }
+      />
+
+      {error && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      <div className="page-metrics grid grid-cols-1 gap-3 md:grid-cols-3">
+        <StatCard
+          icon={Activity}
+          label="Active sessions"
+          value={String(summary.active)}
+          tone="success"
+        />
+        <StatCard
+          icon={ShieldAlert}
+          label="Sessions with alerts"
+          value={String(summary.highRisk)}
+          tone="danger"
+        />
+        <StatCard
+          icon={AlertTriangle}
+          label="Behavior events captured"
+          value={String(summary.events)}
+          tone="warning"
+        />
+      </div>
+
+      {liveAlerts.length > 0 && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5">
+          <div className="flex items-center justify-between border-b border-destructive/20 px-5 py-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
+              <Radio className="h-4 w-4 animate-pulse" />
+              Live alert feed
+            </div>
+            <button
+              onClick={() => setLiveAlerts([])}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Clear
             </button>
           </div>
-        </header>
-
-        {error && (
-          <div className="mb-6 px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400 text-sm">
-            {error}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Stat icon={Activity} label="Active sessions" value={summary.active} tint="from-emerald-500 to-emerald-600" />
-          <Stat
-            icon={ShieldAlert}
-            label="Sessions with unresolved alerts"
-            value={summary.highRisk}
-            tint="from-rose-500 to-rose-600"
-          />
-          <Stat
-            icon={AlertTriangle}
-            label="Behavior events captured"
-            value={summary.events}
-            tint="from-amber-500 to-amber-600"
-          />
-        </div>
-
-        {liveAlerts.length > 0 && (
-          <div className="mb-6 rounded-xl border border-rose-500/30 bg-rose-500/5">
-            <div className="px-5 py-3 border-b border-rose-500/20 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-semibold text-rose-600 dark:text-rose-400">
-                <Radio className="w-4 h-4 animate-pulse" />
-                Live alert feed
-              </div>
-              <button
-                onClick={() => setLiveAlerts([])}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                Clear
-              </button>
-            </div>
-            <div className="max-h-44 overflow-y-auto divide-y divide-rose-500/10">
-              {liveAlerts.map((a, i) => (
-                <div
-                  key={`${a.ts}-${i}`}
-                  className="px-5 py-2 flex items-center gap-3 text-sm"
+          <div className="max-h-44 divide-y divide-destructive/10 overflow-y-auto">
+            {liveAlerts.map((a, i) => (
+              <div key={`${a.ts}-${i}`} className="flex items-center gap-3 px-5 py-2.5 text-sm">
+                <span
+                  className={`status-pill border ${SEVERITY_COLORS[a.severity] ?? ""}`}
                 >
-                  <span
-                    className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border ${
-                      SEVERITY_COLORS[a.severity] ?? ""
-                    }`}
-                  >
-                    {a.severity}
-                  </span>
-                  <span className="font-medium">{a.type}</span>
-                  <span className="text-muted-foreground truncate flex-1">
-                    {a.message}
-                  </span>
-                  {a.sessionId && (
-                    <Link
-                      to={`/monitoring/${a.sessionId}`}
-                      className="text-xs text-primary hover:underline"
-                    >
-                      Inspect
-                    </Link>
-                  )}
-                  <span className="text-[10px] text-muted-foreground tabular-nums">
-                    {new Date(a.ts).toLocaleTimeString()}
-                  </span>
-                </div>
-              ))}
-            </div>
+                  {a.severity}
+                </span>
+                <span className="font-medium">{a.type}</span>
+                <span className="flex-1 truncate text-muted-foreground">{a.message}</span>
+                {a.sessionId && (
+                  <Link to={`/monitoring/${a.sessionId}`} className="section-link text-xs">
+                    Inspect
+                  </Link>
+                )}
+                <span className="text-[10px] tabular-nums text-muted-foreground">
+                  {new Date(a.ts).toLocaleTimeString()}
+                </span>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <div className="xl:col-span-2 bg-card rounded-xl border border-border">
-            <div className="p-5 border-b border-border flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Active sessions</h2>
-              <span className="text-xs text-muted-foreground">
-                Auto-refresh every 15s
-              </span>
-            </div>
-            <div className="divide-y divide-border">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <SectionPanel
+          className="xl:col-span-2"
+          title="Active sessions"
+          description="Auto-refresh every 15 seconds."
+        >
+          <div className="divide-y divide-border">
               {sessions.length === 0 && !loading && (
                 <div className="p-10 text-center text-sm text-muted-foreground">
                   No active sessions right now.
@@ -294,16 +287,13 @@ export function Monitoring() {
                 </div>
               ))}
             </div>
-          </div>
+        </SectionPanel>
 
-          <div className="bg-card rounded-xl border border-border">
-            <div className="p-5 border-b border-border">
-              <h2 className="text-lg font-semibold">Unresolved alerts</h2>
-              <p className="text-xs text-muted-foreground">
-                Newest first; click resolve once reviewed.
-              </p>
-            </div>
-            <div className="divide-y divide-border max-h-[640px] overflow-y-auto">
+        <SectionPanel
+          title="Unresolved alerts"
+          description="Newest first; resolve once reviewed."
+        >
+          <div className="max-h-[640px] divide-y divide-border overflow-y-auto">
               {alerts.length === 0 && !loading && (
                 <div className="p-10 text-center text-sm text-muted-foreground">
                   No active alerts.
@@ -339,33 +329,8 @@ export function Monitoring() {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
+        </SectionPanel>
       </div>
-    </div>
-  );
-}
-
-function Stat({
-  icon: Icon,
-  label,
-  value,
-  tint,
-}: {
-  icon: typeof Activity;
-  label: string;
-  value: number;
-  tint: string;
-}) {
-  return (
-    <div className="p-5 rounded-xl border border-border bg-card flex items-center gap-4">
-      <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${tint} flex items-center justify-center`}>
-        <Icon className="w-6 h-6 text-white" />
-      </div>
-      <div>
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-xs text-muted-foreground">{label}</p>
-      </div>
-    </div>
+    </PageShell>
   );
 }

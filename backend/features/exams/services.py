@@ -19,6 +19,8 @@ User = get_user_model()
 
 
 def _is_owner_or_superuser(exam: Exam, user) -> bool:
+    if getattr(user, "is_admin", lambda: False)():
+        return True
     return exam.created_by_id == getattr(user, "id", None) or getattr(
         user, "is_superuser", False
     )

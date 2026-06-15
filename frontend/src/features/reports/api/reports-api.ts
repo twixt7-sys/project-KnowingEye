@@ -19,6 +19,6 @@ export function fetchTimeseries() {
   return apiClient.getTimeseries();
 }
 
-export function sessionsCsvUrl() {
-  return apiClient.exportSessionsCSV();
+export async function downloadSessionsCsv() {
+  return apiClient.downloadSessionsCSV();
 }

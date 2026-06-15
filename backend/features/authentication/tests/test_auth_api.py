@@ -47,6 +47,24 @@ class AuthenticationAPITests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(username="new_student").exists())
+        user = User.objects.get(username="new_student")
+        self.assertEqual(user.role, User.Role.EXAMINEE)
+
+    def test_register_rejects_admin_role_escalation(self):
+        response = self.client.post(
+            "/api/auth/register/",
+            {
+                "username": "evil_admin",
+                "email": "evil@test.local",
+                "password": "TestPass123!",
+                "password2": "TestPass123!",
+                "role": User.Role.ADMIN,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        user = User.objects.get(username="evil_admin")
+        self.assertEqual(user.role, User.Role.EXAMINEE)
 
     def test_profile_me(self):
         self.client.force_authenticate(user=self.examinee)

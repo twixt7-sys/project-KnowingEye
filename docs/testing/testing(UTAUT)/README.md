@@ -3,7 +3,7 @@
 Structured data for **Chapter 7 §§7.6–7.8** (UTAUT framework, survey, analysis), adapted for the **Knowing Eye** proctored examination platform.
 
 Functional IEEE testing: [`docs/testing/testing(IEEE)/`](../testing(IEEE)/).  
-Frozen OSAS reference: [`testing(UTAUT)[reference]/`](../testing(UTAUT)[reference]/).
+Frozen OSAS reference: [`misc/archive/osas-utaut-reference/`](../../../misc/archive/osas-utaut-reference/).
 
 ## Quick start
 

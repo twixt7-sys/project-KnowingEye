@@ -82,8 +82,7 @@ export function Profile() {
   }
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl space-y-6">
+    <div className="space-y-6">
         <h1 className="text-3xl md:text-4xl font-bold mb-1">Profile</h1>
         <p className="text-muted-foreground">
           Update your personal details, avatar and password.
@@ -192,7 +191,6 @@ export function Profile() {
             </button>
           </div>
         </section>
-      </div>
     </div>
   );
 }

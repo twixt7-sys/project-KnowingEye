@@ -62,6 +62,7 @@ class Command(BaseCommand):
             self.load_questions(data_dir)
             self.load_sessions(data_dir)
             self.load_responses(data_dir)
+            self.reset_sequences()
 
         self.stdout.write(self.style.SUCCESS('CSV seeding complete.'))
 
@@ -281,7 +282,36 @@ class Command(BaseCommand):
         if user_ids:
             self.user_model.objects.filter(id__in=user_ids).delete()
 
+        self.reset_sequences()
         self.stdout.write(self.style.SUCCESS('Seeded CSV data removed.'))
+
+    def reset_sequences(self):
+        """Bump PostgreSQL sequences after rows inserted with explicit IDs."""
+        from django.db import connection
+
+        if connection.vendor != 'postgresql':
+            return
+
+        models = (
+            self.user_model,
+            Exam,
+            Question,
+            Response,
+        )
+        with connection.cursor() as cursor:
+            for model in models:
+                table = model._meta.db_table
+                pk_col = model._meta.pk.column
+                cursor.execute(
+                    f"""
+                    SELECT setval(
+                        pg_get_serial_sequence(%s, %s),
+                        COALESCE((SELECT MAX({pk_col}) FROM {table}), 1),
+                        true
+                    )
+                    """,
+                    [table, pk_col],
+                )
 
     def read_csv_ids(self, csv_path, id_field='id', cls=int):
         ids = []

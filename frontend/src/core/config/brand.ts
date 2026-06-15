@@ -19,6 +19,11 @@
  *       - Replace `frontend/public/branding/institution-logo.svg`
  *         (or add institution-logo.png and update `institutionLogo` below).
  *
+ *  3. Campus / school background (home page + signed-in workspace):
+ *       - Replace `frontend/public/branding/school-campus.svg` with your photo, e.g.
+ *         `school-campus.jpg` or `school-campus.webp`, then update `schoolCampusImage`.
+ *       - Recommended size: 1920×1080 or larger, landscape orientation.
+ *
  *  Paths are resolved from the web root, so a file at
  *  `frontend/public/branding/app-logo.svg` is referenced as
  *  `/branding/app-logo.svg`.
@@ -40,6 +45,12 @@ export const brand = {
 
   /** Institution / school logo placeholder. */
   institutionLogo: "/branding/institution-logo.svg",
+
+  /**
+   * Full-page campus background (home + workspace).
+   * Swap the file under `frontend/public/branding/` and point here.
+   */
+  schoolCampusImage: "/branding/school-campus.svg",
 } as const;
 
 export type Brand = typeof brand;

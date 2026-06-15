@@ -12,6 +12,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from core.pagination import StandardResultsPagination
 from features.behavior.models import Alert, BehaviorLog
 from features.session.models import ExamSession
 from features.session.serializers import ExamSessionDetailSerializer
@@ -22,6 +23,34 @@ def _session_queryset(user):
     if user.is_admin():
         return qs
     return qs.filter(user=user)
+
+
+def _session_report_rows(qs):
+    qs = qs.annotate(
+        _alert_count=Count("alerts", distinct=True),
+        _behavior_count=Count("behavior_logs", distinct=True),
+        _unresolved=Count("alerts", filter=Q(alerts__resolved=False), distinct=True),
+    )
+    return [
+        {
+            "id": str(s.id),
+            "exam_id": s.exam_id,
+            "exam_title": s.exam.title,
+            "user": s.user.username,
+            "user_full_name": f"{s.user.first_name} {s.user.last_name}".strip(),
+            "status": s.status,
+            "started_at": s.started_at,
+            "submitted_at": s.submitted_at,
+            "percentage_score": (
+                float(s.percentage_score) if s.percentage_score is not None else None
+            ),
+            "passed": s.passed,
+            "alert_count": s._alert_count,
+            "unresolved_alert_count": s._unresolved,
+            "behavior_event_count": s._behavior_count,
+        }
+        for s in qs
+    ]
 
 
 @api_view(["GET"])
@@ -43,18 +72,20 @@ def report_summary(request):
         behavior_qs.values("event_type").annotate(count=Count("id")).order_by("-count")
     )
 
+    completed_count = completed.count()
     return Response(
         {
             "total_sessions": sessions.count(),
             "active_sessions": active.count(),
-            "completed_sessions": completed.count(),
+            "completed_sessions": completed_count,
             "terminated_sessions": terminated.count(),
             "unresolved_alerts": alert_qs.filter(resolved=False).count(),
             "resolved_alerts": alert_qs.filter(resolved=True).count(),
             "behavior_events": behavior_qs.count(),
             "average_score": completed.aggregate(avg=Avg("percentage_score"))["avg"],
-            "pass_rate": completed.filter(passed=True).count()
-            / completed.count() * 100.0 if completed.count() else None,
+            "pass_rate": completed.filter(passed=True).count() / completed_count * 100.0
+            if completed_count
+            else None,
             "alerts_by_severity": by_severity,
             "events_by_type": by_event,
             "generated_at": timezone.now().isoformat(),
@@ -118,41 +149,35 @@ def list_session_reports(request):
     if exam_id:
         qs = qs.filter(exam_id=exam_id)
 
-    qs = qs.annotate(
-        _alert_count=Count("alerts", distinct=True),
-        _behavior_count=Count("behavior_logs", distinct=True),
-        _unresolved=Count("alerts", filter=Q(alerts__resolved=False), distinct=True),
-    )
-
-    rows = []
-    for s in qs[:200]:
-        rows.append(
-            {
-                "id": str(s.id),
-                "exam_id": s.exam_id,
-                "exam_title": s.exam.title,
-                "user": s.user.username,
-                "user_full_name": f"{s.user.first_name} {s.user.last_name}".strip(),
-                "status": s.status,
-                "started_at": s.started_at,
-                "submitted_at": s.submitted_at,
-                "percentage_score": (
-                    float(s.percentage_score) if s.percentage_score is not None else None
-                ),
-                "passed": s.passed,
-                "alert_count": s._alert_count,
-                "unresolved_alert_count": s._unresolved,
-                "behavior_event_count": s._behavior_count,
-            }
+    search = (request.query_params.get("search") or "").strip()
+    if search:
+        qs = qs.filter(
+            Q(user__username__icontains=search)
+            | Q(user__first_name__icontains=search)
+            | Q(user__last_name__icontains=search)
+            | Q(exam__title__icontains=search)
         )
-    return Response({"results": rows, "count": len(rows)})
+
+    paginator = StandardResultsPagination()
+    page = paginator.paginate_queryset(qs, request)
+    rows = _session_report_rows(page or [])
+    return paginator.get_paginated_response(rows)
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def export_sessions_csv(request):
     """GET /api/reports/export/csv/ — downloadable CSV of session reports."""
-    qs = _session_queryset(request.user).order_by("-started_at")[:1000]
+    qs = (
+        _session_queryset(request.user)
+        .select_related("exam", "user")
+        .annotate(
+            _alert_count=Count("alerts", distinct=True),
+            _behavior_count=Count("behavior_logs", distinct=True),
+            _unresolved=Count("alerts", filter=Q(alerts__resolved=False), distinct=True),
+        )
+        .order_by("-started_at")[:1000]
+    )
 
     buffer = StringIO()
     writer = csv.writer(buffer)
@@ -185,9 +210,9 @@ def export_sessions_csv(request):
                 s.submitted_at.isoformat() if s.submitted_at else "",
                 float(s.percentage_score) if s.percentage_score is not None else "",
                 s.passed if s.passed is not None else "",
-                s.alerts.count(),
-                s.alerts.filter(resolved=False).count(),
-                s.behavior_logs.count(),
+                s._alert_count,
+                s._unresolved,
+                s._behavior_count,
             ]
         )
 

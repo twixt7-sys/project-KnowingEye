@@ -116,8 +116,9 @@ export function ExamBuilder() {
       setForm(examToForm(examData));
       setQuestions(questionList.sort((a, b) => a.order - b.order));
       setReadiness(readinessData);
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Failed to load exam");
+    } catch (e: unknown) {
+      const err = e as { detail?: () => string; message?: string };
+      setError(err?.detail?.() ?? err?.message ?? "Failed to load exam");
     } finally {
       setLoading(false);
     }
@@ -268,7 +269,7 @@ export function ExamBuilder() {
     }
   };
 
-  if (loading || !form || !exam) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center gap-2 text-muted-foreground">
         <Loader2 className="w-5 h-5 animate-spin" />
@@ -277,9 +278,33 @@ export function ExamBuilder() {
     );
   }
 
+  if (error && !exam) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
+        <p className="text-red-600 dark:text-red-400 max-w-md">{error}</p>
+        <Link
+          to="/examiner"
+          className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+        >
+          <ArrowLeft className="w-4 h-4" /> Back to dashboard
+        </Link>
+      </div>
+    );
+  }
+
+  if (!form || !exam) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
+        <p className="text-muted-foreground">Exam not found.</p>
+        <Link to="/examiner" className="text-sm text-primary hover:underline">
+          Back to dashboard
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen py-8">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+    <div className="mx-auto max-w-6xl space-y-6">
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
           <Link
             to="/examiner"
@@ -579,7 +604,6 @@ export function ExamBuilder() {
             )}
           </div>
         )}
-      </div>
 
       {showQuestionForm && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -707,16 +731,6 @@ export function ExamBuilder() {
           </div>
         </div>
       )}
-
-      <style>{`
-        .field-input {
-          width: 100%;
-          padding: 0.5rem 1rem;
-          border-radius: 0.5rem;
-          border: 1px solid hsl(var(--border));
-          background: hsl(var(--background));
-        }
-      `}</style>
     </div>
   );
 }
