@@ -25,12 +25,15 @@ def _session_queryset(user):
     return qs.filter(user=user)
 
 
-def _session_report_rows(qs):
-    qs = qs.annotate(
+def _annotate_sessions(qs):
+    return qs.annotate(
         _alert_count=Count("alerts", distinct=True),
         _behavior_count=Count("behavior_logs", distinct=True),
         _unresolved=Count("alerts", filter=Q(alerts__resolved=False), distinct=True),
     )
+
+
+def _serialize_session_rows(sessions):
     return [
         {
             "id": str(s.id),
@@ -49,7 +52,7 @@ def _session_report_rows(qs):
             "unresolved_alert_count": s._unresolved,
             "behavior_event_count": s._behavior_count,
         }
-        for s in qs
+        for s in sessions
     ]
 
 
@@ -158,9 +161,11 @@ def list_session_reports(request):
             | Q(exam__title__icontains=search)
         )
 
+    qs = _annotate_sessions(qs)
+
     paginator = StandardResultsPagination()
     page = paginator.paginate_queryset(qs, request)
-    rows = _session_report_rows(page or [])
+    rows = _serialize_session_rows(page or [])
     return paginator.get_paginated_response(rows)
 
 
@@ -169,13 +174,8 @@ def list_session_reports(request):
 def export_sessions_csv(request):
     """GET /api/reports/export/csv/ — downloadable CSV of session reports."""
     qs = (
-        _session_queryset(request.user)
+        _annotate_sessions(_session_queryset(request.user))
         .select_related("exam", "user")
-        .annotate(
-            _alert_count=Count("alerts", distinct=True),
-            _behavior_count=Count("behavior_logs", distinct=True),
-            _unresolved=Count("alerts", filter=Q(alerts__resolved=False), distinct=True),
-        )
         .order_by("-started_at")[:1000]
     )
 

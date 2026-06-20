@@ -25,6 +25,16 @@
     applyTheme(getTheme() === 'light' ? 'dark' : 'light');
   }
 
+  function createToggleButton() {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'theme-toggle';
+    btn.className = 'theme-toggle';
+    btn.setAttribute('aria-label', 'Toggle light and dark mode');
+    btn.addEventListener('click', toggleTheme);
+    return btn;
+  }
+
   function updateToggleLabel(theme) {
     const btn = document.getElementById('theme-toggle');
     if (!btn) return;
@@ -32,20 +42,31 @@
     btn.setAttribute('aria-pressed', isLight ? 'true' : 'false');
     btn.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
     btn.innerHTML = isLight
-      ? '<span class="theme-toggle-icon" aria-hidden="true">🌙</span><span class="theme-toggle-text">Dark</span>'
-      : '<span class="theme-toggle-icon" aria-hidden="true">☀️</span><span class="theme-toggle-text">Light</span>';
+      ? `<span class="theme-toggle-icon" aria-hidden="true">${iconMoon()}</span><span class="theme-toggle-text">Dark mode</span>`
+      : `<span class="theme-toggle-icon" aria-hidden="true">${iconSun()}</span><span class="theme-toggle-text">Light mode</span>`;
+  }
+
+  function iconSun() {
+    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
+  }
+
+  function iconMoon() {
+    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
   }
 
   function injectToggle() {
-    const nav = document.querySelector('.site-nav');
-    if (!nav || document.getElementById('theme-toggle')) return;
+    if (document.getElementById('theme-toggle')) return;
 
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.id = 'theme-toggle';
-    btn.className = 'theme-toggle';
-    btn.addEventListener('click', toggleTheme);
-    nav.appendChild(btn);
+    const nav = document.querySelector('.site-nav');
+    const btn = createToggleButton();
+
+    if (nav) {
+      nav.appendChild(btn);
+    } else {
+      btn.classList.add('theme-toggle-floating');
+      document.body.appendChild(btn);
+    }
+
     updateToggleLabel(getTheme());
   }
 

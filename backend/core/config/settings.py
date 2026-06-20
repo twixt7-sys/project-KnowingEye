@@ -63,7 +63,7 @@ SECRET_KEY = decouple_config(
 DEBUG = _env_bool("DJANGO_DEBUG", default=True)
 ALLOWED_HOSTS = decouple_config(
     "DJANGO_ALLOWED_HOSTS",
-    default="localhost,127.0.0.1,0.0.0.0",
+    default="localhost,127.0.0.1,0.0.0.0,testserver",
     cast=Csv(),
 )
 
