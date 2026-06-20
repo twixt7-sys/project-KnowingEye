@@ -1,0 +1,64 @@
+{
+  "diagram_id": "Fig-2.4",
+  "title": "Deployment Architecture (Web-Based Environment)",
+  "section": "2.1.4",
+  "description": "Production topology for browser-based deployment with TLS, static SPA hosting, ASGI API, PostgreSQL, and optional Redis for multi-worker WebSocket broadcast.",
+  "format": "deployment_topology",
+  "environments": {
+    "development": {
+      "frontend": { "host": "127.0.0.1:5173", "tool": "Vite dev server (HMR)" },
+      "backend": { "host": "127.0.0.1:8000", "tool": "Daphne ASGI" },
+      "database": { "engine": "SQLite", "path": "backend/db.sqlite3" },
+      "redis": { "required": false, "fallback": "InMemoryChannelLayer" },
+      "ai_pipeline": { "mode": "playground or stub", "gpu": "optional local CUDA" }
+    },
+    "production": {
+      "frontend": { "host": "https://exam.example.com", "serve": "Nginx static (frontend/dist)" },
+      "backend": { "host": "https://exam.example.com/api", "process": "Daphne behind Nginx upstream" },
+      "websocket": { "host": "wss://exam.example.com/ws/", "upgrade": "Nginx proxy_http_version 1.1" },
+      "database": { "engine": "PostgreSQL 15+", "host": "postgres.internal:5432" },
+      "redis": { "required": true, "url": "redis://redis.internal:6379/0", "purpose": "Channels layer" },
+      "ai_pipeline": { "mode": "playground", "gpu": "optional dedicated worker" }
+    }
+  },
+  "nodes": [
+    { "id": "user", "label": "End User (Browser)", "type": "external" },
+    { "id": "cdn_optional", "label": "CDN (optional)", "type": "edge", "note": "Static asset caching" },
+    { "id": "nginx", "label": "Nginx", "type": "edge", "ports": ["443 TLS", "80 redirect"], "config_refs": ["docs/deployment.md §7"] },
+    { "id": "spa_static", "label": "React SPA (dist/)", "type": "static", "path": "/var/www/exam-eye" },
+    { "id": "daphne_1", "label": "Daphne Worker 1", "type": "compute", "port": 8000 },
+    { "id": "daphne_n", "label": "Daphne Worker N", "type": "compute", "note": "Horizontal scale" },
+    { "id": "redis", "label": "Redis 7", "type": "cache", "purpose": "Channels broadcast" },
+    { "id": "postgres", "label": "PostgreSQL", "type": "database" },
+    { "id": "media_storage", "label": "Media Volume", "type": "storage", "path": "backend/media/" }
+  ],
+  "edges": [
+    { "from": "user", "to": "cdn_optional", "label": "HTTPS (optional)" },
+    { "from": "cdn_optional", "to": "nginx", "label": "origin" },
+    { "from": "user", "to": "nginx", "label": "HTTPS direct" },
+    { "from": "nginx", "to": "spa_static", "label": "GET / (try_files)" },
+    { "from": "nginx", "to": "daphne_1", "label": "/api/, /ws/" },
+    { "from": "nginx", "to": "daphne_n", "label": "load balance" },
+    { "from": "daphne_1", "to": "postgres", "label": "ORM" },
+    { "from": "daphne_n", "to": "postgres", "label": "ORM" },
+    { "from": "daphne_1", "to": "redis", "label": "channel layer" },
+    { "from": "daphne_n", "to": "redis", "label": "channel layer" },
+    { "from": "daphne_1", "to": "media_storage", "label": "avatar uploads" }
+  ],
+  "cloud_options_within_scope": [
+    { "provider": "Railway", "fit": "Recommended for capstone demo", "services": ["Web", "PostgreSQL", "Redis"] },
+    { "provider": "Render", "fit": "Free tier friendly", "services": ["Web service", "Managed Postgres"] },
+    { "provider": "DigitalOcean App Platform", "fit": "Simple VPS-style", "services": ["App", "Managed DB"] },
+    { "provider": "AWS Lightsail / EC2", "fit": "Self-managed Nginx stack", "services": ["VM", "RDS optional"] },
+    { "provider": "Azure App Service", "fit": "Institutional alignment", "services": ["App Service", "Azure Database"] },
+    { "provider": "On-premise campus VM", "fit": "Lab deployment", "services": ["Single VM", "Local PostgreSQL"] }
+  ],
+  "security_controls_production": [
+    "DJANGO_DEBUG=False",
+    "Strong DJANGO_SECRET_KEY",
+    "SECURE_SSL_REDIRECT + HSTS",
+    "CORS_ALLOWED_ORIGINS whitelist",
+    "JWT access/refresh TTL",
+    "RBAC on all endpoints and WS connections"
+  ]
+}

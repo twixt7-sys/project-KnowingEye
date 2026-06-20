@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ch.7 — Workflows &amp; Diagrams</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="assets/theme.js"></script>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="page">
+    <nav class="site-nav">
+      <a href="index.html">Index</a>
+      <a href="01-high-level-architecture.html">§2.1 Overview</a>
+      <a href="02-system-components.html">Components</a>
+      <a href="03-communication-protocols.html">Protocols</a>
+      <a href="04-database-design.html">Database</a>
+      <a href="05-ai-pipeline.html">AI Module</a>
+      <a href="06-deployment.html">Deployment</a>
+      <a href="07-workflows-diagrams.html" class="active">Workflows</a>
+    </nav>
+
+    <header class="doc-header">
+      <p class="eyebrow">Chapter 7 · Workflows &amp; Diagram Sources</p>
+      <h1>System Workflows &amp; Diagram Index</h1>
+      <p class="lead">Sequence and data-flow diagrams as machine-readable JSON. Use placeholders below in your paper; render figures from the linked JSON/DBML files.</p>
+    </header>
+
+    <section>
+      <h2>Examinee Exam Workflow</h2>
+      <ol>
+        <li>Login → obtain JWT</li>
+        <li>Dashboard → select published exam</li>
+        <li>Start session → receive questions + session UUID</li>
+        <li>Open monitoring WebSocket → enroll reference face</li>
+        <li>Answer questions (parallel monitoring loop)</li>
+        <li>Submit session → receive score and pass/fail</li>
+        <li>View results / profile</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Administrator Workflow</h2>
+      <ol>
+        <li>Login as ADMIN</li>
+        <li>Create exam and questions → publish</li>
+        <li>Monitor live sessions via dashboard + WebSocket alert feed</li>
+        <li>Inspect session behavior logs and resolve alerts</li>
+        <li>Generate reports and export CSV</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Figure 3.1 — Exam Session Sequence</h2>
+      <figure class="diagram">
+        <figcaption>Sequence: login → start session → monitoring (parallel) → submit</figcaption>
+        <div class="diagram-placeholder">
+          <span class="fig-id">Fig-3.1 · PLACEHOLDER</span>
+          <p>Import sequence messages from JSON into draw.io, PlantUML, or Mermaid.</p>
+          <a href="graphs/sequence-exam-flow.json">sequence-exam-flow.json</a>
+        </div>
+        <details class="graph-source"><summary>JSON source + Mermaid placeholder</summary><pre id="json-seq"></pre></details>
+      </figure>
+    </section>
+
+    <section>
+      <h2>Figure 3.2 — Monitoring Data Flow</h2>
+      <figure class="diagram">
+        <figcaption>DFD: webcam → WebSocket → AI pipeline → DB → alert broadcast</figcaption>
+        <div class="diagram-placeholder">
+          <span class="fig-id">Fig-3.2 · PLACEHOLDER</span>
+          <a href="graphs/data-flow-monitoring.json">data-flow-monitoring.json</a>
+        </div>
+        <details class="graph-source"><summary>JSON source</summary><pre id="json-dfd"></pre></details>
+      </figure>
+    </section>
+
+    <section>
+      <h2>Complete Graph File Index</h2>
+      <table>
+        <thead><tr><th>ID</th><th>File</th><th>Format</th><th>Use in paper as</th></tr></thead>
+        <tbody>
+          <tr><td>Fig-2.1</td><td>graphs/system-architecture.json</td><td>JSON graph</td><td>System architecture diagram</td></tr>
+          <tr><td>Fig-2.2</td><td>graphs/backend-layers.json</td><td>JSON</td><td>Backend structure diagram</td></tr>
+          <tr><td>Fig-2.3</td><td>graphs/ai-pipeline-component.json</td><td>JSON</td><td>AI module diagram</td></tr>
+          <tr><td>Fig-2.4</td><td>graphs/deployment-topology.json</td><td>JSON</td><td>Deployment diagram</td></tr>
+          <tr><td>Fig-2.5</td><td>graphs/frontend-component.json</td><td>JSON</td><td>Frontend structure diagram</td></tr>
+          <tr><td>Fig-3.1</td><td>graphs/sequence-exam-flow.json</td><td>JSON sequence</td><td>Sequence diagram</td></tr>
+          <tr><td>Fig-3.2</td><td>graphs/data-flow-monitoring.json</td><td>JSON DFD</td><td>Data flow diagram</td></tr>
+          <tr><td>Fig-3.3</td><td>graphs/rest-api-catalog.json</td><td>JSON</td><td>API map / appendix table</td></tr>
+          <tr><td>Fig-4.1</td><td>graphs/database-erd.dbml</td><td>DBML</td><td>ERD (dbdiagram.io → PNG)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Rendering Instructions for Paper</h2>
+      <div class="card">
+        <h3>Interactive viewer (recommended)</h3>
+        <p>Open <a href="graph-viewer.html">graph-viewer.html</a> to render all figures live in the browser. Use <strong>Print figure</strong> or screenshot for your paper.</p>
+        <h3>ERD (Fig-4.1)</h3>
+        <ol>
+          <li>Open <a href="https://dbdiagram.io">dbdiagram.io</a></li>
+          <li>Paste contents of <code>graphs/database-erd.dbml</code></li>
+          <li>Export as PNG or PDF → insert as Figure 4.1</li>
+        </ol>
+        <h3>Architecture / Deployment (Fig-2.1, Fig-2.4)</h3>
+        <ol>
+          <li>Open JSON in draw.io: Arrange → Insert → Advanced → JSON</li>
+          <li>Or use Mermaid template in <code>render_hints.mermaid_template</code> field</li>
+        </ol>
+        <h3>Sequence (Fig-3.1)</h3>
+        <ol>
+          <li>Copy <code>mermaid_placeholder</code> from sequence-exam-flow.json into Mermaid Live Editor</li>
+          <li>Export SVG/PNG</li>
+        </ol>
+      </div>
+    </section>
+
+    <footer class="doc-footer"><a href="06-deployment.html">← Previous</a> · <a href="index.html">Back to Index</a></footer>
+  </div>
+  <script>
+    Promise.all([
+      fetch('graphs/sequence-exam-flow.json').then(r=>r.text()),
+      fetch('graphs/data-flow-monitoring.json').then(r=>r.text())
+    ]).then(([a,b])=>{
+      document.getElementById('json-seq').textContent=a;
+      document.getElementById('json-dfd').textContent=b;
+    });
+  </script>
+</body>
+</html>

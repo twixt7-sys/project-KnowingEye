@@ -1,0 +1,46 @@
+{
+  "diagram_id": "Fig-3.1",
+  "title": "Exam Session Sequence Flow",
+  "section": "1.2.3.1 / 2.1.3.1",
+  "description": "End-to-end sequence from examinee login through exam completion with parallel monitoring.",
+  "format": "sequence_diagram",
+  "participants": [
+    { "id": "examinee", "label": "Examinee (Browser)" },
+    { "id": "frontend", "label": "React SPA" },
+    { "id": "api", "label": "Django REST API" },
+    { "id": "ws", "label": "WebSocket Consumer" },
+    { "id": "ai", "label": "AI Adapter / Pipeline" },
+    { "id": "db", "label": "PostgreSQL" }
+  ],
+  "messages": [
+    { "order": 1, "from": "examinee", "to": "frontend", "type": "action", "label": "Login (username/password)" },
+    { "order": 2, "from": "frontend", "to": "api", "type": "request", "method": "POST", "path": "/api/auth/token/", "label": "Obtain JWT" },
+    { "order": 3, "from": "api", "to": "frontend", "type": "response", "label": "access + refresh tokens" },
+    { "order": 4, "from": "examinee", "to": "frontend", "type": "action", "label": "Select exam → Start" },
+    { "order": 5, "from": "frontend", "to": "api", "type": "request", "method": "POST", "path": "/api/sessions/start/", "body": "{ exam_id }" },
+    { "order": 6, "from": "api", "to": "db", "type": "persist", "label": "Create ExamSession (UUID)" },
+    { "order": 7, "from": "api", "to": "frontend", "type": "response", "label": "session_id, questions, timer" },
+    { "order": 8, "from": "frontend", "to": "ws", "type": "connect", "path": "/ws/monitoring/{session_id}/?token=JWT", "label": "Open monitoring WebSocket" },
+    { "order": 9, "from": "ws", "to": "frontend", "type": "event", "label": "connected + pipeline_mode" },
+    { "order": 10, "from": "frontend", "to": "ws", "type": "message", "label": "enroll (reference face base64)" },
+    { "order": 11, "from": "ws", "to": "ai", "type": "call", "label": "enroll_reference()" },
+    { "order": 12, "from": "ai", "to": "db", "type": "persist", "label": "SessionIdentityReference" },
+    { "order": 13, "from": "ws", "to": "frontend", "type": "event", "label": "enroll_result { ok: true }" },
+    { "order": 14, "from": "examinee", "to": "frontend", "type": "parallel", "label": "Answer questions (loop)" },
+    { "order": 15, "from": "frontend", "to": "api", "type": "request", "method": "POST", "path": "/api/sessions/{id}/submit/", "label": "Submit answers" },
+    { "order": 16, "from": "api", "to": "db", "type": "persist", "label": "Responses + score calculation" },
+    { "order": 17, "from": "api", "to": "frontend", "type": "response", "label": "total_score, passed, percentage" },
+    { "order": 18, "from": "frontend", "to": "ws", "type": "disconnect", "label": "Close monitoring stream" }
+  ],
+  "parallel_region": {
+    "name": "Monitoring (runs during steps 14–17)",
+    "messages": [
+      { "from": "frontend", "to": "ws", "interval": "~200–1000ms", "label": "frame { image: base64 }" },
+      { "from": "ws", "to": "ai", "label": "analyze_frame_bgr()" },
+      { "from": "ai", "to": "ws", "label": "metrics, events, alerts" },
+      { "from": "ws", "to": "db", "label": "persist_analysis → behavior_log, alert" },
+      { "from": "ws", "to": "frontend", "label": "analysis + alert payloads" }
+    ]
+  },
+  "mermaid_placeholder": "sequenceDiagram\n  participant E as Examinee\n  participant FE as React SPA\n  participant API as REST API\n  participant WS as WebSocket\n  participant AI as AI Pipeline\n  participant DB as Database\n  E->>FE: Login\n  FE->>API: POST /api/auth/token/\n  API-->>FE: JWT\n  FE->>API: POST /api/sessions/start/\n  API->>DB: Create session\n  API-->>FE: session + questions\n  FE->>WS: Connect /ws/monitoring/{id}/\n  par Monitoring loop\n    FE->>WS: frame\n    WS->>AI: analyze\n    AI-->>WS: results\n    WS->>DB: persist\n    WS-->>FE: analysis/alert\n  and Exam taking\n    FE->>API: submit answers\n    API->>DB: score\n    API-->>FE: results\n  end"
+}

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ch.1 — High-Level Architecture (§2.1)</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="assets/theme.js"></script>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="page">
+    <nav class="site-nav">
+      <a href="index.html">Index</a>
+      <a href="01-high-level-architecture.html" class="active">§2.1 Overview</a>
+      <a href="02-system-components.html">Components</a>
+      <a href="03-communication-protocols.html">Protocols</a>
+      <a href="04-database-design.html">Database</a>
+      <a href="05-ai-pipeline.html">AI Module</a>
+      <a href="06-deployment.html">Deployment</a>
+      <a href="07-workflows-diagrams.html">Workflows</a>
+    </nav>
+
+    <header class="doc-header">
+      <p class="eyebrow">Chapter 1 · §2.1 High-Level Architecture Design</p>
+      <h1>High-Level System Architecture</h1>
+      <p class="lead">Defines the overall architectural pattern, primary system components, inter-component communication, and deployment model for the Knowing Eye platform.</p>
+    </header>
+
+    <section id="s211">
+      <h2><span class="ref">2.1.1</span> Define System Architecture</h2>
+      <p>The Knowing Eye platform adopts a <strong>Feature-Based Modular Monolith</strong> with an internal <strong>Layered Architecture</strong>. This decision balances capstone project scope, team maintainability, and deployment simplicity while preserving clear boundaries between presentation, application logic, AI processing, and persistence.</p>
+
+      <table>
+        <thead><tr><th>Decision</th><th>Choice</th><th>Rationale</th></tr></thead>
+        <tbody>
+          <tr><td>Deployment unit</td><td>Single backend monolith + separate SPA</td><td>One ASGI process handles REST and WebSocket; frontend built as static assets</td></tr>
+          <tr><td>Domain organization</td><td>Feature modules (auth, exams, session, monitoring, behavior, reports)</td><td>Each business capability owns models, services, and API layer</td></tr>
+          <tr><td>Data access pattern</td><td>Service–Repository (via Django ORM)</td><td>Separates business rules from persistence queries</td></tr>
+          <tr><td>AI integration</td><td>Adapter bridge to installable package</td><td><code>backend/ai/adapter.py</code> → <code>pipeline_playground/knowing_eye</code></td></tr>
+          <tr><td>Real-time layer</td><td>Django Channels on ASGI</td><td>Same codebase serves HTTP and WebSocket without a separate realtime server</td></tr>
+        </tbody>
+      </table>
+
+      <figure class="diagram">
+        <figcaption>Figure 2.1 — High-Level System Architecture <em>(render from JSON)</em></figcaption>
+        <div class="diagram-placeholder">
+          <span class="fig-id">Fig-2.1 · PLACEHOLDER</span>
+          <p>Import <code>graphs/system-architecture.json</code> into draw.io / Lucidchart,<br/>or use the embedded Mermaid template in that file.</p>
+          <a href="graphs/system-architecture.json">Open system-architecture.json</a>
+        </div>
+        <details class="graph-source"><summary>View JSON source (Fig-2.1)</summary><pre id="json-fig21"></pre></details>
+      </figure>
+    </section>
+
+    <section id="s212">
+      <h2><span class="ref">2.1.2</span> Identify System Components</h2>
+      <p>The system comprises four primary components. Detailed specifications appear in <a href="02-system-components.html">Chapter 2</a>.</p>
+      <table>
+        <thead><tr><th>Ref</th><th>Component</th><th>Technology</th><th>Primary Responsibility</th></tr></thead>
+        <tbody>
+          <tr><td>2.1.2.1</td><td>Frontend</td><td>React 18, Vite, TypeScript</td><td>User interface, exam delivery, monitoring client, dashboards</td></tr>
+          <tr><td>2.1.2.2</td><td>Backend</td><td>Django 6, DRF, Channels</td><td>APIs, authentication, session orchestration, alert persistence</td></tr>
+          <tr><td>2.1.2.3</td><td>AI Module</td><td>YOLOv8, MediaPipe, ArcFace</td><td>Computer vision analysis and behavior scoring</td></tr>
+          <tr><td>2.1.2.4</td><td>Database</td><td>SQLite / PostgreSQL</td><td>Relational persistence for all domain entities</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s213">
+      <h2><span class="ref">2.1.3</span> Define Communication Protocols</h2>
+      <h3>2.1.3.1 REST APIs for CRUD Operations</h3>
+      <p>Stateless HTTP/JSON endpoints handle authentication, exam management, session lifecycle, monitoring fallback, behavior logs, and reporting. JWT bearer tokens secure authenticated routes. Full endpoint catalog: <a href="03-communication-protocols.html">Chapter 3</a> and <code>graphs/rest-api-catalog.json</code>.</p>
+      <h3>2.1.3.2 WebSocket for Real-Time Monitoring</h3>
+      <p>Django Channels provides persistent WebSocket connections for frame streaming, analysis feedback, and alert broadcast during live exam sessions. Protocol documented in <code>backend/features/monitoring/consumers.py</code>.</p>
+      <table>
+        <thead><tr><th>Protocol</th><th>Use Case</th><th>Latency Requirement</th></tr></thead>
+        <tbody>
+          <tr><td>REST (HTTPS)</td><td>CRUD, auth, submit, reports, frame fallback</td><td>&lt; 2 s per request</td></tr>
+          <tr><td>WebSocket (WSS)</td><td>Live frame analysis, alert push</td><td>&lt; 300 ms per frame (target)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="s214">
+      <h2><span class="ref">2.1.4</span> Design System Deployment Architecture</h2>
+      <h3>2.1.4.1 Web-Based Environment</h3>
+      <p>End users access the system through modern browsers on desktop or laptop devices with webcam support. The React SPA is served as static files; API and WebSocket traffic is proxied to the Django ASGI server. No native client installation is required.</p>
+      <h3>2.1.4.2 Cloud Hosting Options Within Scope</h3>
+      <p>Given capstone constraints, deployment targets cost-effective managed or single-VM platforms rather than multi-region infrastructure. See <a href="06-deployment.html">Chapter 6</a> and <code>graphs/deployment-topology.json</code>.</p>
+    </section>
+
+    <section>
+      <h2>Non-Functional Requirements (Architecture-Relevant)</h2>
+      <table>
+        <thead><tr><th>Category</th><th>Target</th></tr></thead>
+        <tbody>
+          <tr><td>Monitoring throughput</td><td>1–5 FPS per active examinee session</td></tr>
+          <tr><td>Analysis latency</td><td>≤ 300 ms per frame (design target)</td></tr>
+          <tr><td>Concurrent sessions</td><td>Institutional lab scale (capstone demo: tens, not thousands)</td></tr>
+          <tr><td>Security</td><td>HTTPS, JWT, RBAC, secure cookies in production</td></tr>
+          <tr><td>Availability</td><td>Single-region; Redis enables multi-worker failover for WS broadcast</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="doc-footer"><a href="02-system-components.html">Next: System Components →</a></footer>
+  </div>
+  <script>
+    fetch('graphs/system-architecture.json').then(r=>r.text()).then(t=>{
+      document.getElementById('json-fig21').textContent=t;
+    }).catch(()=>{ document.getElementById('json-fig21').textContent='[Load graphs/system-architecture.json locally]'; });
+  </script>
+</body>
+</html>

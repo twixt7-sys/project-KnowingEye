@@ -1,0 +1,98 @@
+{
+  "diagram_id": "Fig-2.2",
+  "title": "Backend Layered Architecture",
+  "section": "2.2",
+  "description": "Feature-based modular monolith internal structure with service-repository pattern per domain module.",
+  "format": "layered_component",
+  "layers": [
+    {
+      "name": "Core Layer",
+      "path": "backend/core/",
+      "responsibilities": [
+        "Django settings (core/config/settings.py)",
+        "ASGI/WSGI entry (core/config/asgi.py)",
+        "Global URL routing",
+        "Exception handlers",
+        "Management commands (seed_db)",
+        "Base model mixins (TimeStampedModel)"
+      ]
+    },
+    {
+      "name": "Feature Layer",
+      "path": "backend/features/",
+      "modules": [
+        {
+          "name": "authentication",
+          "models": ["User (AbstractUser + role)"],
+          "api_prefix": "/api/auth/",
+          "auth": "SimpleJWT"
+        },
+        {
+          "name": "exams",
+          "models": ["Exam", "Question"],
+          "api_prefix": "/api/exams/",
+          "patterns": ["ViewSets", "nested questions", "publish/archive actions"]
+        },
+        {
+          "name": "session",
+          "models": ["ExamSession (UUID PK)", "Response", "SessionLog"],
+          "api_prefix": "/api/sessions/",
+          "patterns": ["start/submit/terminate", "auto-scoring"]
+        },
+        {
+          "name": "monitoring",
+          "models": ["SessionIdentityReference"],
+          "api_prefix": "/api/monitoring/",
+          "websocket": ["/ws/monitoring/{session_id}/", "/ws/monitoring/alerts/"],
+          "patterns": ["REST frame fallback", "AsyncJsonWebsocketConsumer"]
+        },
+        {
+          "name": "behavior",
+          "models": ["BehaviorLog", "Alert"],
+          "api_prefix": "/api/behavior/",
+          "patterns": ["persist_analysis service", "alert resolve"]
+        },
+        {
+          "name": "reports",
+          "models": [],
+          "api_prefix": "/api/reports/",
+          "patterns": ["aggregations", "CSV export", "timeseries"]
+        }
+      ]
+    },
+    {
+      "name": "AI Integration Layer",
+      "path": "backend/ai/",
+      "responsibilities": [
+        "adapter.py — pipeline bridge",
+        "frame_utils.py — base64 decode",
+        "Stub pipeline for contract testing"
+      ]
+    },
+    {
+      "name": "Shared Layer",
+      "path": "backend/shared/ (planned/partial)",
+      "responsibilities": [
+        "Base repository classes",
+        "Common DTOs and validators",
+        "Reusable mixins"
+      ]
+    }
+  ],
+  "request_flow": [
+    "HTTP/WS → ASGI router",
+    "→ DRF view / Channels consumer",
+    "→ Permission check (RBAC + JWT)",
+    "→ Service layer (business logic)",
+    "→ Repository / ORM (data access)",
+    "→ Serializer / JSON response"
+  ],
+  "authentication_strategy": {
+    "method": "JWT (SimpleJWT)",
+    "access_token_ttl": "30 min (configurable JWT_ACCESS_TTL_MIN)",
+    "refresh_token_ttl": "14 days (configurable JWT_REFRESH_TTL_DAYS)",
+    "websocket_auth": "JWT access token via query string ?token=",
+    "roles": ["ADMIN", "EXAMINEE"],
+    "permissions": "DRF permission classes + consumer _user_can_access()"
+  }
+}

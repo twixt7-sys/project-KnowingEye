@@ -1,0 +1,86 @@
+{
+  "diagram_id": "Fig-3.3",
+  "title": "REST API Surface Map",
+  "section": "2.1.3.1 / 2.2.4",
+  "description": "Complete REST endpoint catalog grouped by feature module. WebSocket endpoints documented separately in data-flow-monitoring.json.",
+  "format": "api_catalog",
+  "base_url_dev": "http://127.0.0.1:8000",
+  "base_url_prod": "https://exam.example.com",
+  "auth_header": "Authorization: Bearer <access_token>",
+  "modules": [
+    {
+      "name": "Authentication",
+      "base": "/api/auth",
+      "endpoints": [
+        { "method": "POST", "path": "/token/", "auth": false, "description": "Obtain JWT access + refresh" },
+        { "method": "POST", "path": "/token/refresh/", "auth": false, "description": "Rotate access token" },
+        { "method": "POST", "path": "/register/", "auth": false, "description": "Register new user" },
+        { "method": "GET", "path": "/profile/me/", "auth": true, "description": "Current user profile" },
+        { "method": "PATCH", "path": "/profile/update_profile/", "auth": true, "description": "Update profile fields" },
+        { "method": "POST", "path": "/profile/avatar/", "auth": true, "description": "Upload avatar (multipart)" },
+        { "method": "POST", "path": "/profile/change-password/", "auth": true, "description": "Change password" }
+      ]
+    },
+    {
+      "name": "Exams",
+      "base": "/api/exams",
+      "endpoints": [
+        { "method": "GET", "path": "/", "auth": true, "description": "List exams (paginated)" },
+        { "method": "POST", "path": "/", "auth": "ADMIN", "description": "Create exam" },
+        { "method": "GET", "path": "/{id}/", "auth": true, "description": "Exam detail" },
+        { "method": "PUT", "path": "/{id}/", "auth": "ADMIN", "description": "Full update" },
+        { "method": "PATCH", "path": "/{id}/", "auth": "ADMIN", "description": "Partial update" },
+        { "method": "DELETE", "path": "/{id}/", "auth": "ADMIN", "description": "Delete exam" },
+        { "method": "POST", "path": "/{id}/publish/", "auth": "ADMIN", "description": "Publish draft → active" },
+        { "method": "POST", "path": "/{id}/archive/", "auth": "ADMIN", "description": "Archive exam" },
+        { "method": "GET", "path": "/{id}/questions/", "auth": true, "description": "List questions" },
+        { "method": "POST", "path": "/{id}/questions/", "auth": "ADMIN", "description": "Add question" }
+      ]
+    },
+    {
+      "name": "Sessions",
+      "base": "/api/sessions",
+      "endpoints": [
+        { "method": "GET", "path": "/", "auth": true, "description": "List sessions" },
+        { "method": "GET", "path": "/{uuid}/", "auth": true, "description": "Session detail" },
+        { "method": "POST", "path": "/start/", "auth": true, "description": "Start exam session" },
+        { "method": "POST", "path": "/{uuid}/submit/", "auth": true, "description": "Submit answers + score" },
+        { "method": "POST", "path": "/{uuid}/terminate/", "auth": "ADMIN", "description": "Force terminate" },
+        { "method": "GET", "path": "/{uuid}/logs/", "auth": true, "description": "Session audit logs" }
+      ]
+    },
+    {
+      "name": "Monitoring",
+      "base": "/api/monitoring",
+      "endpoints": [
+        { "method": "GET", "path": "/health/", "auth": false, "description": "Health + pipeline_mode" },
+        { "method": "POST", "path": "/frame/", "auth": true, "description": "Analyze single base64 frame (REST fallback)" },
+        { "method": "POST", "path": "/enroll/", "auth": true, "description": "Enroll reference face" }
+      ],
+      "websocket": [
+        { "path": "/ws/monitoring/{session_uuid}/?token={jwt}", "auth": "JWT query", "description": "Per-session monitoring stream" },
+        { "path": "/ws/monitoring/alerts/?token={jwt}", "auth": "ADMIN JWT", "description": "Global admin alert feed" }
+      ]
+    },
+    {
+      "name": "Behavior",
+      "base": "/api/behavior",
+      "endpoints": [
+        { "method": "GET", "path": "/logs/?session={uuid}", "auth": true, "description": "Behavior event logs" },
+        { "method": "GET", "path": "/alerts/?resolved=false", "auth": true, "description": "Unresolved alerts" },
+        { "method": "POST", "path": "/alerts/{id}/resolve/", "auth": "ADMIN", "description": "Resolve alert" }
+      ]
+    },
+    {
+      "name": "Reports",
+      "base": "/api/reports",
+      "endpoints": [
+        { "method": "GET", "path": "/summary/", "auth": "ADMIN", "description": "Dashboard KPIs" },
+        { "method": "GET", "path": "/sessions/", "auth": "ADMIN", "description": "Paginated session reports" },
+        { "method": "GET", "path": "/sessions/{uuid}/", "auth": "ADMIN", "description": "Full session report" },
+        { "method": "GET", "path": "/timeseries/", "auth": "ADMIN", "description": "Daily activity series" },
+        { "method": "GET", "path": "/export/csv/", "auth": "ADMIN", "description": "CSV download" }
+      ]
+    }
+  ]
+}

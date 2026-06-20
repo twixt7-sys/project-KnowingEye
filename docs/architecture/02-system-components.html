@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ch.2 — System Components</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="assets/theme.js"></script>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="page">
+    <nav class="site-nav">
+      <a href="index.html">Index</a>
+      <a href="01-high-level-architecture.html">§2.1 Overview</a>
+      <a href="02-system-components.html" class="active">Components</a>
+      <a href="03-communication-protocols.html">Protocols</a>
+      <a href="04-database-design.html">Database</a>
+      <a href="05-ai-pipeline.html">AI Module</a>
+      <a href="06-deployment.html">Deployment</a>
+      <a href="07-workflows-diagrams.html">Workflows</a>
+    </nav>
+
+    <header class="doc-header">
+      <p class="eyebrow">Chapter 2 · §2.1.2 System Components</p>
+      <h1>System Components — Detailed Specification</h1>
+      <p class="lead">Expanded definitions of the four primary components plus internal backend and frontend structure (§2.2–2.3).</p>
+    </header>
+
+    <section id="frontend">
+      <h2><span class="ref">2.1.2.1</span> Frontend Component</h2>
+      <p><span class="chip">React 18</span><span class="chip">Vite</span><span class="chip">TypeScript</span><span class="chip">Tailwind</span><span class="chip">shadcn/ui</span><span class="chip">Recharts</span></p>
+      <h3>Purpose</h3>
+      <p>Delivers all user-facing functionality: authentication, role-based dashboards, exam creation and taking, live monitoring views, behavioral alert display, reports, and profile management.</p>
+      <h3>Architecture</h3>
+      <p>Feature-Based Modular Architecture with a thin <code>pages/</code> routing layer, <code>features/</code> domain modules, <code>core/</code> providers and config, and <code>shared/</code> reusable UI.</p>
+      <h3>Core Providers</h3>
+      <ul>
+        <li><strong>AuthProvider</strong> — JWT storage, login/logout, token refresh</li>
+        <li><strong>ThemeProvider</strong> — Dark/light mode</li>
+        <li><strong>QueryProvider</strong> — TanStack React Query for server state</li>
+        <li><strong>WebSocket integration</strong> — via <code>use-monitoring</code> hook per session</li>
+      </ul>
+      <h3>Key Pages</h3>
+      <table>
+        <thead><tr><th>Page</th><th>Role</th><th>Function</th></tr></thead>
+        <tbody>
+          <tr><td>Login / Register</td><td>All</td><td>Authentication entry</td></tr>
+          <tr><td>Dashboard</td><td>Admin / Examinee</td><td>Exam list, stats, quick actions</td></tr>
+          <tr><td>Exam Taking</td><td>Examinee</td><td>Timer, questions, submit, parallel monitoring</td></tr>
+          <tr><td>Monitoring</td><td>Admin</td><td>Live session grid, alert feed</td></tr>
+          <tr><td>Session Monitor</td><td>Admin</td><td>Per-session behavior inspector</td></tr>
+          <tr><td>Reports</td><td>Admin</td><td>KPIs, charts, CSV export</td></tr>
+          <tr><td>Profile</td><td>All</td><td>Avatar, institution, password change</td></tr>
+        </tbody>
+      </table>
+      <figure class="diagram">
+        <figcaption>Figure 2.5 — Frontend Component Architecture</figcaption>
+        <div class="diagram-placeholder"><span class="fig-id">Fig-2.5 · PLACEHOLDER</span><a href="graphs/frontend-component.json">frontend-component.json</a></div>
+      </figure>
+    </section>
+
+    <section id="backend">
+      <h2><span class="ref">2.1.2.2</span> Backend Component</h2>
+      <p><span class="chip">Django 6</span><span class="chip">DRF</span><span class="chip">SimpleJWT</span><span class="chip">Channels</span><span class="chip">Daphne ASGI</span></p>
+      <h3>Purpose</h3>
+      <p>Central application server: REST API, WebSocket consumers, business logic, authorization, and coordination with the AI adapter and database.</p>
+      <h3>Feature Modules</h3>
+      <table>
+        <thead><tr><th>Module</th><th>Models</th><th>API Prefix</th><th>Responsibilities</th></tr></thead>
+        <tbody>
+          <tr><td>authentication</td><td>User</td><td>/api/auth/</td><td>JWT, register, profile, avatar, RBAC</td></tr>
+          <tr><td>exams</td><td>Exam, Question</td><td>/api/exams/</td><td>CRUD, publish, archive, nested questions</td></tr>
+          <tr><td>session</td><td>ExamSession, Response, SessionLog</td><td>/api/sessions/</td><td>Start, submit, terminate, scoring</td></tr>
+          <tr><td>monitoring</td><td>SessionIdentityReference</td><td>/api/monitoring/, /ws/</td><td>Frame analysis, enrollment, WS stream</td></tr>
+          <tr><td>behavior</td><td>BehaviorLog, Alert</td><td>/api/behavior/</td><td>Persist AI output, alert resolution</td></tr>
+          <tr><td>reports</td><td>— (aggregations)</td><td>/api/reports/</td><td>Summary, timeseries, CSV export</td></tr>
+        </tbody>
+      </table>
+      <h3>Service–Repository Pattern</h3>
+      <p>Each feature encapsulates: <strong>models</strong> (ORM entities) → <strong>services</strong> (business rules) → <strong>views/consumers</strong> (HTTP/WS entry) → <strong>serializers</strong> (DTO mapping). Example: <code>persist_analysis()</code> in behavior services writes logs/alerts from AI output.</p>
+      <figure class="diagram">
+        <figcaption>Figure 2.2 — Backend Layered Architecture</figcaption>
+        <div class="diagram-placeholder"><span class="fig-id">Fig-2.2 · PLACEHOLDER</span><a href="graphs/backend-layers.json">backend-layers.json</a></div>
+      </figure>
+    </section>
+
+    <section id="ai">
+      <h2><span class="ref">2.1.2.3</span> AI Module for Computer Vision Processing</h2>
+      <p>See <a href="05-ai-pipeline.html">Chapter 5</a> for full pipeline specification. Summary:</p>
+      <ul>
+        <li><strong>Package:</strong> <code>pipeline_playground/knowing_eye/</code></li>
+        <li><strong>Bridge:</strong> <code>backend/ai/adapter.py</code> (thread-safe lazy load, stub fallback)</li>
+        <li><strong>Capabilities:</strong> Face detection, gaze estimation, posture analysis, object detection (phone), identity verification, behavior scoring, temporal suspicious-pattern detection</li>
+        <li><strong>Config:</strong> <code>pipeline_playground/config/pipeline.yaml</code></li>
+      </ul>
+    </section>
+
+    <section id="database">
+      <h2><span class="ref">2.1.2.4</span> Database Component</h2>
+      <p>See <a href="04-database-design.html">Chapter 4</a> for ERD and table definitions.</p>
+      <table>
+        <thead><tr><th>Environment</th><th>Engine</th><th>Configuration</th></tr></thead>
+        <tbody>
+          <tr><td>Development</td><td>SQLite</td><td><code>DB_ENGINE=django.db.backends.sqlite3</code></td></tr>
+          <tr><td>Production</td><td>PostgreSQL 15+</td><td><code>DB_ENGINE=django.db.backends.postgresql</code> + credentials</td></tr>
+        </tbody>
+      </table>
+      <p>Naming convention: <code>snake_case</code> via Django <code>db_table</code>. Primary keys: AutoField for most entities; UUID for <code>ExamSession</code>, <code>BehaviorLog</code>, <code>Alert</code>, and identity reference.</p>
+    </section>
+
+    <footer class="doc-footer"><a href="01-high-level-architecture.html">← Previous</a> · <a href="03-communication-protocols.html">Next: Protocols →</a></footer>
+  </div>
+</body>
+</html>
