@@ -37,7 +37,7 @@
           <tr><td>Deployment unit</td><td>Single backend monolith + separate SPA</td><td>One ASGI process handles REST and WebSocket; frontend built as static assets</td></tr>
           <tr><td>Domain organization</td><td>Feature modules (auth, exams, session, monitoring, behavior, reports)</td><td>Each business capability owns models, services, and API layer</td></tr>
           <tr><td>Data access pattern</td><td>Service–Repository (via Django ORM)</td><td>Separates business rules from persistence queries</td></tr>
-          <tr><td>AI integration</td><td>Adapter bridge to installable package</td><td><code>backend/ai/adapter.py</code> → <code>pipeline_playground/knowing_eye</code></td></tr>
+          <tr><td>AI integration</td><td>Adapter bridge to production package</td><td><code>backend/ai/adapter.py</code> → <code>backend/ai/knowing_eye</code></td></tr>
           <tr><td>Real-time layer</td><td>Django Channels on ASGI</td><td>Same codebase serves HTTP and WebSocket without a separate realtime server</td></tr>
         </tbody>
       </table>

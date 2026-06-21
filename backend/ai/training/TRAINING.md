@@ -1,27 +1,27 @@
-# Training Guide — Knowing Eye CV Playground
+# Training Guide — Knowing Eye CV Pipeline
 
-This playground supports the capstone training approach: **public datasets + controlled mock exam recordings with consent**.
+The production pipeline lives in `backend/ai/knowing_eye/` and is loaded by
+`backend/ai/adapter.py`. This guide covers fine-tuning YOLO weights and tuning
+behavior thresholds for the integrated Django backend.
 
-## What you can train here
+## What you can train
 
-| Component | Playground default | Fine-tunable? | Production target (main system) |
-|-----------|-------------------|---------------|----------------------------------|
+| Component | Default | Fine-tunable? | Notes |
+|-----------|---------|---------------|-------|
 | Face / pose landmarks | MediaPipe (pretrained) | No — use as-is or swap model | Same or custom CNN |
-| Object detection (phone, person) | YOLOv8n COCO pretrained | **Yes — YOLO fine-tune** | YOLO per docs |
-| Identity consistency | `face_recognition` embeddings | Optional — collect pairs | FaceNet / ArcFace |
+| Object detection (phone, person) | YOLOv8n COCO pretrained | **Yes — YOLO fine-tune** | See sections below |
+| Identity consistency | ArcFace embeddings | Optional — collect pairs | InsightFace `buffalo_l` |
 | Behavior scoring | Rule-based weights in YAML | Tune thresholds + weights | LSTM / classifier (future) |
 
 ## 1. Collect mock exam data (required for custom YOLO)
 
 1. Obtain **written consent** from participants (capstone requirement).
 2. Record 10–30 minute mock exam sessions with webcam (720p+, good lighting).
-3. Export frames every 1–2 seconds:
+3. Export frames every 1–2 seconds with ffmpeg:
    ```bash
-   python scripts/analyze_image.py path/to/session.mp4 --every-n 30 -o /tmp/frames.jsonl
-   # Or use ffmpeg:
-   ffmpeg -i session.mp4 -vf fps=0.5 training/raw/images/frame_%04d.jpg
+   ffmpeg -i session.mp4 -vf fps=0.5 ai/training/raw/images/frame_%04d.jpg
    ```
-4. Store under `training/raw/images/`.
+4. Store under `backend/ai/training/raw/images/`.
 
 ## 2. Label data for YOLO
 
@@ -35,7 +35,7 @@ Use [Roboflow](https://roboflow.com), [CVAT](https://www.cvat.ai), or [labelImg]
 
 Export in **YOLO format** (one `.txt` per image, normalized boxes).
 
-Place labels in `training/raw/labels/` matching image filenames.
+Place labels in `backend/ai/training/raw/labels/` matching image filenames.
 
 ## 3. Public datasets (optional boost)
 
@@ -46,13 +46,15 @@ Place labels in `training/raw/labels/` matching image filenames.
 | [MPII Human Pose](http://human-pose.mpi-inf.mpg.de/) | Posture reference (convert or use MediaPipe) |
 | Custom LTO-style mock exams | Domain-specific phones, lighting, seating |
 
-Merge a subset into `training/data/` using `scripts/prepare_dataset.py`.
+Merge a subset into `ai/training/data/` using `ai/scripts/prepare_dataset.py`.
 
 ## 4. Prepare train/val split
 
-```bash
-python scripts/prepare_dataset.py training/raw --out training/data --val-ratio 0.2
-copy training\data\dataset.yaml.example training\data\dataset.yaml
+From the `backend/` directory:
+
+```powershell
+python ai/scripts/prepare_dataset.py ai/training/raw --out ai/training/data --val-ratio 0.2
+copy ai\training\data\dataset.yaml.example ai\training\data\dataset.yaml
 ```
 
 Edit `dataset.yaml` paths if needed.
@@ -61,47 +63,49 @@ Edit `dataset.yaml` paths if needed.
 
 **Local (NVIDIA GPU recommended):**
 
-```bash
+```powershell
+cd backend
 pip install torch torchvision  # match your CUDA version
-python scripts/train_yolo.py --data training/data/dataset.yaml --epochs 50 --batch 16
+python ai/scripts/train_yolo.py --data ai/training/data/dataset.yaml --epochs 50 --batch 16
 ```
 
 **Google Colab:**
 
-1. Upload `training/data` or mount Drive.
+1. Upload `ai/training/data` or mount Drive.
 2. `!pip install ultralytics`
 3. Run the same `train_yolo.py` command.
-4. Download `training/runs/knowing_eye_proctor/weights/best.pt`.
+4. Download `ai/training/runs/knowing_eye_proctor/weights/best.pt`.
 
 **Point the pipeline at your weights:**
 
 ```yaml
-# config/pipeline.yaml
+# backend/ai/config/pipeline.yaml
 detection:
-  yolo_model: training/runs/knowing_eye_proctor/weights/best.pt
+  yolo_model: ai/training/runs/knowing_eye_proctor/weights/best.pt
 ```
+
+Restart the API process after updating the config.
 
 ## 6. Tune behavior thresholds (no GPU)
 
-Edit `config/pipeline.yaml`:
+Edit `backend/ai/config/pipeline.yaml`:
 
 - `gaze_yaw_threshold_deg` / `gaze_pitch_threshold_deg` — looking away sensitivity
 - `posture_shoulder_tilt_max` — slouch / lean detection
 - `behavior.weights` — how much each event lowers `behavior_score`
-- `event_confidence_threshold` — minimum confidence to log an event
 
-Validate with mock sessions and compare logs in `data/sessions/<session_id>/behavior_log.jsonl`.
+Validate with mock sessions via the monitoring WebSocket or REST frame endpoint.
 
 ## 7. Identity model (ArcFace)
 
 The pipeline uses **InsightFace ArcFace** (`buffalo_l` by default) for 512-D identity
-embeddings. Install optional deps:
+embeddings. Install optional deps from the `backend/` directory:
 
-```bash
+```powershell
 pip install -r requirements-identity.txt
 ```
 
-Configure in `config/pipeline.yaml`:
+Configure in `backend/ai/config/pipeline.yaml`:
 
 ```yaml
 recognition:
@@ -110,11 +114,6 @@ recognition:
 pipeline:
   identity_match_threshold: 0.42  # cosine distance; lower = stricter
 ```
-
-Legacy `face_recognition` (128-D) remains available via `embedding_backend: face_recognition`
-and `pip install -e ".[identity-legacy]"`.
-
-The `verify()` / `verify_against()` contract is unchanged: `(match: bool, distance: float)`.
 
 ## 8. Evaluation metrics (for capstone reporting)
 
@@ -127,10 +126,12 @@ Track on a held-out mock exam set:
 
 Example: process a labeled video and compare predicted `events` to ground-truth timestamps.
 
-## Integration with main Django backend
+## Runtime integration
 
-After training:
-1. Copy `best.pt` into main repo `ai/models/`.
-2. Import `BehaviorPipeline` from this package (or vendor the `knowing_eye/` folder into `backend/ai/`).
-3. In monitoring service: decode frame → `pipeline.analyze_frame()` → persist `behavior_logs` + `alerts`.
-4. WebSocket: forward `analysis_result` payload shape from `api/main.py` `ws/monitor`.
+The trained pipeline is consumed automatically by:
+
+- `backend/ai/adapter.py` — lazy-loads `BehaviorPipeline` from `backend/ai/knowing_eye/`
+- `backend/features/monitoring/consumers.py` — WebSocket frame stream
+- `backend/features/monitoring/views.py` — REST frame/enroll endpoints
+
+Check `/api/monitoring/health/` for the current `pipeline_mode` (`production`, `stub`, or `disabled`).

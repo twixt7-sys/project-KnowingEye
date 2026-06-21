@@ -1,15 +1,14 @@
-// Auto-generated manifest for offline graph viewer
 window.KNOWING_EYE_GRAPHS = {
   "ai-pipeline-component.json": {
     "diagram_id": "Fig-2.3",
     "title": "AI / Computer Vision Module Architecture",
     "section": "2.1.2.3",
-    "description": "Internal structure of pipeline_playground/knowing_eye and its integration boundary via backend/ai/adapter.py.",
+    "description": "Internal structure of backend/ai/knowing_eye and its integration boundary via backend/ai/adapter.py.",
     "format": "component_diagram",
     "integration_boundary": {
       "django_side": "backend/ai/adapter.py",
-      "pipeline_side": "pipeline_playground/knowing_eye/pipeline.py",
-      "config": "pipeline_playground/config/pipeline.yaml",
+      "pipeline_side": "backend/ai/knowing_eye/pipeline.py",
+      "config": "backend/ai/config/pipeline.yaml",
       "fallback": "StubPipeline when ML deps unavailable"
     },
     "nodes": [
@@ -26,13 +25,13 @@ window.KNOWING_EYE_GRAPHS = {
       {
         "id": "pipeline",
         "label": "BehaviorPipeline",
-        "path": "knowing_eye/pipeline.py",
+        "path": "backend/ai/knowing_eye/pipeline.py",
         "role": "Orchestrator"
       },
       {
         "id": "preprocess",
         "label": "Preprocessing",
-        "path": "knowing_eye/preprocessing/",
+        "path": "backend/ai/knowing_eye/preprocessing/",
         "modules": [
           "frame.py"
         ]
@@ -40,7 +39,7 @@ window.KNOWING_EYE_GRAPHS = {
       {
         "id": "detection",
         "label": "Detection",
-        "path": "knowing_eye/detection/",
+        "path": "backend/ai/knowing_eye/detection/",
         "modules": [
           "face_detector.py",
           "pose_detector.py",
@@ -51,7 +50,7 @@ window.KNOWING_EYE_GRAPHS = {
       {
         "id": "recognition",
         "label": "Recognition",
-        "path": "knowing_eye/recognition/",
+        "path": "backend/ai/knowing_eye/recognition/",
         "modules": [
           "identity.py",
           "arcface_backend.py"
@@ -60,7 +59,7 @@ window.KNOWING_EYE_GRAPHS = {
       {
         "id": "behavior",
         "label": "Behavior Analysis",
-        "path": "knowing_eye/behavior/",
+        "path": "backend/ai/knowing_eye/behavior/",
         "modules": [
           "scoring.py",
           "temporal.py",
@@ -70,7 +69,7 @@ window.KNOWING_EYE_GRAPHS = {
       {
         "id": "config",
         "label": "Pipeline Config",
-        "path": "config/pipeline.yaml",
+        "path": "backend/ai/config/pipeline.yaml",
         "role": "Thresholds, model paths, weights"
       }
     ],
@@ -166,7 +165,7 @@ window.KNOWING_EYE_GRAPHS = {
     ],
     "pipeline_modes": [
       {
-        "mode": "playground",
+        "mode": "production",
         "condition": "ML deps installed, ENABLE_PIPELINE=True"
       },
       {
@@ -1417,7 +1416,7 @@ window.KNOWING_EYE_GRAPHS = {
         "Mermaid",
         "dbdiagram.io (for ERD only)"
       ],
-      "mermaid_template": "flowchart TB\n  subgraph Client[\"Client Tier\"]\n    FE[React SPA]\n    CAM[Webcam API]\n  end\n  subgraph Edge[\"Edge Tier\"]\n    NG[Nginx TLS]\n  end\n  subgraph App[\"Application Tier\"]\n    API[Django DRF + Channels]\n    REDIS[(Redis)]\n    AI[AI Adapter \u2192 pipeline_playground]\n  end\n  subgraph Data[\"Data Tier\"]\n    DB[(PostgreSQL)]\n  end\n  FE -->|REST| NG\n  FE -->|WebSocket| NG\n  CAM --> FE\n  NG --> API\n  API --> REDIS\n  API --> AI\n  API --> DB"
+      "mermaid_template": "flowchart TB\n  subgraph Client[\"Client Tier\"]\n    FE[React SPA]\n    CAM[Webcam API]\n  end\n  subgraph Edge[\"Edge Tier\"]\n    NG[Nginx TLS]\n  end\n  subgraph App[\"Application Tier\"]\n    API[Django DRF + Channels]\n    REDIS[(Redis)]\n    AI[AI Adapter \u2192 backend/ai/knowing_eye]\n  end\n  subgraph Data[\"Data Tier\"]\n    DB[(PostgreSQL)]\n  end\n  FE -->|REST| NG\n  FE -->|WebSocket| NG\n  CAM --> FE\n  NG --> API\n  API --> REDIS\n  API --> AI\n  API --> DB"
     },
     "nodes": [
       {
@@ -1526,7 +1525,7 @@ window.KNOWING_EYE_GRAPHS = {
         "id": "cv_pipeline",
         "label": "Behavior Pipeline",
         "tier": "ai",
-        "technology": "pipeline_playground/knowing_eye",
+        "technology": "backend/ai/knowing_eye",
         "responsibilities": [
           "Detection",
           "Recognition",

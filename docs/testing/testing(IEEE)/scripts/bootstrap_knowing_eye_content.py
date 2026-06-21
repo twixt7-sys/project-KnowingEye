@@ -64,11 +64,11 @@ w(
             "subtitle": "Web-Based Examination Platform with Behavioral Monitoring",
             "group": GROUP,
             "institution": "Legacy College of Compostela — Institute of Information Technology",
-            "repositoryLayout": "monorepo (Django backend + React frontend + pipeline_playground)",
+            "repositoryLayout": "monorepo (Django backend + React frontend + backend/ai/knowing_eye)",
             "packages": [
-                {"name": "backend", "path": "backend/", "role": "Django 6 + DRF + JWT"},
+                {"name": "backend", "path": "backend/", "role": "Django 6 + DRF + JWT + CV pipeline"},
                 {"name": "frontend", "path": "frontend/", "role": "React 18 + Vite + TypeScript"},
-                {"name": "pipeline_playground", "path": "pipeline_playground/", "role": "CV/AI BehaviorPipeline"},
+                {"name": "ai", "path": "backend/ai/knowing_eye/", "role": "CV/AI BehaviorPipeline"},
             ],
         },
         "functional_requirements_for_traceability": [
@@ -87,7 +87,7 @@ w(
         "demo_environment": {
             "api_base": "http://localhost:8000/api",
             "frontend_url": "http://localhost:5173",
-            "pipeline_health": "http://localhost:8090/health",
+            "pipeline_health": "http://localhost:8000/api/monitoring/health/",
             "note": "Use seed_db management command; do not commit real passwords.",
         },
         "key_routes_for_docs": {

@@ -13,9 +13,9 @@ python manage.py test features
 if errorlevel 1 goto :fail
 
 echo.
-echo === Pipeline (pytest) ===
-cd /d "%ROOT%pipeline_playground"
-python -m pytest tests/ -q
+echo === AI pipeline (pytest) ===
+cd /d "%ROOT%backend"
+python -m pytest ai/tests/ -q
 if errorlevel 1 goto :fail
 
 echo.

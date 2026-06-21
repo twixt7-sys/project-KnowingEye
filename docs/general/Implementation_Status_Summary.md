@@ -10,7 +10,7 @@ root README when in conflict.*
 | Frontend | React 18, Vite, TypeScript, Tailwind, shadcn, Recharts | `npm run dev` → `http://127.0.0.1:5173`                                                   |
 | Backend  | Django 6, DRF, SimpleJWT, **Channels (ASGI)**, Daphne  | `start-dev.cmd` or `backend/run-api.cmd` → `http://127.0.0.1:8000` (HTTP + WebSocket)     |
 | Database | SQLite (dev), PostgreSQL (prod)                        | Set `DB_ENGINE` env var                                                                   |
-| AI / CV  | `pipeline_playground/knowing_eye` (YOLO + MediaPipe)   | Integrated via `backend/ai/adapter.py` — auto-fallback to a stub when ML deps are absent |
+| AI / CV  | `backend/ai/knowing_eye` (YOLO + MediaPipe + ArcFace)   | Integrated via `backend/ai/adapter.py` — auto-fallback to a stub when ML deps are absent |
 
 ## Module completion
 
@@ -27,7 +27,7 @@ root README when in conflict.*
 ## What is new in this revision
 
 * **ASGI + WebSocket monitoring.** Daphne serves both HTTP and `ws://ws/monitoring/{session}/` with JWT auth via query-string token, JSON message protocol, group broadcast for alerts.
-* **Pipeline integration hardened.** Thread-safe lazy loader, graceful degradation to a stub analyzer, `enroll_reference` exposed, `pipeline_playground` installable as a Python package (`pyproject.toml`).
+* **Pipeline integration hardened.** Thread-safe lazy loader, graceful degradation to a stub analyzer, `enroll_reference` exposed; production code lives in `backend/ai/knowing_eye/`.
 * **Production-grade settings.** Decouple-based env config, structured logging to file + stdout, conditional production hardening (HSTS, secure cookies, SSL proxy), Redis-ready Channels layer.
 * **Reports & analytics.** Pass-rate, severity histogram, behavior-event histogram, day-by-day timeseries, downloadable CSV.
 * **Profile & avatars.** ImageField avatar, phone, institution, student-id; multipart upload endpoint; signed media via `MEDIA_URL`.
@@ -85,7 +85,7 @@ All 23 tests pass.
 ## Documentation
 
 * **Production deployment:** [docs/deployment.md](../deployment.md)
-* **Pipeline integration:** [pipeline_playground/README.md](../../pipeline_playground/README.md)
+* **CV training & tuning:** [backend/ai/training/TRAINING.md](../../backend/ai/training/TRAINING.md)
 * **WBS:** [docs/general/workflow.tree](./workflow.tree)
 * **IEEE testing:** [docs/testing/testing(IEEE)/](../testing/testing\(IEEE\)/)
 * **UTAUT testing:** [docs/testing/testing(UTAUT)/](../testing/testing\(UTAUT\)/)

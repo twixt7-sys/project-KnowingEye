@@ -12,7 +12,7 @@ def main() -> None:
     parser.add_argument(
         "--data",
         type=Path,
-        default=Path("training/data/dataset.yaml"),
+        default=Path("ai/training/data/dataset.yaml"),
         help="Ultralytics dataset YAML",
     )
     parser.add_argument("--model", default="yolov8n.pt", help="Base checkpoint")
@@ -25,7 +25,7 @@ def main() -> None:
     if not args.data.exists():
         raise SystemExit(
             f"Dataset config not found: {args.data}\n"
-            "Copy training/data/dataset.yaml.example and prepare labels first."
+            "Copy ai/training/data/dataset.yaml.example and prepare labels first."
         )
 
     from ultralytics import YOLO
@@ -37,7 +37,7 @@ def main() -> None:
         imgsz=args.imgsz,
         batch=args.batch,
         device=args.device or None,
-        project="training/runs",
+        project="ai/training/runs",
         name="knowing_eye_proctor",
     )
     print("Training complete. Best weights:", results.save_dir)

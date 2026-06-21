@@ -11,7 +11,7 @@ Items here are **not part of the active application**. They were moved out of th
 | `archive/reference-architectures/` | THERIA reference trees from another project |
 | `thesis-notes/` | Informal thesis notes and converted documents |
 | `dead-code/` | Superseded source files (mock UI, unused backend scaffolding) |
-| `duplicate-docs/` | Copy of `docs/` that lived under `pipeline_playground/` |
+| `duplicate-docs/` | Historical copy of `docs/` from an earlier repo layout (pre–backend/ai migration) |
 
 ## Active docs
 

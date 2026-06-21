@@ -1,7 +1,7 @@
 # Copy to dataset.yaml and adjust paths after preparing data
 # Ultralytics YOLO dataset format
 
-path: training/data  # dataset root (relative to repo root or absolute)
+path: ai/training/data  # dataset root (relative to backend/ or absolute)
 train: images/train
 val: images/val
 

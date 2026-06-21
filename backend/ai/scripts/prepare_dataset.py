@@ -3,7 +3,7 @@
 Prepare YOLO training dataset from mock exam recordings.
 
 Expected layout after running:
-  training/data/
+  ai/training/data/
     images/train/, images/val/
     labels/train/, labels/val/
 
@@ -32,7 +32,7 @@ def main() -> None:
     parser.add_argument(
         "--out",
         type=Path,
-        default=Path("training/data"),
+        default=Path("ai/training/data"),
         help="Output dataset root",
     )
     parser.add_argument("--val-ratio", type=float, default=0.2)
@@ -61,11 +61,10 @@ def main() -> None:
             if lbl.exists():
                 shutil.copy2(lbl, lbl_dst / lbl.name)
             else:
-                # Empty label placeholder — annotate with Roboflow / CVAT / labelImg
                 (lbl_dst / f"{img.stem}.txt").write_text("", encoding="utf-8")
 
     print(f"Prepared {len(images)} images -> {args.out}")
-    print("Annotate missing labels before training (see TRAINING.md).")
+    print("Annotate missing labels before training (see ai/training/TRAINING.md).")
 
 
 if __name__ == "__main__":

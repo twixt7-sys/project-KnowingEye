@@ -6,7 +6,7 @@ Industry-standard layout:
     * Provides safe SQLite defaults for development; PostgreSQL for production
       via DB_ENGINE=django.db.backends.postgresql.
     * Adds Channels (ASGI), JWT, CORS, REST Framework, structured logging.
-    * Production AI pipeline lives in backend/ai/knowing_eye (not pipeline_playground).
+    * Production AI pipeline lives in backend/ai/knowing_eye.
 
 For deployment checklist see:
     https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/

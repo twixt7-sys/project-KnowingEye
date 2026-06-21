@@ -10,7 +10,7 @@ A capstone full-stack platform that delivers timed exams and monitors examinee b
 Browser (React) ──REST/JWT──► Django API (DRF + Channels)
                                     │
                                     ├── SQLite / PostgreSQL
-                                    └── ai.adapter ──► pipeline_playground (YOLO, MediaPipe, …)
+                                    └── ai.adapter ──► backend/ai/knowing_eye (YOLO, MediaPipe, …)
 Webcam frames ──WebSocket──► monitoring consumer ──► same pipeline
 ```
 
@@ -23,7 +23,7 @@ Webcam frames ──WebSocket──► monitoring consumer ──► same pipeli
 | API endpoints | [README.md](README.md) → API surface |
 | Implementation status | [docs/general/Implementation_Status_Summary.md](docs/general/Implementation_Status_Summary.md) |
 | Deploy to production | [docs/deployment.md](docs/deployment.md) |
-| CV pipeline tuning | [pipeline_playground/README.md](pipeline_playground/README.md) |
+| CV pipeline tuning | [backend/ai/training/TRAINING.md](backend/ai/training/TRAINING.md) |
 
 **Seed logins** (after `python manage.py seed_db --noinput`):
 
@@ -42,11 +42,10 @@ project-KnowingEye/
 │   ├── features/         Domain apps (auth, exams, session, monitoring, behavior, reports)
 │   └── seed_data/        CSV seeds for dev/demo
 ├── frontend/             React SPA (see frontend/README.md)
-├── pipeline_playground/  Installable CV package + optional FastAPI demo
 ├── docs/                 Architecture, deployment, thesis/testing (Knowing Eye)
 ├── misc/                 Archived / unrelated artifacts (safe to delete after review)
 ├── start-dev.cmd         Windows dev bootstrap
-└── test-all.cmd          Run backend + pipeline test suites
+└── test-all.cmd          Run backend feature + AI pipeline test suites
 ```
 
 ## Backend conventions
@@ -74,9 +73,9 @@ cd backend
 $env:DB_ENGINE = "django.db.backends.sqlite3"
 python manage.py test features
 
-# Pipeline only
-cd pipeline_playground
-python -m pytest tests/
+# AI pipeline only
+cd backend
+python -m pytest ai/tests/
 ```
 
 Backend: **32 tests** across auth, exams, sessions, monitoring (REST + WebSocket), behavior, reports.
@@ -102,4 +101,4 @@ Prior thesis artifacts, OSAS reference packs from another project, duplicate doc
 | [docs/deployment.md](docs/deployment.md) | Production |
 | [docs/backend/commands.txt](docs/backend/commands.txt) | CLI cheat sheet |
 | [frontend/README.md](frontend/README.md) | UI structure |
-| [pipeline_playground/README.md](pipeline_playground/README.md) | CV pipeline |
+| [backend/ai/training/TRAINING.md](backend/ai/training/TRAINING.md) | CV pipeline training & tuning |

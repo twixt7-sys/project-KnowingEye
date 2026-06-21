@@ -1,7 +1,7 @@
 """
 Production AI adapter for Knowing Eye.
 
-Loads the canonical pipeline from ``backend/ai/knowing_eye`` (not pipeline_playground).
+Loads the production pipeline from ``backend/ai/knowing_eye``.
 Falls back to a deterministic stub when CV/ML dependencies are unavailable.
 """
 

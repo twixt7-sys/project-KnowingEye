@@ -26,10 +26,6 @@ project-KnowingEye/
 │       ├── core/            providers, router, api client, env
 │       ├── pages/           home, login, dashboard, monitoring, reports, profile, …
 │       └── shared/          components, hooks (use-monitoring), utilities
-├── pipeline_playground/     Installable CV/AI module (YOLO + MediaPipe + scoring)
-│   ├── knowing_eye/         preprocessing/detection/recognition/behavior packages
-│   ├── api/                 FastAPI standalone playground (optional)
-│   └── config/pipeline.yaml Thresholds & model paths
 ├── docs/                    Architecture, deployment, IEEE / UTAUT testing (Knowing Eye)
 ├── misc/                    Archived artifacts & dead code (see misc/README.md)
 ├── REPOSITORY_GUIDE.md      Contributor map — start here if new to the repo
@@ -125,7 +121,7 @@ cd backend
 .\venv\Scripts\Activate.ps1
 pip install -r requirements-cv.txt
 # optional ArcFace identity verification (Windows may need Visual C++ build tools):
-pip install -r ../pipeline_playground/requirements-identity.txt
+pip install -r requirements-identity.txt
 ```
 
 When dependencies load successfully the adapter runs in **`production`** mode
@@ -154,6 +150,7 @@ Currently **32 tests** across:
 * `features.monitoring` — REST frame, enroll, **WebSocket consumer**, RBAC
 * `features.behavior` — logs + alerts persistence
 * `features.reports` — summary, detail, CSV export, timeseries
+* `ai.tests` — production CV pipeline unit tests
 
 ## Production deployment
 
@@ -172,7 +169,7 @@ See [docs/deployment.md](docs/deployment.md) for the full guide. Highlights:
 * **Implementation status:** [docs/general/Implementation_Status_Summary.md](docs/general/Implementation_Status_Summary.md)
 * **WBS:** [docs/general/workflow.tree](docs/general/workflow.tree)
 * **Deployment:** [docs/deployment.md](docs/deployment.md)
-* **Pipeline integration:** [pipeline_playground/README.md](pipeline_playground/README.md)
+* **CV training:** [backend/ai/training/TRAINING.md](backend/ai/training/TRAINING.md)
 
 ## Team
 

@@ -28,11 +28,11 @@
 
     <section>
       <h2>Module Overview</h2>
-      <p>The AI module is implemented as an installable Python package (<code>pipeline_playground/knowing_eye</code>) integrated into Django through <code>backend/ai/adapter.py</code>. It processes webcam frames and returns structured metrics, behavioral events, and alerts without storing raw video in the database.</p>
+      <p>The AI module lives in <code>backend/ai/knowing_eye/</code> and is integrated into Django through <code>backend/ai/adapter.py</code>. It processes webcam frames and returns structured metrics, behavioral events, and alerts without storing raw video in the database.</p>
       <table>
         <thead><tr><th>Pipeline Mode</th><th>Condition</th></tr></thead>
         <tbody>
-          <tr><td><code>playground</code></td><td>ML dependencies installed (mediapipe, ultralytics, etc.)</td></tr>
+          <tr><td><code>production</code></td><td>ML dependencies installed (mediapipe, ultralytics, etc.)</td></tr>
           <tr><td><code>stub</code></td><td>Deterministic fallback when imports fail</td></tr>
           <tr><td><code>disabled</code></td><td><code>KE_ENABLE_PIPELINE=False</code> in settings</td></tr>
         </tbody>

@@ -2,22 +2,22 @@
   "diagram_id": "Fig-2.3",
   "title": "AI / Computer Vision Module Architecture",
   "section": "2.1.2.3",
-  "description": "Internal structure of pipeline_playground/knowing_eye and its integration boundary via backend/ai/adapter.py.",
+  "description": "Internal structure of backend/ai/knowing_eye and its integration boundary via backend/ai/adapter.py.",
   "format": "component_diagram",
   "integration_boundary": {
     "django_side": "backend/ai/adapter.py",
-    "pipeline_side": "pipeline_playground/knowing_eye/pipeline.py",
-    "config": "pipeline_playground/config/pipeline.yaml",
+    "pipeline_side": "backend/ai/knowing_eye/pipeline.py",
+    "config": "backend/ai/config/pipeline.yaml",
     "fallback": "StubPipeline when ML deps unavailable"
   },
   "nodes": [
     { "id": "adapter", "label": "AI Adapter", "path": "backend/ai/adapter.py", "functions": ["get_pipeline_mode()", "analyze_frame_bgr()", "enroll_reference()"] },
-    { "id": "pipeline", "label": "BehaviorPipeline", "path": "knowing_eye/pipeline.py", "role": "Orchestrator" },
-    { "id": "preprocess", "label": "Preprocessing", "path": "knowing_eye/preprocessing/", "modules": ["frame.py"] },
-    { "id": "detection", "label": "Detection", "path": "knowing_eye/detection/", "modules": ["face_detector.py", "pose_detector.py", "yolo_detector.py", "mp_models.py"] },
-    { "id": "recognition", "label": "Recognition", "path": "knowing_eye/recognition/", "modules": ["identity.py", "arcface_backend.py"] },
-    { "id": "behavior", "label": "Behavior Analysis", "path": "knowing_eye/behavior/", "modules": ["scoring.py", "temporal.py", "normalize.py"] },
-    { "id": "config", "label": "Pipeline Config", "path": "config/pipeline.yaml", "role": "Thresholds, model paths, weights" }
+    { "id": "pipeline", "label": "BehaviorPipeline", "path": "backend/ai/knowing_eye/pipeline.py", "role": "Orchestrator" },
+    { "id": "preprocess", "label": "Preprocessing", "path": "backend/ai/knowing_eye/preprocessing/", "modules": ["frame.py"] },
+    { "id": "detection", "label": "Detection", "path": "backend/ai/knowing_eye/detection/", "modules": ["face_detector.py", "pose_detector.py", "yolo_detector.py", "mp_models.py"] },
+    { "id": "recognition", "label": "Recognition", "path": "backend/ai/knowing_eye/recognition/", "modules": ["identity.py", "arcface_backend.py"] },
+    { "id": "behavior", "label": "Behavior Analysis", "path": "backend/ai/knowing_eye/behavior/", "modules": ["scoring.py", "temporal.py", "normalize.py"] },
+    { "id": "config", "label": "Pipeline Config", "path": "backend/ai/config/pipeline.yaml", "role": "Thresholds, model paths, weights" }
   ],
   "edges": [
     { "from": "adapter", "to": "pipeline", "label": "lazy init (thread-safe)" },
@@ -51,7 +51,7 @@
     "leaving_seat", "object_detected", "identity_mismatch", "suspicious_pattern"
   ],
   "pipeline_modes": [
-    { "mode": "playground", "condition": "ML deps installed, ENABLE_PIPELINE=True" },
+    { "mode": "production", "condition": "ML deps installed, ENABLE_PIPELINE=True" },
     { "mode": "stub", "condition": "Import failure or missing deps" },
     { "mode": "disabled", "condition": "KE_ENABLE_PIPELINE=False" }
   ]

@@ -70,14 +70,13 @@ python -m venv venv
 source venv/bin/activate   # Windows: .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-# enable the full ML pipeline (mediapipe, ultralytics, yaml)
-pip install mediapipe ultralytics PyYAML
+pip install -r requirements-cv.txt
 
-# optional: production Channels backend
+# optional: production Channels backend (multi-worker WebSocket broadcast)
 pip install channels-redis
 
 # optional: ArcFace identity verification (InsightFace + ONNX Runtime)
-pip install -r ../pipeline_playground/requirements-identity.txt
+pip install -r requirements-identity.txt
 ```
 
 ---
@@ -199,7 +198,7 @@ server {
 
 ```bash
 curl https://exam.example.com/api/monitoring/health/
-# → {"status":"ok","service":"knowing-eye-monitoring","pipeline_mode":"playground"}
+# → {"status":"ok","service":"knowing-eye-monitoring","pipeline_mode":"production"}
 
 # Browse the SPA, sign in with the seeded admin account,
 # create an exam, start a student session and confirm WebSocket monitoring
@@ -226,9 +225,9 @@ curl https://exam.example.com/api/monitoring/health/
 
 ## 11. Upgrading the AI pipeline
 
-1. Place new YOLO weights under `pipeline_playground/training/runs/...`.
-2. Update `pipeline_playground/config/pipeline.yaml` → `detection.yolo_model`.
+1. Place new YOLO weights under `backend/ai/training/runs/...`.
+2. Update `backend/ai/config/pipeline.yaml` → `detection.yolo_model`.
 3. Restart the API processes — the adapter reloads the pipeline on next call.
 
-ArcFace is configured in `pipeline_playground/config/pipeline.yaml` (`recognition.embedding_backend: arcface`).
-See `pipeline_playground/training/TRAINING.md` for thresholds and legacy `face_recognition`.
+ArcFace is configured in `backend/ai/config/pipeline.yaml` (`recognition.embedding_backend: arcface`).
+See `backend/ai/training/TRAINING.md` for thresholds and training workflow.

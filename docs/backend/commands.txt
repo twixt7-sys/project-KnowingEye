@@ -39,6 +39,6 @@ python manage.py test features
 ## Optional ML stack
 
 ```powershell
-pip install mediapipe ultralytics PyYAML
-pip install -r ../pipeline_playground/requirements-identity.txt
+pip install -r requirements-cv.txt
+pip install -r requirements-identity.txt
 ```

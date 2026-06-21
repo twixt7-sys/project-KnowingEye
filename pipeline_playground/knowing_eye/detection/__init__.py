@@ -1,5 +1,0 @@
-from knowing_eye.detection.face_detector import FaceDetector
-from knowing_eye.detection.pose_detector import PoseDetector
-from knowing_eye.detection.yolo_detector import YoloDetector
-
-__all__ = ["FaceDetector", "PoseDetector", "YoloDetector"]

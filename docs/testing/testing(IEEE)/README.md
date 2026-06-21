@@ -1,6 +1,6 @@
 # Knowing Eye — IEEE Testing Pack
 
-Structured testing artifacts for the **Knowing Eye** examination platform (Django + React + `pipeline_playground`), adapted from the OSAS reference pack archived in [`misc/archive/osas-ieee-reference/`](../../../misc/archive/osas-ieee-reference/).
+Structured testing artifacts for the **Knowing Eye** examination platform (Django + React + `backend/ai/knowing_eye`), adapted from the OSAS reference pack archived in [`misc/archive/osas-ieee-reference/`](../../../misc/archive/osas-ieee-reference/).
 
 ## Folder layout
 
@@ -47,5 +47,5 @@ python docs/testing/testing(IEEE)/document-data/generate_documents.py
 
 - [`docs/general/Project.json`](../../general/Project.json)
 - [`docs/general/Implementation_Status_Summary.md`](../../general/Implementation_Status_Summary.md)
-- [`pipeline_playground/README.md`](../../../pipeline_playground/README.md)
+- [`backend/ai/training/TRAINING.md`](../../../backend/ai/training/TRAINING.md)
 - Frozen OSAS example: [`testing(IEEE)[reference]/`](../testing(IEEE)[reference]/)

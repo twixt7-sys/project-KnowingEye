@@ -6,7 +6,7 @@
   "format": "directed_graph",
   "render_hints": {
     "tools": ["draw.io", "Lucidchart", "Mermaid", "dbdiagram.io (for ERD only)"],
-    "mermaid_template": "flowchart TB\n  subgraph Client[\"Client Tier\"]\n    FE[React SPA]\n    CAM[Webcam API]\n  end\n  subgraph Edge[\"Edge Tier\"]\n    NG[Nginx TLS]\n  end\n  subgraph App[\"Application Tier\"]\n    API[Django DRF + Channels]\n    REDIS[(Redis)]\n    AI[AI Adapter → pipeline_playground]\n  end\n  subgraph Data[\"Data Tier\"]\n    DB[(PostgreSQL)]\n  end\n  FE -->|REST| NG\n  FE -->|WebSocket| NG\n  CAM --> FE\n  NG --> API\n  API --> REDIS\n  API --> AI\n  API --> DB"
+    "mermaid_template": "flowchart TB\n  subgraph Client[\"Client Tier\"]\n    FE[React SPA]\n    CAM[Webcam API]\n  end\n  subgraph Edge[\"Edge Tier\"]\n    NG[Nginx TLS]\n  end\n  subgraph App[\"Application Tier\"]\n    API[Django DRF + Channels]\n    REDIS[(Redis)]\n    AI[AI Adapter → backend/ai/knowing_eye]\n  end\n  subgraph Data[\"Data Tier\"]\n    DB[(PostgreSQL)]\n  end\n  FE -->|REST| NG\n  FE -->|WebSocket| NG\n  CAM --> FE\n  NG --> API\n  API --> REDIS\n  API --> AI\n  API --> DB"
   },
   "nodes": [
     { "id": "examinee_browser", "label": "Examinee Browser", "tier": "client", "technology": "Chrome/Edge/Firefox", "responsibilities": ["Exam UI", "Webcam capture", "WebSocket client"] },
@@ -18,7 +18,7 @@
     { "id": "channels", "label": "Django Channels", "tier": "application", "technology": "Channels 4", "responsibilities": ["WebSocket routing", "Group broadcast", "Async consumers"] },
     { "id": "feature_modules", "label": "Feature Modules", "tier": "application", "technology": "Django apps", "responsibilities": ["auth", "exams", "session", "monitoring", "behavior", "reports"] },
     { "id": "ai_adapter", "label": "AI Adapter", "tier": "application", "technology": "backend/ai/adapter.py", "responsibilities": ["Lazy pipeline load", "Stub fallback", "Thread-safe init"] },
-    { "id": "cv_pipeline", "label": "Behavior Pipeline", "tier": "ai", "technology": "pipeline_playground/knowing_eye", "responsibilities": ["Detection", "Recognition", "Scoring", "Alerts"] },
+    { "id": "cv_pipeline", "label": "Behavior Pipeline", "tier": "ai", "technology": "backend/ai/knowing_eye", "responsibilities": ["Detection", "Recognition", "Scoring", "Alerts"] },
     { "id": "redis", "label": "Redis", "tier": "infrastructure", "technology": "Redis 7", "responsibilities": ["Channel layer", "Optional cache"] },
     { "id": "postgresql", "label": "PostgreSQL", "tier": "data", "technology": "PostgreSQL 15+ (SQLite dev)", "responsibilities": ["Users", "Exams", "Sessions", "Logs", "Alerts"] }
   ],
