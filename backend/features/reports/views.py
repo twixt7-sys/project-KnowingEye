@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import csv
-from io import StringIO
+from io import BytesIO, StringIO
 
 from django.db.models import Avg, Count, Q
 from django.http import HttpResponse
@@ -11,6 +11,8 @@ from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from core.utils.constants import MAX_REPORT_EXPORT_ROWS
 
 from core.pagination import StandardResultsPagination
 from features.behavior.models import Alert, BehaviorLog
@@ -176,7 +178,7 @@ def export_sessions_csv(request):
     qs = (
         _annotate_sessions(_session_queryset(request.user))
         .select_related("exam", "user")
-        .order_by("-started_at")[:1000]
+        .order_by("-started_at")[:MAX_REPORT_EXPORT_ROWS]
     )
 
     buffer = StringIO()
@@ -218,6 +220,71 @@ def export_sessions_csv(request):
 
     response = HttpResponse(buffer.getvalue(), content_type="text/csv")
     filename = f"knowing-eye-sessions-{timezone.now():%Y%m%d-%H%M%S}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def export_sessions_pdf(request):
+    """GET /api/reports/export/pdf/ — downloadable PDF summary of session reports."""
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas
+
+    qs = (
+        _annotate_sessions(_session_queryset(request.user))
+        .select_related("exam", "user")
+        .order_by("-started_at")[:MAX_REPORT_EXPORT_ROWS]
+    )
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    y = height - 50
+
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(50, y, "Knowing Eye — Session Report Export")
+    y -= 24
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(50, y, f"Generated: {timezone.now():%Y-%m-%d %H:%M UTC}")
+    y -= 30
+
+    pdf.setFont("Helvetica-Bold", 9)
+    headers = ["Session", "Exam", "User", "Status", "Score", "Alerts"]
+    col_x = [50, 130, 250, 330, 410, 470]
+    for x, label in zip(col_x, headers):
+        pdf.drawString(x, y, label)
+    y -= 16
+    pdf.setFont("Helvetica", 8)
+
+    for session in qs:
+        if y < 60:
+            pdf.showPage()
+            y = height - 50
+            pdf.setFont("Helvetica", 8)
+
+        score = (
+            f"{float(session.percentage_score):.1f}%"
+            if session.percentage_score is not None
+            else "-"
+        )
+        row = [
+            str(session.id)[:8],
+            (session.exam.title or "")[:18],
+            session.user.username[:14],
+            session.status[:12],
+            score,
+            str(session._alert_count),
+        ]
+        for x, value in zip(col_x, row):
+            pdf.drawString(x, y, value)
+        y -= 14
+
+    pdf.save()
+    buffer.seek(0)
+
+    response = HttpResponse(buffer.getvalue(), content_type="application/pdf")
+    filename = f"knowing-eye-sessions-{timezone.now():%Y%m%d-%H%M%S}.pdf"
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
 

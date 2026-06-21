@@ -59,6 +59,15 @@ def receive_frame(request):
     if err:
         return err
 
+    from features.session.services import ensure_active_session
+
+    if not ensure_active_session(session):
+        session.refresh_from_db()
+        return Response(
+            {"error": "Session has expired due to time limit"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     if session.status != ExamSession.Status.IN_PROGRESS:
         return Response(
             {"error": "Session is not active"}, status=status.HTTP_400_BAD_REQUEST

@@ -12,8 +12,9 @@ from rest_framework.response import Response
 
 from . import services
 from .models import Exam, Question
+from .exam_service import ExamService
 from .permissions import IsAdminOrReadOnly, IsExamOwnerOrAdmin
-from .repositories import ExamRepository, QuestionRepository
+from .repositories import QuestionRepository
 from .serializers import (
     ExamCreateUpdateSerializer,
     ExamDetailSerializer,
@@ -36,11 +37,11 @@ class ExamViewSet(viewsets.ModelViewSet):
     search_fields = ["title", "description", "exam_code"]
     ordering_fields = ["created_at", "title"]
     ordering = ["-created_at"]
-    exam_repo = ExamRepository()
+    exam_service = ExamService()
     question_repo = QuestionRepository()
 
     def get_queryset(self):
-        return self.exam_repo.visible_to(self.request.user)
+        return self.exam_service.visible_to(self.request.user)
 
     def get_serializer_class(self):
         if self.action == "retrieve":

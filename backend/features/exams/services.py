@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import csv
 import io
-from dataclasses import dataclass
 from typing import Any
 
 from django.contrib.auth import get_user_model
@@ -13,6 +12,7 @@ from django.db.models import Max
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
+from .dto import ExamLifecycleResult
 from .models import Exam, Question
 
 User = get_user_model()
@@ -73,12 +73,6 @@ def assert_exam_available_for_user(exam: Exam, user) -> None:
                 "exam": f"Maximum attempts ({exam.max_attempts}) reached for this exam."
             }
         )
-
-
-@dataclass(frozen=True)
-class ExamLifecycleResult:
-    exam: Exam
-    message: str
 
 
 def exam_publish_readiness(exam: Exam) -> dict[str, Any]:

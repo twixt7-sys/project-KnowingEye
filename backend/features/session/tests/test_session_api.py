@@ -64,3 +64,23 @@ class SessionAPITests(APITestCase):
         session = ExamSession.objects.get(pk=session_id)
         self.assertEqual(session.status, ExamSession.Status.COMPLETED)
         self.assertTrue(session.passed)
+
+    def test_expired_session_cannot_submit(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        session_id = start.data["session"]["id"]
+        session = ExamSession.objects.get(pk=session_id)
+        session.started_at = timezone.now() - timedelta(minutes=self.exam.duration_minutes + 5)
+        session.save(update_fields=["started_at"])
+
+        submit = self.client.post(
+            f"/api/sessions/{session_id}/submit/",
+            {"responses": [], "time_remaining": 0},
+            format="json",
+        )
+        self.assertEqual(submit.status_code, status.HTTP_400_BAD_REQUEST)
+        session.refresh_from_db()
+        self.assertEqual(session.status, ExamSession.Status.EXPIRED)

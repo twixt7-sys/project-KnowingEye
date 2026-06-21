@@ -92,6 +92,13 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
     async def _handle_frame(self, content: dict[str, Any]) -> None:
         from ai.adapter import analyze_frame_bgr
         from ai.frame_utils import decode_base64_image
+        from features.session.services import ensure_active_session
+
+        still_active = await database_sync_to_async(ensure_active_session)(self._session)
+        if not still_active:
+            await self.send_json({"type": "error", "message": "session expired"})
+            await self.close(code=4408)
+            return
 
         image_data = content.get("image") or ""
         frame = await database_sync_to_async(decode_base64_image)(image_data)

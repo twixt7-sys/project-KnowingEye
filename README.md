@@ -98,6 +98,7 @@ npm run dev
 | GET    | `/api/reports/sessions/{uuid}/`                       | Full session report                      |
 | GET    | `/api/reports/timeseries/`                            | Per-day activity                         |
 | GET    | `/api/reports/export/csv/`                            | CSV download                             |
+| GET    | `/api/reports/export/pdf/`                            | PDF download                             |
 | WS     | `/ws/monitoring/{uuid}/?token={jwt-access}`           | Live monitoring (frame stream + alerts)  |
 
 The WebSocket protocol is documented in `backend/features/monitoring/consumers.py`.

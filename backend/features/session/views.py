@@ -15,8 +15,9 @@ from .serializers import (
     ExamSessionStartSerializer,
     ExamSessionSubmitSerializer,
     ResponseSerializer,
-    SessionLogSerializer
+    SessionLogSerializer,
 )
+from .services import ensure_active_session
 
 
 class ExamSessionViewSet(viewsets.ModelViewSet):
@@ -92,8 +93,16 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        ensure_active_session(session, ip_address=self._get_client_ip(request))
+        session.refresh_from_db()
+
         # Check if session can be submitted
         if not session.can_submit():
+            if session.status == ExamSession.Status.EXPIRED:
+                return APIResponse(
+                    {'error': 'Session has expired due to time limit'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             return APIResponse(
                 {'error': f'Session cannot be submitted (status: {session.get_status_display()})'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -146,6 +155,13 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_200_OK
         )
+
+    def retrieve(self, request, *args, **kwargs):
+        session = self.get_object()
+        ensure_active_session(session, ip_address=self._get_client_ip(request))
+        session.refresh_from_db()
+        serializer = self.get_serializer(session)
+        return APIResponse(serializer.data)
 
     @action(detail=True, methods=['get'])
     def logs(self, request, pk=None):

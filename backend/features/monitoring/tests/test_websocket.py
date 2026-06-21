@@ -94,7 +94,7 @@ class MonitoringWebsocketTests(TransactionTestCase):
                 await communicator.send_to(
                     text_data=json.dumps({"type": "frame", "image": _tiny_jpeg()})
                 )
-                response = json.loads(await communicator.receive_from())
+                response = json.loads(await communicator.receive_from(timeout=30))
                 self.assertEqual(response["type"], "analysis")
                 self.assertIn("metrics", response["payload"])
             finally:

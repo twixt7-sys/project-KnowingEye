@@ -2719,3 +2719,37 @@ AttributeError: 'list' object has no attribute 'annotate'
 2026-06-21 15:16:58,318 [WARNING] django.request: Unauthorized: /api/reports/summary/
 2026-06-21 15:16:58,334 [WARNING] django.request: Unauthorized: /api/exams/
 2026-06-21 15:16:58,501 [WARNING] django.request: Unauthorized: /api/reports/sessions/
+2026-06-21 17:05:57,555 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 17:05:59,342 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 17:06:05,566 [WARNING] matplotlib.font_manager: Matplotlib is building the font cache; this may take a moment.
+2026-06-21 17:06:05,954 [INFO] matplotlib.font_manager: generated new fontManager
+2026-06-21 17:06:09,144 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 17:06:12,010 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 17:06:14,406 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 17:06:16,342 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 17:06:20,278 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-21 17:06:42,461 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-21 23:49:23,226 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:49:25,319 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:49:27,665 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:49:30,244 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:49:32,836 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:49:35,213 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:49:38,798 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-21 23:50:10,844 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-21 23:50:43,399 [WARNING] django.request: Bad Request: /api/sessions/106ca1bd-0210-42bb-bcaf-6ade23e12b9f/submit/
+2026-06-21 23:51:23,108 [WARNING] knowing_eye.api.errors: API error [validation_error] _DummyView.GET status=400 detail={'field': [ErrorDetail(string='bad', code='invalid')]}
+2026-06-21 23:52:14,272 [WARNING] django.request: Bad Request: /api/sessions/bf0dab94-4b30-417a-a462-d55c7fdc73d9/submit/
+2026-06-21 23:52:42,974 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:52:53,918 [WARNING] knowing_eye.api.errors: API error [validation_error] _DummyView.GET status=400 detail={'field': [ErrorDetail(string='bad', code='invalid')]}
+2026-06-21 23:53:46,635 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:54:51,628 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:54:54,688 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:54:57,325 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:54:59,674 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:55:02,372 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:55:05,666 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:55:08,369 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-21 23:55:17,027 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-21 23:55:27,951 [WARNING] django.request: Bad Request: /api/sessions/337f650b-6367-4ae7-95a8-cbc7bb04f171/submit/
+2026-06-21 23:55:48,505 [WARNING] knowing_eye.api.errors: API error [validation_error] _DummyView.GET status=400 detail={'field': [ErrorDetail(string='bad', code='invalid')]}

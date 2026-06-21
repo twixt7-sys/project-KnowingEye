@@ -69,6 +69,12 @@ class ReportsAPITests(APITestCase):
         body = response.content.decode("utf-8")
         self.assertIn("session_id,exam_id", body.split("\n")[0])
 
+    def test_export_pdf(self):
+        response = self.client.get("/api/reports/export/pdf/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response["Content-Type"].startswith("application/pdf"))
+        self.assertTrue(response.content.startswith(b"%PDF"))
+
     def test_timeseries(self):
         response = self.client.get("/api/reports/timeseries/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)

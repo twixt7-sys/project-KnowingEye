@@ -49,6 +49,11 @@ class UserDetailSerializer(UserSerializer):
         ]
         read_only_fields = ["id", "created_at", "updated_at", "last_seen_at", "avatar_url"]
 
+    def validate_phone(self, value):
+        from shared.utils.validators import validate_phone
+
+        return validate_phone(value)
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
