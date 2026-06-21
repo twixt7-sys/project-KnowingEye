@@ -27,7 +27,7 @@ class SessionIdentityReference(models.Model):
     backend = models.CharField(
         max_length=32,
         default="stub",
-        help_text="Pipeline backend that produced the embedding (stub/playground).",
+        help_text="Pipeline backend that produced the embedding (production/stub/disabled).",
     )
     dims = models.PositiveIntegerField(default=0, help_text="Embedding dimensionality.")
     created_at = models.DateTimeField(auto_now_add=True)

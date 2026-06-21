@@ -2683,3 +2683,39 @@ AttributeError: 'list' object has no attribute 'annotate'
 2026-06-20 22:35:56,101 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
 2026-06-20 22:35:56,102 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
 2026-06-20 22:35:56,104 [CRITICAL] daphne.server: Listen failure: Couldn't listen on 127.0.0.1:8000: [WinError 10048] Only one usage of each socket address (protocol/network address/port) is normally permitted.
+2026-06-20 23:05:11,706 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-20 23:05:15,289 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-20 23:05:18,440 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-20 23:05:21,590 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-20 23:05:24,608 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-20 23:05:27,687 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-20 23:05:30,348 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-20 23:05:43,901 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-20 23:07:33,476 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-20 23:07:36,744 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-20 23:07:40,030 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-20 23:07:43,366 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-20 23:07:46,589 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-20 23:07:49,751 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-20 23:07:53,418 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-20 23:08:06,056 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-21 00:40:20,770 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-21 00:40:20,771 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-21 00:40:20,771 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-21 00:40:20,772 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-21 00:40:56,781 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-21 00:42:18,937 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-21 00:42:22,867 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-21 03:22:04,722 [WARNING] django.request: Unauthorized: /api/behavior/alerts/
+2026-06-21 03:22:04,703 [WARNING] django.request: Unauthorized: /api/reports/summary/
+2026-06-21 03:22:04,727 [WARNING] django.request: Unauthorized: /api/exams/
+2026-06-21 03:22:04,757 [WARNING] django.request: Unauthorized: /api/reports/sessions/
+2026-06-21 03:22:06,254 [WARNING] django.request: Unauthorized: /api/auth/profile/me/
+2026-06-21 11:07:11,225 [WARNING] django.request: Unauthorized: /api/exams/
+2026-06-21 11:07:11,233 [WARNING] django.request: Unauthorized: /api/behavior/alerts/
+2026-06-21 11:07:11,236 [WARNING] django.request: Unauthorized: /api/reports/sessions/
+2026-06-21 11:07:11,239 [WARNING] django.request: Unauthorized: /api/reports/summary/
+2026-06-21 15:16:58,309 [WARNING] django.request: Unauthorized: /api/behavior/alerts/
+2026-06-21 15:16:58,318 [WARNING] django.request: Unauthorized: /api/reports/summary/
+2026-06-21 15:16:58,334 [WARNING] django.request: Unauthorized: /api/exams/
+2026-06-21 15:16:58,501 [WARNING] django.request: Unauthorized: /api/reports/sessions/

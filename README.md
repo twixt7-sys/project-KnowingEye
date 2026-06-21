@@ -18,7 +18,7 @@ with real-time computer-vision behavior analysis for examination integrity.
 ```text
 project-KnowingEye/
 ├── backend/                 Django REST + Channels API
-│   ├── ai/                  Adapter bridging Django ↔ pipeline_playground
+│   ├── ai/                  Production CV pipeline (knowing_eye) + adapter
 │   ├── core/                Settings, ASGI/WSGI, exceptions, management
 │   └── features/            authentication, exams, session, monitoring, behavior, reports
 ├── frontend/                React + Vite UI
@@ -108,13 +108,13 @@ The WebSocket protocol is documented in `backend/features/monitoring/consumers.p
 
 ## Computer-Vision pipeline
 
-`backend/ai/adapter.py` lazily loads `pipeline_playground/knowing_eye`. If the
-ML dependencies aren't present it falls back to a deterministic stub so the
+`backend/ai/adapter.py` loads the production pipeline from `backend/ai/knowing_eye`.
+If ML dependencies aren't present it falls back to a deterministic stub so the
 monitoring API contract is always honoured.
 
 ```text
 Webcam ► JPEG/base64 ► /api/monitoring/frame/ (REST) or /ws/monitoring/* (WebSocket)
-       ► ai.adapter.analyze_frame_bgr()  ← pipeline_playground.BehaviorPipeline
+       ► ai.adapter.analyze_frame_bgr()  ← backend/ai/knowing_eye.BehaviorPipeline
        ► metrics + events + alerts ► persisted via features.behavior.services
 ```
 
@@ -123,16 +123,17 @@ Webcam ► JPEG/base64 ► /api/monitoring/frame/ (REST) or /ws/monitoring/* (We
 ```powershell
 cd backend
 .\venv\Scripts\Activate.ps1
-pip install mediapipe ultralytics PyYAML
-# optional identity verification (Windows requires Visual C++ build tools):
+pip install -r requirements-cv.txt
+# optional ArcFace identity verification (Windows may need Visual C++ build tools):
 pip install -r ../pipeline_playground/requirements-identity.txt
 ```
 
-When all three are present the adapter switches from `stub` → `playground`.
+When dependencies load successfully the adapter runs in **`production`** mode
+(stub otherwise).
 
 ### Tune thresholds
 
-Edit `pipeline_playground/config/pipeline.yaml` — values control compliance
+Edit `backend/ai/config/pipeline.yaml` — values control preprocessing, compliance
 thresholds, alert severities, and metric weights. The adapter picks the file up
 automatically on next process start.
 

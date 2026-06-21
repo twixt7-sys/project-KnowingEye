@@ -1,18 +1,13 @@
 """
-Bridge from the Django backend to ``pipeline_playground/knowing_eye``.
+Production AI adapter for Knowing Eye.
 
-Behavior
---------
-* Lazily imports the heavy ML stack (mediapipe / opencv / ultralytics).
-* When ML dependencies aren't installed, transparently falls back to a
-  deterministic stub so the monitoring API contract is always honored.
-* Threadsafe initialization — used from both DRF views and Channels consumers.
+Loads the canonical pipeline from ``backend/ai/knowing_eye`` (not pipeline_playground).
+Falls back to a deterministic stub when CV/ML dependencies are unavailable.
 """
 
 from __future__ import annotations
 
 import logging
-import sys
 import threading
 from pathlib import Path
 from typing import Any
@@ -22,26 +17,47 @@ from django.conf import settings
 logger = logging.getLogger("knowing_eye.ai.adapter")
 
 _PIPELINE = None
+_FRAME_BUFFER = None
 _PIPELINE_MODE: str = "uninitialized"
 _TEMPORAL_TRACKER = None
 _LOCK = threading.Lock()
 
-
-def _repo_root() -> Path:
-    """Returns the project root (parent of ``backend/``)."""
-    return Path(settings.BASE_DIR).parent
-
-
-def _ensure_playground_on_path() -> None:
-    playground = _repo_root() / "pipeline_playground"
-    if playground.is_dir() and str(playground) not in sys.path:
-        sys.path.insert(0, str(playground))
+_AI_ROOT = Path(__file__).resolve().parent
+_DEFAULT_CONFIG = _AI_ROOT / "config" / "pipeline.yaml"
 
 
 def get_pipeline_mode() -> str:
-    """Returns one of ``"playground"``, ``"stub"``, ``"disabled"``."""
+    """Returns one of ``"production"``, ``"stub"``, ``"disabled"``."""
     _get_pipeline()
     return _PIPELINE_MODE
+
+
+def _config_path() -> Path:
+    ke_settings = getattr(settings, "KNOWING_EYE", {})
+    configured = Path(str(ke_settings.get("PIPELINE_CONFIG", "")))
+    if configured.exists():
+        return configured
+    return _DEFAULT_CONFIG
+
+
+def _buffer_depth() -> int:
+    try:
+        from ai.knowing_eye.config import load_config
+
+        cfg = load_config(_config_path())
+        return int(cfg.get("pipeline", {}).get("frame_buffer_depth", 3))
+    except Exception:
+        return 3
+
+
+def _get_frame_buffer():
+    global _FRAME_BUFFER
+    if _FRAME_BUFFER is not None:
+        return _FRAME_BUFFER
+    from ai.knowing_eye.processing.frame_buffer import FrameAnalysisBuffer
+
+    _FRAME_BUFFER = FrameAnalysisBuffer(max_depth=_buffer_depth())
+    return _FRAME_BUFFER
 
 
 def _get_pipeline():
@@ -60,19 +76,16 @@ def _get_pipeline():
             logger.info("AI pipeline disabled via settings; using stub.")
             return _PIPELINE
 
-        _ensure_playground_on_path()
         try:
-            from knowing_eye.pipeline import BehaviorPipeline  # type: ignore
+            from ai.knowing_eye.pipeline import BehaviorPipeline
 
-            config_path = Path(ke_settings.get("PIPELINE_CONFIG", ""))
-            _PIPELINE = BehaviorPipeline(
-                config_path=config_path if config_path.exists() else None
-            )
-            _PIPELINE_MODE = "playground"
-            logger.info("Loaded pipeline_playground BehaviorPipeline.")
-        except Exception as exc:  # noqa: BLE001 - we always want to degrade gracefully
+            config_path = _config_path()
+            _PIPELINE = BehaviorPipeline(config_path=config_path)
+            _PIPELINE_MODE = "production"
+            logger.info("Loaded production BehaviorPipeline from backend/ai/knowing_eye.")
+        except Exception as exc:  # noqa: BLE001
             logger.warning(
-                "Falling back to stub analyzer (pipeline_playground not loadable): %s",
+                "Falling back to stub analyzer (production pipeline not loadable): %s",
                 exc,
             )
             _PIPELINE = _StubPipeline()
@@ -84,14 +97,11 @@ def _get_temporal_tracker():
     global _TEMPORAL_TRACKER
     if _TEMPORAL_TRACKER is not None:
         return _TEMPORAL_TRACKER
-    _ensure_playground_on_path()
     try:
-        from knowing_eye.behavior.temporal import BehaviorTemporalTracker
-        from knowing_eye.config import load_config
+        from ai.knowing_eye.behavior.temporal import BehaviorTemporalTracker
+        from ai.knowing_eye.config import load_config
 
-        ke_settings = getattr(settings, "KNOWING_EYE", {})
-        config_path = Path(ke_settings.get("PIPELINE_CONFIG", ""))
-        config = load_config(config_path if config_path.exists() else None)
+        config = load_config(_config_path())
         _TEMPORAL_TRACKER = BehaviorTemporalTracker(config)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Temporal behavior tracker unavailable: %s", exc)
@@ -100,12 +110,11 @@ def _get_temporal_tracker():
 
 
 def _apply_temporal_stub(session_id: str, payload: dict[str, Any]) -> dict[str, Any]:
-    """Apply grace / pattern rules to stub analyzer output."""
     tracker = _get_temporal_tracker()
     if tracker is None:
         return payload
 
-    from knowing_eye.types import (
+    from ai.knowing_eye.types import (
         Alert,
         AlertSeverity,
         BehaviorEvent,
@@ -184,23 +193,14 @@ def _apply_temporal_stub(session_id: str, payload: dict[str, Any]) -> dict[str, 
     return merged
 
 
-# Stub identity tuning: distance = 1 - cosine(reference, current); a fully
-# matching frame scores 100%, and the metric reaches 0% once the distance
-# exceeds this threshold. Deterministic and dependency-free.
 _STUB_IDENTITY_THRESHOLD = 0.15
 _ALERT_THRESHOLD_PCT = 80.0
 
 
 class _StubPipeline:
-    """Lightweight deterministic analyzer used when the ML stack is missing.
-
-    Supports a *real* enroll → verify identity cycle (via a downscaled,
-    L2-normalised grayscale signature) so the identity-matching flow is fully
-    exercisable without the heavy ML dependencies installed.
-    """
+    """Deterministic analyzer when ML dependencies are missing."""
 
     def compute_embedding(self, frame_bgr) -> list[float] | None:
-        """Deterministic 256-d signature for the frame, or None if no face."""
         if not hasattr(frame_bgr, "shape"):
             return None
         try:
@@ -208,7 +208,7 @@ class _StubPipeline:
             import numpy as np
 
             gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
-            if float(gray.mean()) < 40:  # too dark — treat as "no face present"
+            if float(gray.mean()) < 40:
                 return None
             small = cv2.resize(gray, (16, 16)).astype("float32").flatten()
             norm = float(np.linalg.norm(small))
@@ -343,7 +343,6 @@ class _StubPipeline:
     def _identity_score(
         self, frame_bgr, reference_embedding: list[float] | None
     ) -> tuple[float | None, float | None]:
-        """Return (identity_match_pct, distance) or (None, None) when not enrolled."""
         if reference_embedding is None:
             return None, None
         current = self.compute_embedding(frame_bgr)
@@ -366,7 +365,6 @@ class _StubPipeline:
 
 
 def compute_embedding(frame_bgr) -> list[float] | None:
-    """Compute a reference face embedding for the given frame (or None)."""
     pipeline = _get_pipeline()
     if not hasattr(pipeline, "compute_embedding"):
         return None
@@ -379,12 +377,7 @@ def compute_embedding(frame_bgr) -> list[float] | None:
 
 
 def analyze_frame_bgr(frame_bgr, session_id: str | None = None) -> dict[str, Any]:
-    """Analyze a single BGR frame and return the canonical contract dict.
-
-    Identity is verified against the reference enrolled for ``session_id`` (if
-    any), so the metric reflects this specific examinee — never a global or
-    auto-enrolled face.
-    """
+    """Analyze a single BGR frame through the production pipeline (sequential per session)."""
     pipeline = _get_pipeline()
 
     reference: list[float] | None = None
@@ -393,13 +386,19 @@ def analyze_frame_bgr(frame_bgr, session_id: str | None = None) -> dict[str, Any
             from ai.identity_store import get_reference_embedding
 
             reference = get_reference_embedding(session_id)
-        except Exception as exc:  # noqa: BLE001 - analysis must never 500
+        except Exception as exc:  # noqa: BLE001
             logger.warning("identity reference lookup failed: %s", exc)
             reference = None
 
-    result = pipeline.analyze_frame(
-        frame_bgr, session_id=session_id, reference_embedding=reference
-    )
+    def _run(frame, session_id=session_id, reference_embedding=reference):
+        return pipeline.analyze_frame(
+            frame,
+            session_id=session_id,
+            reference_embedding=reference_embedding,
+        )
+
+    buffer = _get_frame_buffer()
+    result = buffer.analyze(session_id, frame_bgr, reference, _run)
     payload = result.to_dict() if hasattr(result, "to_dict") else result
     mode = get_pipeline_mode()
     if session_id is not None and mode in ("stub", "disabled") and isinstance(payload, dict):
@@ -409,12 +408,6 @@ def analyze_frame_bgr(frame_bgr, session_id: str | None = None) -> dict[str, Any
 
 
 def enroll_reference(frame_bgr, session=None) -> dict[str, Any]:
-    """Enrol a reference face for a session's identity verification.
-
-    Computes an embedding for the frame and, when a session is supplied,
-    persists it as that session's reference. Returns a status dict the API and
-    WebSocket layers can return verbatim.
-    """
     mode = get_pipeline_mode()
     embedding = compute_embedding(frame_bgr)
     if not embedding:
@@ -450,9 +443,9 @@ def enroll_reference(frame_bgr, session=None) -> dict[str, Any]:
 
 
 def reset_pipeline() -> None:
-    """Force re-initialization on the next call (useful for tests)."""
-    global _PIPELINE, _PIPELINE_MODE, _TEMPORAL_TRACKER
+    global _PIPELINE, _PIPELINE_MODE, _TEMPORAL_TRACKER, _FRAME_BUFFER
     with _LOCK:
         _PIPELINE = None
         _PIPELINE_MODE = "uninitialized"
         _TEMPORAL_TRACKER = None
+        _FRAME_BUFFER = None

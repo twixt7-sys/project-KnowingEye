@@ -1,0 +1,38 @@
+{
+  "diagram_id": "Fig-2.4-DFD1",
+  "title": "Level 1 DFD — Decomposed Processes",
+  "section": "Chapter II · System Analysis",
+  "notation": "Gane and Sarson (logical)",
+  "parent": "P0 Knowing Eye Examination Platform",
+  "processes": [
+    { "id": "P1", "name": "Authenticate & Authorize" },
+    { "id": "P2", "name": "Manage Exams" },
+    { "id": "P3", "name": "Conduct Exam Session" },
+    { "id": "P4", "name": "Analyze Behavior (AI)" },
+    { "id": "P5", "name": "Persist Logs & Alerts" },
+    { "id": "P6", "name": "Generate Reports" }
+  ],
+  "data_stores": [
+    { "id": "D1", "name": "Users & Profiles" },
+    { "id": "D2", "name": "Exams & Questions" },
+    { "id": "D3", "name": "Sessions & Responses" },
+    { "id": "D4", "name": "Behavior Logs & Alerts" },
+    { "id": "D5", "name": "Identity References" }
+  ],
+  "flows": [
+    { "from": "Administrator", "to": "P1", "label": "Credentials" },
+    { "from": "P1", "to": "D1", "label": "User record R/W" },
+    { "from": "Administrator", "to": "P2", "label": "Exam CRUD" },
+    { "from": "P2", "to": "D2", "label": "Exam data R/W" },
+    { "from": "Examinee", "to": "P3", "label": "Start / submit" },
+    { "from": "P3", "to": "D3", "label": "Session & answers" },
+    { "from": "Webcam", "to": "P4", "label": "Base64 frames" },
+    { "from": "P4", "to": "D5", "label": "Verify embedding" },
+    { "from": "P4", "to": "P5", "label": "Events & alerts" },
+    { "from": "P5", "to": "D4", "label": "Log write" },
+    { "from": "Administrator", "to": "P6", "label": "Report filters" },
+    { "from": "D3", "to": "P6", "label": "Session read" },
+    { "from": "D4", "to": "P6", "label": "Behavior read" },
+    { "from": "P6", "to": "Administrator", "label": "KPIs, CSV" }
+  ]
+}

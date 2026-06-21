@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ch. II — System Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="../architecture/assets/theme.js"></script>
+  <link rel="stylesheet" href="../architecture/assets/styles.css" />
+  <link rel="stylesheet" href="assets/chapter.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script defer src="assets/mermaid-init.js"></script>
+</head>
+<body>
+  <div class="page">
+    <nav class="site-nav">
+      <a href="index.html">Index</a>
+      <a href="01-system-analysis.html" class="active">System Analysis</a>
+      <a href="02-system-design.html">System Design</a>
+      <a href="03-system-testing.html">System Testing</a>
+      <a href="04-system-maintenance.html">Maintenance</a>
+    </nav>
+
+    <header class="doc-header">
+      <p class="part-banner">Part A — System Analysis</p>
+      <h1>System Analysis</h1>
+      <p class="lead">
+        Defines the conceptual architecture, expected system behaviors, quality attributes,
+        and structured diagrams (use case, context DFD, Level 1 DFD) for the Knowing Eye platform.
+      </p>
+    </header>
+
+    <!-- SYSTEM ARCHITECTURE -->
+    <section id="architecture">
+      <h2>System Architecture</h2>
+      <p>
+        Knowing Eye is a <strong>full-stack web examination platform</strong> with integrated
+        computer-vision proctoring. The conceptual framework separates <em>users</em>,
+        <em>software components</em>, <em>data stores</em>, and <em>hardware interfaces</em>
+        as shown below.
+      </p>
+
+      <h3>Conceptual Components</h3>
+      <table>
+        <thead><tr><th>Layer</th><th>Component</th><th>Technology</th><th>Interaction</th></tr></thead>
+        <tbody>
+          <tr><td>Users</td><td>Administrator, Examinee</td><td>Web browser</td><td>HTTPS + WSS to backend</td></tr>
+          <tr><td>Presentation</td><td>React SPA</td><td>React 18, Vite, TypeScript</td><td>REST JSON, WebSocket frames</td></tr>
+          <tr><td>Application</td><td>Django monolith</td><td>Django 6, DRF, Channels</td><td>Business logic, RBAC, session orchestration</td></tr>
+          <tr><td>AI / CV</td><td>Behavior pipeline</td><td>MediaPipe, YOLOv8, ArcFace</td><td>In-process via <code>backend/ai/knowing_eye</code></td></tr>
+          <tr><td>Data</td><td>Relational DB</td><td>SQLite (dev) / PostgreSQL (prod)</td><td>ORM persistence</td></tr>
+          <tr><td>Hardware</td><td>Webcam</td><td>USB / built-in camera</td><td>Captured by browser MediaDevices API</td></tr>
+        </tbody>
+      </table>
+
+      <figure class="diagram">
+        <figcaption>Figure 2.1 — Conceptual System Architecture</figcaption>
+        <div class="mermaid-host">
+          <pre class="mermaid">
+flowchart TB
+  subgraph Users["Users"]
+    ADM[Administrator]
+    EXM[Examinee]
+  end
+  subgraph Client["Client Tier — React SPA"]
+    UI[Exam UI · Dashboard · Monitoring]
+    CAM[Webcam Capture]
+  end
+  subgraph Server["Server Tier — Django ASGI"]
+    API[REST API]
+    WS[WebSocket Consumers]
+    AI[AI Pipeline backend/ai]
+  end
+  subgraph Data["Data Tier"]
+    DB[(PostgreSQL / SQLite)]
+    MEDIA[(Media Files)]
+  end
+  ADM --> UI
+  EXM --> UI
+  EXM --> CAM
+  UI -->|HTTPS JSON| API
+  UI -->|WSS frames| WS
+  CAM -->|JPEG base64| WS
+  API --> DB
+  WS --> AI
+  AI --> DB
+  API --> MEDIA
+          </pre>
+        </div>
+        <details class="graph-source"><summary>Extended architecture reference</summary>
+          <p style="padding:0 1rem 1rem;font-size:0.85rem;color:var(--muted)">
+            See <a href="../architecture/01-high-level-architecture.html">Architecture §2.1</a> and
+            <code>architecture/graphs/system-architecture.json</code> for deployment topology and component detail.
+          </p>
+        </details>
+      </figure>
+
+      <h3>User–System Interactions</h3>
+      <ul>
+        <li><strong>Administrator</strong> creates exams, publishes schedules, monitors live sessions via WebSocket alert feed, resolves alerts, and exports reports.</li>
+        <li><strong>Examinee</strong> authenticates, starts a timed session, answers questions, streams webcam frames for behavior analysis, and views results.</li>
+        <li><strong>System</strong> scores answers, computes compliance metrics (face, gaze, posture, identity, objects), persists logs, and pushes real-time alerts.</li>
+      </ul>
+    </section>
+
+    <!-- REQUIREMENTS -->
+    <section id="requirements">
+      <h2>Functional and Non-Functional Requirements</h2>
+      <p>
+        Requirements were derived from capstone objectives, stakeholder interviews with IT faculty,
+        and iterative prototype validation. Each item is numbered for traceability to test cases
+        (prefixes <code>FR-</code>, <code>NFR-</code>).
+      </p>
+
+      <h3>Functional Requirements</h3>
+      <ol class="req-list fr">
+        <li>The system shall allow users to register and authenticate using username/password with JWT access and refresh tokens.</li>
+        <li>The system shall enforce role-based access control with two roles: Administrator and Examinee.</li>
+        <li>Administrators shall create, update, publish, archive, and delete exams and associated questions.</li>
+        <li>Administrators shall manage user accounts (activate, deactivate, assign roles).</li>
+        <li>Examinees shall start an exam session for a published exam within its availability window and attempt limit.</li>
+        <li>The system shall enforce one active session per examinee per exam at a time.</li>
+        <li>Examinees shall answer questions within a timed session and submit responses for automatic scoring.</li>
+        <li>The system shall calculate percentage score and pass/fail based on exam passing threshold.</li>
+        <li>Examinees shall enroll a reference face image before or during monitoring for identity verification.</li>
+        <li>The system shall capture webcam frames and analyze behavior in near real time via WebSocket (REST fallback).</li>
+        <li>The AI pipeline shall detect face absence, multiple faces, gaze deviation, poor posture, prohibited objects, and identity mismatch.</li>
+        <li>The system shall persist behavior events and generate severity-classified alerts linked to the session.</li>
+        <li>Administrators shall view live alerts and resolve them through the behavior API.</li>
+        <li>Administrators shall access dashboard KPIs, session reports, timeseries analytics, and CSV export.</li>
+        <li>Examinees shall view their own session history and results where authorized.</li>
+      </ol>
+
+      <h3>Non-Functional Requirements</h3>
+      <ol class="req-list nfr">
+        <li><strong>Performance:</strong> Frame analysis target ≤ 300 ms per frame at ~1–5 FPS; REST API responses ≤ 2 s under normal load.</li>
+        <li><strong>Scalability:</strong> Support multiple concurrent examinees on a single server; production deployment uses Redis channel layer for multi-worker WebSocket broadcast.</li>
+        <li><strong>Security:</strong> Passwords hashed (Django PBKDF2); JWT for API/WS auth; HTTPS/WSS in production; RBAC on all endpoints.</li>
+        <li><strong>Reliability:</strong> AI adapter degrades to deterministic stub when ML dependencies unavailable; monitoring API contract always honored.</li>
+        <li><strong>Usability:</strong> Responsive web UI; role-specific navigation; clear exam timer and compliance feedback during monitoring.</li>
+        <li><strong>Maintainability:</strong> Feature-based modular monolith; documented REST catalog; 37 automated backend tests.</li>
+        <li><strong>Portability:</strong> Runs on Windows/Linux; SQLite for development; PostgreSQL for production without code changes.</li>
+        <li><strong>Privacy:</strong> Raw video frames are not stored in the database by default (<code>KE_STORE_FRAMES=False</code>); only derived metrics and events persist.</li>
+      </ol>
+    </section>
+
+    <!-- USE CASE -->
+    <section id="use-case">
+      <h2>Use Case Diagram</h2>
+      <p>Shows primary actors and their interactions with the Knowing Eye system boundary.</p>
+
+      <figure class="diagram">
+        <figcaption>Figure 2.2 — Use Case Diagram</figcaption>
+        <div class="mermaid-host">
+          <pre class="mermaid">
+flowchart LR
+  subgraph Actors
+    ADM((Administrator))
+    EXM((Examinee))
+  end
+  subgraph System["Knowing Eye System"]
+    UC1[Authenticate]
+    UC2[Manage Exams]
+    UC3[Manage Users]
+    UC4[Start Session]
+    UC5[Take Exam]
+    UC6[Enroll Face]
+    UC7[Monitor Behavior]
+    UC8[View Alerts]
+    UC9[Resolve Alerts]
+    UC10[View Reports]
+    UC11[View Results]
+  end
+  ADM --> UC1
+  ADM --> UC2
+  ADM --> UC3
+  ADM --> UC8
+  ADM --> UC9
+  ADM --> UC10
+  EXM --> UC1
+  EXM --> UC4
+  EXM --> UC5
+  EXM --> UC6
+  EXM --> UC7
+  EXM --> UC11
+  UC7 -.-> UC8
+          </pre>
+        </div>
+        <details class="graph-source"><summary>JSON source (Fig-2.2)</summary><pre id="json-uc"></pre></details>
+      </figure>
+    </section>
+
+    <!-- DFD LEVEL 0 -->
+    <section id="dfd0">
+      <h2>Context Flow Diagram (Level 0 DFD)</h2>
+      <p>
+        Illustrates business-level data flows between external entities and the system as a single
+        process. Notation follows <strong>Gane and Sarson</strong> conventions (logical diagram).
+      </p>
+
+      <figure class="diagram">
+        <figcaption>Figure 2.3 — Context Diagram (Level 0 DFD)</figcaption>
+        <div class="mermaid-host">
+          <pre class="mermaid">
+flowchart LR
+  E1[Administrator]
+  E2[Examinee]
+  E3[Webcam Device]
+  P0(("P0: Knowing Eye\nExamination Platform"))
+  E1 -->|"Exam defs, user mgmt,\nreport queries"| P0
+  P0 -->|"KPIs, alerts,\nreports, CSV"| E1
+  E2 -->|"Credentials,\nanswers, enroll frames"| P0
+  P0 -->|"Exam content,\nscores, feedback"| E2
+  E3 -->|"Video frames\n(via browser)"| P0
+          </pre>
+        </div>
+        <details class="graph-source"><summary>JSON source (Fig-2.3)</summary><pre id="json-dfd0"></pre></details>
+      </figure>
+    </section>
+
+    <!-- DFD LEVEL 1 -->
+    <section id="dfd1">
+      <h2>Level 1 DFD</h2>
+      <p>
+        Decomposes process P0 into subprocesses, data stores, and detailed flows between modules.
+        Aligns with backend feature modules: authentication, exams, session, monitoring/AI, behavior, reports.
+      </p>
+
+      <figure class="diagram">
+        <figcaption>Figure 2.4 — Level 1 DFD (Gane &amp; Sarson)</figcaption>
+        <div class="mermaid-host">
+          <pre class="mermaid">
+flowchart TB
+  E1[Administrator]
+  E2[Examinee]
+  E3[Webcam]
+
+  P1(("P1: Authenticate\n&amp; Authorize"))
+  P2(("P2: Manage\nExams"))
+  P3(("P3: Conduct\nExam Session"))
+  P4(("P4: Analyze\nBehavior"))
+  P5(("P5: Persist\nLogs &amp; Alerts"))
+  P6(("P6: Generate\nReports"))
+
+  D1[("D1: Users")]
+  D2[("D2: Exams &\nQuestions")]
+  D3[("D3: Sessions &\nResponses")]
+  D4[("D4: Behavior\nLogs & Alerts")]
+  D5[("D5: Identity\nReferences")]
+
+  E1 --> P1
+  E2 --> P1
+  P1 <--> D1
+
+  E1 --> P2
+  P2 <--> D2
+
+  E2 --> P3
+  P3 <--> D3
+
+  E3 --> P4
+  P3 --> P4
+  D5 <--> P4
+  P4 --> P5
+  P5 --> D4
+
+  E1 --> P6
+  D3 --> P6
+  D4 --> P6
+  P6 --> E1
+          </pre>
+        </div>
+        <details class="graph-source"><summary>JSON source (Fig-2.4)</summary><pre id="json-dfd1"></pre></details>
+      </figure>
+
+      <h3>Process Descriptions</h3>
+      <table>
+        <thead><tr><th>Process</th><th>Module</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>P1</td><td><code>features.authentication</code></td><td>JWT login, registration, profile, RBAC enforcement</td></tr>
+          <tr><td>P2</td><td><code>features.exams</code></td><td>Exam/question CRUD, publish, archive, import</td></tr>
+          <tr><td>P3</td><td><code>features.session</code></td><td>Start session, timer, answer capture, submit &amp; score</td></tr>
+          <tr><td>P4</td><td><code>backend/ai/knowing_eye</code></td><td>Preprocess frames, run CV models, score compliance</td></tr>
+          <tr><td>P5</td><td><code>features.behavior</code></td><td>Write BehaviorLog and Alert records from analysis output</td></tr>
+          <tr><td>P6</td><td><code>features.reports</code></td><td>Aggregate KPIs, timeseries, CSV export</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="doc-footer">
+      <a href="index.html">← Chapter II Index</a> ·
+      <a href="02-system-design.html">Next: System Design →</a>
+    </footer>
+  </div>
+  <script>
+    fetch('graphs/use-case.json').then(r=>r.text()).then(t=>{document.getElementById('json-uc').textContent=t});
+    fetch('graphs/dfd-level0.json').then(r=>r.text()).then(t=>{document.getElementById('json-dfd0').textContent=t});
+    fetch('graphs/dfd-level1.json').then(r=>r.text()).then(t=>{document.getElementById('json-dfd1').textContent=t});
+  </script>
+</body>
+</html>

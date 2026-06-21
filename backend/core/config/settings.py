@@ -6,7 +6,7 @@ Industry-standard layout:
     * Provides safe SQLite defaults for development; PostgreSQL for production
       via DB_ENGINE=django.db.backends.postgresql.
     * Adds Channels (ASGI), JWT, CORS, REST Framework, structured logging.
-    * Wires pipeline_playground into the import path for the AI adapter.
+    * Production AI pipeline lives in backend/ai/knowing_eye (not pipeline_playground).
 
 For deployment checklist see:
     https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -15,7 +15,6 @@ For deployment checklist see:
 from __future__ import annotations
 
 import os
-import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -46,11 +45,7 @@ def _env_bool(key: str, default: bool) -> bool:
 # ---------------------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent.parent  # backend/
 REPO_ROOT = BASE_DIR.parent                                # project root
-PIPELINE_PLAYGROUND_DIR = REPO_ROOT / "pipeline_playground"
-
-# Make pipeline_playground importable from anywhere in Django
-if PIPELINE_PLAYGROUND_DIR.is_dir() and str(PIPELINE_PLAYGROUND_DIR) not in sys.path:
-    sys.path.insert(0, str(PIPELINE_PLAYGROUND_DIR))
+AI_PIPELINE_CONFIG = BASE_DIR / "ai" / "config" / "pipeline.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -316,7 +311,7 @@ LOGGING = {
 # Knowing Eye AI pipeline
 # ---------------------------------------------------------------------------
 KNOWING_EYE = {
-    "PIPELINE_CONFIG": str(PIPELINE_PLAYGROUND_DIR / "config" / "pipeline.yaml"),
+    "PIPELINE_CONFIG": str(AI_PIPELINE_CONFIG),
     "ENABLE_PIPELINE": _env_bool("KE_ENABLE_PIPELINE", default=True),
     "STORE_FRAMES": _env_bool("KE_STORE_FRAMES", default=False),
     "ALERT_THRESHOLD": float(decouple_config("KE_ALERT_THRESHOLD", default="80")),

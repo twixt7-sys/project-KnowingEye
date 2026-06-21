@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ch. II — System Maintenance</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="../architecture/assets/theme.js"></script>
+  <link rel="stylesheet" href="../architecture/assets/styles.css" />
+  <link rel="stylesheet" href="assets/chapter.css" />
+</head>
+<body>
+  <div class="page">
+    <nav class="site-nav">
+      <a href="index.html">Index</a>
+      <a href="01-system-analysis.html">System Analysis</a>
+      <a href="02-system-design.html">System Design</a>
+      <a href="03-system-testing.html">System Testing</a>
+      <a href="04-system-maintenance.html" class="active">Maintenance</a>
+    </nav>
+
+    <header class="doc-header">
+      <p class="part-banner">Part D — System Maintenance</p>
+      <h1>System Maintenance</h1>
+      <p class="lead">
+        Post-deployment security and maintenance plans for sustaining Knowing Eye in
+        academic production environments.
+      </p>
+    </header>
+
+    <section id="security">
+      <h2>Systems Security Plan</h2>
+      <p>
+        Security controls are implemented across authentication, transport, application,
+        and data layers. The plan below defines preventive, detective, and corrective measures.
+      </p>
+
+      <h3>1. Authentication &amp; Authorization</h3>
+      <table>
+        <thead><tr><th>Control</th><th>Implementation</th><th>Maintenance Action</th></tr></thead>
+        <tbody>
+          <tr><td>Password storage</td><td>Django PBKDF2 hashing</td><td>Enforce minimum length; rotate on breach</td></tr>
+          <tr><td>Session tokens</td><td>JWT access (60 min) + refresh (7 days) with rotation &amp; blacklist</td><td>Monitor token TTL env vars; revoke on compromise</td></tr>
+          <tr><td>RBAC</td><td>ADMIN / EXAMINEE roles on all API and WS routes</td><td>Audit new endpoints for permission classes</td></tr>
+          <tr><td>WebSocket auth</td><td>JWT in query string validated by <code>JWTAuthMiddleware</code></td><td>Use WSS only in production</td></tr>
+        </tbody>
+      </table>
+
+      <h3>2. Transport &amp; Network Security</h3>
+      <ul>
+        <li>Production: TLS 1.2+ via Nginx; <code>SECURE_SSL_REDIRECT=True</code>, HSTS enabled when <code>DEBUG=False</code>.</li>
+        <li>CORS restricted to known frontend origins in production (<code>CORS_ALLOWED_ORIGINS</code>).</li>
+        <li>Rate limiting: DRF throttling (60/min anon, 1200/min authenticated).</li>
+        <li><code>ALLOWED_HOSTS</code> and <code>AllowedHostsOriginValidator</code> prevent host-header attacks.</li>
+      </ul>
+
+      <h3>3. Application &amp; Data Security</h3>
+      <table>
+        <thead><tr><th>Asset</th><th>Threat</th><th>Mitigation</th></tr></thead>
+        <tbody>
+          <tr><td>Exam content</td><td>Unauthorized access</td><td>JWT + exam ownership checks; draft exams hidden from examinees</td></tr>
+          <tr><td>Behavior logs</td><td>Data leakage</td><td>Session-scoped queries; examinees see own data only</td></tr>
+          <tr><td>Face embeddings</td><td>Biometric misuse</td><td>Stored per session only; not shared across users; deletable with session</td></tr>
+          <tr><td>Media uploads</td><td>Malicious files</td><td>Avatar upload via DRF parser; size/type validation recommended</td></tr>
+          <tr><td>Secrets</td><td>Exposure in repo</td><td><code>.env</code> gitignored; <code>DJANGO_SECRET_KEY</code> required in prod</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4. Security Monitoring &amp; Incident Response</h3>
+      <ol>
+        <li>Review <code>backend/logs/knowing_eye.log</code> for 401/403 spikes and 500 errors.</li>
+        <li>Monitor unresolved behavior alerts via admin dashboard.</li>
+        <li>On suspected breach: rotate <code>DJANGO_SECRET_KEY</code>, invalidate JWT blacklist, force password reset for affected accounts.</li>
+        <li>Apply Django security patches monthly; dependabot or manual <code>pip audit</code> / <code>npm audit</code>.</li>
+      </ol>
+    </section>
+
+    <section id="maintenance">
+      <h2>Systems Maintenance Plan</h2>
+      <p>
+        Routine maintenance ensures availability, data integrity, and alignment with
+        evolving exam policies and ML model updates.
+      </p>
+
+      <h3>Maintenance Categories</h3>
+      <table>
+        <thead><tr><th>Type</th><th>Frequency</th><th>Activities</th><th>Responsible</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Corrective</strong></td><td>As needed</td><td>Bug fixes from logs, user reports, failed tests; hotfix deploy</td><td>Dev team</td></tr>
+          <tr><td><strong>Adaptive</strong></td><td>Per semester</td><td>Update exam schedules, question banks, passing thresholds, pipeline.yaml tuning</td><td>Admin + Dev</td></tr>
+          <tr><td><strong>Perfective</strong></td><td>Quarterly</td><td>Performance tuning, UI polish, report enhancements, model upgrades (YOLO/ArcFace versions)</td><td>Dev team</td></tr>
+          <tr><td><strong>Preventive</strong></td><td>Weekly / Monthly</td><td>DB backup, dependency updates, disk cleanup, log rotation</td><td>Sysadmin / Dev</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Operational Procedures</h3>
+      <div class="two-col">
+        <div class="card">
+          <h4>Database Backup</h4>
+          <ul>
+            <li>PostgreSQL: daily <code>pg_dump</code> to secure storage</li>
+            <li>SQLite (dev): copy <code>backend/db.sqlite3</code> before migrations</li>
+            <li>Retention: 30 days rolling; verify restore quarterly</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Application Deployment</h4>
+          <ul>
+            <li><code>python manage.py migrate</code> before each release</li>
+            <li><code>python manage.py collectstatic</code> for admin assets</li>
+            <li>Restart Daphne workers after backend deploy</li>
+            <li>Rebuild frontend: <code>npm run build</code> → serve <code>dist/</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>AI Pipeline Maintenance</h4>
+          <ul>
+            <li>Update <code>backend/ai/config/pipeline.yaml</code> thresholds per proctoring policy</li>
+            <li>Refresh MediaPipe models in <code>backend/ai/models/</code> if URLs change</li>
+            <li>Re-test with <code>python manage.py test ai.tests</code> after CV dependency updates</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Log &amp; Storage Hygiene</h4>
+          <ul>
+            <li>Rotating log: <code>knowing_eye.log</code> (5 MB × 5 backups)</li>
+            <li>Archive old exam sessions per institutional retention policy</li>
+            <li>Clear stale <code>in_progress</code> sessions manually or via admin terminate</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Environment Configuration Checklist</h3>
+      <table>
+        <thead><tr><th>Variable</th><th>Development</th><th>Production</th></tr></thead>
+        <tbody>
+          <tr><td><code>DJANGO_DEBUG</code></td><td>True</td><td><strong>False</strong></td></tr>
+          <tr><td><code>DJANGO_SECRET_KEY</code></td><td>Local default</td><td>Strong random 50+ chars</td></tr>
+          <tr><td><code>DB_ENGINE</code></td><td>sqlite3</td><td>postgresql</td></tr>
+          <tr><td><code>REDIS_URL</code></td><td>(empty — in-memory)</td><td>redis://… for Channels</td></tr>
+          <tr><td><code>KE_ENABLE_PIPELINE</code></td><td>True</td><td>True (with ML deps installed)</td></tr>
+          <tr><td><code>KE_STORE_FRAMES</code></td><td>False</td><td>False (privacy default)</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Support &amp; Escalation</h3>
+      <table>
+        <thead><tr><th>Issue Severity</th><th>Example</th><th>Response Target</th></tr></thead>
+        <tbody>
+          <tr><td>Critical</td><td>Platform down, mass login failure</td><td>4 hours — restore service</td></tr>
+          <tr><td>High</td><td>Monitoring pipeline offline, submit failures</td><td>1 business day</td></tr>
+          <tr><td>Medium</td><td>Report export error, UI defect</td><td>3 business days</td></tr>
+          <tr><td>Low</td><td>Cosmetic UI, documentation</td><td>Next release cycle</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="doc-footer">
+      <a href="03-system-testing.html">← System Testing</a> ·
+      <a href="index.html">Chapter II Index</a> ·
+      <a href="../deployment.md">Deployment Guide</a>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,65 @@
+# Knowing Eye — production AI pipeline configuration (backend/ai)
+# §2.1.4 AI & Monitoring Architecture
+
+pipeline:
+  target_fps: 5
+  alert_threshold_pct: 80
+  identity_match_threshold: 0.42
+  frame_buffer_depth: 3
+
+preprocessing:
+  max_width: 640
+  denoise: light          # off | light | strong
+  normalize_histogram: true
+
+detection:
+  face_backend: mediapipe
+  pose_backend: mediapipe
+  yolo_model: yolov8n.pt
+  yolo_confidence: 0.45
+  yolo_target_classes: [0, 67]
+
+recognition:
+  embedding_backend: arcface
+  arcface_model: buffalo_l
+  gaze_yaw_threshold_deg: 25
+  gaze_pitch_threshold_deg: 20
+  posture_shoulder_tilt_max: 0.12
+  posture_spine_lean_max: 0.55
+  no_face_grace_seconds: 2.0
+
+behavior:
+  leaving_seat_grace_seconds: 3.0
+  suspicious_pattern:
+    window_seconds: 60
+    min_flags: 3
+    cooldown_seconds: 120
+  metric_weights:
+    face: 0.25
+    gaze: 0.25
+    posture: 0.2
+    identity: 0.15
+    object: 0.15
+  weights:
+    no_face: 1.0
+    multiple_faces: 0.9
+    looking_away: 0.7
+    bad_posture: 0.6
+    leaving_seat: 0.75
+    object_detected: 0.85
+    identity_mismatch: 0.95
+    suspicious_pattern: 0.9
+  alert_severity:
+    no_face: high
+    multiple_faces: high
+    looking_away: medium
+    bad_posture: low
+    leaving_seat: medium
+    object_detected: high
+    identity_mismatch: high
+    suspicious_pattern: high
+
+paths:
+  reference_faces_dir: data/reference_faces
+  sessions_output_dir: data/sessions
+  training_data_dir: training/data

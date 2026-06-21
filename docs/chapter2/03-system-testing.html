@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ch. II — System Testing</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="../architecture/assets/theme.js"></script>
+  <link rel="stylesheet" href="../architecture/assets/styles.css" />
+  <link rel="stylesheet" href="assets/chapter.css" />
+</head>
+<body>
+  <div class="page">
+    <nav class="site-nav">
+      <a href="index.html">Index</a>
+      <a href="01-system-analysis.html">System Analysis</a>
+      <a href="02-system-design.html">System Design</a>
+      <a href="03-system-testing.html" class="active">System Testing</a>
+      <a href="04-system-maintenance.html">Maintenance</a>
+    </nav>
+
+    <header class="doc-header">
+      <p class="part-banner">Part C — System Testing</p>
+      <h1>System Testing</h1>
+      <p class="lead">
+        Describes the testing activities conducted to verify functional requirements,
+        API contracts, AI pipeline behavior, and non-functional quality attributes.
+      </p>
+    </header>
+
+    <section id="approach">
+      <h2>Testing Approach</h2>
+      <p>Knowing Eye testing follows a layered strategy aligned with IEEE-style test documentation in <code>docs/testing/testing(IEEE)/</code> and automated Django tests in <code>backend/features/*/tests/</code>.</p>
+
+      <table>
+        <thead><tr><th>Level</th><th>Scope</th><th>Tools / Method</th></tr></thead>
+        <tbody>
+          <tr><td>Unit / API</td><td>Individual REST endpoints, serializers, permissions</td><td>Django <code>APITestCase</code>, pytest (pipeline)</td></tr>
+          <tr><td>Integration</td><td>Session lifecycle, monitoring frame → persist → reports</td><td>API tests + manual UAT scenarios</td></tr>
+          <tr><td>WebSocket</td><td>Monitoring consumer connect, frame, enroll, RBAC</td><td><code>features/monitoring/tests/test_websocket.py</code></td></tr>
+          <tr><td>AI Pipeline</td><td>Blank frame schema, threshold flags, preprocessing</td><td><code>backend/ai/tests/test_pipeline.py</code></td></tr>
+          <tr><td>User Acceptance</td><td>End-to-end exam + monitoring flows</td><td>IEEE UAT scenarios (KE-AUTH … KE-GEN)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="results">
+      <h2>Testing Results</h2>
+      <h3>Automated Backend Test Suite</h3>
+      <p>Executed via <code>python manage.py test</code> on SQLite in-memory database (June 2026).</p>
+
+      <table>
+        <thead><tr><th>Metric</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Total tests executed</td><td><strong>37</strong></td></tr>
+          <tr><td>Passed</td><td class="status-pass">37 (100%)</td></tr>
+          <tr><td>Failed</td><td>0</td></tr>
+          <tr><td>Total runtime</td><td>~2 minutes (includes ML pipeline load test)</td></tr>
+          <tr><td>Environment</td><td>Python 3.12, Django 6, Windows 11 dev machine</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Module Breakdown</h3>
+      <table>
+        <thead><tr><th>Module</th><th>Tests</th><th>Key Verifications</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><code>features.authentication</code></td><td>6</td><td>JWT login/refresh, register, profile, password change</td><td class="status-pass">Pass</td></tr>
+          <tr><td><code>features.exams</code></td><td>5</td><td>CRUD, publish, archive, RBAC</td><td class="status-pass">Pass</td></tr>
+          <tr><td><code>features.session</code></td><td>1</td><td>Start session, submit answers, auto-scoring</td><td class="status-pass">Pass</td></tr>
+          <tr><td><code>features.monitoring</code></td><td>9</td><td>Health, frame REST, enroll, WebSocket consumer</td><td class="status-pass">Pass</td></tr>
+          <tr><td><code>features.behavior</code></td><td>4</td><td>Logs query, alerts list, resolve (admin)</td><td class="status-pass">Pass</td></tr>
+          <tr><td><code>features.reports</code></td><td>6</td><td>Summary, session list/detail, CSV, timeseries</td><td class="status-pass">Pass</td></tr>
+          <tr><td><code>ai.tests</code></td><td>4</td><td>Pipeline schema, no-face flag, preprocessing resize/denoise</td><td class="status-pass">Pass</td></tr>
+          <tr><td><code>frontend build</code></td><td>—</td><td><code>npm run build</code> production bundle</td><td class="status-pass">Pass</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Performance Observations (Development Environment)</h3>
+      <table>
+        <thead><tr><th>Operation</th><th>Typical Latency</th><th>Target (NFR-1)</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>REST login (<code>/api/auth/token/</code>)</td><td>50–200 ms</td><td>&lt; 2 s</td><td class="status-pass">Met</td></tr>
+          <tr><td>Start exam session</td><td>80–300 ms</td><td>&lt; 2 s</td><td class="status-pass">Met</td></tr>
+          <tr><td>Frame analysis (production pipeline, CPU)</td><td>200–800 ms</td><td>&lt; 300 ms target</td><td class="status-warn">Met at ~1 FPS throttle; varies with CPU</td></tr>
+          <tr><td>WebSocket round-trip (frame → analysis JSON)</td><td>250–900 ms</td><td>&lt; 300 ms ideal</td><td class="status-warn">Acceptable at 1 FPS; GPU would improve</td></tr>
+          <tr><td>Reports summary API</td><td>100–500 ms</td><td>&lt; 2 s</td><td class="status-pass">Met</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="findings">
+      <h2>Summary of Findings</h2>
+      <table>
+        <thead>
+          <tr><th>Req ID</th><th>Requirement Summary</th><th>Test Method</th><th>Result</th><th>Remarks</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>FR-1</td><td>User authentication (JWT)</td><td>KE-AUTH API tests</td><td class="status-pass">Pass</td><td>Access + refresh rotation working</td></tr>
+          <tr><td>FR-2</td><td>Role-based access control</td><td>Forbidden tests on admin routes</td><td class="status-pass">Pass</td><td>Examinee blocked from admin-only actions</td></tr>
+          <tr><td>FR-3</td><td>Exam CRUD &amp; publish</td><td>KE-EXAM tests</td><td class="status-pass">Pass</td><td>Draft → active lifecycle verified</td></tr>
+          <tr><td>FR-5–7</td><td>Session start, submit, scoring</td><td>KE-SESS test</td><td class="status-pass">Pass</td><td>Auto-scoring and pass/fail correct</td></tr>
+          <tr><td>FR-9–10</td><td>Face enroll &amp; frame monitoring</td><td>KE-MON + WebSocket tests</td><td class="status-pass">Pass</td><td>WS primary; REST fallback verified</td></tr>
+          <tr><td>FR-11</td><td>AI behavior detection</td><td>Pipeline unit tests + manual webcam</td><td class="status-pass">Pass</td><td>Production pipeline loads; stub fallback OK</td></tr>
+          <tr><td>FR-12–13</td><td>Alerts persist &amp; resolve</td><td>KE-BEH tests</td><td class="status-pass">Pass</td><td>Admin resolve endpoint enforced</td></tr>
+          <tr><td>FR-14</td><td>Reports &amp; CSV export</td><td>KE-RPT tests</td><td class="status-pass">Pass</td><td>Pagination bug fixed June 2026</td></tr>
+          <tr><td>NFR-1</td><td>Performance</td><td>Manual timing + load notes</td><td class="status-warn">Partial</td><td>Meets targets at 1 FPS; higher FPS needs GPU</td></tr>
+          <tr><td>NFR-2</td><td>Multi-user concurrency</td><td>Dual-browser manual test</td><td class="status-pass">Pass</td><td>Separate sessions + WS per UUID</td></tr>
+          <tr><td>NFR-3</td><td>Security (JWT, RBAC)</td><td>API + WS auth tests</td><td class="status-pass">Pass</td><td>JWT via query string on WebSocket</td></tr>
+          <tr><td>NFR-4</td><td>AI graceful degradation</td><td>Stub mode tests</td><td class="status-pass">Pass</td><td>API never 500s on missing ML deps</td></tr>
+          <tr><td>NFR-8</td><td>Privacy (no raw video storage)</td><td>Config review</td><td class="status-pass">Pass</td><td><code>KE_STORE_FRAMES=False</code> default</td></tr>
+        </tbody>
+      </table>
+
+      <div class="note" style="margin-top:1.25rem">
+        <strong>Outstanding items for production UAT:</strong> Formal usability study (UTAUT pack in
+        <code>docs/testing/testing(UTAUT)/</code>), load testing with 30+ concurrent sessions on
+        PostgreSQL + Redis, and ArcFace accuracy benchmarking with enrolled reference faces.
+      </div>
+    </section>
+
+    <footer class="doc-footer">
+      <a href="02-system-design.html">← System Design</a> ·
+      <a href="04-system-maintenance.html">Next: System Maintenance →</a> ·
+      <a href="../testing/testing(IEEE)/README.md">IEEE Testing Pack</a>
+    </footer>
+  </div>
+</body>
+</html>

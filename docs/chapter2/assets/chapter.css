@@ -1,0 +1,75 @@
+/* Chapter II — supplemental styles (base: ../architecture/assets/styles.css) */
+
+.part-banner {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent2);
+  background: rgba(124, 92, 255, 0.12);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.req-list {
+  list-style: none;
+  margin: 0.75rem 0 1.25rem;
+  padding: 0;
+  counter-reset: req;
+}
+
+.req-list > li {
+  counter-increment: req;
+  margin-bottom: 0.65rem;
+  padding: 0.65rem 0.85rem 0.65rem 2.75rem;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+}
+
+.req-list > li::before {
+  content: counter(req);
+  position: absolute;
+  left: 0.75rem;
+  top: 0.65rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 6px;
+  min-width: 1.5rem;
+  text-align: center;
+  padding: 0.1rem 0.35rem;
+}
+
+.req-list.nfr > li::before {
+  content: "NFR-" counter(req);
+  font-size: 0.62rem;
+}
+
+.req-list.fr > li::before {
+  content: "FR-" counter(req);
+  font-size: 0.62rem;
+}
+
+.status-pass { color: var(--ok); font-weight: 600; }
+.status-warn { color: var(--warn); font-weight: 600; }
+
+.mermaid-host {
+  padding: 1.25rem;
+  overflow-x: auto;
+  background: var(--surface);
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}

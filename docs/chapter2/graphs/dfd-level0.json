@@ -1,0 +1,23 @@
+{
+  "diagram_id": "Fig-2.3-DFD0",
+  "title": "Context Diagram (Level 0 DFD)",
+  "section": "Chapter II · System Analysis",
+  "notation": "Gane and Sarson (logical)",
+  "process": {
+    "id": "P0",
+    "name": "Knowing Eye Examination Platform"
+  },
+  "external_entities": [
+    { "id": "E1", "name": "Administrator" },
+    { "id": "E2", "name": "Examinee" },
+    { "id": "E3", "name": "Webcam" }
+  ],
+  "data_flows": [
+    { "from": "E1", "to": "P0", "label": "Exam definitions, user management, report queries" },
+    { "from": "P0", "to": "E1", "label": "Dashboard KPIs, alerts, session reports, CSV export" },
+    { "from": "E2", "to": "P0", "label": "Login credentials, exam answers, enrollment frames" },
+    { "from": "P0", "to": "E2", "label": "Exam content, timer, scores, compliance feedback" },
+    { "from": "E3", "to": "P0", "label": "JPEG video frames (via browser)" },
+    { "from": "P0", "to": "E3", "label": "Camera permission prompts (browser UI)" }
+  ]
+}

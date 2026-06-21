@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ch. II — System Design</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="../architecture/assets/theme.js"></script>
+  <link rel="stylesheet" href="../architecture/assets/styles.css" />
+  <link rel="stylesheet" href="assets/chapter.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script defer src="assets/mermaid-init.js"></script>
+</head>
+<body>
+  <div class="page">
+    <nav class="site-nav">
+      <a href="index.html">Index</a>
+      <a href="01-system-analysis.html">System Analysis</a>
+      <a href="02-system-design.html" class="active">System Design</a>
+      <a href="03-system-testing.html">System Testing</a>
+      <a href="04-system-maintenance.html">Maintenance</a>
+    </nav>
+
+    <header class="doc-header">
+      <p class="part-banner">Part B — System Design</p>
+      <h1>System Design</h1>
+      <p class="lead">
+        Database structure, data dictionary, and the technologies, models, and algorithms
+        used for data collection through classification in the Knowing Eye platform.
+      </p>
+    </header>
+
+    <!-- ERD -->
+    <section id="erd">
+      <h2>Entity-Relationship Diagram (ERD)</h2>
+      <p>
+        Knowing Eye uses a <strong>relational SQL database</strong> (SQLite in development,
+        PostgreSQL in production). The ERD below reflects Django models under
+        <code>backend/features/</code>.
+      </p>
+
+      <figure class="diagram">
+        <figcaption>Figure 2.5 — Entity-Relationship Diagram</figcaption>
+        <div class="mermaid-host">
+          <pre class="mermaid">
+erDiagram
+  AUTHENTICATION_USER ||--o{ EXAMS_EXAM : creates
+  AUTHENTICATION_USER ||--o{ EXAM_SESSION : takes
+  EXAMS_EXAM ||--o{ EXAMS_QUESTION : contains
+  EXAMS_EXAM ||--o{ EXAM_SESSION : has
+  EXAM_SESSION ||--o{ RESPONSE : has
+  EXAMS_QUESTION ||--o{ RESPONSE : answered_by
+  EXAM_SESSION ||--o{ SESSION_LOG : logs
+  EXAM_SESSION ||--o{ BEHAVIOR_LOG : monitors
+  EXAM_SESSION ||--o{ BEHAVIOR_ALERT : triggers
+  EXAM_SESSION ||--o| IDENTITY_REFERENCE : enrolls
+
+  AUTHENTICATION_USER {
+    int id PK
+    string username UK
+    string email UK
+    string role
+    string password
+  }
+  EXAMS_EXAM {
+    int id PK
+    string title
+    int duration_minutes
+    int passing_score
+    string status
+    int created_by_id FK
+  }
+  EXAMS_QUESTION {
+    int id PK
+    int exam_id FK
+    text question_text
+    string question_type
+    json options
+  }
+  EXAM_SESSION {
+    uuid id PK
+    int exam_id FK
+    int user_id FK
+    string status
+    datetime started_at
+    decimal percentage_score
+  }
+  BEHAVIOR_LOG {
+    uuid id PK
+    uuid session_id FK
+    string event_type
+    float score
+    json metadata
+  }
+  BEHAVIOR_ALERT {
+    uuid id PK
+    uuid session_id FK
+    string severity
+    boolean resolved
+  }
+          </pre>
+        </div>
+        <details class="graph-source"><summary>DBML source (export to PNG via dbdiagram.io)</summary>
+          <p style="padding:0 1rem;font-size:0.85rem"><a href="../architecture/graphs/database-erd.dbml">architecture/graphs/database-erd.dbml</a></p>
+        </details>
+      </figure>
+    </section>
+
+    <!-- JSON Schema -->
+    <section id="json-schema">
+      <h2>JSON Schema Diagram</h2>
+      <div class="note">
+        <strong>Omitted.</strong> Knowing Eye persists structured data in SQL tables via Django ORM.
+        JSON fields (<code>options</code>, <code>metadata</code>, <code>embedding</code>) are embedded
+        columns validated at the application layer, not standalone JSON document stores.
+        Per capstone guidelines, JSON Schema diagrams are omitted for SQL-based databases.
+      </div>
+      <p>The API response contract for frame analysis (used by frontend and WebSocket) follows this structure:</p>
+      <pre class="graph-source" style="margin:1rem 0;padding:1rem;border-radius:10px"><code>{
+  "metrics": { "face_presence_pct", "gaze_focus_pct", "posture_compliance_pct",
+               "identity_match_pct", "object_clear_pct", "overall_compliance_pct" },
+  "events": [{ "event_type", "score_pct", "confidence_pct", "metadata" }],
+  "alerts": [{ "type", "severity", "message", "metric_pct" }]
+}</code></pre>
+    </section>
+
+    <!-- DATA DICTIONARY -->
+    <section id="data-dictionary">
+      <h2>Data Dictionary</h2>
+      <p>Complete listing of primary tables, fields, types, and descriptions.</p>
+
+      <h3>authentication_user</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>id</td><td>INTEGER</td><td>PK, auto</td><td>Unique user identifier</td></tr>
+          <tr><td>username</td><td>VARCHAR(150)</td><td>UNIQUE, NOT NULL</td><td>Login username</td></tr>
+          <tr><td>email</td><td>VARCHAR(254)</td><td>UNIQUE, NOT NULL</td><td>Contact email</td></tr>
+          <tr><td>password</td><td>VARCHAR(128)</td><td>NOT NULL</td><td>Hashed password (PBKDF2)</td></tr>
+          <tr><td>first_name, last_name</td><td>VARCHAR(150)</td><td></td><td>Display name</td></tr>
+          <tr><td>role</td><td>VARCHAR(20)</td><td>ADMIN | EXAMINEE</td><td>RBAC role</td></tr>
+          <tr><td>avatar</td><td>VARCHAR(100)</td><td>NULL</td><td>Profile image path</td></tr>
+          <tr><td>phone, institution, student_id</td><td>VARCHAR</td><td></td><td>Profile metadata</td></tr>
+          <tr><td>is_active</td><td>BOOLEAN</td><td>DEFAULT true</td><td>Account enabled flag</td></tr>
+          <tr><td>last_seen_at</td><td>DATETIME</td><td>NULL</td><td>Last activity timestamp</td></tr>
+          <tr><td>created_at, updated_at</td><td>DATETIME</td><td>auto</td><td>Audit timestamps</td></tr>
+        </tbody>
+      </table>
+
+      <h3>exams_exam</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>id</td><td>INTEGER</td><td>PK</td><td>Exam identifier</td></tr>
+          <tr><td>title</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Exam name</td></tr>
+          <tr><td>description, instructions</td><td>TEXT</td><td></td><td>Exam narrative and rules</td></tr>
+          <tr><td>duration_minutes</td><td>INTEGER</td><td>DEFAULT 120</td><td>Time limit</td></tr>
+          <tr><td>passing_score</td><td>INTEGER</td><td>0–100</td><td>Minimum % to pass</td></tr>
+          <tr><td>exam_code</td><td>VARCHAR(32)</td><td>UNIQUE, NULL</td><td>Optional access code</td></tr>
+          <tr><td>available_from, available_until</td><td>DATETIME</td><td>NULL</td><td>Scheduling window</td></tr>
+          <tr><td>max_attempts</td><td>INTEGER</td><td>DEFAULT 1</td><td>Attempts per user</td></tr>
+          <tr><td>status</td><td>VARCHAR(20)</td><td>draft | active | archived</td><td>Lifecycle state</td></tr>
+          <tr><td>created_by_id</td><td>INTEGER</td><td>FK → user</td><td>Authoring administrator</td></tr>
+        </tbody>
+      </table>
+
+      <h3>exams_question</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>id</td><td>INTEGER</td><td>PK</td><td>Question identifier</td></tr>
+          <tr><td>exam_id</td><td>INTEGER</td><td>FK → exam</td><td>Parent exam</td></tr>
+          <tr><td>question_text</td><td>TEXT</td><td>NOT NULL</td><td>Prompt text</td></tr>
+          <tr><td>question_type</td><td>VARCHAR(20)</td><td>MCQ, T/F, etc.</td><td>Answer format</td></tr>
+          <tr><td>options</td><td>JSON</td><td>DEFAULT []</td><td>MCQ choices</td></tr>
+          <tr><td>correct_answer</td><td>TEXT</td><td>NOT NULL</td><td>Scoring key</td></tr>
+          <tr><td>points, order</td><td>INTEGER</td><td></td><td>Weight and display order</td></tr>
+        </tbody>
+      </table>
+
+      <h3>exam_sessions (ExamSession)</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>id</td><td>UUID</td><td>PK</td><td>Session identifier (used in WebSocket URL)</td></tr>
+          <tr><td>exam_id, user_id</td><td>INTEGER</td><td>FK</td><td>Exam and examinee</td></tr>
+          <tr><td>status</td><td>VARCHAR(20)</td><td>in_progress | completed | terminated | expired</td><td>Session state</td></tr>
+          <tr><td>started_at, submitted_at</td><td>DATETIME</td><td></td><td>Session timeline</td></tr>
+          <tr><td>time_remaining</td><td>INTEGER</td><td></td><td>Seconds left at submit</td></tr>
+          <tr><td>total_score, percentage_score</td><td>INT / DECIMAL</td><td>NULL until submit</td><td>Computed results</td></tr>
+          <tr><td>passed</td><td>BOOLEAN</td><td>NULL until submit</td><td>Pass/fail flag</td></tr>
+          <tr><td>ip_address, user_agent</td><td>VARCHAR / TEXT</td><td></td><td>Client audit trail</td></tr>
+        </tbody>
+      </table>
+
+      <h3>responses, session_logs, behavior_log, behavior_alert, monitoring_identity_reference</h3>
+      <table>
+        <thead><tr><th>Table</th><th>Key Fields</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>responses</td><td>session_id, question_id, answer_text, is_correct, time_spent</td><td>Per-question answers submitted during session</td></tr>
+          <tr><td>session_logs</td><td>session_id, event_type, details, timestamp</td><td>Lifecycle audit (started, submitted, terminated)</td></tr>
+          <tr><td>behavior_log</td><td>session_id, event_type, score, confidence, metadata</td><td>AI-detected behavioral events</td></tr>
+          <tr><td>behavior_alert</td><td>session_id, alert_type, severity, resolved</td><td>Flagged integrity violations</td></tr>
+          <tr><td>monitoring_identity_reference</td><td>session_id (1:1), embedding (JSON), backend</td><td>Enrolled face vector for identity verification</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- TECHNOLOGIES -->
+    <section id="technologies">
+      <h2>Technologies, Concepts, and Theories</h2>
+      <p>
+        The AI monitoring subsystem implements a classical computer-vision pipeline:
+        <strong>data collection → preprocessing → feature extraction → classification/scoring</strong>.
+        Each stage is described below with definitions and usage in Knowing Eye.
+      </p>
+
+      <h3>1. Data Collection</h3>
+      <div class="card">
+        <p><strong>Definition:</strong> Acquisition of raw visual input from the examinee's environment during an exam session.</p>
+        <p><strong>Technology:</strong> Browser <code>MediaDevices.getUserMedia()</code> API captures webcam video; canvas encodes frames as JPEG/base64 at ~1 FPS.</p>
+        <p><strong>Transport:</strong> WebSocket (<code>/ws/monitoring/{session_id}/</code>) primary path; REST <code>POST /api/monitoring/frame/</code> fallback.</p>
+        <p><strong>Implementation:</strong> <code>frontend/src/shared/hooks/use-monitoring.ts</code>, <code>backend/features/monitoring/consumers.py</code></p>
+      </div>
+
+      <h3>2. Data Pre-processing</h3>
+      <div class="card">
+        <p><strong>Definition:</strong> Normalization and enhancement of raw frames before model inference to improve detection stability under varying lighting and noise.</p>
+        <table>
+          <thead><tr><th>Step</th><th>Method</th><th>Implementation</th></tr></thead>
+          <tbody>
+            <tr><td>Decode</td><td>Base64 → BGR numpy array</td><td><code>ai/frame_utils.py</code>, <code>preprocessing/frame.py</code></td></tr>
+            <tr><td>Resize</td><td>Max width 640px (INTER_AREA)</td><td><code>prepare_frame()</code></td></tr>
+            <tr><td>Denoise</td><td>fastNlMeansDenoisingColored</td><td>Configurable: off | light | strong</td></tr>
+            <tr><td>Normalize</td><td>YCbCr histogram equalization</td><td>Stabilizes luminance across frames</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Config:</strong> <code>backend/ai/config/pipeline.yaml</code> → <code>preprocessing:</code> section</p>
+      </div>
+
+      <h3>3. Feature Extraction</h3>
+      <div class="card">
+        <p><strong>Definition:</strong> Derivation of discriminative representations from preprocessed frames for downstream classification.</p>
+        <table>
+          <thead><tr><th>Feature Domain</th><th>Model / Library</th><th>Extracted Features</th></tr></thead>
+          <tbody>
+            <tr><td>Face &amp; gaze</td><td>MediaPipe Face Landmarker</td><td>Bounding box, 468 landmarks, head yaw/pitch angles</td></tr>
+            <tr><td>Posture</td><td>MediaPipe Pose Landmarker</td><td>Shoulder tilt ratio, spine lean ratio</td></tr>
+            <tr><td>Objects</td><td>YOLOv8n (Ultralytics)</td><td>Person and cell-phone detections with confidence</td></tr>
+            <tr><td>Identity</td><td>ArcFace / InsightFace (512-D CNN embedding)</td><td>Normalised face embedding vector for cosine-distance matching</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Theory:</strong> CNN-based face recognition (ArcFace) learns angular-margin embeddings optimised for identity discrimination; MediaPipe provides lightweight geometric features for gaze and posture without custom training.</p>
+      </div>
+
+      <h3>4. Classification &amp; Scoring</h3>
+      <div class="card">
+        <p><strong>Definition:</strong> Mapping extracted features to behavioral labels, compliance percentages, and alert severities.</p>
+        <table>
+          <thead><tr><th>Stage</th><th>Approach</th><th>Output</th></tr></thead>
+          <tbody>
+            <tr><td>Metric normalization</td><td>Threshold-based 0–100% scoring</td><td>face_presence_pct, gaze_focus_pct, posture_compliance_pct, etc.</td></tr>
+            <tr><td>Event classification</td><td>Rule-based threshold flags</td><td>no_face, looking_away, bad_posture, object_detected, identity_mismatch, …</td></tr>
+            <tr><td>Temporal classification</td><td>Sliding-window pattern detection</td><td>suspicious_pattern after N flags in 60 s window</td></tr>
+            <tr><td>Weighted aggregation</td><td>Configurable metric_weights</td><td>overall_compliance_pct, behavior_score (0–1)</td></tr>
+          </tbody>
+        </table>
+        <p><strong>Implementation:</strong> <code>behavior/scoring.py</code>, <code>behavior/normalize.py</code>, <code>behavior/temporal.py</code></p>
+        <p><strong>Persistence:</strong> <code>features/behavior/services.py</code> → <code>BehaviorLog</code>, <code>Alert</code> models → reports dashboard.</p>
+      </div>
+
+      <h3>Technology Stack Summary</h3>
+      <table>
+        <thead><tr><th>Category</th><th>Technologies</th></tr></thead>
+        <tbody>
+          <tr><td>Frontend</td><td>React 18, Vite, TypeScript, Tailwind CSS, shadcn/ui, Recharts</td></tr>
+          <tr><td>Backend</td><td>Django 6, DRF, SimpleJWT, Channels, Daphne ASGI</td></tr>
+          <tr><td>AI / CV</td><td>OpenCV, MediaPipe, Ultralytics YOLOv8, InsightFace ArcFace</td></tr>
+          <tr><td>Database</td><td>SQLite (dev), PostgreSQL 15+ (prod)</td></tr>
+          <tr><td>Realtime</td><td>Redis 7 + channels-redis (prod multi-worker)</td></tr>
+          <tr><td>Edge</td><td>Nginx reverse proxy, TLS termination</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer class="doc-footer">
+      <a href="01-system-analysis.html">← System Analysis</a> ·
+      <a href="03-system-testing.html">Next: System Testing →</a>
+    </footer>
+  </div>
+</body>
+</html>
