@@ -2753,3 +2753,59 @@ AttributeError: 'list' object has no attribute 'annotate'
 2026-06-21 23:55:17,027 [WARNING] django.request: Forbidden: /api/monitoring/frame/
 2026-06-21 23:55:27,951 [WARNING] django.request: Bad Request: /api/sessions/337f650b-6367-4ae7-95a8-cbc7bb04f171/submit/
 2026-06-21 23:55:48,505 [WARNING] knowing_eye.api.errors: API error [validation_error] _DummyView.GET status=400 detail={'field': [ErrorDetail(string='bad', code='invalid')]}
+2026-06-22 01:56:42,878 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-22 01:56:42,884 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-22 01:56:42,885 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-22 01:56:42,891 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-22 01:58:04,120 [WARNING] knowing_eye.api.errors: API error [authentication_failed] CustomTokenObtainPairView.POST status=401 detail={'detail': ErrorDetail(string='No active account found with the given credentials', code='no_active_account')}
+2026-06-22 01:58:04,133 [WARNING] django.request: Unauthorized: /api/auth/token/
+2026-06-22 01:59:48,686 [ERROR] knowing_eye.api.errors: Unhandled exception in ExamViewSet
+Traceback (most recent call last):
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\features\exams\views.py", line 112, in import_questions
+    created = services.import_questions(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\features\exams\services.py", line 265, in import_questions
+    raw_items = _parse_csv_questions(csv_text)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\features\exams\services.py", line 241, in _parse_csv_questions
+    points = int(row[3])
+             ^^^^^^^^^^^
+ValueError: invalid literal for int() with base 10: 'true'
+2026-06-22 01:59:48,872 [ERROR] django.request: Internal Server Error: /api/exams/33/questions/import/
+2026-06-22 02:00:31,982 [WARNING] knowing_eye.api.errors: API error [method_not_allowed] ExamViewSet.POST status=405 detail={'detail': ErrorDetail(string='Method "POST" not allowed.', code='method_not_allowed')}
+2026-06-22 02:00:31,990 [WARNING] django.request: Method Not Allowed: /api/exams/33/questions/
+2026-06-22 02:05:15,735 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:05:18,343 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:05:23,185 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:05:25,813 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:05:28,054 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:05:30,272 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:05:32,236 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:05:40,656 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-22 02:05:50,303 [WARNING] django.request: Bad Request: /api/sessions/34dc91df-5abe-44f8-aa74-03fd890937a4/submit/
+2026-06-22 02:06:09,569 [WARNING] knowing_eye.api.errors: API error [validation_error] _DummyView.GET status=400 detail={'field': [ErrorDetail(string='bad', code='invalid')]}
+2026-06-22 02:12:05,914 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:12:07,832 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:12:12,161 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:12:14,320 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:12:16,139 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:12:17,822 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:12:19,602 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:12:25,499 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-22 02:12:33,427 [WARNING] django.request: Bad Request: /api/sessions/df32b13c-5354-484e-8238-bba8600e4253/submit/
+2026-06-22 02:15:12,589 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-22 02:15:12,590 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-22 02:15:12,591 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-22 02:15:12,594 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-22 02:16:31,642 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-22 02:16:31,644 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-22 02:16:31,644 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-22 02:16:31,645 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-22 02:17:12,482 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'exam_code': [ErrorDetail(string='Exam with this exam code already exists.', code='unique')]}
+2026-06-22 02:17:12,501 [WARNING] django.request: Bad Request: /api/exams/
+2026-06-22 02:17:16,373 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'exam_code': [ErrorDetail(string='Exam with this exam code already exists.', code='unique')]}
+2026-06-22 02:17:16,381 [WARNING] django.request: Bad Request: /api/exams/
+2026-06-22 02:19:24,169 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.

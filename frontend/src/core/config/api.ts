@@ -10,6 +10,7 @@
  */
 
 import { API_BASE_URL } from "./env";
+import { extractApiErrorMessage } from "./extract-api-error";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -621,23 +622,50 @@ class ApiClient {
     }>("/reports/timeseries/");
   }
 
-  async downloadSessionsCSV(): Promise<void> {
-    const url = `${this.baseURL}/reports/export/csv/`;
-    const headers: Record<string, string> = { Accept: "text/csv" };
+  private async downloadExport(
+    path: string,
+    accept: string,
+    filename: string
+  ): Promise<void> {
+    const url = `${this.baseURL}${path}`;
+    const headers: Record<string, string> = { Accept: accept };
     if (tokenStore.access) {
       headers.Authorization = `Bearer ${tokenStore.access}`;
     }
     const res = await fetch(url, { headers });
     if (!res.ok) {
-      throw new ApiError(res.status, await res.text());
+      const raw = await res.text();
+      let body: unknown = raw;
+      try {
+        body = raw ? JSON.parse(raw) : null;
+      } catch {
+        /* keep plain-text error body */
+      }
+      throw new ApiError(res.status, body);
     }
     const blob = await res.blob();
     const objectUrl = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = objectUrl;
-    anchor.download = "knowing-eye-sessions.csv";
+    anchor.download = filename;
     anchor.click();
     URL.revokeObjectURL(objectUrl);
+  }
+
+  async downloadSessionsCSV(): Promise<void> {
+    return this.downloadExport(
+      "/reports/export/csv/",
+      "text/csv",
+      "knowing-eye-sessions.csv"
+    );
+  }
+
+  async downloadSessionsPDF(): Promise<void> {
+    return this.downloadExport(
+      "/reports/export/pdf/",
+      "application/pdf",
+      "knowing-eye-sessions.pdf"
+    );
   }
 }
 
@@ -646,15 +674,14 @@ export class ApiError extends Error {
     super(`API ${status}`);
   }
   detail(): string {
-    if (typeof this.payload === "string") return this.payload;
-    if (this.payload && typeof this.payload === "object") {
-      const p = this.payload as Record<string, unknown>;
-      if (typeof p.detail === "string") return p.detail;
-      if (typeof p.error === "string") return p.error;
-      return JSON.stringify(this.payload);
-    }
-    return String(this.payload);
+    return extractApiErrorMessage(this.payload);
   }
+}
+
+export function formatApiError(err: unknown): string {
+  if (err instanceof ApiError) return err.detail();
+  if (err instanceof Error) return err.message;
+  return "Request failed";
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

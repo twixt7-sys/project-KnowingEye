@@ -203,9 +203,62 @@ def reorder_questions(exam: Exam, user, ordered_ids: list[int]) -> list[Question
     return list(exam.questions.order_by("order"))
 
 
+def _parse_int(value: str, *, field: str, line_no: int) -> int:
+    try:
+        return int(value.strip())
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(
+            {field: f"Line {line_no}: '{value}' is not a valid integer for {field}."}
+        ) from exc
+
+
+def _row_from_mapping(row: dict[str, str], line_no: int) -> dict[str, Any]:
+    question_text = (row.get("question_text") or "").strip()
+    qtype = (row.get("question_type") or "").strip().lower()
+    if not question_text:
+        raise ValidationError({"csv": f"Line {line_no}: question_text is required."})
+    if not qtype:
+        raise ValidationError({"csv": f"Line {line_no}: question_type is required."})
+
+    options_raw = (row.get("options") or "").strip()
+    options = [o.strip() for o in options_raw.split("|") if o.strip()] if options_raw else []
+    correct_answer = (row.get("correct_answer") or "").strip()
+    points_raw = (row.get("points") or "").strip()
+    points = _parse_int(points_raw, field="points", line_no=line_no) if points_raw else 1
+
+    return {
+        "question_text": question_text,
+        "question_type": qtype,
+        "options": options,
+        "correct_answer": correct_answer,
+        "points": points,
+    }
+
+
 def _parse_csv_questions(csv_text: str) -> list[dict[str, Any]]:
-    reader = csv.reader(io.StringIO(csv_text.strip()))
-    rows: list[dict[str, Any]] = []
+    text = csv_text.strip()
+    if not text:
+        return []
+
+    stream = io.StringIO(text)
+    peek = csv.reader([text.splitlines()[0]])
+    first_row = next(peek, [])
+    header_keys = {cell.strip().lower() for cell in first_row if cell.strip()}
+    if {"question_text", "question_type"}.issubset(header_keys):
+        reader = csv.DictReader(io.StringIO(text))
+        rows: list[dict[str, Any]] = []
+        for line_no, row in enumerate(reader, start=2):
+            if not row or all(not (v or "").strip() for v in row.values()):
+                continue
+            normalized = {
+                (key or "").strip().lower(): (value or "").strip()
+                for key, value in row.items()
+            }
+            rows.append(_row_from_mapping(normalized, line_no))
+        return rows
+
+    reader = csv.reader(io.StringIO(text))
+    rows = []
     for line_no, row in enumerate(reader, start=1):
         if not row or all(not cell.strip() for cell in row):
             continue
@@ -234,11 +287,17 @@ def _parse_csv_questions(csv_text: str) -> list[dict[str, Any]]:
             options = [o.strip() for o in row[2].split("|") if o.strip()]
             correct_answer = row[3].strip()
             if len(row) > 4 and row[4].strip():
-                points = int(row[4])
+                points = _parse_int(row[4], field="points", line_no=line_no)
         else:
+            # Positional legacy format: text,type,correct[,points]
             correct_answer = row[2].strip()
             if len(row) > 3 and row[3].strip():
-                points = int(row[3])
+                if row[3].strip().isdigit():
+                    points = _parse_int(row[3], field="points", line_no=line_no)
+                elif len(row) > 4 and row[4].strip():
+                    # Extended format with blank options column: text,type,,correct,points
+                    correct_answer = row[3].strip()
+                    points = _parse_int(row[4], field="points", line_no=line_no)
 
         rows.append(
             {

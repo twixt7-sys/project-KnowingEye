@@ -38,7 +38,6 @@ class ExamViewSet(viewsets.ModelViewSet):
     ordering_fields = ["created_at", "title"]
     ordering = ["-created_at"]
     exam_service = ExamService()
-    question_repo = QuestionRepository()
 
     def get_queryset(self):
         return self.exam_service.visible_to(self.request.user)
@@ -63,18 +62,6 @@ class ExamViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         services.delete_exam(self.get_object(), request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-    @action(detail=True, methods=["get"])
-    def questions(self, request, pk=None):
-        exam = self.get_object()
-        qs = self.question_repo.for_exam(exam.id)
-        if getattr(request.user, "is_admin", lambda: False)():
-            data = QuestionDetailSerializer(qs, many=True).data
-        else:
-            from .serializers import QuestionTakeSerializer
-
-            data = QuestionTakeSerializer(qs, many=True).data
-        return Response(data)
 
     @action(detail=True, methods=["get"])
     def readiness(self, request, pk=None):
@@ -135,7 +122,8 @@ class ExamViewSet(viewsets.ModelViewSet):
 
 
 class QuestionViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly, IsExamOwnerOrAdmin]
+    http_method_names = ["get", "post", "put", "patch", "delete", "head", "options"]
 
     question_repo = QuestionRepository()
 
@@ -152,6 +140,21 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     def _exam(self) -> Exam:
         return get_object_or_404(Exam, pk=self.kwargs.get("exam_id"))
+
+    def get_permissions(self):
+        if self.action in {"list", "retrieve"}:
+            return [IsAuthenticated()]
+        return super().get_permissions()
+
+    def list(self, request, *args, **kwargs):
+        qs = self.filter_queryset(self.get_queryset())
+        if getattr(request.user, "is_admin", lambda: False)():
+            serializer = QuestionDetailSerializer(qs, many=True)
+        else:
+            from .serializers import QuestionTakeSerializer
+
+            serializer = QuestionTakeSerializer(qs, many=True)
+        return Response(serializer.data)
 
     def perform_create(self, serializer):
         services.create_question_for_exam(

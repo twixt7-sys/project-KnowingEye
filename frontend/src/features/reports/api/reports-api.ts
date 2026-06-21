@@ -22,3 +22,7 @@ export function fetchTimeseries() {
 export async function downloadSessionsCsv() {
   return apiClient.downloadSessionsCSV();
 }
+
+export async function downloadSessionsPdf() {
+  return apiClient.downloadSessionsPDF();
+}

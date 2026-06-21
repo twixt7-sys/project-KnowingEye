@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
   Activity,
@@ -13,10 +13,10 @@ import {
 
 import {
   apiClient,
+  formatApiError,
   type Exam,
-  type ReportSummary,
-  type SessionReportRow,
 } from "../core/config/api";
+import { useDashboard } from "../features/dashboard/hooks/use-dashboard";
 import { PageHeader } from "../shared/components/layout/page-header";
 import { PageShell } from "../shared/components/layout/page-shell";
 import { SectionPanel } from "../shared/components/layout/section-panel";
@@ -46,38 +46,15 @@ const EMPTY_FORM: CreateExamForm = {
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const [summary, setSummary] = useState<ReportSummary | null>(null);
-  const [exams, setExams] = useState<Exam[]>([]);
-  const [activeSessions, setActiveSessions] = useState<SessionReportRow[]>([]);
+  const { summary, exams, activeSessions, error: loadError, reload } = useDashboard();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<CreateExamForm>(EMPTY_FORM);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createBusy, setCreateBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const reload = async () => {
-    setError(null);
-    try {
-      const [s, list, sessions] = await Promise.all([
-        apiClient.getReportSummary(),
-        apiClient.getExams(),
-        apiClient.listSessionReports({ status: "in_progress", page_size: 50 }),
-      ]);
-      setSummary(s);
-      setExams(list);
-      setActiveSessions(sessions.results);
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Failed to load dashboard");
-    }
-  };
-
-  useEffect(() => {
-    reload();
-    const id = window.setInterval(reload, 30_000);
-    return () => window.clearInterval(id);
-  }, []);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const error = actionError ?? loadError;
 
   const filteredExams = useMemo(
     () =>
@@ -108,28 +85,30 @@ export function Dashboard() {
       setForm(EMPTY_FORM);
       setShowCreate(false);
       navigate(`/examiner/exams/${created.id}/edit`);
-    } catch (err: any) {
-      setCreateError(err?.detail?.() ?? err?.message ?? "Could not create exam");
+    } catch (err) {
+      setCreateError(formatApiError(err));
     } finally {
       setCreateBusy(false);
     }
   };
 
   const publish = async (exam: Exam) => {
+    setActionError(null);
     try {
       await apiClient.publishExam(exam.id);
-      reload();
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Publish failed");
+      await reload();
+    } catch (e) {
+      setActionError(formatApiError(e));
     }
   };
 
   const archive = async (exam: Exam) => {
+    setActionError(null);
     try {
       await apiClient.archiveExam(exam.id);
-      reload();
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Archive failed");
+      await reload();
+    } catch (e) {
+      setActionError(formatApiError(e));
     }
   };
 

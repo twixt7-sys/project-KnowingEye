@@ -19,6 +19,18 @@ python -m pytest ai/tests/ -q
 if errorlevel 1 goto :fail
 
 echo.
+echo === Backend smoke (API) ===
+cd /d "%ROOT%backend"
+python manage.py test core.tests.test_smoke_api --verbosity 1
+if errorlevel 1 goto :fail
+
+echo.
+echo === Frontend (Vitest) ===
+cd /d "%ROOT%frontend"
+call npm test
+if errorlevel 1 goto :fail
+
+echo.
 echo All test suites passed.
 pause
 exit /b 0

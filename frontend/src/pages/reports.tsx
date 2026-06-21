@@ -26,6 +26,7 @@ import { Link } from "react-router";
 
 import {
   apiClient,
+  formatApiError,
   type ReportSummary,
   type SessionReportRow,
 } from "../core/config/api";
@@ -51,19 +52,30 @@ export function Reports() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<"csv" | "pdf" | null>(null);
   const [tableLoading, setTableLoading] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
   const { page, pageSize, setPage, setPageSize } = usePagination(10);
 
   const handleExportCsv = async () => {
-    setExporting(true);
+    setExporting("csv");
     try {
       await apiClient.downloadSessionsCSV();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "CSV export failed.");
+      setError(formatApiError(err));
     } finally {
-      setExporting(false);
+      setExporting(null);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setExporting("pdf");
+    try {
+      await apiClient.downloadSessionsPDF();
+    } catch (err) {
+      setError(formatApiError(err));
+    } finally {
+      setExporting(null);
     }
   };
 
@@ -137,10 +149,20 @@ export function Reports() {
         title="Reports & analytics"
         description="KPIs, exam outcomes, and behavioral patterns across all sessions."
         actions={
-          <Button onClick={handleExportCsv} disabled={exporting}>
-            <Download className="h-4 w-4" />
-            {exporting ? "Exporting…" : "Export CSV"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExportCsv}
+              disabled={exporting !== null}
+            >
+              <Download className="h-4 w-4" />
+              {exporting === "csv" ? "Exporting…" : "Export CSV"}
+            </Button>
+            <Button onClick={handleExportPdf} disabled={exporting !== null}>
+              <Download className="h-4 w-4" />
+              {exporting === "pdf" ? "Exporting…" : "Export PDF"}
+            </Button>
+          </div>
         }
       />
 

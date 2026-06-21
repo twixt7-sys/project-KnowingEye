@@ -9,6 +9,7 @@ React + TypeScript SPA for the Knowing Eye examination platform. Connects to the
 | Framework | React 18, TypeScript |
 | Build | Vite 6 |
 | Routing | React Router 7 |
+| Data fetching | TanStack Query |
 | Styling | Tailwind CSS 4, shadcn/Radix UI |
 | Charts | Recharts |
 
@@ -45,14 +46,16 @@ frontend/src/
 | `/examinee/exam/:id` | Student | Live exam + monitoring |
 | `/monitoring` | Admin | Active session list |
 | `/monitoring/:sessionId` | Admin | Session inspector |
-| `/reports` | Admin | Analytics + CSV export |
+| `/reports` | Admin | Analytics + CSV/PDF export |
 | `/profile` | Any | Profile & password |
 
 Legacy paths (`/dashboard`, `/student/*`) redirect to the routes above.
 
 ## API client
 
-All HTTP calls go through `src/core/config/api.ts` (`apiClient`). JWT tokens are stored in `localStorage` and attached automatically; refresh is handled on 401.
+All HTTP calls go through `src/core/config/api.ts` (`apiClient`). JWT tokens are stored in `localStorage` and attached automatically; refresh is handled on 401. API errors from the backend envelope (`{ success, error: { code, details } }`) are normalized via `extractApiErrorMessage`.
+
+Server state for dashboard and reports hooks uses TanStack Query via `QueryProvider`.
 
 WebSocket monitoring URLs are built with `buildMonitoringWsUrl(sessionId)`.
 
@@ -63,6 +66,8 @@ WebSocket monitoring URLs are built with `buildMonitoringWsUrl(sessionId)`.
 | `npm run dev` | Vite dev server (HMR) |
 | `npm run build` | Production bundle → `dist/` |
 | `npm run preview` | Serve production build locally |
+| `npm test` | Run Vitest unit tests |
+| `npm run test:watch` | Vitest in watch mode |
 
 ## Environment
 
