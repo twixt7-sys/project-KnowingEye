@@ -4,6 +4,7 @@ import {
   cellActive,
   fmtDisplay,
   groupColumnsByPhase,
+  parseDate,
   projectBounds,
   resolvePhases,
   rollupProgress,
@@ -40,12 +41,52 @@ function togglePhase(phaseId) {
   else phaseCollapsed.add(phaseId);
 }
 
-function indentPx(depth) {
-  return 8 + depth * 20;
+function indentPx(depth, mobile = false) {
+  const step = mobile ? 12 : 20;
+  const base = mobile ? 6 : 8;
+  return base + depth * step;
+}
+
+function isMobileViewport() {
+  return window.matchMedia('(max-width: 768px)').matches;
+}
+
+function phaseContainsToday(phase, today) {
+  const s = parseDate(phase.start);
+  const e = parseDate(phase.end);
+  if (!s || !e) return false;
+  return today >= s && today <= e;
+}
+
+let mobilePhasesPrimed = false;
+
+function primeMobilePhases(phases, today) {
+  if (!isMobileViewport() || mobilePhasesPrimed) return;
+  mobilePhasesPrimed = true;
+  for (const p of phases) {
+    if (!phaseContainsToday(p, today)) phaseCollapsed.add(p.id);
+  }
+}
+
+function scrollToToday(wrap) {
+  if (!wrap) return;
+  const todayHead = wrap.querySelector('thead .gantt-col-today');
+  if (!todayHead) return;
+  const labelW = wrap.querySelector('.gantt-row-label')?.offsetWidth || 140;
+  const target = todayHead.offsetLeft - labelW - todayHead.offsetWidth;
+  wrap.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
 }
 
 export async function mount(container, ctx) {
   const { store, utils } = ctx;
+  let resizeTimer = null;
+
+  const onResize = () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => render(), 160);
+  };
+  window.addEventListener('resize', onResize);
+  container._ganttResize = onResize;
 
   if (!ganttSeed) {
     try {
@@ -64,6 +105,9 @@ export async function mount(container, ctx) {
     initPhaseCollapse(phases);
 
     const today = todayDate();
+    primeMobilePhases(phases, today);
+    const mobile = isMobileViewport();
+    const compactHeader = mobile;
     const bounds = projectBounds(nodes, phases);
     const expandedPhases = new Set(phases.map((p) => p.id).filter((id) => !phaseCollapsed.has(id)));
     const cols = buildTimelineColumns(phases, expandedPhases);
@@ -91,9 +135,11 @@ export async function mount(container, ctx) {
             return `<td class="${cls}"${style} title="${utils.escapeHtml(title)}" data-id="${n.id}"></td>`;
           })
           .join('');
-        const titleText = n.title.length > 42 - depth * 2 ? n.title.slice(0, 40 - depth * 2) + '…' : n.title;
+        const titleText = mobile
+          ? (n.title.length > 18 - depth ? n.title.slice(0, 16 - depth) + '…' : n.title)
+          : (n.title.length > 42 - depth * 2 ? n.title.slice(0, 40 - depth * 2) + '…' : n.title);
         rows += `<tr class="gantt-row" data-depth="${depth}">
-          <th class="gantt-row-label" style="padding-left:${indentPx(depth)}px" title="${utils.escapeHtml(n.title)}">
+          <th class="gantt-row-label" style="padding-left:${indentPx(depth, mobile)}px" title="${utils.escapeHtml(n.title)}">
             ${hasKids ? `<button type="button" class="gantt-caret ${isOpen ? 'open' : ''}" data-toggle="${n.id}" aria-label="Toggle"></button>` : '<span class="gantt-caret-spacer"></span>'}
             <span class="mono gantt-code">${utils.escapeHtml(n.code)}</span>
             <span class="gantt-task-title">${utils.escapeHtml(titleText)}</span>
@@ -117,12 +163,16 @@ export async function mount(container, ctx) {
       })
       .join('');
 
-    const weekHead = groups
-      .flatMap((group) => weekBandsForGroup(group).map((band) => {
-        const isToday = !group.collapsed && band.start && sameDay(band.start, today);
-        return `<th class="gantt-week-head${isToday ? ' gantt-col-today' : ''}" colspan="${band.span}" data-phase="${group.phase.id}">${utils.escapeHtml(band.label)}</th>`;
-      }))
-      .join('');
+    const weekHead = compactHeader
+      ? ''
+      : groups
+        .flatMap((group) => weekBandsForGroup(group).map((band) => {
+          const isToday = !group.collapsed && band.start && sameDay(band.start, today);
+          return `<th class="gantt-week-head${isToday ? ' gantt-col-today' : ''}" colspan="${band.span}" data-phase="${group.phase.id}">${utils.escapeHtml(band.label)}</th>`;
+        }))
+        .join('');
+
+    const headerRows = compactHeader ? 2 : 3;
 
     const dayHead = cols
       .map((col) => {
@@ -138,30 +188,33 @@ export async function mount(container, ctx) {
     const rangeLabel = `${fmtDisplay(bounds.min)} – ${fmtDisplay(bounds.max)}`;
 
     container.innerHTML = `
-      <section class="module-page gantt-page">
-        <header class="page-head">
-          <div>
+      <section class="module-page gantt-page${mobile ? ' gantt-mobile' : ''}${compactHeader ? ' gantt-compact-header' : ''}">
+        <header class="page-head gantt-page-head">
+          <div class="gantt-head-copy">
             <h1>Gantt Chart</h1>
-            <p class="page-sub">Daily timeline aligned with <code>Knowing Eye Gantt Chart - Sheet1.csv</code> · Today: <strong>${utils.escapeHtml(fmtDisplay(today))}</strong> · ${utils.escapeHtml(rangeLabel)}. Toggle ▶ on phases or tasks. Edit dates in <a href="#/wbs">WBS</a>.</p>
+            <p class="page-sub gantt-sub-full">Daily timeline aligned with <code>Knowing Eye Gantt Chart - Sheet1.csv</code> · Today: <strong>${utils.escapeHtml(fmtDisplay(today))}</strong> · ${utils.escapeHtml(rangeLabel)}. Toggle ▶ on phases or tasks. Edit dates in <a href="#/wbs">WBS</a>.</p>
+            <p class="page-sub gantt-sub-compact">Today <strong>${utils.escapeHtml(fmtDisplay(today))}</strong> · ${utils.escapeHtml(rangeLabel)} · <a href="#/wbs">Edit in WBS</a></p>
           </div>
           <div class="gantt-toolbar">
             <button class="btn btn-sm" id="g-expand-rows">Expand rows</button>
             <button class="btn btn-sm" id="g-collapse-rows">Collapse rows</button>
             <button class="btn btn-sm" id="g-expand-phases">Expand phases</button>
             <button class="btn btn-sm" id="g-collapse-phases">Collapse phases</button>
+            <button class="btn btn-sm gantt-jump-today" id="g-jump-today" type="button">Jump to today</button>
           </div>
         </header>
-        <div class="gantt-grid-wrap card">
+        <p class="gantt-scroll-hint muted" aria-hidden="true">Swipe the timeline horizontally</p>
+        <div class="gantt-grid-wrap card" tabindex="0" aria-label="Gantt timeline, scroll horizontally">
           <table class="gantt-grid">
             <thead>
-              <tr><th class="gantt-row-label gantt-corner" rowspan="3">WBS Task</th>${phaseHead}</tr>
-              <tr>${weekHead}</tr>
+              <tr><th class="gantt-row-label gantt-corner" rowspan="${headerRows}">WBS Task</th>${phaseHead}</tr>
+              ${compactHeader ? '' : `<tr>${weekHead}</tr>`}
               <tr>${dayHead}</tr>
             </thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
-        <p class="muted" style="font-size:0.8rem">P1 Planning · P2 System Development · P3 Testing &amp; Docs · project ${utils.escapeHtml(ganttSeed.config?.project_start || '2026-04-16')} – ${utils.escapeHtml(ganttSeed.config?.project_end || '2026-06-10')}</p>
+        <p class="muted gantt-footnote">P1 Planning · P2 System Development · P3 Testing &amp; Docs · project ${utils.escapeHtml(ganttSeed.config?.project_start || '2026-04-16')} – ${utils.escapeHtml(ganttSeed.config?.project_end || '2026-06-10')}</p>
       </section>`;
 
     container.querySelectorAll('[data-toggle]').forEach((btn) => {
@@ -198,14 +251,25 @@ export async function mount(container, ctx) {
     };
     container.querySelector('#g-expand-phases').onclick = () => { phaseCollapsed.clear(); render(); };
     container.querySelector('#g-collapse-phases').onclick = () => { phases.forEach((p) => phaseCollapsed.add(p.id)); render(); };
+    container.querySelector('#g-jump-today')?.addEventListener('click', () => {
+      scrollToToday(container.querySelector('.gantt-grid-wrap'));
+    });
     container.querySelectorAll('.gantt-cell.on').forEach((cell) => {
       cell.onclick = () => { location.hash = '#/wbs'; };
     });
+
+    if (mobile) {
+      requestAnimationFrame(() => scrollToToday(container.querySelector('.gantt-grid-wrap')));
+    }
   }
 
   await render();
 }
 
 export function unmount(container) {
+  if (container._ganttResize) {
+    window.removeEventListener('resize', container._ganttResize);
+    delete container._ganttResize;
+  }
   container.innerHTML = '';
 }

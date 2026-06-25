@@ -2,7 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="description" content="Knowing Eye: A Full-Stack Session-Guided Web-Based Examination Platform with Integrated Behavior Monitoring - Project OS" />
   <title>Knowing Eye - Project OS</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="os/assets/styles.css" />
   <link rel="stylesheet" href="os/assets/os.css" />
   <link rel="stylesheet" href="documentation/chapter2/assets/manuscript.css" />
-  <script type="module" src="os/app.js?v=6"></script>
+  <script type="module" src="os/app.js?v=8"></script>
 </head>
 <body class="project-os">
   <div id="app" class="app-shell">
@@ -24,6 +24,9 @@
           <strong>Knowing Eye</strong>
           <small>Project OS</small>
         </div>
+        <button type="button" id="btn-sidebar-close" class="btn-icon sidebar-close" aria-label="Close navigation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
       </div>
       <nav id="module-nav" class="module-nav"></nav>
       <div class="sidebar-docs">
@@ -34,7 +37,7 @@
     </aside>
     <div class="shell-main">
       <header id="topbar" class="topbar">
-        <button type="button" id="btn-sidebar" class="btn-icon btn-sidebar" aria-label="Toggle navigation">
+        <button type="button" id="btn-sidebar" class="btn-icon btn-sidebar" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
         </button>
         <div id="breadcrumb" class="breadcrumb"></div>
@@ -54,6 +57,7 @@
         <span id="deploy-info"></span>
       </footer>
     </div>
+    <div id="sidebar-backdrop" class="sidebar-backdrop" aria-hidden="true"></div>
   </div>
 </body>
 </html>

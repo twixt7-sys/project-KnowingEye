@@ -19,14 +19,14 @@ export async function mount(container, ctx) {
         const overdue = m.status !== 'completed' && days < 0;
         const status = overdue ? 'missed' : m.status;
         const countdown = m.status === 'completed' ? 'Done' : days < 0 ? `${Math.abs(days)}d overdue` : `in ${days}d`;
-        return `<div class="card" data-id="${m.id}" style="border-left:3px solid var(--${m.category === 'institutional' ? 'accent2' : 'accent'});cursor:pointer" title="Click to edit">
-          <div class="row between">
+        return `<div class="card milestone-card" data-id="${m.id}" style="border-left:3px solid var(--${m.category === 'institutional' ? 'accent2' : 'accent'});cursor:pointer" title="Click to edit">
+          <div class="row between milestone-card-body">
             <div>
               <strong>${utils.escapeHtml(m.title)}</strong>
               <span class="badge" style="margin-left:0.5rem">${m.category}</span>
               <div class="muted" style="font-size:0.85rem;margin-top:0.2rem">${utils.escapeHtml(m.description || '')}</div>
             </div>
-            <div style="text-align:right;min-width:120px">
+            <div class="milestone-meta">
               <div>${utils.fmtDate(m.date)}</div>
               <span class="badge status-${status}">${(status || '').replace('_', ' ')}</span>
               <div class="muted ${overdue ? 'text-danger' : ''}" style="font-size:0.8rem;margin-top:0.2rem">${countdown}</div>

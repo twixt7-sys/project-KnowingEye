@@ -64,15 +64,18 @@ export async function mount(container, ctx) {
           <p class="page-sub">Edit manuscript pages in place - changes save to your browser (IndexedDB). Use <strong>Download HTML</strong> to export; static files in the repo are unchanged until you replace them.</p>
         </div>
       </header>
-      <div class="grid doc-layout" style="grid-template-columns:280px 1fr;gap:1rem;align-items:start">
-        <div class="card doc-list" style="position:sticky;top:0;max-height:calc(100vh - 160px);overflow:auto">
+      <div class="grid doc-layout">
+        <div class="card doc-list">
           <input id="doc-search" placeholder="Search documents…" style="margin-bottom:0.6rem">
           <div id="doc-nav">${sidebar()}</div>
         </div>
         <div class="card doc-panel" style="padding:0.75rem">
-          <div class="row between" style="margin-bottom:0.35rem">
+          <div class="row between" style="margin-bottom:0.35rem;flex-wrap:wrap;gap:0.5rem">
             <strong id="doc-title">${utils.escapeHtml(current.title)}</strong>
-            <span class="muted" id="doc-meta" style="font-size:0.78rem"></span>
+            <div class="row" style="gap:0.35rem">
+              <button type="button" class="btn btn-sm doc-nav-toggle" id="doc-nav-toggle">Browse docs</button>
+              <span class="muted" id="doc-meta" style="font-size:0.78rem"></span>
+            </div>
           </div>
           <div id="doc-toolbar-wrap">${toolbarHtml()}</div>
           <div class="doc-viewer-shell">
@@ -131,6 +134,12 @@ export async function mount(container, ctx) {
     current = flat.find((p) => p.file === file) || { file, title };
     editing = false;
     container.querySelectorAll('.doc-link').forEach((x) => x.classList.toggle('active', x.dataset.file === file));
+    const section = container.querySelector('.doc-module');
+    const navToggle = container.querySelector('#doc-nav-toggle');
+    if (section && window.matchMedia('(max-width: 900px)').matches) {
+      section.classList.add('doc-nav-hidden');
+      if (navToggle) navToggle.textContent = 'Browse docs';
+    }
     updateToolbar();
     await renderPage(file, title);
   }
@@ -227,6 +236,18 @@ export async function mount(container, ctx) {
     container.querySelector('#doc-nav').innerHTML = sidebar(e.target.value);
     bindNav();
   };
+
+  const section = container.querySelector('.doc-module');
+  const navToggle = container.querySelector('#doc-nav-toggle');
+  if (navToggle && section) {
+    navToggle.onclick = () => {
+      section.classList.toggle('doc-nav-hidden');
+      navToggle.textContent = section.classList.contains('doc-nav-hidden') ? 'Browse docs' : 'Hide list';
+    };
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      section.classList.add('doc-nav-hidden');
+    }
+  }
 
   await renderPage(current.file, current.title);
 }

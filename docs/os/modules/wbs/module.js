@@ -76,8 +76,8 @@ export async function mount(container, ctx) {
           </div>
         </header>
         <div class="card" style="padding:0.5rem">
-          <div class="wbs-row" style="font-weight:600;color:var(--muted)"><span>Code / Activity</span><span class="wbs-dates">Dates</span><span class="wbs-owner">Owner</span><span class="wbs-status">Status</span><span>Progress</span></div>
-          <div class="wbs-tree">${html || '<p class="muted" style="padding:1rem">No WBS nodes yet.</p>'}</div>
+          <div class="wbs-row wbs-header-row" style="font-weight:600;color:var(--muted)"><span>Code / Activity</span><span class="wbs-dates">Dates</span><span class="wbs-owner">Owner</span><span class="wbs-status">Status</span><span>Progress</span></div>
+          <div class="wbs-scroll wbs-tree">${html || '<p class="muted" style="padding:1rem">No WBS nodes yet.</p>'}</div>
         </div>
       </section>`;
 

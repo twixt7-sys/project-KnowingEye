@@ -86,12 +86,43 @@ const app = {
       a.innerHTML = `<span class="nav-icon">${iconSvg(m.icon)}</span><span class="nav-label">${utils.escapeHtml(m.label)}</span>`;
       nav.append(a);
     }
+    nav.addEventListener('click', (e) => {
+      if (e.target.closest('.nav-item')) this.closeSidebar();
+    });
+    document.querySelector('.sidebar-docs')?.addEventListener('click', (e) => {
+      if (e.target.closest('a')) this.closeSidebar();
+    });
     const brand = document.querySelector('.sidebar-brand strong');
     if (brand) brand.textContent = config.project?.title || 'Project OS';
   },
 
+  closeSidebar() {
+    const shell = document.getElementById('app');
+    if (!shell?.classList.contains('sidebar-open')) return;
+    shell.classList.remove('sidebar-open');
+    document.getElementById('sidebar-backdrop')?.setAttribute('aria-hidden', 'true');
+    document.getElementById('btn-sidebar')?.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('sidebar-open-body');
+  },
+
+  openSidebar() {
+    const shell = document.getElementById('app');
+    shell?.classList.add('sidebar-open');
+    document.getElementById('sidebar-backdrop')?.setAttribute('aria-hidden', 'false');
+    document.getElementById('btn-sidebar')?.setAttribute('aria-expanded', 'true');
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      document.body.classList.add('sidebar-open-body');
+    }
+  },
+
+  toggleSidebar() {
+    const shell = document.getElementById('app');
+    if (shell?.classList.contains('sidebar-open')) this.closeSidebar();
+    else this.openSidebar();
+  },
+
   bindChrome() {
-    const { store, router } = this.ctx;
+    const { store } = this.ctx;
 
     const exportBtn = document.getElementById('btn-export');
     if (exportBtn) {
@@ -113,10 +144,32 @@ const app = {
 
     const toggle = document.getElementById('btn-sidebar');
     if (toggle) {
-      toggle.addEventListener('click', () => {
-        document.getElementById('app').classList.toggle('sidebar-open');
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleSidebar();
       });
     }
+
+    const closeBtn = document.getElementById('btn-sidebar-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.closeSidebar();
+      });
+    }
+
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (backdrop) {
+      backdrop.addEventListener('click', () => this.closeSidebar());
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this.closeSidebar();
+    });
+
+    window.matchMedia('(max-width: 900px)').addEventListener('change', (e) => {
+      if (!e.matches) this.closeSidebar();
+    });
 
     // restore last route
     const last = store.getPref('last_route');
@@ -124,6 +177,7 @@ const app = {
   },
 
   async handleRoute(route) {
+    this.closeSidebar();
     const { registry, router, store } = this.ctx;
     const viewport = document.getElementById('module-viewport');
     let id = route.moduleId;

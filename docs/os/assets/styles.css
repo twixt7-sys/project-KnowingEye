@@ -241,4 +241,37 @@ tbody tr:hover { background: var(--accent-soft); }
 /* responsive helpers */
 .row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
 .between { justify-content: space-between; }
-.scroll-x { overflow-x: auto; }
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 768px) {
+  .grid-2,
+  .grid-3,
+  .grid-4 { grid-template-columns: 1fr; }
+  .stat .stat-value { font-size: 1.65rem; }
+  .card { padding: 0.9rem 1rem; }
+  .tech-card { flex-direction: column; }
+  .toast-host {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .toast { max-width: none; }
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modal {
+    width: 100%;
+    max-height: min(92dvh, 100%);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  .modal .grid-2,
+  .modal .grid-3 { grid-template-columns: 1fr; }
+  th, td { padding: 0.5rem 0.55rem; font-size: 0.84rem; }
+}
+
+@media (max-width: 480px) {
+  .stat .stat-value { font-size: 1.45rem; }
+  .btn, .btn-primary, .btn-ghost { min-height: 2.35rem; }
+}

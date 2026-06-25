@@ -57,7 +57,7 @@ export async function mount(container, ctx) {
         <div class="grid grid-2">
           <div class="card">
             <div class="card-title">Risk Heat Map</div>
-            ${heat}
+            <div class="heatmap-wrap">${heat}</div>
             <p class="muted" style="font-size:0.78rem;margin-top:0.5rem">Rows = probability (1–5), columns = impact (1–5). Number = risks in that cell.</p>
           </div>
           <div class="card">
