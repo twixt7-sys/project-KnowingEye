@@ -351,38 +351,5 @@
     "Responses are saved and submitted",
     "AI analysis evaluates behavior and flags events",
     "Reports and session summaries are generated"
-  ],
-
-  "project_management": {
-    "project_os": {
-      "entry": "index.html",
-      "config": "os/config/project.json",
-      "modules": [
-        "dashboard", "tasks", "gantt", "wbs", "team",
-        "milestones", "risks", "documents", "architecture",
-        "testing", "reports", "settings"
-      ]
-    },
-    "seed_files": {
-      "project": "os/data/seed/project.json",
-      "team": "os/data/seed/team.json",
-      "tasks": "os/data/seed/tasks.json",
-      "wbs": "os/data/seed/wbs.json",
-      "gantt": "os/data/seed/gantt.json",
-      "milestones": "os/data/seed/milestones.json",
-      "risks": "os/data/seed/risks.json",
-      "documents_index": "os/data/seed/documents-index.json"
-    },
-    "data_model": {
-      "committed_seed": "JSON under os/data/seed/ - version-controlled source of truth",
-      "runtime_edits": "IndexedDB (knowing-eye-project-os) - local, not committed",
-      "ui_prefs": "localStorage (theme, last route, sidebar state)"
-    },
-    "documentation": {
-      "manuscript": "chapter1/ and chapter2/ (Chapter II - Methodology, Parts A–E)",
-      "architecture": "architecture/ (01–07 + graph-viewer.html)",
-      "testing_packs": ["testing/testing(IEEE)/", "testing/testing(UTAUT)/"],
-      "outline_alignment": "docs/Outline-Alignment.docx"
-    }
-  }
+  ]
 }
