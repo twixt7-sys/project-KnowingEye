@@ -1,9 +1,9 @@
 // Shared WBS tree + Gantt phase timeline (aligned with Gantt CSV).
 
 export const PHASES = [
-  { id: 'P1', label: 'P1 — Planning', start: '2026-04-16', end: '2026-05-02', color: '#5b8def' },
-  { id: 'P2', label: 'P2 — System Development', start: '2026-05-03', end: '2026-06-21', color: '#7c5cff' },
-  { id: 'P3', label: 'P3 — Testing & Docs', start: '2026-06-22', end: '2026-07-18', color: '#34d399' },
+  { id: 'P1', label: 'P1 - Planning', start: '2026-04-16', end: '2026-05-02', color: '#5b8def' },
+  { id: 'P2', label: 'P2 - System Development', start: '2026-05-03', end: '2026-06-21', color: '#7c5cff' },
+  { id: 'P3', label: 'P3 - Testing & Docs', start: '2026-06-22', end: '2026-07-18', color: '#34d399' },
 ];
 
 export function parseDate(s) {

@@ -1,5 +1,5 @@
 /**
- * Reports feature API — typed wrappers over the shared API client.
+ * Reports feature API - typed wrappers over the shared API client.
  */
 import { apiClient } from "../../../core/config/api";
 

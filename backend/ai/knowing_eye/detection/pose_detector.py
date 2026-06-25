@@ -1,4 +1,4 @@
-"""Posture estimation — MediaPipe when available, heuristic fallback from face position."""
+"""Posture estimation - MediaPipe when available, heuristic fallback from face position."""
 
 from __future__ import annotations
 

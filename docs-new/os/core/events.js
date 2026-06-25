@@ -1,4 +1,4 @@
-// Tiny pub/sub event bus. No project-specific logic — portable across projects.
+// Tiny pub/sub event bus. No project-specific logic - portable across projects.
 export function createEventBus() {
   const listeners = new Map();
 

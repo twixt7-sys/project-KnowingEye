@@ -1,4 +1,4 @@
-# OSAS WBSMS — UTAUT Testing Pack
+# OSAS WBSMS - UTAUT Testing Pack
 
 Structured data and tooling for **Chapter 7 §§7.6–7.8** (UTAUT framework, survey instrument, data analysis), based on [UTAUT chap 7.pdf](../overview/documents/UTAUT%20chap%207.pdf) and adapted for the **Web-Based Student Management System** at Legacy College of Compostela.
 

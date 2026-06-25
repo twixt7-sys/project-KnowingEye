@@ -43,7 +43,7 @@ export async function mount(container, ctx) {
           <div class="row" style="gap:0.7rem;margin-top:0.6rem">
             ${personAvatar('adviser', info.advisor?.name)}
             <div>
-              <strong>${utils.escapeHtml(info.advisor?.name || '—')}</strong>
+              <strong>${utils.escapeHtml(info.advisor?.name || '-')}</strong>
               <div class="muted" style="font-size:0.82rem">${utils.escapeHtml(info.advisor?.title || 'Project Adviser')}</div>
             </div>
           </div>

@@ -97,7 +97,7 @@ export async function mount(container, ctx) {
             <tbody>${rows}</tbody>
           </table>
         </div>
-        <p class="muted" style="font-size:0.8rem">P1 Planning · P2 System Development · P3 Testing &amp; Docs — dates from <code>Knowing Eye Gantt Chart - Sheet1.csv</code></p>
+        <p class="muted" style="font-size:0.8rem">P1 Planning · P2 System Development · P3 Testing &amp; Docs - dates from <code>Knowing Eye Gantt Chart - Sheet1.csv</code></p>
       </section>`;
 
     container.querySelectorAll('[data-toggle]').forEach((btn) => {

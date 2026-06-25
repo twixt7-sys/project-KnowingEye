@@ -1,4 +1,4 @@
-"""Main behavior analysis pipeline — production implementation in backend/ai."""
+"""Main behavior analysis pipeline - production implementation in backend/ai."""
 
 from __future__ import annotations
 
@@ -32,9 +32,9 @@ class BehaviorPipeline:
     behavior scoring, and temporal rules.
 
     Model roles (§2.1.4.3):
-      * MediaPipe — face landmarks, gaze angles, posture keypoints
-      * YOLOv8 — prohibited object detection (phone, person context)
-      * ArcFace (InsightFace) — 512-D CNN embeddings for identity verification
+      * MediaPipe - face landmarks, gaze angles, posture keypoints
+      * YOLOv8 - prohibited object detection (phone, person context)
+      * ArcFace (InsightFace) - 512-D CNN embeddings for identity verification
     """
 
     def __init__(self, config_path: str | Path | None = None) -> None:

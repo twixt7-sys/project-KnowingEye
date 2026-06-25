@@ -1,16 +1,16 @@
 {
   "reference": "See document-data/02_test_cases_document.json for authoritative case catalogue",
   "id_prefix_legend": {
-    "WBS-AUTH": "Authentication — login, logout, password reset, session",
-    "WBS-PROF": "Student profiling — registration, multi-step form",
-    "WBS-VAL": "Profile validation — faculty/assistant approval",
-    "WBS-STU": "Student management — search, view, update",
-    "WBS-VIO": "Violations — record, update, search",
-    "WBS-CON": "Concerns — submit, staff update",
-    "WBS-DSH": "Dashboard — analytics, PDF report",
-    "WBS-NOT": "Notifications — list, mark read",
-    "WBS-ADM": "Account management — admin CRUD",
+    "WBS-AUTH": "Authentication - login, logout, password reset, session",
+    "WBS-PROF": "Student profiling - registration, multi-step form",
+    "WBS-VAL": "Profile validation - faculty/assistant approval",
+    "WBS-STU": "Student management - search, view, update",
+    "WBS-VIO": "Violations - record, update, search",
+    "WBS-CON": "Concerns - submit, staff update",
+    "WBS-DSH": "Dashboard - analytics, PDF report",
+    "WBS-NOT": "Notifications - list, mark read",
+    "WBS-ADM": "Account management - admin CRUD",
     "WBS-SEC": "Security / RBAC",
-    "WBS-GEN": "General — landing, lookups, responsive UI"
+    "WBS-GEN": "General - landing, lookups, responsive UI"
   }
 }

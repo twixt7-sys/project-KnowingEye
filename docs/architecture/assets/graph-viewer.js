@@ -472,7 +472,7 @@ async function renderDiagram(diagramMeta) {
   const linkSource = document.getElementById('link-source');
 
   currentDiagram = diagramMeta;
-  titleEl.textContent = `${diagramMeta.id} — ${diagramMeta.title}`;
+  titleEl.textContent = `${diagramMeta.id} - ${diagramMeta.title}`;
   if (linkSource) linkSource.href = `graphs/${diagramMeta.file}`;
   canvas.innerHTML = '<p class="loading">Rendering…</p>';
   setCanvasScrollMode(null);

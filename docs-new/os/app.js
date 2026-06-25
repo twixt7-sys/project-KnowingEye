@@ -1,10 +1,10 @@
 // Project OS bootstrap: load config, init store/router/registry, render shell chrome.
-import { DataStore } from './core/store.js';
-import { Router } from './core/router.js';
-import { PluginRegistry } from './core/plugin-registry.js';
-import { createEventBus } from './core/events.js';
-import * as utils from './core/utils.js';
-import { initTheme, setTheme, currentTheme } from './assets/theme.js';
+import { DataStore } from './core/store.js?v=6';
+import { Router } from './core/router.js?v=6';
+import { PluginRegistry } from './core/plugin-registry.js?v=6';
+import { createEventBus } from './core/events.js?v=6';
+import * as utils from './core/utils.js?v=6';
+import { initTheme, setTheme, currentTheme } from './assets/theme.js?v=6';
 
 const ICONS = {
   grid: 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
@@ -32,8 +32,14 @@ const app = {
     try {
       config = await utils.fetchJson('os/config/project.json');
     } catch (err) {
-      this.fatal('Could not load os/config/project.json', err);
-      return;
+      // deploy.bat may open the browser before the server is listening
+      await new Promise((r) => setTimeout(r, 600));
+      try {
+        config = await utils.fetchJson('os/config/project.json');
+      } catch (err2) {
+        this.fatal('Could not load os/config/project.json', err2);
+        return;
+      }
     }
 
     const slug = config.project?.slug || 'project-os';
@@ -132,7 +138,7 @@ const app = {
       await registry.mount(id, viewport, { ...this.ctx, route });
     } catch (err) {
       console.error(err);
-      viewport.innerHTML = `<section class="module-page"><div class="empty-state"><h2>Module failed to load</h2><p>${utils.escapeHtml(id)} — ${utils.escapeHtml(err.message)}</p></div></section>`;
+      viewport.innerHTML = `<section class="module-page"><div class="empty-state"><h2>Module failed to load</h2><p>${utils.escapeHtml(id)} - ${utils.escapeHtml(err.message)}</p></div></section>`;
     }
   },
 
@@ -165,7 +171,7 @@ const app = {
   fatal(msg, err) {
     const viewport = document.getElementById('module-viewport');
     if (viewport) {
-      viewport.innerHTML = `<section class="module-page"><div class="empty-state"><h2>${utils.escapeHtml(msg)}</h2><p>${utils.escapeHtml(err?.message || '')}</p><p class="muted">Serve this folder over HTTP (e.g. <code>./deploy.sh</code>) — opening index.html via file:// blocks module imports and fetch.</p></div></section>`;
+      viewport.innerHTML = `<section class="module-page"><div class="empty-state"><h2>${utils.escapeHtml(msg)}</h2><p>${utils.escapeHtml(err?.message || '')}</p><p class="muted">Serve this folder over HTTP (e.g. <code>./deploy.sh</code>) - opening index.html via file:// blocks module imports and fetch.</p></div></section>`;
     }
     console.error(msg, err);
   },

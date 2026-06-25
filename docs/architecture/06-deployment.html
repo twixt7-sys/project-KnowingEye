@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ch.6 — Deployment Architecture</title>
+  <title>Ch.6 - Deployment Architecture</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="assets/theme.js"></script>
   <link rel="stylesheet" href="assets/styles.css" />
@@ -47,7 +47,7 @@
         <thead><tr><th>Tier</th><th>Component</th><th>Specification</th></tr></thead>
         <tbody>
           <tr><td>Edge</td><td>Nginx</td><td>TLS termination, static SPA, reverse proxy, WebSocket upgrade</td></tr>
-          <tr><td>Application</td><td>Daphne (×N workers)</td><td>ASGI — REST + WebSocket on port 8000</td></tr>
+          <tr><td>Application</td><td>Daphne (×N workers)</td><td>ASGI - REST + WebSocket on port 8000</td></tr>
           <tr><td>Cache</td><td>Redis 7</td><td>Channels layer for cross-worker alert broadcast</td></tr>
           <tr><td>Database</td><td>PostgreSQL 15+</td><td>Managed or self-hosted</td></tr>
           <tr><td>Static</td><td>frontend/dist/</td><td>Built via <code>npm run build</code></td></tr>
@@ -103,7 +103,7 @@
     </section>
 
     <figure class="diagram">
-      <figcaption>Figure 2.4 — Deployment Topology</figcaption>
+      <figcaption>Figure 2.4 - Deployment Topology</figcaption>
       <div class="diagram-placeholder"><span class="fig-id">Fig-2.4 · PLACEHOLDER</span><a href="graphs/deployment-topology.json">deployment-topology.json</a></div>
       <details class="graph-source"><summary>JSON source</summary><pre id="json-deploy"></pre></details>
     </figure>

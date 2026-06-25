@@ -1,5 +1,5 @@
 /* =========================================================================
-   Project OS shell layout — sidebar + topbar + viewport grid.
+   Project OS shell layout - sidebar + topbar + viewport grid.
    ========================================================================= */
 
 .app-shell {
@@ -172,8 +172,32 @@
 .heatmap { border-collapse: separate; border-spacing: 3px; }
 .heatmap td { width: 54px; height: 44px; text-align: center; border-radius: 6px; font-size: 0.78rem; border: none; color: #0a0e17; font-weight: 600; }
 
-/* ---- doc iframe ---- */
+/* ---- doc iframe / viewer ---- */
 .doc-frame { width: 100%; height: calc(100vh - 230px); border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+.doc-module .doc-layout { align-items: stretch; }
+.doc-panel { min-width: 0; }
+.doc-viewer-shell {
+  height: calc(100vh - 280px);
+  min-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.doc-viewer-pane {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 2rem;
+  min-height: 100%;
+}
+.doc-viewer-pane .doc-nav { display: none; }
+.doc-viewer-pane[contenteditable="true"] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  cursor: text;
+}
+.doc-viewer-pane[contenteditable="true"]:focus { outline-color: var(--accent); }
+.doc-toolbar .badge { font-size: 0.72rem; }
 .doc-list a { display: block; padding: 0.5rem 0.6rem; border-radius: 8px; }
 .doc-list a:hover { background: var(--surface2); text-decoration: none; }
 

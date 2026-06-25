@@ -1,7 +1,7 @@
-# Test Case Evidence — LCC-OSAS Production (lcc-osas.com)
+# Test Case Evidence - LCC-OSAS Production (lcc-osas.com)
 
 Captured: **2026-05-22**  
-Environment: **Production** — https://lcc-osas.com  
+Environment: **Production** - https://lcc-osas.com  
 Tester: Automated browser smoke + manual verification via Cursor IDE browser
 
 ## Folder structure

@@ -39,7 +39,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class RegisterView(viewsets.ModelViewSet):
-    """POST /api/auth/register/ — public account creation."""
+    """POST /api/auth/register/ - public account creation."""
 
     queryset = User.objects.all()
     serializer_class = RegisterSerializer

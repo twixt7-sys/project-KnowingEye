@@ -1,4 +1,4 @@
-# Knowing Eye — UTAUT Testing Pack
+# Knowing Eye - UTAUT Testing Pack
 
 Structured data for **Chapter 7 §§7.6–7.8** (UTAUT framework, survey, analysis), adapted for the **Knowing Eye** proctored examination platform.
 

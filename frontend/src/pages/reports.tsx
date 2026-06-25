@@ -191,14 +191,14 @@ export function Reports() {
               value={
                 summary.average_score != null
                   ? `${summary.average_score.toFixed(1)}%`
-                  : "—"
+                  : "-"
               }
               icon={TrendingUp}
             />
             <StatCard
               label="Pass rate"
               value={
-                summary.pass_rate != null ? `${summary.pass_rate.toFixed(1)}%` : "—"
+                summary.pass_rate != null ? `${summary.pass_rate.toFixed(1)}%` : "-"
               }
               icon={CheckCircle}
               tone={
@@ -329,7 +329,7 @@ export function Reports() {
                     <span className="status-pill bg-muted text-muted-foreground">{s.status}</span>
                   </td>
                   <td className="text-right font-medium">
-                    {s.percentage_score != null ? `${s.percentage_score.toFixed(1)}%` : "—"}
+                    {s.percentage_score != null ? `${s.percentage_score.toFixed(1)}%` : "-"}
                   </td>
                   <td className="hidden text-right md:table-cell">
                     {s.alert_count}

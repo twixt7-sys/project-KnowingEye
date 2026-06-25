@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Part B — System Analysis · Knowing Eye</title>
+  <title>Part B - System Analysis · Knowing Eye</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../../os/assets/styles.css" />
@@ -15,7 +15,7 @@
   <main class="doc-wrap">
     <div class="doc-nav">
       <a class="btn btn-sm" href="01-system-planning.html">← Part A</a>
-      <a class="btn btn-sm" href="03-system-design.html">Part C — System Design →</a>
+      <a class="btn btn-sm" href="03-system-design.html">Part C - System Design →</a>
     </div>
     <p class="doc-eyebrow">Chapter II · <span class="part-badge">Part B</span></p>
     <h1>System Analysis</h1>
@@ -38,18 +38,18 @@
       </table>
     </div>
     <figure class="doc-fig">
-      <figcaption>Figure 2.1 — Conceptual System Architecture</figcaption>
+      <figcaption>Figure 2.1 - Conceptual System Architecture</figcaption>
       <pre class="mermaid">
 flowchart TB
   subgraph Users["Users"]
     ADM[Administrator]
     EXM[Examinee]
   end
-  subgraph Client["Client Tier — React SPA"]
+  subgraph Client["Client Tier - React SPA"]
     UI[Exam UI · Dashboard · Monitoring]
     CAM[Webcam Capture]
   end
-  subgraph Server["Server Tier — Django ASGI"]
+  subgraph Server["Server Tier - Django ASGI"]
     API[REST API]
     WS[WebSocket Consumers]
     AI[AI Pipeline backend/ai]
@@ -70,7 +70,7 @@ flowchart TB
   API --> MEDIA
       </pre>
       <details class="graph-source"><summary>Extended architecture reference</summary>
-        <p style="padding:0.5rem 0;font-size:0.85rem;color:var(--muted)">See Part C — System Design and <code>assets/graphs/system-architecture.json</code> for deployment topology and component detail.</p>
+        <p style="padding:0.5rem 0;font-size:0.85rem;color:var(--muted)">See Part C - System Design and <code>assets/graphs/system-architecture.json</code> for deployment topology and component detail.</p>
       </details>
     </figure>
 
@@ -105,12 +105,12 @@ flowchart TB
       <li><strong>Portability:</strong> Runs on Windows/Linux; SQLite for development; PostgreSQL for production without code changes.</li>
       <li><strong>Privacy:</strong> Raw video frames are not stored by default (<code>KE_STORE_FRAMES=False</code>); only derived metrics and events persist.</li>
     </ol>
-    <div class="cross-links"><a class="btn btn-sm" href="../../index.html#/testing">Testing module (#/testing)</a><a class="btn btn-sm" href="../testing/testing(IEEE)/README.md" target="_blank">IEEE Test Pack ↗</a></div>
+    <div class="cross-links"><a class="btn btn-sm" href="04-system-testing.html">Part D - System Testing</a><a class="btn btn-sm" href="../../testing/testing(IEEE)/README.md" target="_blank" rel="noopener">IEEE Test Pack ↗</a></div>
 
     <h2 id="use-case">Use Case Diagram</h2>
     <p>Shows primary actors and their interactions with the Knowing Eye system boundary.</p>
     <figure class="doc-fig">
-      <figcaption>Figure 2.2 — Use Case Diagram</figcaption>
+      <figcaption>Figure 2.2 - Use Case Diagram</figcaption>
       <pre class="mermaid">
 flowchart LR
   ADM((Administrator))
@@ -148,7 +148,7 @@ flowchart LR
     <h2 id="dfd0">Context Flow Diagram (Level 0 DFD)</h2>
     <p>Illustrates business-level data flows between external entities and the system as a single process. Notation follows <strong>Gane and Sarson</strong> conventions.</p>
     <figure class="doc-fig">
-      <figcaption>Figure 2.3 — Context Diagram (Level 0 DFD)</figcaption>
+      <figcaption>Figure 2.3 - Context Diagram (Level 0 DFD)</figcaption>
       <pre class="mermaid">
 flowchart LR
   E1[Administrator]
@@ -167,7 +167,7 @@ flowchart LR
     <h2 id="dfd1">Level 1 DFD</h2>
     <p>Decomposes process P0 into subprocesses, data stores, and detailed flows between modules. Aligns with backend feature modules: authentication, exams, session, monitoring/AI, behavior, reports.</p>
     <figure class="doc-fig">
-      <figcaption>Figure 2.4 — Level 1 DFD (Gane &amp; Sarson)</figcaption>
+      <figcaption>Figure 2.4 - Level 1 DFD (Gane &amp; Sarson)</figcaption>
       <pre class="mermaid">
 flowchart TB
   E1[Administrator]
@@ -221,7 +221,7 @@ flowchart TB
 
     <div class="doc-nav" style="margin-top:2.5rem">
       <a class="btn btn-sm" href="01-system-planning.html">← Part A</a>
-      <a class="btn-primary btn-sm" href="03-system-design.html">Part C — System Design →</a>
+      <a class="btn-primary btn-sm" href="03-system-design.html">Part C - System Design →</a>
     </div>
   </main>
   <script>

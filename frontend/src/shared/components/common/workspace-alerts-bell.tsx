@@ -22,7 +22,7 @@ export function WorkspaceAlertsBell() {
       const rows = await apiClient.listAlerts({ resolved: false });
       setAlerts(rows.slice(0, 12));
     } catch {
-      /* silent — bell is non-blocking */
+      /* silent - bell is non-blocking */
     } finally {
       setLoading(false);
     }

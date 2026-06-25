@@ -1,5 +1,5 @@
 # =============================================================================
-# PROJECT OS + DOCUMENTATION GENERATOR — PROMPT TEMPLATE v2
+# PROJECT OS + DOCUMENTATION GENERATOR - PROMPT TEMPLATE v2
 # =============================================================================
 # File type : YAML (structured, reusable, machine-parseable AI prompt)
 # Version   : 2.0.0
@@ -23,7 +23,7 @@ kind: project-os-documentation-generator
 output_root: "{{DOCS_OUTPUT_DIR}}"
 
 # -----------------------------------------------------------------------------
-# TECHNOLOGY STACK (mandatory — do not substitute frameworks)
+# TECHNOLOGY STACK (mandatory - do not substitute frameworks)
 # -----------------------------------------------------------------------------
 technology_stack:
   frontend:
@@ -51,7 +51,7 @@ technology_stack:
     - Plugin-Based Module System
 
 # -----------------------------------------------------------------------------
-# VARIABLES — customize per project
+# VARIABLES - customize per project
 # -----------------------------------------------------------------------------
 variables:
   project:
@@ -165,13 +165,13 @@ variables:
     chapters:
       - id: chapter1
         enabled: true
-        title: "Chapter I — Introduction"
+        title: "Chapter I - Introduction"
         slug: chapter1
         pages:
           - { file: 01-introduction.html, title: Introduction }
       - id: chapter2
         enabled: true
-        title: "Chapter II — Methodology"
+        title: "Chapter II - Methodology"
         slug: chapter2
         outline_source: "docs/Outline-Alignment.docx"
         pages:
@@ -228,7 +228,7 @@ outline_alignment:
         each definition explains application within the system (with citation).
 
   chapter2_methodology:
-    title: "Chapter II — Methodology"
+    title: "Chapter II - Methodology"
     introduction: |
       Methodology is the systematic approach, techniques, and processes used to carry out
       the study and develop the system. Briefly justify the chosen software process model
@@ -368,9 +368,9 @@ outline_alignment:
             entry_format:
               pattern: |
                 Repeat for each item (VS Code, Django, React, PostgreSQL, MediaPipe, etc.):
-                  1. Heading — technology or concept name (h3)
-                  2. Visual — logo icon or screenshot (<img> in chapter2/assets/tech/)
-                  3. Body — paragraph(s) explaining role in the project, version, and rationale
+                  1. Heading - technology or concept name (h3)
+                  2. Visual - logo icon or screenshot (<img> in chapter2/assets/tech/)
+                  3. Body - paragraph(s) explaining role in the project, version, and rationale
               html_structure: |
                 <article class="tech-card">
                   <h3>VS Code</h3>
@@ -418,7 +418,7 @@ outline_alignment:
             classification_metrics_table:
               tag: tables-results-syst-test
               css_class: tables-results-syst-test
-              caption: "Table — System Testing Results (Classification Metrics)"
+              caption: "Table - System Testing Results (Classification Metrics)"
               required_metrics:
                 - Accuracy
                 - Recall
@@ -427,16 +427,16 @@ outline_alignment:
               columns: [Metric, Value, Target, Interpretation, Status]
               notes: |
                 Populate from real evaluation runs (confusion matrix, held-out frames, or
-                labeled test set). Do not fabricate values — cite dataset size and method.
+                labeled test set). Do not fabricate values - cite dataset size and method.
               charts:
                 - id: classification-metrics-bar
-                  title: "Fig-2.6 — Classification Metrics (Accuracy, Recall, Precision, F1-Score)"
+                  title: "Fig-2.6 - Classification Metrics (Accuracy, Recall, Precision, F1-Score)"
                   type: grouped_bar
                   metrics: [Accuracy, Recall, Precision, F1-Score]
                   renderer: "os/assets/charts/svg-charts.js or inline SVG in chapter2/assets/"
                   data_source: classification_metrics_table
                 - id: classification-metrics-comparison
-                  title: "Fig-2.7 — Per-Class or Per-Scenario F1 Comparison (optional)"
+                  title: "Fig-2.7 - Per-Class or Per-Scenario F1 Comparison (optional)"
                   type: bar
                   optional: true
             deliverables:
@@ -459,7 +459,7 @@ outline_alignment:
         part: "Part E"
         tense: future
         voice: |
-          Entire section written in future tense — e.g. "will be implemented", "shall be
+          Entire section written in future tense - e.g. "will be implemented", "shall be
           performed", "will ensure", "plans to deploy". Describes post-deployment sustainment.
         subsections:
           - id: systems_security_plan
@@ -501,7 +501,7 @@ outline_alignment:
       - { id: classification-metrics-comparison, diagram_id: "Fig-2.7", section: system_testing, optional: true }
 
 # -----------------------------------------------------------------------------
-# PROJECT OS — ARCHITECTURE SPEC (reusable across all future projects)
+# PROJECT OS - ARCHITECTURE SPEC (reusable across all future projects)
 # -----------------------------------------------------------------------------
 project_os_spec:
   concept: |
@@ -682,7 +682,7 @@ project_os_spec:
 folder_structure:
   repository_root:
     - path: ".github/workflows/deploy.yml"
-      role: CI/CD — auto-deploy on push to main
+      role: CI/CD - auto-deploy on push to main
     - path: "deploy.sh"
       role: Unix one-command local preview + deploy helper
     - path: "deploy.bat"
@@ -692,7 +692,7 @@ folder_structure:
 
   project_os_core:
     - path: "{{DOCS_OUTPUT_DIR}}/index.html"
-      role: Master shell — Project OS SPA entry
+      role: Master shell - Project OS SPA entry
     - path: "{{DOCS_OUTPUT_DIR}}/os/app.js"
       role: Bootstrap, plugin loader, hash router init
     - path: "{{DOCS_OUTPUT_DIR}}/os/config/project.json"
@@ -830,8 +830,8 @@ master_shell_template: |
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="{{PROJECT_FULL_TITLE}} — Project OS" />
-    <title>{{PROJECT_TITLE}} — Project OS</title>
+    <meta name="description" content="{{PROJECT_FULL_TITLE}} - Project OS" />
+    <title>{{PROJECT_TITLE}} - Project OS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="os/assets/styles.css" />
@@ -920,7 +920,7 @@ schemas:
       {
         "chapters": [{
           "id": "chapter2",
-          "title": "Chapter II — Methodology",
+          "title": "Chapter II - Methodology",
           "outline_source": "docs/Outline-Alignment.docx",
           "pages": [
             { "file": "chapter2/index.html", "title": "Index" },
@@ -938,7 +938,7 @@ schemas:
 # -----------------------------------------------------------------------------
 conventions:
   javascript:
-    modules: "ES6 import/export only — no bundler required for deployment"
+    modules: "ES6 import/export only - no bundler required for deployment"
     no_frameworks: "No React, Vue, Angular, jQuery"
     naming: "camelCase functions, PascalCase only for future classes, kebab-case files"
     error_handling: "Graceful degradation; console.warn + user-visible toast"
@@ -966,12 +966,12 @@ conventions:
       No hardcoded project names in core/ files.
 
 # -----------------------------------------------------------------------------
-# AGENT PROMPT — primary instruction block
+# AGENT PROMPT - primary instruction block
 # -----------------------------------------------------------------------------
 agent_prompt: |
   # Role
   You are a senior full-stack architect, technical writer, and UI engineer building a
-  **self-contained static Project OS** — a reusable project management + documentation
+  **self-contained static Project OS** - a reusable project management + documentation
   platform that deploys with zero backend infrastructure.
 
   # Project context
@@ -986,7 +986,7 @@ agent_prompt: |
   - Base path: {{BASE_PATH}}
   - Version: {{DOC_VERSION}}
 
-  # Technology stack (STRICT — do not deviate)
+  # Technology stack (STRICT - do not deviate)
   - Frontend: HTML5, CSS3, Vanilla JavaScript (ES6 Modules)
   - Storage: committed JSON seeds + localStorage + IndexedDB
   - Visualization: SVG charts, SVG Gantt (custom renderer, no paid dependencies)
@@ -998,9 +998,9 @@ agent_prompt: |
 
   # Mission
   Generate a complete `{{DOCS_OUTPUT_DIR}}/` folder that serves as both:
-  1. **Project OS** — dynamic master shell with dashboard, Gantt, WBS, team, tasks,
+  1. **Project OS** - dynamic master shell with dashboard, Gantt, WBS, team, tasks,
      milestones, risks, reports, settings
-  2. **Technical documentation** — capstone chapters, architecture, API/DB references, testing packs
+  2. **Technical documentation** - capstone chapters, architecture, API/DB references, testing packs
 
   Plus repository-root deployment automation for push-to-deploy workflow.
 
@@ -1013,7 +1013,7 @@ agent_prompt: |
   README.md
 
   {{DOCS_OUTPUT_DIR}}/
-  ├── index.html                    # MASTER SHELL — Project OS SPA (primary entry)
+  ├── index.html                    # MASTER SHELL - Project OS SPA (primary entry)
   ├── os/
   │   ├── app.js                    # bootstrap + plugin loader + hash router
   │   ├── config/project.json
@@ -1070,71 +1070,71 @@ agent_prompt: |
 
   # Execution phases (follow in order)
 
-  ## Phase 0 — Scaffold Project OS core (highest priority)
+  ## Phase 0 - Scaffold Project OS core (highest priority)
   1. Create master `index.html` shell (sidebar + topbar + module viewport + footer).
   2. Implement `os/core/store.js`:
      - openIndexedDB("{{PROJECT_SLUG}}-project-os")
-     - importSeedIfNeeded() — fetch `os/data/seed/*.json` on first visit
+     - importSeedIfNeeded() - fetch `os/data/seed/*.json` on first visit
      - CRUD helpers per entity type
      - localStorage for theme, route, sidebar state
-  3. Implement `os/core/router.js` — hash routes `#/dashboard`, `#/gantt`, etc.
-  4. Implement `os/core/plugin-registry.js` — dynamic `import()` of enabled modules.
-  5. Implement `os/app.js` — wire store, router, registry; render sidebar from config.
+  3. Implement `os/core/router.js` - hash routes `#/dashboard`, `#/gantt`, etc.
+  4. Implement `os/core/plugin-registry.js` - dynamic `import()` of enabled modules.
+  5. Implement `os/app.js` - wire store, router, registry; render sidebar from config.
   6. Build shared `os/assets/styles.css` + `os/assets/os.css` with CSS variables,
      light/dark themes, responsive sidebar, card/table/form components.
   7. Each module exports `{ id, label, icon, mount, unmount }` and renders into viewport.
 
-  ## Phase 1 — Project management modules
+  ## Phase 1 - Project management modules
   Implement all enabled modules with real UI (not placeholders):
 
-  **Dashboard** — health score, milestone countdown, task counts, team workload SVG bar chart,
+  **Dashboard** - health score, milestone countdown, task counts, team workload SVG bar chart,
   implementation status from Project.json, activity feed, quick links.
 
-  **Tasks** — kanban board (5 columns), CRUD forms, filters, IndexedDB persistence,
+  **Tasks** - kanban board (5 columns), CRUD forms, filters, IndexedDB persistence,
   link tasks to WBS codes.
 
-  **Gantt** — pure SVG renderer in `svg-gantt.js`:
+  **Gantt** - pure SVG renderer in `svg-gantt.js`:
   - timeline header (weeks/months), task rows, draggable bars, dependency arrows,
     milestone diamonds, today line, zoom controls, export SVG.
 
-  **WBS** — expandable tree, drag-reparent, roll-up progress %, export outline.
+  **WBS** - expandable tree, drag-reparent, roll-up progress %, export outline.
 
-  **Team** — member cards, roles, RACI matrix, workload from tasks, advisor panel.
+  **Team** - member cards, roles, RACI matrix, workload from tasks, advisor panel.
 
-  **Milestones** — defense dates + technical milestones, status badges, overdue alerts.
+  **Milestones** - defense dates + technical milestones, status badges, overdue alerts.
 
-  **Risks** — register table, auto risk score (probability × impact), SVG heat map.
+  **Risks** - register table, auto risk score (probability × impact), SVG heat map.
 
-  **Reports** — status report preview, export JSON/SVG, print stylesheet.
+  **Reports** - status report preview, export JSON/SVG, print stylesheet.
 
-  **Settings** — theme, seed version, reset/import/export data, deployment info.
+  **Settings** - theme, seed version, reset/import/export data, deployment info.
 
   Seed all `os/data/seed/*.json` from scanned repo + capstone timeline (realistic dates).
 
-  ## Phase 2 — Discover codebase
+  ## Phase 2 - Discover codebase
   1. Scan repository: README, manifests, routes, migrations, tests, team info.
-  2. Extract real API endpoints, DB tables, test counts — never fabricate.
+  2. Extract real API endpoints, DB tables, test counts - never fabricate.
   3. Read capstone PDF / title doc if present.
 
-  ## Phase 3 — Manifest & machine-readable references
-  1. `general/Project.json` — single source of truth; add `project_management` section
+  ## Phase 3 - Manifest & machine-readable references
+  1. `general/Project.json` - single source of truth; add `project_management` section
      linking to seed files and module config.
   2. `backend/API_structure.json`, `database/database_schema.json`, structure trees.
   3. `general/Implementation_Status_Summary.md`, `Study_Objectives_IPO.md`.
 
-  ## Phase 4 — Documentation pack
+  ## Phase 4 - Documentation pack
   1. Architecture HTML pages (01–07), graph JSON sources, graph-viewer.html.
-  2. **Chapter II — Methodology** per `outline_alignment.chapter2_methodology`:
-     - `chapter2/index.html` — institutional TOC (Parts A–E)
-     - `01-system-planning.html` — team org chart, WBS summary, Gantt snapshot;
+  2. **Chapter II - Methodology** per `outline_alignment.chapter2_methodology`:
+     - `chapter2/index.html` - institutional TOC (Parts A–E)
+     - `01-system-planning.html` - team org chart, WBS summary, Gantt snapshot;
        cross-link to Project OS `#/team`, `#/wbs`, `#/gantt` modules
-     - `02-system-analysis.html` — architecture, FR/NFR tables, use case, DFD L0/L1
-     - `03-system-design.html` — ERD, JSON schema (or omission note), data dictionary,
+     - `02-system-analysis.html` - architecture, FR/NFR tables, use case, DFD L0/L1
+     - `03-system-design.html` - ERD, JSON schema (or omission note), data dictionary,
        technologies/concepts/theories as `.tech-card` blocks (name → icon/screenshot → paragraph)
-     - `04-system-testing.html` — System Testing and Implementation: tagged results table
+     - `04-system-testing.html` - System Testing and Implementation: tagged results table
        (`.tables-results-syst-test`) with Accuracy, Recall, Precision, F1-Score; SVG bar
        charts for classification metrics; confidence level; summary of findings
-     - `05-system-maintenance.html` — future-tense generalized intro paragraph for security
+     - `05-system-maintenance.html` - future-tense generalized intro paragraph for security
        and maintenance, then systems security plan and systems maintenance plan tables
      - `chapter2/graphs/*.json` for use case and DFD diagrams (Fig-2.2–Fig-2.4)
   3. Chapter I HTML with shared theme (reference `os/assets/styles.css` paths).
@@ -1142,7 +1142,7 @@ agent_prompt: |
   5. `architecture` module embeds graph viewer navigation.
   6. `testing` module links IEEE pack + traceability from chapter2/04-system-testing.html.
 
-  ## Phase 5 — Deployment automation
+  ## Phase 5 - Deployment automation
   Generate these files at repository root:
 
   **`.github/workflows/deploy.yml`**
@@ -1151,7 +1151,7 @@ agent_prompt: |
   # Job 1: validate JSON in {{DOCS_OUTPUT_DIR}}/os/data/seed/
   # Job 2: deploy to GitHub Pages (actions/configure-pages + upload-pages-artifact)
   # permissions: pages: write, id-token: write
-  # No build step — static files only
+  # No build step - static files only
   ```
 
   **`deploy.sh`** (chmod +x)
@@ -1174,7 +1174,7 @@ agent_prompt: |
   - How to copy `os/` to another project
   - Plugin development guide
 
-  ## Phase 6 — Validation
+  ## Phase 6 - Validation
   - [ ] `index.html` loads; no module import errors in console
   - [ ] Every sidebar module mounts and unmounts cleanly
   - [ ] Gantt SVG renders with ≥3 tasks from seed
@@ -1231,7 +1231,7 @@ agent_prompt: |
   - Formal capstone tone in chapter HTML
   - Chapter II must follow `outline_alignment` (docs/Outline-Alignment.docx):
     System Planning → System Analysis → System Design → System Testing and Implementation → System Maintenance
-  - Technologies section: each tool as `.tech-card` — heading, icon/screenshot, explanatory paragraph
+  - Technologies section: each tool as `.tech-card` - heading, icon/screenshot, explanatory paragraph
   - System Testing: `.tables-results-syst-test` table with Accuracy, Recall, Precision, F1-Score + SVG charts
   - System Maintenance: future tense throughout; one generalized intro paragraph before each plan subsection
   - Tables for requirements, traceability, test results
@@ -1333,5 +1333,5 @@ cursor_invocation: |
   Read `docs/templates/generate-documentation.prompt.yaml` v2. Fill variables for [PROJECT NAME].
   Scan this repository and generate the complete Project OS + documentation per `agent_prompt`.
   Priority: master shell (index.html + os/) with working dashboard, Gantt SVG, WBS tree, team,
-  tasks, milestones, risks — then capstone docs — then .github/workflows/deploy.yml, deploy.sh,
+  tasks, milestones, risks - then capstone docs - then .github/workflows/deploy.yml, deploy.sh,
   deploy.bat, README.md. Static only. ES6 modules. No backend. Push-to-deploy ready.

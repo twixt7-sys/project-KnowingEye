@@ -1,4 +1,4 @@
-"""Facial identity consistency — ArcFace (primary), face_recognition, or appearance fallback."""
+"""Facial identity consistency - ArcFace (primary), face_recognition, or appearance fallback."""
 
 from __future__ import annotations
 
@@ -35,9 +35,9 @@ class IdentityVerifier:
     Enroll a reference face embedding per examinee session.
 
     Backends (selected via ``embedding_backend`` config, with automatic fallback):
-      * ``arcface`` — 512-D InsightFace / ArcFace embeddings (cosine distance)
-      * ``face_recognition`` — 128-D dlib embeddings (L2 distance)
-      * ``appearance`` — normalised 16×16 grayscale crop (cosine distance)
+      * ``arcface`` - 512-D InsightFace / ArcFace embeddings (cosine distance)
+      * ``face_recognition`` - 128-D dlib embeddings (L2 distance)
+      * ``appearance`` - normalised 16×16 grayscale crop (cosine distance)
     """
 
     def __init__(

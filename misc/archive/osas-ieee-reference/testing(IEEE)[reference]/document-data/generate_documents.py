@@ -64,7 +64,7 @@ def build_test_plan() -> None:
     data = load("01_test_plan.json")
     doc = Document()
     proj = data.get("project", {})
-    style_title(doc, "Test Plan — OSAS WBSMS (IEEE 829)")
+    style_title(doc, "Test Plan - OSAS WBSMS (IEEE 829)")
     doc.add_paragraph(f"Group: {proj.get('group', '')}")
     doc.add_paragraph(f"Standard: {data.get('standard', '')}")
     doc.add_paragraph(proj.get("description", ""))
@@ -84,7 +84,7 @@ def build_test_plan() -> None:
         ],
     )
     for rh in tid.get("revision_history", []):
-        doc.add_paragraph(f"Rev {rh.get('version')}: {rh.get('date')} — {rh.get('change', '')}")
+        doc.add_paragraph(f"Rev {rh.get('version')}: {rh.get('date')} - {rh.get('change', '')}")
 
     intro = s["introduction"]
     doc.add_heading(intro["title"], level=1)
@@ -106,7 +106,7 @@ def build_test_plan() -> None:
     doc.add_heading(ti["title"], level=1)
     for it in ti.get("items", []):
         doc.add_paragraph(
-            f"{it.get('name', '')} — {it.get('role', '')} ({it.get('version') or it.get('path', '')})"
+            f"{it.get('name', '')} - {it.get('role', '')} ({it.get('version') or it.get('path', '')})"
         )
 
     ft = s["features_to_be_tested"]
@@ -206,7 +206,7 @@ def build_test_plan() -> None:
 def build_system_report() -> None:
     d = load("03_system_test_report.json")
     doc = Document()
-    style_title(doc, "System Test Report — OSAS WBSMS")
+    style_title(doc, "System Test Report - OSAS WBSMS")
     doc.add_paragraph(f"Group: {d.get('group', '')} | Date: {d.get('report_date', '')}")
     doc.add_paragraph(d.get("executive_summary", ""))
 
@@ -264,7 +264,7 @@ def build_system_report() -> None:
 def build_uat_report() -> None:
     d = load("04_uat_plan_and_report.json")
     doc = Document()
-    style_title(doc, "UAT Plan & Report — OSAS WBSMS")
+    style_title(doc, "UAT Plan & Report - OSAS WBSMS")
     doc.add_paragraph(f"Group: {d.get('group', '')}")
 
     cov = d.get("cover", {})
@@ -422,7 +422,7 @@ def build_uat_report() -> None:
 def build_regression_report() -> None:
     d = load("06_regression_test_report.json")
     doc = Document()
-    style_title(doc, "Regression Test Report — OSAS WBSMS")
+    style_title(doc, "Regression Test Report - OSAS WBSMS")
     doc.add_paragraph(f"Group: {d.get('group', '')} | Date: {d.get('report_date', '')}")
 
     intro = d["introduction"]
@@ -473,7 +473,7 @@ def build_regression_report() -> None:
 def build_summary_report() -> None:
     d = load("07_test_summary_report.json")
     doc = Document()
-    style_title(doc, "Test Summary Report — OSAS WBSMS")
+    style_title(doc, "Test Summary Report - OSAS WBSMS")
     doc.add_paragraph(f"Group: {d.get('group', '')} | Date: {d.get('report_date', '')}")
     doc.add_paragraph(d.get("executive_summary", ""))
 

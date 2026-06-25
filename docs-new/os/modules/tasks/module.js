@@ -18,7 +18,7 @@ export async function mount(container, ctx) {
     container.innerHTML = `
       <section class="module-page">
         <header class="page-head">
-          <div><h1>Tasks</h1><p class="page-sub">Documentation and capstone deliverables — drag cards or double-click to edit.</p></div>
+          <div><h1>Tasks</h1><p class="page-sub">Documentation and capstone deliverables - drag cards or double-click to edit.</p></div>
           <button class="btn-primary btn-sm" id="add-task">+ Task</button>
         </header>
         <div class="kanban kanban-3">

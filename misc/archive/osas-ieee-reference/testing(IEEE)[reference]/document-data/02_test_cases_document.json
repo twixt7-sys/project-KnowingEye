@@ -1,22 +1,22 @@
 {
   "compiled_into": "docs/testing/document-data",
   "suggested_filename": "[[Your Group Name]_WBSMS]_Doc2_TestCases.xlsx",
-  "document": "Doc 2 — Test Cases + Test Execution Log (OSAS WBSMS)",
+  "document": "Doc 2 - Test Cases + Test Execution Log (OSAS WBSMS)",
   "project": "OSAS WBSMS",
   "group": "[Your Group Name]",
   "layout_note": "Sheet A: execution log. Sheet B: detailed cases with preconditions, steps, and expected results.",
   "id_prefix_legend": {
-    "WBS-AUTH": "Authentication — login, logout, password reset, session",
-    "WBS-PROF": "Student profiling — registration, multi-step form",
-    "WBS-VAL": "Profile validation — faculty/assistant approval",
-    "WBS-STU": "Student management — search, view, update",
-    "WBS-VIO": "Violations — record, update, search",
-    "WBS-CON": "Concerns — submit, staff update",
-    "WBS-DSH": "Dashboard — analytics, PDF report",
-    "WBS-NOT": "Notifications — list, mark read",
-    "WBS-ADM": "Account management — admin CRUD",
+    "WBS-AUTH": "Authentication - login, logout, password reset, session",
+    "WBS-PROF": "Student profiling - registration, multi-step form",
+    "WBS-VAL": "Profile validation - faculty/assistant approval",
+    "WBS-STU": "Student management - search, view, update",
+    "WBS-VIO": "Violations - record, update, search",
+    "WBS-CON": "Concerns - submit, staff update",
+    "WBS-DSH": "Dashboard - analytics, PDF report",
+    "WBS-NOT": "Notifications - list, mark read",
+    "WBS-ADM": "Account management - admin CRUD",
     "WBS-SEC": "Security / RBAC",
-    "WBS-GEN": "General — landing, lookups, responsive UI"
+    "WBS-GEN": "General - landing, lookups, responsive UI"
   },
   "sheet_a_execution_log": {
     "columns": [
@@ -248,7 +248,7 @@
       {
         "test_case_id": "WBS-AUTH-001",
         "module_feature": "Authentication",
-        "test_case_title": "Login success — faculty",
+        "test_case_title": "Login success - faculty",
         "preconditions": "Faculty test account exists; not logged in.",
         "test_steps": [
           "Open /osas/institutional-portal/login.",

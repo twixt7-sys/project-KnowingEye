@@ -65,10 +65,10 @@ export async function mount(container, ctx) {
     const win = window.open('', '_blank');
     const taskRows = tasks.map((t) => `<tr><td>${t.id}</td><td>${utils.escapeHtml(t.title)}</td><td>${t.status}</td><td>${utils.escapeHtml(t.assignee || '')}</td></tr>`).join('');
     const msRows = milestones.map((m) => `<tr><td>${utils.escapeHtml(m.title)}</td><td>${m.date}</td><td>${m.status}</td></tr>`).join('');
-    win.document.write(`<!DOCTYPE html><html><head><title>Status Report — ${utils.escapeHtml(s.project)}</title>
+    win.document.write(`<!DOCTYPE html><html><head><title>Status Report - ${utils.escapeHtml(s.project)}</title>
       <style>body{font-family:system-ui,sans-serif;margin:2rem;color:#111;max-width:900px}h1{margin-bottom:0}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #ccc;padding:6px 10px;text-align:left;font-size:13px}.stats{display:flex;gap:1.5rem;margin:1rem 0}.stat{border:1px solid #ddd;border-radius:8px;padding:.6rem 1rem}@media print{button{display:none}}</style>
       </head><body>
-      <h1>${utils.escapeHtml(s.project)} — Status Report</h1>
+      <h1>${utils.escapeHtml(s.project)} - Status Report</h1>
       <p style="color:#666">Generated ${new Date().toLocaleString()}</p>
       <div class="stats">
         <div class="stat"><strong>${s.tasks.done}/${s.tasks.total}</strong><br>Tasks done</div>

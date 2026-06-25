@@ -82,7 +82,7 @@ def utaut_analysis_report_docx() -> None:
     ch6 = load("chapter-data/07_6_utaut_framework.json")
     ch8 = load("chapter-data/07_8_data_analysis.json")
     doc = Document()
-    title(doc, "UTAUT Evaluation Report — OSAS WBSMS")
+    title(doc, "UTAUT Evaluation Report - OSAS WBSMS")
     doc.add_paragraph("Sections 7.6–7.8 (System Testing and Validation)")
     doc.add_paragraph()
 

@@ -5,7 +5,7 @@
     "slug": "knowing-eye",
     "full_title": "Knowing Eye: A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis",
     "type": "Capstone Project",
-    "seed_version": 4
+    "seed_version": 5
   },
   "deployment": {
     "base_path": "",

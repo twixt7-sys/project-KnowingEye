@@ -1,4 +1,4 @@
-# Knowing Eye — Frontend
+# Knowing Eye - Frontend
 
 React + TypeScript SPA for the Knowing Eye examination platform. Connects to the Django API for auth, exams, live monitoring, and reports.
 
@@ -20,7 +20,7 @@ From the repo root, use `start-dev.cmd` (starts API + UI), or run the frontend a
 ```powershell
 cd frontend
 npm install
-copy .env.example .env.local   # optional — defaults to http://127.0.0.1:8000/api
+copy .env.example .env.local   # optional - defaults to http://127.0.0.1:8000/api
 npm run dev
 ```
 
@@ -40,7 +40,7 @@ frontend/src/
 
 | Path | Role | Purpose |
 |------|------|---------|
-| `/login` | — | JWT login |
+| `/login` | - | JWT login |
 | `/examiner` | Admin | Exam management dashboard |
 | `/examinee` | Student | Available / completed exams |
 | `/examinee/exam/:id` | Student | Live exam + monitoring |
@@ -78,6 +78,6 @@ WebSocket monitoring URLs are built with `buildMonitoringWsUrl(sessionId)`.
 
 ## Further reading
 
-- Root [README.md](../README.md) — full stack overview
-- [REPOSITORY_GUIDE.md](../REPOSITORY_GUIDE.md) — repo map for new contributors
-- [docs/deployment.md](../docs/deployment.md) — production build & deploy
+- Root [README.md](../README.md) - full stack overview
+- [REPOSITORY_GUIDE.md](../REPOSITORY_GUIDE.md) - repo map for new contributors
+- [docs/deployment.md](../docs/deployment.md) - production build & deploy

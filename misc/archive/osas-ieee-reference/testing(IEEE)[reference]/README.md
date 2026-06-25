@@ -1,4 +1,4 @@
-# OSAS WBSMS — Testing Documentation Pack
+# OSAS WBSMS - Testing Documentation Pack
 
 Structured testing artifacts for the **Web-Based Student Management System** (LCC-OSAS-SYSTEM), mirroring `docs/testing(unmodified)/` but adapted to the current Laravel + Inertia + React codebase.
 

@@ -115,7 +115,7 @@ def exam_publish_readiness(exam: Exam) -> dict[str, Any]:
 
     if len(questions) < 5:
         warnings.append(
-            f"Only {len(questions)} question(s) — entrance exams often use more items."
+            f"Only {len(questions)} question(s) - entrance exams often use more items."
         )
 
     return {

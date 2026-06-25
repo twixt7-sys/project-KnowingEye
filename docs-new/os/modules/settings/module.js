@@ -39,6 +39,7 @@ export async function mount(container, ctx) {
         <div class="card">
           <div class="card-title">Data</div>
           <p class="muted" style="font-size:0.85rem">Seed version: <code>${utils.escapeHtml(seedVersion)}</code> · DB: <code>${utils.escapeHtml(store.dbName)}</code></p>
+          <p class="muted" style="font-size:0.82rem">Documentation edits are stored in <code>doc_pages</code> (browser only). Export backup before reset.</p>
           <div class="grid" style="gap:0.5rem">
             <button class="btn btn-sm" id="s-export">Export all data (JSON backup)</button>
             <label class="btn btn-sm" style="text-align:center;cursor:pointer">Import JSON backup<input type="file" id="s-import" accept="application/json" hidden></label>
@@ -61,7 +62,7 @@ export async function mount(container, ctx) {
 
       <div class="card">
         <div class="card-title">About Project OS</div>
-        <p class="muted">A self-contained, zero-backend static project operating system: documentation, dashboard, Gantt, WBS, team, tasks, milestones, and risks — all driven by committed JSON seeds with local IndexedDB edits.</p>
+        <p class="muted">A self-contained, zero-backend static project operating system: documentation, dashboard, Gantt, WBS, team, and milestones - all driven by committed JSON seeds with local IndexedDB edits.</p>
         <p class="muted" style="font-size:0.82rem">Version: ${utils.escapeHtml(config.version_label || '')}</p>
       </div>
     </section>`;

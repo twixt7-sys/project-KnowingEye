@@ -91,7 +91,7 @@ export function ExamResults() {
                 Submitted{" "}
                 {sessionRow.submitted_at
                   ? new Date(sessionRow.submitted_at).toLocaleString()
-                  : "—"}
+                  : "-"}
               </p>
             </header>
 
@@ -102,7 +102,7 @@ export function ExamResults() {
                 value={
                   sessionRow.percentage_score != null
                     ? `${sessionRow.percentage_score.toFixed(1)}%`
-                    : "—"
+                    : "-"
                 }
               />
               <StatCard
@@ -131,7 +131,7 @@ export function ExamResults() {
                     <li key={row.event_type} className="flex justify-between">
                       <span className="text-muted-foreground">{row.event_type}</span>
                       <span>
-                        {row.count} events · avg {row.avg_score?.toFixed(0) ?? "—"}
+                        {row.count} events · avg {row.avg_score?.toFixed(0) ?? "-"}
                       </span>
                     </li>
                   ))}
@@ -161,7 +161,7 @@ export function ExamResults() {
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   {logs.slice(0, 15).map((log) => (
                     <li key={log.id}>
-                      {log.event_type} · score {log.score ?? "—"}
+                      {log.event_type} · score {log.score ?? "-"}
                     </li>
                   ))}
                 </ul>

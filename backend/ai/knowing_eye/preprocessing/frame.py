@@ -1,4 +1,4 @@
-"""Frame preprocessing — decode, resize, denoise, and normalize for inference."""
+"""Frame preprocessing - decode, resize, denoise, and normalize for inference."""
 
 from __future__ import annotations
 

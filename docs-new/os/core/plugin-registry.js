@@ -22,11 +22,12 @@ export class PluginRegistry {
     return [...this.modules.values()];
   }
 
-  async load(id) {
+  async load(id, cacheKey = '') {
     if (this.loaded.has(id)) return this.loaded.get(id);
     const cfg = this.modules.get(id);
     if (!cfg) throw new Error(`Unknown module: ${id}`);
-    const path = new URL(cfg.path, new URL(this.baseUrl, location.href)).href;
+    const q = cacheKey ? `?v=${encodeURIComponent(cacheKey)}` : '';
+    const path = new URL(cfg.path.replace(/^\.\//, '') + q, new URL(this.baseUrl, location.href)).href;
     const mod = await import(path);
     this.loaded.set(id, mod);
     return mod;
@@ -34,7 +35,8 @@ export class PluginRegistry {
 
   async mount(id, container, context) {
     if (this.active) await this.unmount();
-    const mod = await this.load(id);
+    const ver = context?.config?.project?.seed_version || '';
+    const mod = await this.load(id, ver);
     container.innerHTML = '';
     await mod.mount(container, context);
     this.active = { id, exports: mod, container };

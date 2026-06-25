@@ -1,4 +1,4 @@
-// SvgGantt — pure SVG + vanilla JS Gantt renderer. No external dependencies.
+// SvgGantt - pure SVG + vanilla JS Gantt renderer. No external dependencies.
 // Features: month/week/quarter zoom, draggable + resizable bars, dependency
 // arrows (finish-to-start), milestone diamonds, today line, SVG export.
 

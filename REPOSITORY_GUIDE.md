@@ -1,6 +1,6 @@
 # Repository guide
 
-A map of **Knowing Eye** for contributors — whether you are new to the stack or reviewing architecture.
+A map of **Knowing Eye** for contributors - whether you are new to the stack or reviewing architecture.
 
 ## What this project is
 
@@ -57,10 +57,10 @@ project-KnowingEye/
 
 ## Frontend conventions
 
-- **Pages** in `frontend/src/pages/` — one file per route screen.
-- **Feature modules** in `frontend/src/features/` — thin wrappers over `apiClient`.
-- **Shared UI** in `frontend/src/shared/components/ui/` — shadcn/Radix primitives.
-- **Monitoring hook** — `useMonitoring` in `shared/hooks/` (re-exported from features).
+- **Pages** in `frontend/src/pages/` - one file per route screen.
+- **Feature modules** in `frontend/src/features/` - thin wrappers over `apiClient`.
+- **Shared UI** in `frontend/src/shared/components/ui/` - shadcn/Radix primitives.
+- **Monitoring hook** - `useMonitoring` in `shared/hooks/` (re-exported from features).
 
 ## Tests
 
@@ -88,9 +88,9 @@ Prior thesis artifacts, OSAS reference packs from another project, duplicate doc
 
 ## Common pitfalls
 
-1. **Stale JSON schemas** in `docs/database/` and `docs/backend/` may differ from live models — trust the code and [Implementation_Status_Summary.md](docs/general/Implementation_Status_Summary.md).
-2. **ML stack is optional** — without MediaPipe/YOLO the API uses a deterministic stub; monitoring still works end-to-end.
-3. **Registration always creates EXAMINEE** — admin users must be seeded or promoted in the database.
+1. **Stale JSON schemas** in `docs/database/` and `docs/backend/` may differ from live models - trust the code and [Implementation_Status_Summary.md](docs/general/Implementation_Status_Summary.md).
+2. **ML stack is optional** - without MediaPipe/YOLO the API uses a deterministic stub; monitoring still works end-to-end.
+3. **Registration always creates EXAMINEE** - admin users must be seeded or promoted in the database.
 
 ## Documentation index
 

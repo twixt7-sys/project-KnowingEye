@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ch.3 — Communication Protocols</title>
+  <title>Ch.3 - Communication Protocols</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="assets/theme.js"></script>
   <link rel="stylesheet" href="assets/styles.css" />
@@ -30,7 +30,7 @@
       <h2><span class="ref">2.1.3.1</span> REST APIs for CRUD Operations</h2>
       <p>All REST endpoints return JSON. Authenticated requests include <code>Authorization: Bearer &lt;access_token&gt;</code>. Pagination uses DRF standard page/size query parameters where applicable.</p>
 
-      <h3>Authentication Module — <code>/api/auth</code></h3>
+      <h3>Authentication Module - <code>/api/auth</code></h3>
       <table>
         <thead><tr><th>Method</th><th>Path</th><th>Auth</th><th>Description</th></tr></thead>
         <tbody>
@@ -44,7 +44,7 @@
         </tbody>
       </table>
 
-      <h3>Exams — <code>/api/exams</code></h3>
+      <h3>Exams - <code>/api/exams</code></h3>
       <table>
         <thead><tr><th>Method</th><th>Path</th><th>Role</th><th>Description</th></tr></thead>
         <tbody>
@@ -56,7 +56,7 @@
         </tbody>
       </table>
 
-      <h3>Sessions — <code>/api/sessions</code></h3>
+      <h3>Sessions - <code>/api/sessions</code></h3>
       <table>
         <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
         <tbody>
@@ -67,7 +67,7 @@
         </tbody>
       </table>
 
-      <h3>Monitoring (REST fallback) — <code>/api/monitoring</code></h3>
+      <h3>Monitoring (REST fallback) - <code>/api/monitoring</code></h3>
       <table>
         <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
         <tbody>
@@ -78,7 +78,7 @@
       </table>
 
       <figure class="diagram">
-        <figcaption>Figure 3.3 — Complete REST API Catalog (JSON)</figcaption>
+        <figcaption>Figure 3.3 - Complete REST API Catalog (JSON)</figcaption>
         <div class="diagram-placeholder"><span class="fig-id">Fig-3.3</span><a href="graphs/rest-api-catalog.json">rest-api-catalog.json</a></div>
       </figure>
     </section>
@@ -92,7 +92,7 @@
         <thead><tr><th>URL</th><th>Consumer</th><th>Access</th></tr></thead>
         <tbody>
           <tr><td><code>/ws/monitoring/{session_uuid}/</code></td><td>MonitoringConsumer</td><td>Session owner (examinee) or ADMIN</td></tr>
-          <tr><td><code>/ws/monitoring/alerts/</code></td><td>AdminAlertsConsumer</td><td>ADMIN only — global alert fan-in</td></tr>
+          <tr><td><code>/ws/monitoring/alerts/</code></td><td>AdminAlertsConsumer</td><td>ADMIN only - global alert fan-in</td></tr>
         </tbody>
       </table>
 
@@ -102,7 +102,7 @@
         <tbody>
           <tr><td><code>frame</code></td><td><code>{ "image": "&lt;base64 or data URL&gt;" }</code></td><td>Submit webcam frame for analysis</td></tr>
           <tr><td><code>enroll</code></td><td><code>{ "image": "&lt;base64&gt;" }</code></td><td>Enroll identity reference at session start</td></tr>
-          <tr><td><code>ping</code></td><td>—</td><td>Keep-alive</td></tr>
+          <tr><td><code>ping</code></td><td>-</td><td>Keep-alive</td></tr>
         </tbody>
       </table>
 
@@ -114,7 +114,7 @@
           <tr><td><code>analysis</code></td><td>payload (metrics, events), persisted counts</td><td>Frame analysis result</td></tr>
           <tr><td><code>alert</code></td><td>payload (type, severity, message, session_id)</td><td>Suspicious behavior alert</td></tr>
           <tr><td><code>enroll_result</code></td><td>ok, message</td><td>Enrollment outcome</td></tr>
-          <tr><td><code>pong</code></td><td>—</td><td>Keep-alive response</td></tr>
+          <tr><td><code>pong</code></td><td>-</td><td>Keep-alive response</td></tr>
           <tr><td><code>error</code></td><td>message</td><td>Protocol or validation error</td></tr>
         </tbody>
       </table>

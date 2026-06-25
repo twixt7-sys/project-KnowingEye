@@ -4,9 +4,9 @@
   "project": "OSAS WBSMS",
   "group": "[Your Group Name]",
   "cover": {
-    "project_name": "OSAS Web-Based Student Management System — Legacy College of Compostela",
+    "project_name": "OSAS Web-Based Student Management System - Legacy College of Compostela",
     "document_type": "User Acceptance Test (UAT) Plan & Report",
-    "document_status": "Draft — execute and fill Section 11",
+    "document_status": "Draft - execute and fill Section 11",
     "system_basis": "Laravel 12 + Inertia.js + React 18 + MySQL",
     "prepared_date": "2026-05-15",
     "target_submission_date": "[Due date]"

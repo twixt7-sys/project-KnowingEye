@@ -1,6 +1,6 @@
-# Knowing Eye — Implementation Status Summary
+# Knowing Eye - Implementation Status Summary
 
-*Last updated: 2026-05-25. This is the canonical status doc — prefer it over the
+*Last updated: 2026-05-25. This is the canonical status doc - prefer it over the
 root README when in conflict.*
 
 ## Stack
@@ -10,7 +10,7 @@ root README when in conflict.*
 | Frontend | React 18, Vite, TypeScript, Tailwind, shadcn, Recharts | `npm run dev` → `http://127.0.0.1:5173`                                                   |
 | Backend  | Django 6, DRF, SimpleJWT, **Channels (ASGI)**, Daphne  | `start-dev.cmd` or `backend/run-api.cmd` → `http://127.0.0.1:8000` (HTTP + WebSocket)     |
 | Database | SQLite (dev), PostgreSQL (prod)                        | Set `DB_ENGINE` env var                                                                   |
-| AI / CV  | `backend/ai/knowing_eye` (YOLO + MediaPipe + ArcFace)   | Integrated via `backend/ai/adapter.py` — auto-fallback to a stub when ML deps are absent |
+| AI / CV  | `backend/ai/knowing_eye` (YOLO + MediaPipe + ArcFace)   | Integrated via `backend/ai/adapter.py` - auto-fallback to a stub when ML deps are absent |
 
 ## Module completion
 

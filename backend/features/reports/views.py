@@ -1,4 +1,4 @@
-"""Reporting endpoints — dashboard summary, session reports, CSV export."""
+"""Reporting endpoints - dashboard summary, session reports, CSV export."""
 
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ def _serialize_session_rows(sessions):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def report_summary(request):
-    """GET /api/reports/summary/ — dashboard KPIs for admins/examinees."""
+    """GET /api/reports/summary/ - dashboard KPIs for admins/examinees."""
     sessions = _session_queryset(request.user)
     completed = sessions.filter(status=ExamSession.Status.COMPLETED)
     active = sessions.filter(status=ExamSession.Status.IN_PROGRESS)
@@ -101,7 +101,7 @@ def report_summary(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def session_report(request, session_id):
-    """GET /api/reports/sessions/<uuid>/ — exhaustive session report."""
+    """GET /api/reports/sessions/<uuid>/ - exhaustive session report."""
     try:
         session = _session_queryset(request.user).get(pk=session_id)
     except ExamSession.DoesNotExist:
@@ -143,7 +143,7 @@ def session_report(request, session_id):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_session_reports(request):
-    """GET /api/reports/sessions/ — paginated list with KPI per session."""
+    """GET /api/reports/sessions/ - paginated list with KPI per session."""
     qs = _session_queryset(request.user).order_by("-started_at")
 
     status_filter = request.query_params.get("status")
@@ -174,7 +174,7 @@ def list_session_reports(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def export_sessions_csv(request):
-    """GET /api/reports/export/csv/ — downloadable CSV of session reports."""
+    """GET /api/reports/export/csv/ - downloadable CSV of session reports."""
     qs = (
         _annotate_sessions(_session_queryset(request.user))
         .select_related("exam", "user")
@@ -227,7 +227,7 @@ def export_sessions_csv(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def export_sessions_pdf(request):
-    """GET /api/reports/export/pdf/ — downloadable PDF summary of session reports."""
+    """GET /api/reports/export/pdf/ - downloadable PDF summary of session reports."""
     from reportlab.lib.pagesizes import letter
     from reportlab.pdfgen import canvas
 
@@ -243,7 +243,7 @@ def export_sessions_pdf(request):
     y = height - 50
 
     pdf.setFont("Helvetica-Bold", 14)
-    pdf.drawString(50, y, "Knowing Eye — Session Report Export")
+    pdf.drawString(50, y, "Knowing Eye - Session Report Export")
     y -= 24
     pdf.setFont("Helvetica", 10)
     pdf.drawString(50, y, f"Generated: {timezone.now():%Y-%m-%d %H:%M UTC}")
@@ -292,7 +292,7 @@ def export_sessions_pdf(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def analytics_timeseries(request):
-    """GET /api/reports/timeseries/ — behaviors and alerts per day (last 30 days)."""
+    """GET /api/reports/timeseries/ - behaviors and alerts per day (last 30 days)."""
     from django.db.models.functions import TruncDate
 
     sessions = _session_queryset(request.user)

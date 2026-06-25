@@ -40,7 +40,7 @@ export interface UseMonitoringResult {
   enrollReference: () => Promise<{ ok: boolean; message?: string }>;
 }
 
-const DEFAULT_INTERVAL = 1000; // ms — 1 fps is plenty for behaviour scoring
+const DEFAULT_INTERVAL = 1000; // ms - 1 fps is plenty for behaviour scoring
 const DEFAULT_QUALITY = 0.6;
 const DEFAULT_CAPTURE_MAX_WIDTH = 480;
 const DEFAULT_VIDEO: MediaStreamConstraints["video"] = {
@@ -311,7 +311,7 @@ export function useMonitoring({
         await new Promise((r) => window.setTimeout(r, 100));
       }
       if (!image) {
-        return { ok: false, message: "Camera is not ready — check that your webcam is on." };
+        return { ok: false, message: "Camera is not ready - check that your webcam is on." };
       }
 
       // REST enroll avoids WS timeout races with the frame loop (first ML inference can take 30s+).
@@ -320,9 +320,9 @@ export function useMonitoring({
     } catch (e) {
       console.warn("enroll failed", e);
       if (e instanceof DOMException && e.name === "AbortError") {
-        return { ok: false, message: "Enrollment timed out — try Capture identity now again." };
+        return { ok: false, message: "Enrollment timed out - try Capture identity now again." };
       }
-      return { ok: false, message: "Enrollment request failed — try again." };
+      return { ok: false, message: "Enrollment request failed - try again." };
     } finally {
       enrollingRef.current = false;
     }

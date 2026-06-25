@@ -6,7 +6,7 @@ Items here are **not part of the active application**. They were moved out of th
 
 | Folder | Contents |
 |--------|----------|
-| `archive/osas-ieee-reference/` | Prior capstone (OSAS WBSMS) IEEE test pack — Laravel/Inertia, not Knowing Eye |
+| `archive/osas-ieee-reference/` | Prior capstone (OSAS WBSMS) IEEE test pack - Laravel/Inertia, not Knowing Eye |
 | `archive/osas-utaut-reference/` | Prior capstone UTAUT survey artifacts (OSAS-branded) |
 | `archive/reference-architectures/` | THERIA reference trees from another project |
 | `thesis-notes/` | Informal thesis notes and converted documents |
@@ -19,4 +19,4 @@ Use the root **`docs/`** folder for architecture, deployment, and Knowing Eye te
 
 - `docs/deployment.md`
 - `docs/general/Implementation_Status_Summary.md`
-- `docs/testing/testing(IEEE)/` — Knowing Eye IEEE pack (not the OSAS reference)
+- `docs/testing/testing(IEEE)/` - Knowing Eye IEEE pack (not the OSAS reference)

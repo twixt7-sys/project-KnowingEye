@@ -1,4 +1,4 @@
-TEST EXECUTION LOG — PRODUCTION SMOKE
+TEST EXECUTION LOG - PRODUCTION SMOKE
 Project: OSAS WBSMS (LCC-OSAS-SYSTEM)
 Site: https://lcc-osas.com
 Date: 2026-05-22
@@ -8,7 +8,7 @@ Build: Production (Laravel + Inertia + React)
 SUMMARY
 - Browser smoke (authenticated): 13 Passed, 1 Failed, 0 Blocked
 - Public endpoint probe: See production_public_endpoints_2026-05-22.json
-- Local Pest (php artisan test): 2 Passed, 23 Failed — local SQLite schema out of sync with User factory (not used as production evidence)
+- Local Pest (php artisan test): 2 Passed, 23 Failed - local SQLite schema out of sync with User factory (not used as production evidence)
 
 AUTHENTICATION (WBS-AUTH)
 TC-ID          Description                              Expected                    Actual                         Status  Evidence
@@ -26,7 +26,7 @@ WBS-DSH-002    Dashboard JSON API                       200 JSON envelope       
 
 STUDENT RECORDS (WBS-STU)
 WBS-STU-001    Admin student list                       Paginated table             Showing 1–10 of 1111           Pass    WBS-STU-002_admin_student_records.png
-               Student my-profile                       Verified profile sections   Mark Russel Gamboa — BSIT      Pass    WBS-STU-001_student_my_profile.png
+               Student my-profile                       Verified profile sections   Mark Russel Gamboa - BSIT      Pass    WBS-STU-001_student_my_profile.png
 
 PROFILE VALIDATION (WBS-VAL)
 WBS-VAL-001    Validation queue                         Pending/approved/rejected   141 pending, 1112 approved       Pass    WBS-VAL-001_profile_validation.png

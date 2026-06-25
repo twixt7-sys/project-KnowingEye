@@ -607,7 +607,7 @@ export function ExamTakingWithBackend() {
         </div>
       </div>
 
-      {/* Floating monitoring feed — repositionable, video + metrics side by side */}
+      {/* Floating monitoring feed - repositionable, video + metrics side by side */}
       <div
         className={`fixed z-40 max-w-[calc(100vw-2rem)] ${dockLayout.className} ${
           feedOpen ? "w-[min(520px,calc(100vw-2rem))]" : "w-72"

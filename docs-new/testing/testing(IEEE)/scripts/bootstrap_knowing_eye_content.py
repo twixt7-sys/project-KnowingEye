@@ -44,7 +44,7 @@ def build_test_cases() -> list[dict]:
                 {
                     "test_case_id": tc_id,
                     "module": module,
-                    "title": f"Verify {module.lower()} — {tc_id}",
+                    "title": f"Verify {module.lower()} - {tc_id}",
                     "priority": "High",
                     "preconditions": "Backend running; seeded or test users available.",
                     "steps": ["Execute API/UI flow per test plan.", "Record actual result."],
@@ -63,7 +63,7 @@ w(
             "name": "Knowing Eye",
             "subtitle": "Web-Based Examination Platform with Behavioral Monitoring",
             "group": GROUP,
-            "institution": "Legacy College of Compostela — Institute of Information Technology",
+            "institution": "Legacy College of Compostela - Institute of Information Technology",
             "repositoryLayout": "monorepo (Django backend + React frontend + backend/ai/knowing_eye)",
             "packages": [
                 {"name": "backend", "path": "backend/", "role": "Django 6 + DRF + JWT + CV pipeline"},

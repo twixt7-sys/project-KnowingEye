@@ -55,8 +55,8 @@
       {"item": "Backend", "details": "Laravel 12 (PHP 8.3); php artisan serve"},
       {"item": "Database", "details": "MySQL (per .env)"},
       {"item": "Browser", "details": "[List tested browsers/versions]"},
-      {"item": "Test URL / Server", "details": "http://127.0.0.1:8000 — login: /osas/institutional-portal/login"},
-      {"item": "Test Accounts", "details": "Seeded roles: student, student_assistant, faculty, admin — use synthetic data only"}
+      {"item": "Test URL / Server", "details": "http://127.0.0.1:8000 - login: /osas/institutional-portal/login"},
+      {"item": "Test Accounts", "details": "Seeded roles: student, student_assistant, faculty, admin - use synthetic data only"}
     ]
   },
   "section_5_roles": {

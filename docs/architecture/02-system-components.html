@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ch.2 — System Components</title>
+  <title>Ch.2 - System Components</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="assets/theme.js"></script>
   <link rel="stylesheet" href="assets/styles.css" />
@@ -23,7 +23,7 @@
 
     <header class="doc-header">
       <p class="eyebrow">Chapter 2 · §2.1.2 System Components</p>
-      <h1>System Components — Detailed Specification</h1>
+      <h1>System Components - Detailed Specification</h1>
       <p class="lead">Expanded definitions of the four primary components plus internal backend and frontend structure (§2.2–2.3).</p>
     </header>
 
@@ -36,10 +36,10 @@
       <p>Feature-Based Modular Architecture with a thin <code>pages/</code> routing layer, <code>features/</code> domain modules, <code>core/</code> providers and config, and <code>shared/</code> reusable UI.</p>
       <h3>Core Providers</h3>
       <ul>
-        <li><strong>AuthProvider</strong> — JWT storage, login/logout, token refresh</li>
-        <li><strong>ThemeProvider</strong> — Dark/light mode</li>
-        <li><strong>QueryProvider</strong> — TanStack React Query for server state</li>
-        <li><strong>WebSocket integration</strong> — via <code>use-monitoring</code> hook per session</li>
+        <li><strong>AuthProvider</strong> - JWT storage, login/logout, token refresh</li>
+        <li><strong>ThemeProvider</strong> - Dark/light mode</li>
+        <li><strong>QueryProvider</strong> - TanStack React Query for server state</li>
+        <li><strong>WebSocket integration</strong> - via <code>use-monitoring</code> hook per session</li>
       </ul>
       <h3>Key Pages</h3>
       <table>
@@ -55,7 +55,7 @@
         </tbody>
       </table>
       <figure class="diagram">
-        <figcaption>Figure 2.5 — Frontend Component Architecture</figcaption>
+        <figcaption>Figure 2.5 - Frontend Component Architecture</figcaption>
         <div class="diagram-placeholder"><span class="fig-id">Fig-2.5 · PLACEHOLDER</span><a href="graphs/frontend-component.json">frontend-component.json</a></div>
       </figure>
     </section>
@@ -74,13 +74,13 @@
           <tr><td>session</td><td>ExamSession, Response, SessionLog</td><td>/api/sessions/</td><td>Start, submit, terminate, scoring</td></tr>
           <tr><td>monitoring</td><td>SessionIdentityReference</td><td>/api/monitoring/, /ws/</td><td>Frame analysis, enrollment, WS stream</td></tr>
           <tr><td>behavior</td><td>BehaviorLog, Alert</td><td>/api/behavior/</td><td>Persist AI output, alert resolution</td></tr>
-          <tr><td>reports</td><td>— (aggregations)</td><td>/api/reports/</td><td>Summary, timeseries, CSV export</td></tr>
+          <tr><td>reports</td><td>- (aggregations)</td><td>/api/reports/</td><td>Summary, timeseries, CSV export</td></tr>
         </tbody>
       </table>
       <h3>Service–Repository Pattern</h3>
       <p>Each feature encapsulates: <strong>models</strong> (ORM entities) → <strong>services</strong> (business rules) → <strong>views/consumers</strong> (HTTP/WS entry) → <strong>serializers</strong> (DTO mapping). Example: <code>persist_analysis()</code> in behavior services writes logs/alerts from AI output.</p>
       <figure class="diagram">
-        <figcaption>Figure 2.2 — Backend Layered Architecture</figcaption>
+        <figcaption>Figure 2.2 - Backend Layered Architecture</figcaption>
         <div class="diagram-placeholder"><span class="fig-id">Fig-2.2 · PLACEHOLDER</span><a href="graphs/backend-layers.json">backend-layers.json</a></div>
       </figure>
     </section>

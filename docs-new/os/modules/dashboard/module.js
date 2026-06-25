@@ -43,13 +43,13 @@ export async function mount(container, ctx) {
           <div class="card-title">WBS Progress</div>
           ${gauge(wbsProgress, { label: 'overall' })}
         </div>
-        <div class="stat"><span class="stat-value">${countdown == null ? '—' : countdown}</span><span class="stat-label">Days to next milestone</span><span class="stat-sub">${upcoming ? utils.escapeHtml(upcoming.title) : '—'}</span></div>
+        <div class="stat"><span class="stat-value">${countdown == null ? '-' : countdown}</span><span class="stat-label">Days to next milestone</span><span class="stat-sub">${upcoming ? utils.escapeHtml(upcoming.title) : '-'}</span></div>
         <div class="stat"><span class="stat-value">${msDone}/${milestones.length}</span><span class="stat-label">Milestones cleared</span><span class="stat-sub">${wbs.length} WBS tasks</span></div>
       </div>
 
       <div class="card">
         <div class="card-title">Capstone finish line</div>
-        ${finishLine(milestones, { start: project.dates?.started || '2026-04-16', end: project.dates?.target || '2026-07-04' })}
+        ${finishLine(milestones, { start: project.dates?.started || '2026-04-16', end: project.dates?.target || '2026-07-04', uid: 'dash' })}
       </div>
 
       <div class="card">

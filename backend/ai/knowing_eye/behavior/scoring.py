@@ -1,4 +1,4 @@
-"""Behavior scoring — 0–100% compliance metrics, alerts below threshold."""
+"""Behavior scoring - 0–100% compliance metrics, alerts below threshold."""
 
 from __future__ import annotations
 
@@ -207,7 +207,7 @@ def _alert_message(etype: BehaviorEventType, pct: float) -> str:
         BehaviorEventType.LEAVING_SEAT: f"Upper body not visible ({pct:.0f}%)",
         BehaviorEventType.OBJECT_DETECTED: f"Prohibited object detected ({pct:.0f}%)",
         BehaviorEventType.IDENTITY_MISMATCH: (
-            f"Different person — face embedding mismatch ({pct:.0f}%)"
+            f"Different person - face embedding mismatch ({pct:.0f}%)"
         ),
         BehaviorEventType.SUSPICIOUS_PATTERN: f"Repeated behavior flags ({pct:.0f}%)",
     }

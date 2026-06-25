@@ -7,7 +7,7 @@ type PageShellProps = {
   children: ReactNode;
 };
 
-/** Workspace page frame — use `fill` on overview-style pages that stretch tables. */
+/** Workspace page frame - use `fill` on overview-style pages that stretch tables. */
 export function PageShell({ fill = false, className, children }: PageShellProps) {
   return (
     <div className={cn(fill ? "page-shell" : "page-flow", className)}>{children}</div>

@@ -80,7 +80,7 @@ def main() -> None:
     raw = json.loads(raw_path.read_text(encoding="utf-8"))
     respondents = raw.get("respondents", [])
     if not respondents:
-        print("No respondents in raw_responses.json — keeping illustrative stats.")
+        print("No respondents in raw_responses.json - keeping illustrative stats.")
         return
 
     n = len(respondents)

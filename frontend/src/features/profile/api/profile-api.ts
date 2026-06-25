@@ -1,5 +1,5 @@
 /**
- * Profile feature API — typed wrappers over the shared API client.
+ * Profile feature API - typed wrappers over the shared API client.
  */
 import { apiClient, type ProfileUser } from "../../../core/config/api";
 

@@ -1,4 +1,4 @@
-"""Shared DTO — exam lifecycle operation result."""
+"""Shared DTO - exam lifecycle operation result."""
 
 from __future__ import annotations
 

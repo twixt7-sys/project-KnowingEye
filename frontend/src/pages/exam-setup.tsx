@@ -201,7 +201,7 @@ export function ExamSetup() {
     } catch (e) {
       const msg = formatApiError(e);
       if (msg.toLowerCase().includes("expired")) {
-        setError("Setup session expired — refreshing automatically…");
+        setError("Setup session expired - refreshing automatically…");
         await refreshSetupSession();
       } else {
         setError(msg);
@@ -364,7 +364,7 @@ export function ExamSetup() {
                   Live proctoring preview
                 </CardTitle>
                 <CardDescription className="text-slate-400">
-                  Match your position to the user outline — green means you are aligned.
+                  Match your position to the user outline - green means you are aligned.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -395,7 +395,7 @@ export function ExamSetup() {
                     className="mt-4 w-full bg-emerald-600 hover:bg-emerald-500"
                     onClick={() => setStep("enroll")}
                   >
-                    Camera looks good — verify identity
+                    Camera looks good - verify identity
                   </Button>
                 )}
               </CardContent>
@@ -440,9 +440,9 @@ export function ExamSetup() {
                     <div className="flex items-center gap-2 text-sm text-slate-300">
                       <UserCheck className="w-4 h-4 text-emerald-400" />
                       {enrolling
-                        ? "Capturing reference face — first run may take up to a minute…"
+                        ? "Capturing reference face - first run may take up to a minute…"
                         : faceDetected
-                          ? "Face detected — enrolling automatically"
+                          ? "Face detected - enrolling automatically"
                           : "Align yourself in the guide, then capture"}
                     </div>
                     <Button
@@ -467,7 +467,7 @@ export function ExamSetup() {
                   <div className="pt-2 border-t border-slate-700/50 space-y-3">
                     <p className="text-sm text-emerald-300/90 flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />
-                      Identity verified — you are cleared to start.
+                      Identity verified - you are cleared to start.
                     </p>
                     <Button
                       size="lg"

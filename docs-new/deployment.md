@@ -1,4 +1,4 @@
-# Knowing Eye — Production Deployment Guide
+# Knowing Eye - Production Deployment Guide
 
 This document covers everything required to deploy the Knowing Eye platform in
 a production environment that supports real-time WebSocket monitoring,
@@ -17,11 +17,11 @@ PostgreSQL persistence, and the full ML behavior pipeline.
 | Cache      | Redis 7 (Channels layer + DRF cache)                 |
 | Web server | Nginx (TLS termination, static files, WS upgrade)    |
 | ASGI       | Daphne or Uvicorn behind Nginx                       |
-| GPU        | Optional — speeds up YOLO inference (CUDA 12+)      |
+| GPU        | Optional - speeds up YOLO inference (CUDA 12+)      |
 
 ---
 
-## 2. Backend — `backend/.env`
+## 2. Backend - `backend/.env`
 
 ```dotenv
 DJANGO_DEBUG=False
@@ -40,7 +40,7 @@ DB_CONN_MAX_AGE=60
 # Redis (Channels + cache)
 REDIS_URL=redis://redis.internal:6379/0
 
-# CORS — list every domain that hosts the SPA
+# CORS - list every domain that hosts the SPA
 CORS_ALLOWED_ORIGINS=https://exam.example.com
 CORS_ALLOW_ALL_ORIGINS=False
 
@@ -136,7 +136,7 @@ cd frontend
 npm ci
 echo "VITE_API_BASE_URL=https://api.exam.example.com/api" > .env.production
 npm run build
-# Result in frontend/dist — copy to /var/www/exam-eye/
+# Result in frontend/dist - copy to /var/www/exam-eye/
 ```
 
 ---
@@ -219,7 +219,7 @@ curl https://exam.example.com/api/monitoring/health/
 
 * `pg_dump knowing_eye` daily; encrypt + ship offsite.
 * Tarball `backend/media/avatars/` and `backend/logs/` together with the DB.
-* Container images are stateless — redeploying recreates the runtime.
+* Container images are stateless - redeploying recreates the runtime.
 
 ---
 
@@ -227,7 +227,7 @@ curl https://exam.example.com/api/monitoring/health/
 
 1. Place new YOLO weights under `backend/ai/training/runs/...`.
 2. Update `backend/ai/config/pipeline.yaml` → `detection.yolo_model`.
-3. Restart the API processes — the adapter reloads the pipeline on next call.
+3. Restart the API processes - the adapter reloads the pipeline on next call.
 
 ArcFace is configured in `backend/ai/config/pipeline.yaml` (`recognition.embedding_backend: arcface`).
 See `backend/ai/training/TRAINING.md` for thresholds and training workflow.

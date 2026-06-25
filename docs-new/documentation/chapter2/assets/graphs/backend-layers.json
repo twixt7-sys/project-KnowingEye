@@ -64,8 +64,8 @@
       "name": "AI Integration Layer",
       "path": "backend/ai/",
       "responsibilities": [
-        "adapter.py — pipeline bridge",
-        "frame_utils.py — base64 decode",
+        "adapter.py - pipeline bridge",
+        "frame_utils.py - base64 decode",
         "Stub pipeline for contract testing"
       ]
     },

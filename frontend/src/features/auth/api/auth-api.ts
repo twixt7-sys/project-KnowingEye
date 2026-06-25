@@ -1,5 +1,5 @@
 /**
- * Auth feature API — thin, typed wrappers over the shared API client.
+ * Auth feature API - thin, typed wrappers over the shared API client.
  */
 import { apiClient } from "../../../core/config/api";
 import type {

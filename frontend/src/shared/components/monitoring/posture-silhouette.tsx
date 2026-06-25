@@ -3,7 +3,7 @@ interface PostureSilhouetteProps {
   className?: string;
 }
 
-/** Front-facing figure guide — head, neck, shoulders, torso, upper arms. */
+/** Front-facing figure guide - head, neck, shoulders, torso, upper arms. */
 export function PostureSilhouette({ aligned = false, className = "" }: PostureSilhouetteProps) {
   const stroke = aligned ? "rgba(52,211,153,0.38)" : "rgba(255,255,255,0.22)";
   const fill = aligned ? "rgba(52,211,153,0.05)" : "rgba(255,255,255,0.025)";

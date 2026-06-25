@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Serve the Knowing Eye Project OS locally over HTTP.
-# Opening index.html via file:// will NOT work — ES modules and fetch require HTTP.
+# Opening index.html via file:// will NOT work - ES modules and fetch require HTTP.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 PORT="${PORT:-8080}"
 
 echo "──────────────────────────────────────────────"
-echo " Knowing Eye — Project OS local preview"
+echo " Knowing Eye - Project OS local preview"
 echo " Serving: $ROOT"
 echo " URL:     http://localhost:$PORT"
 echo "──────────────────────────────────────────────"

@@ -71,13 +71,13 @@ export function LiveSessionCard({
           <div className="rounded border p-2">
             <p className="text-muted-foreground">Compliance</p>
             <p className="font-semibold tabular-nums">
-              {compliance == null ? "—" : `${compliance.toFixed(0)}%`}
+              {compliance == null ? "-" : `${compliance.toFixed(0)}%`}
             </p>
           </div>
           <div className="rounded border p-2">
             <p className="text-muted-foreground">Face</p>
             <p className="font-semibold tabular-nums">
-              {metrics?.face_presence_pct == null ? "—" : `${metrics.face_presence_pct.toFixed(0)}%`}
+              {metrics?.face_presence_pct == null ? "-" : `${metrics.face_presence_pct.toFixed(0)}%`}
             </p>
           </div>
           <div className="rounded border p-2">

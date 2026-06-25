@@ -1,4 +1,4 @@
-"""Cross-feature API smoke tests — critical user journeys."""
+"""Cross-feature API smoke tests - critical user journeys."""
 
 from django.contrib.auth import get_user_model
 from rest_framework import status

@@ -1,4 +1,4 @@
-"""YOLO object detection (phones, person) — aligns with capstone YOLO requirement."""
+"""YOLO object detection (phones, person) - aligns with capstone YOLO requirement."""
 
 from __future__ import annotations
 

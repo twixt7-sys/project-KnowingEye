@@ -50,8 +50,8 @@ export async function mount(container, ctx) {
               <span class="wbs-code">${utils.escapeHtml(n.code)}</span>
               <span class="wbs-edit" data-edit="${n.id}" style="cursor:pointer">${utils.escapeHtml(n.title)}</span>
             </span>
-            <span class="wbs-dates muted" style="font-size:0.75rem">${n.start_date ? utils.escapeHtml(n.start_date.slice(0, 10)) : '—'} → ${n.end_date ? utils.escapeHtml(n.end_date.slice(0, 10)) : '—'}</span>
-            <span class="wbs-owner muted" style="font-size:0.82rem">${utils.escapeHtml((n.owner || '').split(' ')[0] || '—')}</span>
+            <span class="wbs-dates muted" style="font-size:0.75rem">${n.start_date ? utils.escapeHtml(n.start_date.slice(0, 10)) : '-'} → ${n.end_date ? utils.escapeHtml(n.end_date.slice(0, 10)) : '-'}</span>
+            <span class="wbs-owner muted" style="font-size:0.82rem">${utils.escapeHtml((n.owner || '').split(' ')[0] || '-')}</span>
             <span class="wbs-status"><span class="badge status-${n.status}">${(n.status || '').replace('_', ' ')}</span></span>
             <span><div class="progress" title="${utils.pct(prog)}"><span style="width:${utils.pct(prog)}"></span></div></span>
           </div>
@@ -107,7 +107,7 @@ export async function mount(container, ctx) {
     const nodes = await store.getAll('wbs_nodes');
     const n = nodeId ? await store.get('wbs_nodes', nodeId) : { id: utils.uid('WBS'), code: '', title: '', parent_id: null, level: 1, status: 'todo', progress: 0 };
     const isNew = !nodeId;
-    const parentOptions = ['<option value="">— none (top level) —</option>']
+    const parentOptions = ['<option value="">- none (top level) -</option>']
       .concat(nodes.filter((x) => x.id !== n.id).map((x) => `<option value="${x.id}" ${n.parent_id === x.id ? 'selected' : ''}>${utils.escapeHtml(x.code)} ${utils.escapeHtml(x.title)}</option>`))
       .join('');
     const dlg = document.createElement('div');

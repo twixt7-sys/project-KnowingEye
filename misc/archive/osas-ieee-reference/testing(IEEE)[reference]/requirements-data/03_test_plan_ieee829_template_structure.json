@@ -13,7 +13,7 @@
       "id": "introduction",
       "title": "Introduction",
       "guidance": "Purpose of plan; executive summary; references to SRS/README/Project.json/API OpenAPI.",
-      "encode_for_frinstore": "FrinStore: Vue SPA + FastAPI marketplace for local ice cream — validate catalog, cart/checkout, orders, admin, auth/RBAC per requirements."
+      "encode_for_frinstore": "FrinStore: Vue SPA + FastAPI marketplace for local ice cream - validate catalog, cart/checkout, orders, admin, auth/RBAC per requirements."
     },
     {
       "id": "test_items",
@@ -66,7 +66,7 @@
     {
       "id": "test_deliverables",
       "title": "Test Deliverables",
-      "guidance": "Plans, designs, cases, logs, incident reports, summary — align with course Doc1–Doc9 naming.",
+      "guidance": "Plans, designs, cases, logs, incident reports, summary - align with course Doc1–Doc9 naming.",
       "encode_for_frinstore": "Match PDF checklist file names for Group 6 / FrinStore."
     },
     {

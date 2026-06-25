@@ -24,7 +24,7 @@ class QuestionAttachmentSerializer(serializers.ModelSerializer):
 
 
 class QuestionTakeSerializer(serializers.ModelSerializer):
-    """Examinee-safe question payload — no answer key."""
+    """Examinee-safe question payload - no answer key."""
 
     attachments = QuestionAttachmentSerializer(many=True, read_only=True)
 
@@ -43,7 +43,7 @@ class QuestionTakeSerializer(serializers.ModelSerializer):
 
 
 class QuestionSerializer(serializers.ModelSerializer):
-    """Serializer for Question model (admin — includes answer key)."""
+    """Serializer for Question model (admin - includes answer key)."""
 
     attachments = QuestionAttachmentSerializer(many=True, read_only=True)
 
@@ -199,7 +199,7 @@ class ExamListSerializer(serializers.ModelSerializer):
 
 
 class ExamTakeSerializer(serializers.ModelSerializer):
-    """Examinee-safe exam detail — questions without answer keys."""
+    """Examinee-safe exam detail - questions without answer keys."""
 
     questions = QuestionTakeSerializer(many=True, read_only=True)
     is_open = serializers.SerializerMethodField()

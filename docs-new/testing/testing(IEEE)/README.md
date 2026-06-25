@@ -1,4 +1,4 @@
-# Knowing Eye — IEEE Testing Pack
+# Knowing Eye - IEEE Testing Pack
 
 Structured testing artifacts for the **Knowing Eye** examination platform (Django + React + `backend/ai/knowing_eye`), adapted from the OSAS reference pack archived in [`misc/archive/osas-ieee-reference/`](../../../misc/archive/osas-ieee-reference/).
 

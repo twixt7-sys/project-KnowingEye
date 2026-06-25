@@ -1,4 +1,4 @@
-"""Development settings — SQLite, debug toolbar-friendly defaults."""
+"""Development settings - SQLite, debug toolbar-friendly defaults."""
 
 from __future__ import annotations
 

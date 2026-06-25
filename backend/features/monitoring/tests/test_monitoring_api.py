@@ -16,7 +16,7 @@ def _jpeg_b64(fill=(120, 120, 120), pattern: str | None = None) -> str:
     img = np.zeros((48, 64, 3), dtype=np.uint8)
     img[:] = fill
     if pattern == "split":
-        # Strong spatial structure (dark left, bright right) — distinct from a
+        # Strong spatial structure (dark left, bright right) - distinct from a
         # flat frame, so the appearance signature differs markedly.
         img[:, :32] = 0
         img[:, 32:] = 255

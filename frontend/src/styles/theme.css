@@ -275,7 +275,7 @@ select.field-input {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
-/* Public landing — institution emblem above hero card */
+/* Public landing - institution emblem above hero card */
 .public-header {
   border-bottom: 1px solid color-mix(in srgb, var(--lcc-green-vibrant) 68%, #000);
   background: linear-gradient(

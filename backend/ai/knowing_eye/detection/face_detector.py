@@ -1,4 +1,4 @@
-"""Face detection — MediaPipe Tasks when available, OpenCV Haar fallback."""
+"""Face detection - MediaPipe Tasks when available, OpenCV Haar fallback."""
 
 from __future__ import annotations
 

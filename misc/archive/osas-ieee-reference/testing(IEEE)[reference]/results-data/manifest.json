@@ -1,5 +1,5 @@
 {
-  "title": "OSAS WBSMS testing — results-data hub",
+  "title": "OSAS WBSMS testing - results-data hub",
   "project": "OSAS WBSMS",
   "group": "[Your Group Name]",
   "purpose": "Record execution outcomes and evidence paths. Sync into document-data via scripts/sync_results_to_document_data.py.",

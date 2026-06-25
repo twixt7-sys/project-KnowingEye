@@ -130,7 +130,7 @@ export function SessionMonitor() {
                 return (
                   <div key={m.key} className="rounded-lg border p-3">
                     <p className="text-xs text-muted-foreground">{m.label}</p>
-                    <p className="text-lg font-semibold">{val === null ? "—" : `${val.toFixed(0)}%`}</p>
+                    <p className="text-lg font-semibold">{val === null ? "-" : `${val.toFixed(0)}%`}</p>
                   </div>
                 );
               })}

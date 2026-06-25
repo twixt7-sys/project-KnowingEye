@@ -1,7 +1,7 @@
 import { brand } from "../../../core/config/brand";
 
 /**
- * App / product mark — LCC-inspired palette: green dominant, white, subtle blue & yellow.
+ * App / product mark - LCC-inspired palette: green dominant, white, subtle blue & yellow.
  */
 export function Logo({ className = "w-10 h-10" }: { className?: string }) {
   if (brand.useImageAppLogo) {
@@ -56,7 +56,7 @@ export function Logo({ className = "w-10 h-10" }: { className?: string }) {
 }
 
 /**
- * Institution / school logo — LCC green & white with minimal blue/yellow accents.
+ * Institution / school logo - LCC green & white with minimal blue/yellow accents.
  */
 export function InstitutionLogo({ className = "w-10 h-10" }: { className?: string }) {
   return (

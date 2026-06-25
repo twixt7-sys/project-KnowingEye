@@ -5,7 +5,7 @@ type ScrollableDataTableProps = {
   className?: string;
   /** Fixed row cap (scroll inside). Ignored when `fill` is true. */
   maxRows?: number;
-  /** Grow to fill parent section — for overview dashboards. */
+  /** Grow to fill parent section - for overview dashboards. */
   fill?: boolean;
 };
 

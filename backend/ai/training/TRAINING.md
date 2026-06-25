@@ -1,4 +1,4 @@
-# Training Guide — Knowing Eye CV Pipeline
+# Training Guide - Knowing Eye CV Pipeline
 
 The production pipeline lives in `backend/ai/knowing_eye/` and is loaded by
 `backend/ai/adapter.py`. This guide covers fine-tuning YOLO weights and tuning
@@ -8,9 +8,9 @@ behavior thresholds for the integrated Django backend.
 
 | Component | Default | Fine-tunable? | Notes |
 |-----------|---------|---------------|-------|
-| Face / pose landmarks | MediaPipe (pretrained) | No — use as-is or swap model | Same or custom CNN |
-| Object detection (phone, person) | YOLOv8n COCO pretrained | **Yes — YOLO fine-tune** | See sections below |
-| Identity consistency | ArcFace embeddings | Optional — collect pairs | InsightFace `buffalo_l` |
+| Face / pose landmarks | MediaPipe (pretrained) | No - use as-is or swap model | Same or custom CNN |
+| Object detection (phone, person) | YOLOv8n COCO pretrained | **Yes - YOLO fine-tune** | See sections below |
+| Identity consistency | ArcFace embeddings | Optional - collect pairs | InsightFace `buffalo_l` |
 | Behavior scoring | Rule-based weights in YAML | Tune thresholds + weights | LSTM / classifier (future) |
 
 ## 1. Collect mock exam data (required for custom YOLO)
@@ -29,9 +29,9 @@ Use [Roboflow](https://roboflow.com), [CVAT](https://www.cvat.ai), or [labelImg]
 
 **Classes (recommended):**
 
-- `0` — face (examinee)
-- `1` — bad_posture (optional bounding region)
-- `2` — cell_phone
+- `0` - face (examinee)
+- `1` - bad_posture (optional bounding region)
+- `2` - cell_phone
 
 Export in **YOLO format** (one `.txt` per image, normalized boxes).
 
@@ -90,9 +90,9 @@ Restart the API process after updating the config.
 
 Edit `backend/ai/config/pipeline.yaml`:
 
-- `gaze_yaw_threshold_deg` / `gaze_pitch_threshold_deg` — looking away sensitivity
-- `posture_shoulder_tilt_max` — slouch / lean detection
-- `behavior.weights` — how much each event lowers `behavior_score`
+- `gaze_yaw_threshold_deg` / `gaze_pitch_threshold_deg` - looking away sensitivity
+- `posture_shoulder_tilt_max` - slouch / lean detection
+- `behavior.weights` - how much each event lowers `behavior_score`
 
 Validate with mock sessions via the monitoring WebSocket or REST frame endpoint.
 
@@ -130,8 +130,8 @@ Example: process a labeled video and compare predicted `events` to ground-truth 
 
 The trained pipeline is consumed automatically by:
 
-- `backend/ai/adapter.py` — lazy-loads `BehaviorPipeline` from `backend/ai/knowing_eye/`
-- `backend/features/monitoring/consumers.py` — WebSocket frame stream
-- `backend/features/monitoring/views.py` — REST frame/enroll endpoints
+- `backend/ai/adapter.py` - lazy-loads `BehaviorPipeline` from `backend/ai/knowing_eye/`
+- `backend/features/monitoring/consumers.py` - WebSocket frame stream
+- `backend/features/monitoring/views.py` - REST frame/enroll endpoints
 
 Check `/api/monitoring/health/` for the current `pipeline_mode` (`production`, `stub`, or `disabled`).

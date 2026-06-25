@@ -353,7 +353,7 @@ class _StubPipeline:
                     "type": "identity_mismatch",
                     "severity": "high",
                     "message": (
-                        f"Identity match below threshold ({identity_pct:.0f}%) — "
+                        f"Identity match below threshold ({identity_pct:.0f}%) - "
                         "face differs from enrolled reference."
                     ),
                     "metric_pct": identity_pct,
@@ -506,7 +506,7 @@ def enroll_reference(frame_bgr, session=None) -> dict[str, Any]:
             "ok": False,
             "enrolled": False,
             "pipeline_mode": mode,
-            "message": "No face detected — please face the camera and try again.",
+            "message": "No face detected - please face the camera and try again.",
         }
 
     if session is not None:

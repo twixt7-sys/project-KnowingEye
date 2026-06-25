@@ -1,6 +1,6 @@
 @echo off
 REM ---------------------------------------------------------------------------
-REM  Knowing Eye — development bootstrap (Windows)
+REM  Knowing Eye - development bootstrap (Windows)
 REM  Starts:
 REM   * Django ASGI server (Daphne) with WebSocket support on :8000
 REM   * Vite dev server on :5173 (HMR)

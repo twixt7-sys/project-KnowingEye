@@ -1,4 +1,4 @@
-"""Per-session frame queue — sequential processing with bounded backlog."""
+"""Per-session frame queue - sequential processing with bounded backlog."""
 
 from __future__ import annotations
 

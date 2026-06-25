@@ -192,7 +192,7 @@ def main() -> None:
         INST / "manifest.json",
         {
             "title": "UTAUT survey instrument",
-            "instrument_title": "USER ACCEPTANCE TESTING (UAT) SURVEY — UTAUT",
+            "instrument_title": "USER ACCEPTANCE TESTING (UAT) SURVEY - UTAUT",
             "likert": "5 = SA, 4 = A, 3 = N, 2 = D, 1 = SD",
             "files": ["01_survey_questionnaire.json", "02_osas_official_questionnaires.json"],
         },
@@ -277,7 +277,7 @@ def main() -> None:
                 "docs/overview/documents/OSAS_sys_Questionnaire(student).docx",
                 "docs/overview/documents/OSAS_sys_Questionnaire(admin).docx",
             ],
-            "appendix_reference": "Appendix H — Accomplished Survey Questionnaire (thesis)",
+            "appendix_reference": "Appendix H - Accomplished Survey Questionnaire (thesis)",
         },
     )
 
@@ -314,7 +314,7 @@ def main() -> None:
     w(
         CH / "manifest.json",
         {
-            "title": "Thesis Chapter 7 — UTAUT sections (7.6–7.8)",
+            "title": "Thesis Chapter 7 - UTAUT sections (7.6–7.8)",
             "target": "docs/overview/documents/OSAS_sys_document(WBSMS).docx",
             "related_pack": "docs/testing/ (functional test cases)",
             "files": [

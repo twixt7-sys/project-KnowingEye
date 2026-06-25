@@ -108,7 +108,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         detail_serializer = ExamSessionDetailSerializer(session)
         return APIResponse(
             {
-                'message': 'Exam started — timer is now running.',
+                'message': 'Exam started - timer is now running.',
                 'session': detail_serializer.data,
             },
             status=status.HTTP_200_OK,

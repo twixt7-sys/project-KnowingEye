@@ -44,7 +44,7 @@ export async function mount(container, ctx) {
         </header>
         <div class="card" style="margin-bottom:1rem">
           <div class="card-title">Finish line</div>
-          ${finishLine(milestones, { start: project.dates?.started || '2026-04-16', end: project.dates?.target || '2026-07-04' })}
+          ${finishLine(milestones, { start: project.dates?.started || '2026-04-16', end: project.dates?.target || '2026-07-04', uid: 'ms' })}
         </div>
         <div class="grid" style="gap:0.7rem">${rows || '<p class="muted">No milestones yet.</p>'}</div>
       </section>`;

@@ -32,7 +32,7 @@ w(
         "source": "LCC-OSAS-SYSTEM codebase + docs/overview/documents/OSAS_sys_document(WBSMS).docx",
         "project": {
             "name": "Web-Based Student Management System (WBSMS)",
-            "subtitle": "Office of Student Affairs and Services — Legacy College of Compostela",
+            "subtitle": "Office of Student Affairs and Services - Legacy College of Compostela",
             "group": GROUP,
             "repositoryLayout": "monorepo (Laravel application root)",
             "packages": [
@@ -181,7 +181,7 @@ w(
     {
         "project": PROJECT,
         "date": DATE,
-        "automated_suite": "tests/ (Pest / PHPUnit — Laravel Breeze auth tests present)",
+        "automated_suite": "tests/ (Pest / PHPUnit - Laravel Breeze auth tests present)",
         "command": "php artisan test",
         "note": "Expand Feature tests for profiling, violations, and RBAC; record output in results-data/automated_runs.json",
         "planned_coverage": [
@@ -199,17 +199,17 @@ w(
     {
         "reference": "See document-data/02_test_cases_document.json for authoritative case catalogue",
         "id_prefix_legend": {
-            "WBS-AUTH": "Authentication — login, logout, password reset, session",
-            "WBS-PROF": "Student profiling — registration, multi-step form",
-            "WBS-VAL": "Profile validation — faculty/assistant approval",
-            "WBS-STU": "Student management — search, view, update",
-            "WBS-VIO": "Violations — record, update, search",
-            "WBS-CON": "Concerns — submit, staff update",
-            "WBS-DSH": "Dashboard — analytics, PDF report",
-            "WBS-NOT": "Notifications — list, mark read",
-            "WBS-ADM": "Account management — admin CRUD",
+            "WBS-AUTH": "Authentication - login, logout, password reset, session",
+            "WBS-PROF": "Student profiling - registration, multi-step form",
+            "WBS-VAL": "Profile validation - faculty/assistant approval",
+            "WBS-STU": "Student management - search, view, update",
+            "WBS-VIO": "Violations - record, update, search",
+            "WBS-CON": "Concerns - submit, staff update",
+            "WBS-DSH": "Dashboard - analytics, PDF report",
+            "WBS-NOT": "Notifications - list, mark read",
+            "WBS-ADM": "Account management - admin CRUD",
             "WBS-SEC": "Security / RBAC",
-            "WBS-GEN": "General — landing, lookups, responsive UI",
+            "WBS-GEN": "General - landing, lookups, responsive UI",
         },
     },
 )
@@ -273,7 +273,7 @@ SHEET_B = [
     tc_row_b(
         "WBS-AUTH-001",
         "Authentication",
-        "Login success — faculty",
+        "Login success - faculty",
         "Faculty test account exists; not logged in.",
         ["Open /osas/institutional-portal/login.", "Enter valid credentials.", "Submit."],
         "Faculty email/password from test data sheet.",
@@ -375,7 +375,7 @@ w(
     {
         "compiled_into": "docs/testing/document-data",
         "suggested_filename": f"[{GROUP}_{PROJECT_SHORT}]_Doc2_TestCases.xlsx",
-        "document": "Doc 2 — Test Cases + Test Execution Log (OSAS WBSMS)",
+        "document": "Doc 2 - Test Cases + Test Execution Log (OSAS WBSMS)",
         "project": PROJECT,
         "group": GROUP,
         "layout_note": "Sheet A: execution log. Sheet B: detailed cases with preconditions, steps, and expected results.",
@@ -497,10 +497,10 @@ w(
             "approach": {
                 "title": "Approach / Strategy",
                 "levels": [
-                    "Unit — controllers, form requests, repositories (PHPUnit/Pest)",
-                    "Integration — Inertia routes, middleware, database persistence",
-                    "System — end-to-end workflows in browser",
-                    "UAT — business scenarios with OSAS stakeholders (UTAUT survey)",
+                    "Unit - controllers, form requests, repositories (PHPUnit/Pest)",
+                    "Integration - Inertia routes, middleware, database persistence",
+                    "System - end-to-end workflows in browser",
+                    "UAT - business scenarios with OSAS stakeholders (UTAUT survey)",
                 ],
             },
             "pass_fail_criteria": {
@@ -604,7 +604,7 @@ w(
             "title": "Non-functional testing",
             "rows": [
                 {
-                    "category": "Security — authentication and RBAC",
+                    "category": "Security - authentication and RBAC",
                     "objective": "Four roles enforced; students cannot access admin modules.",
                     "method": "WBS-SEC-001..002 manual; Pest auth tests",
                     "result": "[Pass/Fail]",
@@ -622,7 +622,7 @@ w(
                     "objective": "Dashboard and PDF generation acceptable on demo hardware.",
                     "method": "Stopwatch on WBS-DSH-001..002",
                     "result": "[Pass/Fail]",
-                    "notes": "Target: dashboard < 3s; PDF < 5s on dev — adjust per environment.",
+                    "notes": "Target: dashboard < 3s; PDF < 5s on dev - adjust per environment.",
                 },
             ],
         },
@@ -635,12 +635,12 @@ w(
         "overall_assessment": {
             "executed_manual_cases": "[count]",
             "passed_manual_cases": "[count]",
-            "readiness_statement": "[Ready / Not ready — justify]",
+            "readiness_statement": "[Ready / Not ready - justify]",
         },
     },
 )
 
-# UAT plan — section 11 placeholder rows from scenarios
+# UAT plan - section 11 placeholder rows from scenarios
 uat_scenarios = json.loads((REQ / "05_suggested_uat_scenarios_osas.json").read_text(encoding="utf-8"))["uat_cases"]
 section_11 = []
 for s in uat_scenarios:
@@ -665,9 +665,9 @@ w(
         "project": PROJECT,
         "group": GROUP,
         "cover": {
-            "project_name": "OSAS Web-Based Student Management System — Legacy College of Compostela",
+            "project_name": "OSAS Web-Based Student Management System - Legacy College of Compostela",
             "document_type": "User Acceptance Test (UAT) Plan & Report",
-            "document_status": "Draft — execute and fill Section 11",
+            "document_status": "Draft - execute and fill Section 11",
             "system_basis": "Laravel 12 + Inertia.js + React 18 + MySQL",
             "prepared_date": DATE,
             "target_submission_date": "[Due date]",
@@ -715,7 +715,7 @@ w(
                 {"item": "Application URL", "details": "http://127.0.0.1:8000 (php artisan serve)"},
                 {"item": "Login URL", "details": "/osas/institutional-portal/login"},
                 {"item": "Browser", "details": "[Chrome / Edge]"},
-                {"item": "Student test accounts", "details": "[Create per team — do not use production student data]"},
+                {"item": "Student test accounts", "details": "[Create per team - do not use production student data]"},
                 {"item": "Staff test accounts", "details": "[Faculty, student_assistant, admin seeds]"},
             ],
         },
@@ -991,7 +991,7 @@ w(
                     "pass_fail": "[Pass/Fail]",
                     "tester": "[Tester]",
                     "date": "[YYYY-MM-DD]",
-                    "notes": "Smoke — auth unchanged",
+                    "notes": "Smoke - auth unchanged",
                 },
             ],
         },
@@ -1063,7 +1063,7 @@ w(
         "group": GROUP,
         "compiled_date": DATE,
         "sync_script": "python docs/testing/scripts/sync_results_to_document_data.py",
-        "generated_office_documents": "Run: python docs/testing/document-data/generate_documents.py — outputs under docs/testing/documents/",
+        "generated_office_documents": "Run: python docs/testing/document-data/generate_documents.py - outputs under docs/testing/documents/",
         "results_capture": "docs/testing/results-data/",
         "source_notes": "Adapted from docs/testing(unmodified)/ for LCC-OSAS-SYSTEM WBSMS.",
         "documents": [
@@ -1086,7 +1086,7 @@ w(
 w(
     RD / "manifest.json",
     {
-        "title": "OSAS WBSMS testing — results-data hub",
+        "title": "OSAS WBSMS testing - results-data hub",
         "project": PROJECT,
         "group": GROUP,
         "purpose": "Record execution outcomes and evidence paths. Sync into document-data via scripts/sync_results_to_document_data.py.",
@@ -1229,7 +1229,7 @@ w(
         "base_url": "http://127.0.0.1:8000",
         "sessions": [
             {
-                "note": "Template session log — replace with real browser smoke steps and screenshots.",
+                "note": "Template session log - replace with real browser smoke steps and screenshots.",
                 "routes_checked": [
                     "/",
                     "/osas/institutional-portal/login",

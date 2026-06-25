@@ -8,7 +8,7 @@
     "url": "wss://lcc-osas.com/app/otlrm8iuehzbbvhl0eya",
     "status": 101,
     "result": "Passed",
-    "note": "Laravel Reverb / Pusher protocol — real-time notifications active"
+    "note": "Laravel Reverb / Pusher protocol - real-time notifications active"
   },
   "requests": [
     {"method": "GET", "path": "/osas/admin/dashboard", "status": 200, "result": "Passed"},

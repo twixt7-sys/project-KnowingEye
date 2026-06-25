@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ch. II — System Maintenance</title>
+  <title>Ch. II - System Maintenance</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="../architecture/assets/theme.js"></script>
   <link rel="stylesheet" href="../architecture/assets/styles.css" />
@@ -20,7 +20,7 @@
     </nav>
 
     <header class="doc-header">
-      <p class="part-banner">Part D — System Maintenance</p>
+      <p class="part-banner">Part D - System Maintenance</p>
       <h1>System Maintenance</h1>
       <p class="lead">
         Post-deployment security and maintenance plans for sustaining Knowing Eye in
@@ -137,7 +137,7 @@
           <tr><td><code>DJANGO_DEBUG</code></td><td>True</td><td><strong>False</strong></td></tr>
           <tr><td><code>DJANGO_SECRET_KEY</code></td><td>Local default</td><td>Strong random 50+ chars</td></tr>
           <tr><td><code>DB_ENGINE</code></td><td>sqlite3</td><td>postgresql</td></tr>
-          <tr><td><code>REDIS_URL</code></td><td>(empty — in-memory)</td><td>redis://… for Channels</td></tr>
+          <tr><td><code>REDIS_URL</code></td><td>(empty - in-memory)</td><td>redis://… for Channels</td></tr>
           <tr><td><code>KE_ENABLE_PIPELINE</code></td><td>True</td><td>True (with ML deps installed)</td></tr>
           <tr><td><code>KE_STORE_FRAMES</code></td><td>False</td><td>False (privacy default)</td></tr>
         </tbody>
@@ -147,7 +147,7 @@
       <table>
         <thead><tr><th>Issue Severity</th><th>Example</th><th>Response Target</th></tr></thead>
         <tbody>
-          <tr><td>Critical</td><td>Platform down, mass login failure</td><td>4 hours — restore service</td></tr>
+          <tr><td>Critical</td><td>Platform down, mass login failure</td><td>4 hours - restore service</td></tr>
           <tr><td>High</td><td>Monitoring pipeline offline, submit failures</td><td>1 business day</td></tr>
           <tr><td>Medium</td><td>Report export error, UI defect</td><td>3 business days</td></tr>
           <tr><td>Low</td><td>Cosmetic UI, documentation</td><td>Next release cycle</td></tr>

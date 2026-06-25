@@ -1,4 +1,4 @@
-/* Manuscript layout for Chapter pages — pairs with os/assets/styles.css tokens. */
+/* Manuscript layout for Chapter pages - pairs with os/assets/styles.css tokens. */
 .doc-wrap { max-width: 900px; margin: 0 auto; padding: 2.2rem 1.5rem 4rem; }
 .doc-eyebrow { color: var(--accent); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.8rem; }
 .doc-wrap h1 { font-size: 1.9rem; margin: 0.2rem 0 0.3rem; }

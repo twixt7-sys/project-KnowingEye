@@ -2,7 +2,7 @@
   "source": "LCC-OSAS-SYSTEM codebase + docs/overview/documents/OSAS_sys_document(WBSMS).docx",
   "project": {
     "name": "Web-Based Student Management System (WBSMS)",
-    "subtitle": "Office of Student Affairs and Services — Legacy College of Compostela",
+    "subtitle": "Office of Student Affairs and Services - Legacy College of Compostela",
     "group": "[Your Group Name]",
     "repositoryLayout": "monorepo (Laravel application root)",
     "packages": [

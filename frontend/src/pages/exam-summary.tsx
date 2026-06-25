@@ -104,13 +104,13 @@ export function ExamSummary() {
                     <td className="px-4 py-3">
                       {row.percentage_score != null
                         ? `${row.percentage_score.toFixed(1)}%`
-                        : "—"}
+                        : "-"}
                     </td>
                     <td className="px-4 py-3">{row.unresolved_alert_count}</td>
                     <td className="px-4 py-3">
                       {row.submitted_at
                         ? new Date(row.submitted_at).toLocaleString()
-                        : "—"}
+                        : "-"}
                     </td>
                     <td className="px-4 py-3">
                       <Link

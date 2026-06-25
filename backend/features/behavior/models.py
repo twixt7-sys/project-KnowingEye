@@ -39,7 +39,7 @@ class BehaviorLog(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.session_id} — {self.event_type}"
+        return f"{self.session_id} - {self.event_type}"
 
 
 class Alert(models.Model):
@@ -72,4 +72,4 @@ class Alert(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.session_id} — {self.alert_type} ({self.severity})"
+        return f"{self.session_id} - {self.alert_type} ({self.severity})"

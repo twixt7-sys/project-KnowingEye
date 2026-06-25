@@ -1,6 +1,6 @@
 {
   "title": "UTAUT survey instrument",
-  "instrument_title": "USER ACCEPTANCE TESTING (UAT) SURVEY — UTAUT",
+  "instrument_title": "USER ACCEPTANCE TESTING (UAT) SURVEY - UTAUT",
   "likert": "5 = SA, 4 = A, 3 = N, 2 = D, 1 = SD",
   "files": [
     "01_survey_questionnaire.json",

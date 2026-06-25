@@ -1,5 +1,5 @@
 /**
- * Exam feature API — typed wrappers over the shared API client.
+ * Exam feature API - typed wrappers over the shared API client.
  */
 import { apiClient, type Exam, type PublishReadiness, type Question } from "../../../core/config/api";
 

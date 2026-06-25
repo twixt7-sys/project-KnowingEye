@@ -19,14 +19,24 @@ echo.
 
 where python >nul 2>nul
 if %errorlevel%==0 (
+  echo Starting server...
+  start "Project OS Server" /min cmd /c "python -m http.server %PORT%"
+  ping 127.0.0.1 -n 3 >nul
   start "" http://localhost:%PORT%
-  python -m http.server %PORT%
+  echo.
+  echo Server is running. Close the minimized "Project OS Server" window to stop.
+  pause
   goto :eof
 )
 where npx >nul 2>nul
 if %errorlevel%==0 (
+  echo Starting server...
+  start "Project OS Server" /min cmd /c "npx --yes serve -l %PORT%"
+  ping 127.0.0.1 -n 3 >nul
   start "" http://localhost:%PORT%
-  npx --yes serve -l %PORT%
+  echo.
+  echo Server is running. Close the minimized "Project OS Server" window to stop.
+  pause
   goto :eof
 )
 echo ERROR: Install Python 3 or Node.js (npx serve) to preview locally.

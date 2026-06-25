@@ -1,23 +1,30 @@
 // Finish-line milestone progress visualization.
 
-import { parseDate } from '../core/schedule.js';
+import { parseDate } from '../../core/schedule.js';
 
 function escapeText(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
 }
 
-export function finishLine(milestones, { start = '2026-04-16', end = '2026-07-04', width = 720, height = 120 } = {}) {
-  const ms = [...milestones].sort((a, b) => (a.date < b.date ? -1 : 1));
+export function finishLine(milestones, { start = '2026-04-16', end = '2026-07-04', width = 720, height = 120, uid = 'fl' } = {}) {
+  const ms = [...milestones].filter((m) => m?.date).sort((a, b) => (a.date < b.date ? -1 : 1));
   if (!ms.length) return '<p class="muted">No milestones</p>';
 
-  const t0 = parseDate(start).getTime();
-  const t1 = parseDate(end).getTime();
+  const t0d = parseDate(start);
+  const t1d = parseDate(end);
+  if (!t0d || !t1d) return '<p class="muted">Invalid project date range</p>';
+  const t0 = t0d.getTime();
+  const t1 = t1d.getTime();
   const span = Math.max(t1 - t0, 1);
   const pad = { l: 24, r: 24, t: 28, b: 36 };
   const trackY = 58;
   const trackW = width - pad.l - pad.r;
 
-  const xAt = (date) => pad.l + ((parseDate(date).getTime() - t0) / span) * trackW;
+  const xAt = (date) => {
+    const d = parseDate(date);
+    if (!d) return pad.l;
+    return pad.l + ((d.getTime() - t0) / span) * trackW;
+  };
 
   let flags = '';
   let labels = '';
@@ -31,7 +38,7 @@ export function finishLine(milestones, { start = '2026-04-16', end = '2026-07-04
       <line x1="0" y1="18" x2="0" y2="32" stroke="${color}" stroke-width="2"/>
       <circle cx="0" cy="10" r="11" fill="var(--surface)" stroke="${color}" stroke-width="2"/>
       <text x="0" y="14" text-anchor="middle" font-size="11">${emoji}</text>
-      <title>${escapeText(m.title)} — ${m.date}</title>
+      <title>${escapeText(m.title)} - ${m.date}</title>
     </g>`;
     if (i % 2 === 0 || ms.length <= 6) {
       labels += `<text x="${x.toFixed(1)}" y="${trackY + 48}" text-anchor="middle" font-size="9" fill="var(--muted)">${escapeText(m.title.length > 14 ? m.title.slice(0, 12) + '…' : m.title)}</text>`;
@@ -49,17 +56,17 @@ export function finishLine(milestones, { start = '2026-04-16', end = '2026-07-04
     <text x="${pad.l}" y="16" font-size="11" fill="var(--muted)">Capstone race · ${completed}/${ms.length} checkpoints</text>
     <text x="${width - pad.r}" y="16" text-anchor="end" font-size="12" font-weight="600" fill="var(--accent)">${pct}%</text>
     <rect x="${pad.l}" y="${trackY}" width="${trackW}" height="8" rx="4" fill="var(--surface3)"/>
-    <rect x="${pad.l}" y="${trackY}" width="${(trackW * completed / ms.length).toFixed(1)}" height="8" rx="4" fill="url(#finishGrad)"/>
+    <rect x="${pad.l}" y="${trackY}" width="${(trackW * completed / ms.length).toFixed(1)}" height="8" rx="4" fill="url(#finishGrad-${uid})"/>
     <defs>
-      <linearGradient id="finishGrad" x1="0" y1="0" x2="1" y2="0">
+      <linearGradient id="finishGrad-${uid}" x1="0" y1="0" x2="1" y2="0">
         <stop offset="0%" stop-color="#5b8def"/>
         <stop offset="100%" stop-color="#34d399"/>
       </linearGradient>
     </defs>
     ${showToday ? `<line x1="${todayX.toFixed(1)}" y1="${trackY - 8}" x2="${todayX.toFixed(1)}" y2="${trackY + 20}" stroke="#f472b6" stroke-width="2" stroke-dasharray="4 3"/><text x="${todayX.toFixed(1)}" y="${trackY - 12}" text-anchor="middle" font-size="9" fill="#f472b6">today</text>` : ''}
     <g transform="translate(${width - pad.r - 14},${trackY - 4})">
-      <rect width="14" height="16" fill="url(#checkers)" stroke="var(--border)" stroke-width="1"/>
-      <defs><pattern id="checkers" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="14" height="16" fill="url(#checkers-${uid})" stroke="var(--border)" stroke-width="1"/>
+      <defs><pattern id="checkers-${uid}" width="4" height="4" patternUnits="userSpaceOnUse">
         <rect width="2" height="2" fill="#fff"/><rect x="2" y="2" width="2" height="2" fill="#fff"/>
         <rect x="2" width="2" height="2" fill="#111"/><rect y="2" width="2" height="2" fill="#111"/>
       </pattern></defs>

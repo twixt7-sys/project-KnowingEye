@@ -30,7 +30,7 @@ for code, name, nums in CONSTRUCTS:
                 "item_number": n,
                 "construct_code": code,
                 "construct_name": name,
-                "statement": f"[KE-{n:02d}] Item {n} — {name} for Knowing Eye proctored exams (Likert 1–5).",
+                "statement": f"[KE-{n:02d}] Item {n} - {name} for Knowing Eye proctored exams (Likert 1–5).",
             }
         )
 
@@ -43,7 +43,7 @@ w(
     BASE / "respondent-data" / "01_uat_respondent_profile.json",
     {
         "project": PROJECT,
-        "table_title": "Table 7.7 — Profile of Respondents (Knowing Eye UAT)",
+        "table_title": "Table 7.7 - Profile of Respondents (Knowing Eye UAT)",
         "roles": ["Exam Administrator", "Examinee", "Faculty Observer"],
         "target_sample_n": 50,
         "collected_n": 0,

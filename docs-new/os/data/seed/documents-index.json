@@ -9,7 +9,7 @@
     },
     {
       "id": "chapter1",
-      "title": "Chapter I — Introduction",
+      "title": "Chapter I - Introduction",
       "pages": [
         { "file": "documentation/chapter1/index.html", "title": "Chapter I Index", "kind": "index" },
         { "file": "documentation/chapter1/01-background.html", "title": "Background of the Study" },
@@ -22,7 +22,7 @@
     },
     {
       "id": "chapter2",
-      "title": "Chapter II — Methodology",
+      "title": "Chapter II - Methodology",
       "outline_source": "misc/DRAFT OUTLINE PAPER.docx.pdf",
       "pages": [
         { "file": "documentation/chapter2/index.html", "title": "Chapter II Index", "kind": "index" },

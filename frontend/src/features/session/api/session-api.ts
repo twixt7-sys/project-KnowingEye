@@ -1,5 +1,5 @@
 /**
- * Exam-session feature API — typed wrappers over the shared API client.
+ * Exam-session feature API - typed wrappers over the shared API client.
  */
 import { apiClient, type SubmitSessionData } from "../../../core/config/api";
 

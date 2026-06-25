@@ -1,4 +1,4 @@
-# Knowing Eye — Backend dependencies (Python 3.10+)
+# Knowing Eye - Backend dependencies (Python 3.10+)
 # Full install: pip install -r requirements.txt
 # Staged install (recommended on slow networks): see setup-venv.cmd
 -r requirements-core.txt

@@ -25,7 +25,7 @@ TESTER_PEST = "Pest (php artisan test)"
 
 # Sheet A execution log: test_case_id -> (pass_fail, date, developer, tester, extra_non_qa)
 EXEC: dict[str, tuple[str, str, str, str, str]] = {
-    # Example — uncomment and fill after runs:
+    # Example - uncomment and fill after runs:
     # "WBS-AUTH-001": ("Pass", DATE_DEFAULT, "[Dev]", TESTER_BROWSER, "Faculty login OK"),
 }
 

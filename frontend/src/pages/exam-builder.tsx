@@ -313,7 +313,7 @@ export function ExamBuilder() {
     setError(null);
     try {
       await apiClient.publishExam(exam.id);
-      setMessage("Exam published — examinees can take it during the scheduled window.");
+      setMessage("Exam published - examinees can take it during the scheduled window.");
       await load();
     } catch (e: any) {
       setError(e?.detail?.() ?? e?.message ?? "Publish failed");

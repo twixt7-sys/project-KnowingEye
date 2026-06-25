@@ -1,8 +1,8 @@
-# Knowing Eye — Project OS
+# Knowing Eye - Project OS
 
 A **self-contained static "Project OS"** that bundles the capstone documentation and a full project-management workspace into a single zero-backend site. Clone → push → the live site updates. No servers. No databases.
 
-> **Project:** Knowing Eye — A Full-Stack Session-Guided Web-Based Examination Platform with Integrated Behavior Monitoring
+> **Project:** Knowing Eye - A Full-Stack Session-Guided Web-Based Examination Platform with Integrated Behavior Monitoring
 > **Institution:** Legacy College of Compostela · Institute of Information Technology
 
 ## What is Project OS?
@@ -14,7 +14,7 @@ A single static master shell (SPA) acts as the project's operating system. Docum
 | Module | Description |
 |--------|-------------|
 | **Dashboard** | Health score, milestone countdown, task counts, team workload, implementation status |
-| **Tasks** | Kanban board (5 columns), drag-and-drop, CRUD, filters — persists to IndexedDB |
+| **Tasks** | Kanban board (5 columns), drag-and-drop, CRUD, filters - persists to IndexedDB |
 | **Gantt** | Pure-SVG timeline: draggable/resizable bars, dependencies, milestones, today line, zoom, export |
 | **WBS** | Expandable tree with roll-up progress, outline export |
 | **Team** | Member cards, RACI matrix, workload, adviser panel |
@@ -28,7 +28,7 @@ A single static master shell (SPA) acts as the project's operating system. Docum
 
 ## Quick start (local)
 
-ES modules and `fetch()` require HTTP — **do not** open `index.html` from the file system.
+ES modules and `fetch()` require HTTP - **do not** open `index.html` from the file system.
 
 ```bash
 # from this folder (docs-new/)
@@ -100,12 +100,12 @@ export function unmount(container) { container.innerHTML = ''; }
 
 ## Reusing `os/` in another project
 
-Replace only `os/config/project.json`, `os/data/seed/*.json`, `general/Project.json`, and the documentation HTML. Keep `os/core/`, `os/assets/charts/`, and the deployment workflow identical — no project names are hardcoded in core.
+Replace only `os/config/project.json`, `os/data/seed/*.json`, `general/Project.json`, and the documentation HTML. Keep `os/core/`, `os/assets/charts/`, and the deployment workflow identical - no project names are hardcoded in core.
 
 ## Documentation
 
-- **Chapter I — Introduction:** `chapter1/01-introduction.html`
-- **Chapter II — Methodology (Parts A–E):** `chapter2/index.html`
+- **Chapter I - Introduction:** `chapter1/01-introduction.html`
+- **Chapter II - Methodology (Parts A–E):** `chapter2/index.html`
 - **Architecture & graphs:** `architecture/graph-viewer.html`
 
 ## Credits

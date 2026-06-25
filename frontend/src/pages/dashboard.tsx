@@ -135,19 +135,19 @@ export function Dashboard() {
       <div className="page-metrics mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           label="Active sessions"
-          value={summary ? String(summary.active_sessions) : "—"}
+          value={summary ? String(summary.active_sessions) : "-"}
           hint={summary ? `${summary.total_sessions} total` : undefined}
           icon={Activity}
         />
         <StatCard
           label="Behavior events"
-          value={summary ? String(summary.behavior_events) : "—"}
+          value={summary ? String(summary.behavior_events) : "-"}
           hint="CV pipeline"
           icon={BarChart3}
         />
         <StatCard
           label="Unresolved alerts"
-          value={summary ? String(summary.unresolved_alerts) : "—"}
+          value={summary ? String(summary.unresolved_alerts) : "-"}
           hint="Needs review"
           icon={AlertTriangle}
           tone="warning"
@@ -157,7 +157,7 @@ export function Dashboard() {
           value={
             summary?.average_score != null
               ? `${summary.average_score.toFixed(1)}%`
-              : "—"
+              : "-"
           }
           hint={
             summary?.pass_rate != null
@@ -225,7 +225,7 @@ export function Dashboard() {
                       <span className="line-clamp-2">{exam.title}</span>
                     </td>
                     <td className="hidden font-mono text-sm text-primary sm:table-cell">
-                      {exam.exam_code ?? "—"}
+                      {exam.exam_code ?? "-"}
                     </td>
                     <td>
                       <StatusPill status={exam.status} />

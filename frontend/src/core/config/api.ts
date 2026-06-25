@@ -1,5 +1,5 @@
 /**
- * Knowing Eye — typed API client for the Django REST backend.
+ * Knowing Eye - typed API client for the Django REST backend.
  *
  * Features
  * --------

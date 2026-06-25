@@ -69,7 +69,7 @@
     "title": "Non-functional testing",
     "rows": [
       {
-        "category": "Security — authentication and RBAC",
+        "category": "Security - authentication and RBAC",
         "objective": "Four roles enforced; students cannot access admin modules.",
         "method": "WBS-SEC-001..002 manual; Pest auth tests",
         "result": "[Pass/Fail]",
@@ -87,7 +87,7 @@
         "objective": "Dashboard and PDF generation acceptable on demo hardware.",
         "method": "Stopwatch on WBS-DSH-001..002",
         "result": "[Pass/Fail]",
-        "notes": "Target: dashboard < 3s; PDF < 5s on dev — adjust per environment."
+        "notes": "Target: dashboard < 3s; PDF < 5s on dev - adjust per environment."
       }
     ]
   },
@@ -116,6 +116,6 @@
     "planned_manual_cases": 22,
     "executed_manual_cases": "[count]",
     "passed_manual_cases": "[count]",
-    "readiness_statement": "[Ready / Not ready — justify]"
+    "readiness_statement": "[Ready / Not ready - justify]"
   }
 }

@@ -1,4 +1,4 @@
-"""Temporal behavior rules — grace periods, leaving seat, suspicious patterns."""
+"""Temporal behavior rules - grace periods, leaving seat, suspicious patterns."""
 
 from __future__ import annotations
 
@@ -28,9 +28,9 @@ class BehaviorTemporalTracker:
     """
     Apply MVP temporal rules on top of per-frame scoring:
 
-    * **no_face** — only after face missing for ``no_face_grace_seconds``
-    * **leaving_seat** — face visible but upper-body keypoints missing for grace period
-    * **suspicious_pattern** — repeated flags within a sliding time window
+    * **no_face** - only after face missing for ``no_face_grace_seconds``
+    * **leaving_seat** - face visible but upper-body keypoints missing for grace period
+    * **suspicious_pattern** - repeated flags within a sliding time window
     """
 
     def __init__(self, config: dict[str, Any]) -> None:
@@ -229,7 +229,7 @@ def _alert_message(etype: BehaviorEventType, pct: float, metadata: dict[str, Any
         return f"No face detected for {secs}s (presence {pct:.0f}%)"
     if etype == BehaviorEventType.LEAVING_SEAT:
         secs = metadata.get("leaving_seat_seconds", "?")
-        return f"Upper body not visible for {secs}s — possible leaving seat ({pct:.0f}%)"
+        return f"Upper body not visible for {secs}s - possible leaving seat ({pct:.0f}%)"
     if etype == BehaviorEventType.SUSPICIOUS_PATTERN:
         count = metadata.get("flag_count", 0)
         window = metadata.get("window_seconds", 60)

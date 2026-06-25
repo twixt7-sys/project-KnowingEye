@@ -1,4 +1,4 @@
-"""Production settings — hardened cookies, HSTS, strict CORS."""
+"""Production settings - hardened cookies, HSTS, strict CORS."""
 
 from __future__ import annotations
 

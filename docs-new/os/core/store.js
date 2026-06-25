@@ -2,6 +2,7 @@
 // Project-agnostic. Configure entirely through the constructor options.
 
 import { fetchJson } from './utils.js';
+import { fetchDocMainHtml } from './doc-content.js';
 
 // Maps an IndexedDB object store -> seed file + the array property holding rows.
 const SEED_MAP = {
@@ -20,9 +21,12 @@ const STORES = [
   'milestones',
   'risks',
   'team',
+  'doc_pages',
   'activity_log',
   'meta',
 ];
+
+const DB_VERSION = 2;
 
 export class DataStore {
   constructor({ slug, seedVersion = 1, seedBase = 'os/data/seed/' } = {}) {
@@ -49,7 +53,7 @@ export class DataStore {
   // ---------- IndexedDB ----------
   open() {
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open(this.dbName, 1);
+      const req = indexedDB.open(this.dbName, DB_VERSION);
       req.onupgradeneeded = () => {
         const db = req.result;
         for (const name of STORES) {
@@ -181,7 +185,7 @@ export class DataStore {
     if (prior === this.seedVersion) return { imported: false };
     // First load (no prior version) → merge by id. Version bump → full reseed of
     // seed-owned stores (intentional dataset update; local edits in those stores
-    // are replaced — use Settings → Export beforehand to keep them).
+    // are replaced - use Settings → Export beforehand to keep them).
     const firstLoad = prior === undefined;
     for (const [store, { file, prop }] of Object.entries(SEED_MAP)) {
       let seed;
@@ -214,12 +218,50 @@ export class DataStore {
 
   async resetToSeed() {
     for (const store of Object.keys(SEED_MAP)) await this.clear(store);
+    await this.clear('doc_pages');
     await this.delete('meta', 'seed_version');
     await this.delete('meta', 'project_info');
     await this.delete('meta', 'team_info');
     this._seedCache.clear();
     await this.importSeedIfNeeded();
     return true;
+  }
+
+  // ---------- editable documentation ----------
+  async getDocPage(file) {
+    const row = await this.get('doc_pages', file);
+    if (row?.html) return row;
+    return this.bootstrapDocPage(file);
+  }
+
+  async bootstrapDocPage(file) {
+    const html = await fetchDocMainHtml(file);
+    const row = {
+      id: file,
+      file,
+      html,
+      source: 'static',
+      updated_at: new Date().toISOString(),
+    };
+    await this.put('doc_pages', row);
+    return row;
+  }
+
+  async saveDocPage(file, html) {
+    const row = {
+      id: file,
+      file,
+      html,
+      source: 'edited',
+      updated_at: new Date().toISOString(),
+    };
+    await this.put('doc_pages', row);
+    return row;
+  }
+
+  async resetDocPage(file) {
+    await this.delete('doc_pages', file);
+    return this.bootstrapDocPage(file);
   }
 
   // ---------- activity ----------

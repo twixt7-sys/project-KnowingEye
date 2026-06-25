@@ -41,7 +41,7 @@ export function parseDate(s) {
 
 export function fmtDate(s, opts = { month: 'short', day: 'numeric', year: 'numeric' }) {
   const d = parseDate(s);
-  return d ? d.toLocaleDateString('en-US', opts) : '—';
+  return d ? d.toLocaleDateString('en-US', opts) : '-';
 }
 
 export function daysBetween(a, b) {

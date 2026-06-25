@@ -123,7 +123,7 @@ def cronbach_alpha_from_frequencies(items: list[str]) -> float:
     for iid in items:
         vals = expand_counts(FREQUENCIES[iid])
         item_vars.append(pstdev(vals) ** 2)
-    # Total score variance when summing items (assuming uncorrelated items — lower bound)
+    # Total score variance when summing items (assuming uncorrelated items - lower bound)
     sum_var = sum(item_vars)
     # Upper-bound estimate: assume mean inter-item r from item means similarity
     wms = [item_stats(FREQUENCIES[i])["weighted_mean"] for i in items]

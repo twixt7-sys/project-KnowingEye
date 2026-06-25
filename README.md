@@ -28,7 +28,7 @@ project-KnowingEye/
 │       └── shared/          components, hooks (use-monitoring), utilities
 ├── docs/                    Architecture, deployment, IEEE / UTAUT testing (Knowing Eye)
 ├── misc/                    Archived artifacts & dead code (see misc/README.md)
-├── REPOSITORY_GUIDE.md      Contributor map — start here if new to the repo
+├── REPOSITORY_GUIDE.md      Contributor map - start here if new to the repo
 └── start-dev.cmd            One-click dev bootstrap (Windows)
 ```
 
@@ -41,7 +41,7 @@ Double-click `start-dev.cmd` at the repo root. This boots:
 
 ### Manual
 
-**First time only** — install Python dependencies (creates `backend/venv/`):
+**First time only** - install Python dependencies (creates `backend/venv/`):
 
 ```powershell
 cd backend
@@ -130,7 +130,7 @@ When dependencies load successfully the adapter runs in **`production`** mode
 
 ### Tune thresholds
 
-Edit `backend/ai/config/pipeline.yaml` — values control preprocessing, compliance
+Edit `backend/ai/config/pipeline.yaml` - values control preprocessing, compliance
 thresholds, alert severities, and metric weights. The adapter picks the file up
 automatically on next process start.
 
@@ -145,13 +145,13 @@ python manage.py test features
 
 Currently **32 tests** across:
 
-* `features.authentication` — JWT, registration, profile, password change, refresh
-* `features.exams` — CRUD, publish/archive
-* `features.session` — start, submit, lifecycle
-* `features.monitoring` — REST frame, enroll, **WebSocket consumer**, RBAC
-* `features.behavior` — logs + alerts persistence
-* `features.reports` — summary, detail, CSV export, timeseries
-* `ai.tests` — production CV pipeline unit tests
+* `features.authentication` - JWT, registration, profile, password change, refresh
+* `features.exams` - CRUD, publish/archive
+* `features.session` - start, submit, lifecycle
+* `features.monitoring` - REST frame, enroll, **WebSocket consumer**, RBAC
+* `features.behavior` - logs + alerts persistence
+* `features.reports` - summary, detail, CSV export, timeseries
+* `ai.tests` - production CV pipeline unit tests
 
 ## Production deployment
 
@@ -174,4 +174,4 @@ See [docs/deployment.md](docs/deployment.md) for the full guide. Highlights:
 
 ## Team
 
-Legacy College of Compostela — Institute of Information Technology (capstone).
+Legacy College of Compostela - Institute of Information Technology (capstone).

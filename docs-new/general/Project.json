@@ -374,12 +374,12 @@
       "documents_index": "os/data/seed/documents-index.json"
     },
     "data_model": {
-      "committed_seed": "JSON under os/data/seed/ — version-controlled source of truth",
-      "runtime_edits": "IndexedDB (knowing-eye-project-os) — local, not committed",
+      "committed_seed": "JSON under os/data/seed/ - version-controlled source of truth",
+      "runtime_edits": "IndexedDB (knowing-eye-project-os) - local, not committed",
       "ui_prefs": "localStorage (theme, last route, sidebar state)"
     },
     "documentation": {
-      "manuscript": "chapter1/ and chapter2/ (Chapter II — Methodology, Parts A–E)",
+      "manuscript": "chapter1/ and chapter2/ (Chapter II - Methodology, Parts A–E)",
       "architecture": "architecture/ (01–07 + graph-viewer.html)",
       "testing_packs": ["testing/testing(IEEE)/", "testing/testing(UTAUT)/"],
       "outline_alignment": "docs/Outline-Alignment.docx"

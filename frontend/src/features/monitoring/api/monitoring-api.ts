@@ -1,5 +1,5 @@
 /**
- * Monitoring feature API — typed wrappers over the shared API client.
+ * Monitoring feature API - typed wrappers over the shared API client.
  * Frames can be streamed via WebSocket (preferred) or this REST fallback.
  */
 import { apiClient } from "../../../core/config/api";
