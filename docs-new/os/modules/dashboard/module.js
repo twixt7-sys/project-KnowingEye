@@ -1,54 +1,33 @@
-import { barChart, gauge, donutChart, legend } from '../../assets/charts/svg-charts.js';
+import { gauge } from '../../assets/charts/svg-charts.js';
+import { finishLine } from '../../assets/charts/finish-line.js';
+import { orgChartHtml } from '../../assets/template-images.js';
+import { buildWbsMaps, rollupProgress } from '../../core/schedule.js';
 
 export const id = 'dashboard';
 export const label = 'Dashboard';
 export const icon = 'grid';
 
 export async function mount(container, ctx) {
-  const { store, utils, config, router } = ctx;
-  const [tasks, milestones, risks, wbs, members] = await Promise.all([
-    store.getAll('tasks'),
+  const { store, utils, config } = ctx;
+  const [milestones, wbs, members] = await Promise.all([
     store.getAll('milestones'),
-    store.getAll('risks'),
     store.getAll('wbs_nodes'),
     store.getAll('team'),
   ]);
+  const teamInfo = await store.getTeamInfo().catch(() => ({}));
   const project = await store.getProjectInfo().catch(() => ({}));
-  const team = { members };
+  const { byParent } = buildWbsMaps(wbs);
 
-  const done = tasks.filter((t) => t.status === 'done').length;
-  const inProgress = tasks.filter((t) => ['in_progress', 'review'].includes(t.status)).length;
-  const todo = tasks.length - done - inProgress;
+  const roots = (byParent.get('ROOT') || []);
+  const wbsProgress = roots.length
+    ? roots.reduce((s, n) => s + rollupProgress(n, byParent), 0) / roots.length
+    : 0;
 
-  // health score: weighted tasks-done, milestones-on-track, low open-risk
-  const taskScore = tasks.length ? done / tasks.length : 0;
-  const msDone = milestones.filter((m) => m.status === 'completed').length;
-  const msScore = milestones.length ? msDone / milestones.length : 0;
-  const openHigh = risks.filter((r) => r.status === 'open' && r.probability * r.impact >= 12).length;
-  const riskScore = Math.max(0, 1 - openHigh / Math.max(1, risks.length));
-  const health = taskScore * 0.45 + msScore * 0.35 + riskScore * 0.2;
-
-  // next milestone countdown
   const upcoming = milestones
     .filter((m) => m.status !== 'completed')
     .sort((a, b) => (a.date < b.date ? -1 : 1))[0];
   const countdown = upcoming ? utils.daysFromToday(upcoming.date) : null;
-
-  // workload per member
-  const workload = (team.members || []).map((m) => ({
-    label: m.name.split(' ')[0],
-    value: tasks.filter((t) => t.assignee === m.name && t.status !== 'done').length,
-  }));
-
-  const impl = project.implementation_status || {};
-  const implRows = Object.entries(impl)
-    .map(
-      ([k, v]) =>
-        `<div class="field" style="margin:0"><div class="row between"><span style="text-transform:capitalize">${k.replace('_', ' ')}</span><span class="muted">${utils.pct(v.completion)} · ${v.status}</span></div><div class="progress"><span style="width:${utils.pct(v.completion)}"></span></div></div>`
-    )
-    .join('');
-
-  const activity = await store.recentActivity(6);
+  const msDone = milestones.filter((m) => m.status === 'completed').length;
 
   container.innerHTML = `
     <section class="module-page">
@@ -59,56 +38,24 @@ export async function mount(container, ctx) {
         </div>
       </header>
 
-      <div class="grid grid-4">
+      <div class="grid grid-3">
         <div class="card" style="align-items:center;text-align:center">
-          <div class="card-title">Project Health</div>
-          ${gauge(health, { label: 'health' })}
+          <div class="card-title">WBS Progress</div>
+          ${gauge(wbsProgress, { label: 'overall' })}
         </div>
-        <div class="stat"><span class="stat-value">${countdown == null ? '—' : countdown}</span><span class="stat-label">Days to next milestone</span><span class="stat-sub">${upcoming ? utils.escapeHtml(upcoming.title) : ''}</span></div>
-        <div class="stat"><span class="stat-value">${done}/${tasks.length}</span><span class="stat-label">Tasks done</span><span class="stat-sub">${inProgress} in progress · ${todo} pending</span></div>
-        <div class="stat"><span class="stat-value">${risks.filter((r) => r.status !== 'closed').length}</span><span class="stat-label">Active risks</span><span class="stat-sub text-warn">${openHigh} high severity</span></div>
-      </div>
-
-      <div class="grid grid-2">
-        <div class="card">
-          <div class="card-title">Team Workload (open tasks)</div>
-          ${workload.length ? barChart(workload, { height: 200, color: 'var(--accent)' }) : '<p class="muted">No team data</p>'}
-        </div>
-        <div class="card">
-          <div class="card-title">Task Status</div>
-          <div class="row" style="gap:1.5rem;align-items:center">
-            ${donutChart([
-              { label: 'Done', value: done, color: '#34d399' },
-              { label: 'In progress', value: inProgress, color: '#5b8def' },
-              { label: 'Pending', value: todo, color: '#8b95a8' },
-            ])}
-            ${legend([
-              { label: 'Done', color: '#34d399' },
-              { label: 'In progress', color: '#5b8def' },
-              { label: 'Pending', color: '#8b95a8' },
-            ])}
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-2">
-        <div class="card">
-          <div class="card-title">Implementation Status</div>
-          <div class="grid" style="gap:0.75rem">${implRows || '<p class="muted">No status data</p>'}</div>
-        </div>
-        <div class="card">
-          <div class="card-title">Recent Activity</div>
-          ${activity.length ? `<ul style="margin:0;padding-left:1.1rem;font-size:0.88rem">${activity.map((a) => `<li><span class="muted">${utils.fmtDate(a.ts, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span> — ${utils.escapeHtml(a.action)} ${utils.escapeHtml(a.detail || '')}</li>`).join('')}</ul>` : '<p class="muted">No recorded activity yet. Edits in Tasks, WBS, Risks, and Gantt appear here.</p>'}
-        </div>
+        <div class="stat"><span class="stat-value">${countdown == null ? '—' : countdown}</span><span class="stat-label">Days to next milestone</span><span class="stat-sub">${upcoming ? utils.escapeHtml(upcoming.title) : '—'}</span></div>
+        <div class="stat"><span class="stat-value">${msDone}/${milestones.length}</span><span class="stat-label">Milestones cleared</span><span class="stat-sub">${wbs.length} WBS tasks</span></div>
       </div>
 
       <div class="card">
-        <div class="card-title">Quick Links</div>
-        <div class="row" id="dash-links">
-          ${(project.quick_links || []).map((l) => `<a class="btn btn-sm" href="${utils.escapeHtml(l.href)}" ${l.href.startsWith('#') ? '' : 'target="_blank" rel="noopener"'}>${utils.escapeHtml(l.label)}</a>`).join('')}
-          <a class="btn btn-sm" href="#/gantt">Open Gantt</a>
-          <a class="btn btn-sm" href="#/wbs">Open WBS</a>
-        </div>
+        <div class="card-title">Capstone finish line</div>
+        ${finishLine(milestones, { start: project.dates?.started || '2026-04-16', end: project.dates?.target || '2026-07-04' })}
+      </div>
+
+      <div class="card">
+        <div class="card-title">Project organization</div>
+        <p class="muted" style="font-size:0.82rem;margin:0 0 0.75rem">Photo templates: <code>os/assets/people/adviser.png</code>, <code>tm-1.png</code> … <code>tm-4.png</code></p>
+        ${orgChartHtml(teamInfo.advisor, members, utils.escapeHtml)}
       </div>
     </section>`;
 }

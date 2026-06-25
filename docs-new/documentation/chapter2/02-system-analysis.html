@@ -6,7 +6,7 @@
   <title>Part B — System Analysis · Knowing Eye</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../os/assets/styles.css" />
+  <link rel="stylesheet" href="../../os/assets/styles.css" />
   <link rel="stylesheet" href="assets/manuscript.css" />
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script defer src="assets/mermaid-init.js"></script>
@@ -70,7 +70,7 @@ flowchart TB
   API --> MEDIA
       </pre>
       <details class="graph-source"><summary>Extended architecture reference</summary>
-        <p style="padding:0.5rem 0;font-size:0.85rem;color:var(--muted)">See <a href="../architecture/01-high-level-architecture.html">Architecture §2.1</a> and <code>architecture/graphs/system-architecture.json</code> for deployment topology and component detail.</p>
+        <p style="padding:0.5rem 0;font-size:0.85rem;color:var(--muted)">See Part C — System Design and <code>assets/graphs/system-architecture.json</code> for deployment topology and component detail.</p>
       </details>
     </figure>
 
@@ -105,7 +105,7 @@ flowchart TB
       <li><strong>Portability:</strong> Runs on Windows/Linux; SQLite for development; PostgreSQL for production without code changes.</li>
       <li><strong>Privacy:</strong> Raw video frames are not stored by default (<code>KE_STORE_FRAMES=False</code>); only derived metrics and events persist.</li>
     </ol>
-    <div class="cross-links"><a class="btn btn-sm" href="../index.html#/testing">Testing module (#/testing)</a><a class="btn btn-sm" href="../testing/testing(IEEE)/README.md" target="_blank">IEEE Test Pack ↗</a></div>
+    <div class="cross-links"><a class="btn btn-sm" href="../../index.html#/testing">Testing module (#/testing)</a><a class="btn btn-sm" href="../testing/testing(IEEE)/README.md" target="_blank">IEEE Test Pack ↗</a></div>
 
     <h2 id="use-case">Use Case Diagram</h2>
     <p>Shows primary actors and their interactions with the Knowing Eye system boundary.</p>
@@ -217,7 +217,7 @@ flowchart TB
         </tbody>
       </table>
     </div>
-    <div class="cross-links"><a class="btn btn-sm" href="../architecture/graph-viewer.html" target="_blank">Open all diagrams in Graph Viewer ↗</a></div>
+    <div class="cross-links"><a class="btn btn-sm" href="assets/graphs/manifest.json" target="_blank">Machine-readable graph manifest (JSON) ↗</a></div>
 
     <div class="doc-nav" style="margin-top:2.5rem">
       <a class="btn btn-sm" href="01-system-planning.html">← Part A</a>

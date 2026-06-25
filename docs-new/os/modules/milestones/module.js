@@ -1,3 +1,5 @@
+import { finishLine } from '../../assets/charts/finish-line.js';
+
 export const id = 'milestones';
 export const label = 'Milestones';
 export const icon = 'flag';
@@ -6,6 +8,7 @@ const STATUSES = ['upcoming', 'at_risk', 'completed', 'missed'];
 
 export async function mount(container, ctx) {
   const { store, utils } = ctx;
+  const project = await store.getProjectInfo().catch(() => ({}));
 
   async function render() {
     const milestones = (await store.getAll('milestones')).sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -33,15 +36,16 @@ export async function mount(container, ctx) {
       })
       .join('');
 
-    const inst = milestones.filter((m) => m.category === 'institutional').length;
-    const tech = milestones.filter((m) => m.category === 'technical').length;
-
     container.innerHTML = `
       <section class="module-page">
         <header class="page-head">
-          <div><h1>Milestones</h1><p class="page-sub">${inst} institutional · ${tech} technical. Click a card to edit.</p></div>
+          <div><h1>Milestones</h1><p class="page-sub">Aligned with Gantt CSV (outline requirements, defense, submission). Click a card to edit.</p></div>
           <button class="btn-primary btn-sm" id="add-ms">+ New Milestone</button>
         </header>
+        <div class="card" style="margin-bottom:1rem">
+          <div class="card-title">Finish line</div>
+          ${finishLine(milestones, { start: project.dates?.started || '2026-04-16', end: project.dates?.target || '2026-07-04' })}
+        </div>
         <div class="grid" style="gap:0.7rem">${rows || '<p class="muted">No milestones yet.</p>'}</div>
       </section>`;
 
@@ -73,7 +77,7 @@ export async function mount(container, ctx) {
     dlg.querySelector('[data-cancel]').onclick = close;
     dlg.addEventListener('click', (e) => { if (e.target === dlg) close(); });
     const del = dlg.querySelector('[data-del]');
-    if (del) del.onclick = async () => { await store.delete('milestones', m.id); await store.log('Milestone deleted', m.title); close(); render(); };
+    if (del) del.onclick = async () => { await store.delete('milestones', m.id); close(); render(); };
     dlg.querySelector('[data-save]').onclick = async () => {
       const updated = {
         ...m,
@@ -84,7 +88,6 @@ export async function mount(container, ctx) {
         status: dlg.querySelector('#m-status').value,
       };
       await store.put('milestones', updated);
-      await store.log(isNew ? 'Milestone created' : 'Milestone updated', updated.title);
       close();
       render();
     };

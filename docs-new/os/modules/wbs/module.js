@@ -5,6 +5,16 @@ export const icon = 'tree';
 const STATUSES = ['todo', 'in_progress', 'done'];
 const collapsed = new Set();
 
+function initCollapse(nodes, byParent) {
+  if (collapsed.size) return;
+  for (const n of nodes) {
+    if ((byParent.get(n.id) || []).length) collapsed.add(n.id);
+  }
+  for (const n of nodes) {
+    if (!n.parent_id) collapsed.delete(n.id);
+  }
+}
+
 export async function mount(container, ctx) {
   const { store, utils } = ctx;
 
@@ -17,6 +27,7 @@ export async function mount(container, ctx) {
       byParent.get(p).push(n);
     }
     for (const list of byParent.values()) list.sort((a, b) => a.code.localeCompare(b.code, undefined, { numeric: true }));
+    initCollapse(nodes, byParent);
 
     function rollup(node) {
       const children = byParent.get(node.id) || [];
@@ -39,6 +50,7 @@ export async function mount(container, ctx) {
               <span class="wbs-code">${utils.escapeHtml(n.code)}</span>
               <span class="wbs-edit" data-edit="${n.id}" style="cursor:pointer">${utils.escapeHtml(n.title)}</span>
             </span>
+            <span class="wbs-dates muted" style="font-size:0.75rem">${n.start_date ? utils.escapeHtml(n.start_date.slice(0, 10)) : '—'} → ${n.end_date ? utils.escapeHtml(n.end_date.slice(0, 10)) : '—'}</span>
             <span class="wbs-owner muted" style="font-size:0.82rem">${utils.escapeHtml((n.owner || '').split(' ')[0] || '—')}</span>
             <span class="wbs-status"><span class="badge status-${n.status}">${(n.status || '').replace('_', ' ')}</span></span>
             <span><div class="progress" title="${utils.pct(prog)}"><span style="width:${utils.pct(prog)}"></span></div></span>
@@ -55,7 +67,7 @@ export async function mount(container, ctx) {
     container.innerHTML = `
       <section class="module-page">
         <header class="page-head">
-          <div><h1>Work Breakdown Structure</h1><p class="page-sub">Progress rolls up from child nodes. Overall: <strong>${utils.pct(overall)}</strong>. Click a title to edit.</p></div>
+          <div><h1>Work Breakdown Structure</h1><p class="page-sub">305 tasks from Gantt CSV · progress &amp; dates editable · Gantt derives from dates here. Overall: <strong>${utils.pct(overall)}</strong>.</p></div>
           <div class="row">
             <button class="btn btn-sm" id="w-expand">Expand all</button>
             <button class="btn btn-sm" id="w-collapse">Collapse all</button>
@@ -64,7 +76,7 @@ export async function mount(container, ctx) {
           </div>
         </header>
         <div class="card" style="padding:0.5rem">
-          <div class="wbs-row" style="font-weight:600;color:var(--muted)"><span>Code / Activity</span><span class="wbs-owner">Owner</span><span class="wbs-status">Status</span><span>Progress</span></div>
+          <div class="wbs-row" style="font-weight:600;color:var(--muted)"><span>Code / Activity</span><span class="wbs-dates">Dates</span><span class="wbs-owner">Owner</span><span class="wbs-status">Status</span><span>Progress</span></div>
           <div class="wbs-tree">${html || '<p class="muted" style="padding:1rem">No WBS nodes yet.</p>'}</div>
         </div>
       </section>`;
@@ -114,6 +126,10 @@ export async function mount(container, ctx) {
         <div class="field"><label>Progress %</label><input id="n-prog" type="number" min="0" max="100" value="${Math.round((n.progress || 0) * 100)}"></div>
         <div class="field"><label>Level</label><input id="n-level" type="number" min="1" max="6" value="${n.level || 1}"></div>
       </div>
+      <div class="grid grid-2">
+        <div class="field"><label>Start date</label><input id="n-start" type="date" value="${(n.start_date || '').slice(0, 10)}"></div>
+        <div class="field"><label>End date</label><input id="n-end" type="date" value="${(n.end_date || '').slice(0, 10)}"></div>
+      </div>
       <div class="row between">
         ${isNew ? '<span></span>' : '<button class="btn-danger btn-sm" data-del>Delete</button>'}
         <div class="row"><button class="btn btn-sm" data-cancel>Cancel</button><button class="btn-primary btn-sm" data-save>Save</button></div>
@@ -145,6 +161,8 @@ export async function mount(container, ctx) {
         status: dlg.querySelector('#n-status').value,
         progress: utils.clamp((+dlg.querySelector('#n-prog').value || 0) / 100, 0, 1),
         level: utils.clamp(+dlg.querySelector('#n-level').value || 1, 1, 6),
+        start_date: dlg.querySelector('#n-start').value || null,
+        end_date: dlg.querySelector('#n-end').value || null,
       };
       await store.put('wbs_nodes', updated);
       await store.log(isNew ? 'WBS node created' : 'WBS node updated', updated.code);

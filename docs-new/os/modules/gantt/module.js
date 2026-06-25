@@ -1,116 +1,136 @@
-import { SvgGantt } from '../../assets/charts/svg-gantt.js';
+import {
+  PHASES,
+  buildWbsMaps,
+  buildWeekColumns,
+  cellActive,
+  parseDate,
+  rollupProgress,
+} from '../../core/schedule.js';
 
 export const id = 'gantt';
 export const label = 'Gantt Chart';
 export const icon = 'timeline';
 
-let chart = null;
+const rowCollapsed = new Set();
+const phaseCollapsed = new Set();
+
+function initRowCollapse(nodes, byParent) {
+  if (rowCollapsed.size) return;
+  for (const n of nodes) {
+    if ((byParent.get(n.id) || []).length) rowCollapsed.add(n.id);
+  }
+  // show top-level phases expanded
+  for (const n of nodes) {
+    if (!n.parent_id && (byParent.get(n.id) || []).length) rowCollapsed.delete(n.id);
+  }
+}
 
 export async function mount(container, ctx) {
   const { store, utils } = ctx;
 
-  async function draw() {
-    const tasks = await store.getAll('gantt_tasks');
-    const seed = await store.getSeed('gantt.json').catch(() => ({ config: {} }));
-    const config = seed.config || {};
-    const host = container.querySelector('#gantt-host');
-    chart = new SvgGantt({
-      tasks: tasks.length ? tasks : seed.tasks || [],
-      config,
-      onTaskChange: async (task) => {
-        await store.put('gantt_tasks', task);
-        await store.log('Gantt task rescheduled', `${task.id} ${task.start}→${task.end}`);
-      },
-    });
-    chart.render(host);
-    host.addEventListener('dblclick', (e) => {
-      const bar = e.target.closest('[data-id]');
-      if (bar) openForm(bar.dataset.id);
-    });
-  }
+  async function render() {
+    const nodes = await store.getAll('wbs_nodes');
+    const { byParent } = buildWbsMaps(nodes);
+    initRowCollapse(nodes, byParent);
 
-  container.innerHTML = `
-    <section class="module-page">
-      <header class="page-head">
-        <div><h1>Gantt Chart</h1><p class="page-sub">Drag bars to reschedule, drag edges to resize, double-click a bar to edit. Diamonds are milestones.</p></div>
-        <div class="gantt-toolbar">
-          <span class="muted" style="font-size:0.8rem">Zoom</span>
-          <button class="btn btn-sm" data-zoom="week">Week</button>
-          <button class="btn btn-sm" data-zoom="month">Month</button>
-          <button class="btn btn-sm" data-zoom="quarter">Quarter</button>
-          <button class="btn btn-sm" id="g-add">+ Task</button>
-          <button class="btn-primary btn-sm" id="g-export">Export SVG</button>
+    const expandedPhases = new Set(PHASES.map((p) => p.id).filter((id) => !phaseCollapsed.has(id)));
+    const cols = buildWeekColumns(PHASES, expandedPhases);
+
+    let rows = '';
+    function walk(parentKey, depth) {
+      for (const n of byParent.get(parentKey) || []) {
+        const kids = byParent.get(n.id) || [];
+        const hasKids = kids.length > 0;
+        const isOpen = !rowCollapsed.has(n.id);
+        const prog = hasKids ? rollupProgress(n, byParent) : n.progress || 0;
+        const cells = cols
+          .map((col) => {
+            const active = cellActive(n, col.start, col.end);
+            const cls = active ? `gantt-cell on status-${n.status || 'todo'}` : 'gantt-cell';
+            const title = active ? `${n.code} ${n.title} (${Math.round(prog * 100)}%)` : '';
+            const style = col.type === 'phase' && active ? ` style="background:color-mix(in srgb, ${col.phase.color} 45%, var(--surface2))"` : '';
+            return `<td class="${cls}"${style} title="${utils.escapeHtml(title)}" data-id="${n.id}"></td>`;
+          })
+          .join('');
+        rows += `<tr class="gantt-row" data-depth="${depth}">
+          <th class="gantt-row-label" style="padding-left:${8 + depth * 14}px" title="${utils.escapeHtml(n.title)}">
+            ${hasKids ? `<button type="button" class="gantt-caret ${isOpen ? 'open' : ''}" data-toggle="${n.id}" aria-label="Toggle"></button>` : '<span class="gantt-caret-spacer"></span>'}
+            <span class="mono">${utils.escapeHtml(n.code)}</span>
+            <span class="gantt-task-title">${utils.escapeHtml(n.title.length > 36 ? n.title.slice(0, 34) + '…' : n.title)}</span>
+          </th>
+          ${cells}
+        </tr>`;
+        if (hasKids && isOpen) walk(n.id, depth + 1);
+      }
+    }
+    walk('ROOT', 0);
+
+    const phaseHead = cols
+      .map((col) => {
+        if (col.type === 'phase') {
+          const collapsed = phaseCollapsed.has(col.phase.id);
+          return `<th class="gantt-phase-head" colspan="1" data-phase="${col.phase.id}" title="${utils.escapeHtml(col.label)}">
+            <button type="button" class="phase-toggle" data-phase="${col.phase.id}">${collapsed ? '▶' : '▼'}</button>
+            ${utils.escapeHtml(col.phase.id)}
+          </th>`;
+        }
+        return `<th class="gantt-col-head" data-phase="${col.phase.id}">${utils.escapeHtml(col.label)}</th>`;
+      })
+      .join('');
+
+    container.innerHTML = `
+      <section class="module-page gantt-page">
+        <header class="page-head">
+          <div><h1>Gantt Chart</h1><p class="page-sub">Tree + phase columns (CSV-aligned Apr 16 – Jul 18). Toggle ▶ phases or task rows. Edit in <a href="#/wbs">WBS</a>.</p></div>
+          <div class="gantt-toolbar">
+            <button class="btn btn-sm" id="g-expand-rows">Expand rows</button>
+            <button class="btn btn-sm" id="g-collapse-rows">Collapse rows</button>
+            <button class="btn btn-sm" id="g-expand-phases">Expand all phases</button>
+            <button class="btn btn-sm" id="g-collapse-phases">Collapse phases</button>
+          </div>
+        </header>
+        <div class="gantt-grid-wrap card">
+          <table class="gantt-grid">
+            <thead>
+              <tr><th class="gantt-row-label">WBS Task</th>${phaseHead}</tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
         </div>
-      </header>
-      <div class="gantt-scroll" id="gantt-host"></div>
-      <p class="muted" style="font-size:0.8rem">Bars colored by status: <span class="text-ok">done</span>, <span style="color:var(--accent)">in progress</span>, <span class="muted">pending</span>.</p>
-    </section>`;
+        <p class="muted" style="font-size:0.8rem">P1 Planning · P2 System Development · P3 Testing &amp; Docs — dates from <code>Knowing Eye Gantt Chart - Sheet1.csv</code></p>
+      </section>`;
 
-  await draw();
-
-  container.querySelectorAll('[data-zoom]').forEach((b) => (b.onclick = () => chart.setZoom(b.dataset.zoom)));
-  container.querySelector('#g-add').onclick = () => openForm();
-  container.querySelector('#g-export').onclick = () => {
-    utils.downloadBlob('gantt-chart.svg', chart.exportSvg(), 'image/svg+xml');
-    utils.toast('Gantt exported as SVG', 'ok');
-  };
-
-  async function openForm(taskId) {
-    const today = new Date().toISOString().slice(0, 10);
-    const t = taskId ? await store.get('gantt_tasks', taskId) : { id: utils.uid('GNT'), start: today, end: today, progress: 0, milestone: false, dependencies: [] };
-    const isNew = !taskId;
-    const all = await store.getAll('gantt_tasks');
-    const dlg = document.createElement('div');
-    dlg.className = 'modal-overlay';
-    dlg.innerHTML = `<div class="modal card">
-      <div class="row between"><h2 style="margin:0">${isNew ? 'New' : 'Edit'} Gantt Task</h2><button class="btn-icon" data-x>✕</button></div>
-      <div class="field"><label>Title</label><input id="g-title" value="${utils.escapeHtml(t.title || '')}"></div>
-      <div class="grid grid-2">
-        <div class="field"><label>Start</label><input id="g-start" type="date" value="${(t.start || '').slice(0, 10)}"></div>
-        <div class="field"><label>End</label><input id="g-end" type="date" value="${(t.end || '').slice(0, 10)}"></div>
-        <div class="field"><label>Assignee</label><input id="g-assignee" value="${utils.escapeHtml(t.assignee || '')}"></div>
-        <div class="field"><label>Progress %</label><input id="g-prog" type="number" min="0" max="100" value="${Math.round((t.progress || 0) * 100)}"></div>
-        <div class="field"><label>Status</label><select id="g-status">${['todo', 'in_progress', 'done'].map((s) => `<option ${t.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
-        <div class="field"><label>WBS ref</label><input id="g-wbs" value="${utils.escapeHtml(t.wbs_ref || '')}"></div>
-      </div>
-      <div class="field"><label><input type="checkbox" id="g-ms" ${t.milestone ? 'checked' : ''} style="width:auto;margin-right:0.4rem">Milestone (diamond marker)</label></div>
-      <div class="field"><label>Dependencies</label><select id="g-deps" multiple size="3">${all.filter((x) => x.id !== t.id).map((x) => `<option value="${x.id}" ${(t.dependencies || []).includes(x.id) ? 'selected' : ''}>${utils.escapeHtml(x.title || x.id)}</option>`).join('')}</select></div>
-      <div class="row between">
-        ${isNew ? '<span></span>' : '<button class="btn-danger btn-sm" data-del>Delete</button>'}
-        <div class="row"><button class="btn btn-sm" data-cancel>Cancel</button><button class="btn-primary btn-sm" data-save>Save</button></div>
-      </div></div>`;
-    container.append(dlg);
-    const close = () => dlg.remove();
-    dlg.querySelector('[data-x]').onclick = close;
-    dlg.querySelector('[data-cancel]').onclick = close;
-    dlg.addEventListener('click', (e) => { if (e.target === dlg) close(); });
-    const del = dlg.querySelector('[data-del]');
-    if (del) del.onclick = async () => { await store.delete('gantt_tasks', t.id); await store.log('Gantt task deleted', t.id); close(); chart.destroy(); await draw(); };
-    dlg.querySelector('[data-save]').onclick = async () => {
-      const deps = [...dlg.querySelector('#g-deps').selectedOptions].map((o) => o.value);
-      const updated = {
-        ...t,
-        title: dlg.querySelector('#g-title').value.trim() || 'Untitled',
-        start: dlg.querySelector('#g-start').value || today,
-        end: dlg.querySelector('#g-end').value || today,
-        assignee: dlg.querySelector('#g-assignee').value.trim(),
-        progress: utils.clamp((+dlg.querySelector('#g-prog').value || 0) / 100, 0, 1),
-        status: dlg.querySelector('#g-status').value,
-        wbs_ref: dlg.querySelector('#g-wbs').value.trim(),
-        milestone: dlg.querySelector('#g-ms').checked,
-        dependencies: deps,
+    container.querySelectorAll('[data-toggle]').forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.toggle;
+        if (rowCollapsed.has(id)) rowCollapsed.delete(id); else rowCollapsed.add(id);
+        render();
       };
-      await store.put('gantt_tasks', updated);
-      await store.log(isNew ? 'Gantt task created' : 'Gantt task updated', updated.title);
-      close();
-      chart.destroy();
-      await draw();
+    });
+    container.querySelectorAll('.phase-toggle').forEach((btn) => {
+      btn.onclick = () => {
+        const id = btn.dataset.phase;
+        if (phaseCollapsed.has(id)) phaseCollapsed.delete(id); else phaseCollapsed.add(id);
+        render();
+      };
+    });
+    container.querySelector('#g-expand-rows').onclick = () => { rowCollapsed.clear(); render(); };
+    container.querySelector('#g-collapse-rows').onclick = () => {
+      nodes.forEach((n) => { if ((byParent.get(n.id) || []).length) rowCollapsed.add(n.id); });
+      for (const n of nodes) { if (!n.parent_id) rowCollapsed.delete(n.id); }
+      render();
     };
+    container.querySelector('#g-expand-phases').onclick = () => { phaseCollapsed.clear(); render(); };
+    container.querySelector('#g-collapse-phases').onclick = () => { PHASES.forEach((p) => phaseCollapsed.add(p.id)); render(); };
+    container.querySelectorAll('.gantt-cell.on').forEach((cell) => {
+      cell.onclick = () => { location.hash = '#/wbs'; };
+    });
   }
+
+  await render();
 }
 
 export function unmount(container) {
-  chart?.destroy();
-  chart = null;
   container.innerHTML = '';
 }

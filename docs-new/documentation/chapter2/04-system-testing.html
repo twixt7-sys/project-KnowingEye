@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Part D — System Testing and Implementation · Knowing Eye</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../os/assets/styles.css" />
+  <link rel="stylesheet" href="assets/manuscript.css" />
+</head>
+<body>
+  <main class="doc-wrap">
+    <div class="doc-nav">
+      <a class="btn btn-sm" href="03-system-design.html">← Part C</a>
+      <a class="btn btn-sm" href="05-system-maintenance.html">Part E — System Maintenance →</a>
+    </div>
+    <p class="doc-eyebrow">Chapter II · <span class="part-badge">Part D</span></p>
+    <h1>System Testing and Implementation</h1>
+
+    <div class="note">
+      <strong>Results pending.</strong> Tables and charts below follow the institutional “Tables result sa syst. test” format. Observed values are placeholders until formal UAT and AI benchmark runs are completed.
+    </div>
+
+    <h2 id="approach">Testing Approach</h2>
+    <p>Layered strategy aligned with IEEE documentation and automated Django tests (<code>test-all.cmd</code>).</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Level</th><th>Scope</th><th>Tools / Method</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Unit / API</td><td>REST endpoints, serializers, permissions</td><td>Django <code>APITestCase</code></td><td><span class="badge status-upcoming">Scheduled</span></td></tr>
+        <tr><td>Integration</td><td>Session lifecycle, monitoring → reports</td><td>API + manual UAT</td><td><span class="badge status-upcoming">Scheduled</span></td></tr>
+        <tr><td>WebSocket</td><td>Frame delivery, enroll, RBAC</td><td><code>monitoring/tests/</code></td><td><span class="badge status-upcoming">Scheduled</span></td></tr>
+        <tr><td>AI Pipeline</td><td>Schema, thresholds, preprocessing</td><td><code>backend/ai/tests/</code></td><td><span class="badge status-upcoming">Scheduled</span></td></tr>
+        <tr><td>User Acceptance</td><td>End-to-end exam + monitoring</td><td>IEEE UAT scenarios</td><td><span class="badge status-upcoming">Scheduled</span></td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="results">Table — Results of System Testing</h2>
+    <p>A result is <strong>successful</strong> when observed behavior matches expected behavior. Populate after test execution.</p>
+    <div class="table-wrap"><table class="tables-results-syst-test">
+      <thead><tr><th>Test ID</th><th>Module / Feature</th><th>Expected Result</th><th>Observed Result</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ST-01</td><td>Authentication (login, JWT)</td><td>Valid credentials return tokens; invalid rejected</td><td><em>TBD</em></td><td><span class="badge status-upcoming">Pending</span></td></tr>
+        <tr><td class="mono">ST-02</td><td>Exam CRUD &amp; publish</td><td>Admin creates/publishes; RBAC enforced</td><td><em>TBD</em></td><td><span class="badge status-upcoming">Pending</span></td></tr>
+        <tr><td class="mono">ST-03</td><td>Exam session &amp; submit</td><td>Session starts, answers scored</td><td><em>TBD</em></td><td><span class="badge status-upcoming">Pending</span></td></tr>
+        <tr><td class="mono">ST-04</td><td>Monitoring WebSocket</td><td>Frames accepted; alerts broadcast</td><td><em>TBD</em></td><td><span class="badge status-upcoming">Pending</span></td></tr>
+        <tr><td class="mono">ST-05</td><td>Behavior logs &amp; reports</td><td>Logs queryable; CSV export works</td><td><em>TBD</em></td><td><span class="badge status-upcoming">Pending</span></td></tr>
+        <tr><td class="mono">ST-06</td><td>AI pipeline output</td><td>Valid schema; flags on blank frame</td><td><em>TBD</em></td><td><span class="badge status-upcoming">Pending</span></td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="metrics">Table — Classification Metrics (Accuracy, Recall, Precision, F1-Score)</h2>
+    <p>Targets for held-out behavioral evaluation. <strong>Observed</strong> columns update after labeled dataset testing.</p>
+    <div class="table-wrap"><table class="tables-results-syst-test">
+      <thead><tr><th>Metric</th><th>Target</th><th>Observed</th><th>Interpretation</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Accuracy</td><td>≥ 90%</td><td>—</td><td>Overall correct classifications</td><td><span class="badge status-upcoming">Pending</span></td></tr>
+        <tr><td>Recall</td><td>≥ 88%</td><td>—</td><td>Sensitivity to true violations</td><td><span class="badge status-upcoming">Pending</span></td></tr>
+        <tr><td>Precision</td><td>≥ 88%</td><td>—</td><td>Few false alarms</td><td><span class="badge status-upcoming">Pending</span></td></tr>
+        <tr><td>F1-Score</td><td>≥ 88%</td><td>—</td><td>Balance of precision and recall</td><td><span class="badge status-upcoming">Pending</span></td></tr>
+      </tbody>
+    </table></div>
+
+    <figure class="doc-fig">
+      <figcaption>Figure 2.D.1 — Classification Metrics (target vs observed)</figcaption>
+      <svg viewBox="0 0 520 240" width="100%" role="img" aria-label="Classification metrics chart">
+        <text x="260" y="22" text-anchor="middle" fill="var(--muted)" font-size="12">Target (solid) · Observed (dashed — pending)</text>
+        <line x1="50" y1="200" x2="480" y2="200" stroke="var(--border)"/>
+        <line x1="50" y1="40" x2="50" y2="200" stroke="var(--border)"/>
+        <text x="42" y="200" text-anchor="end" font-size="9" fill="var(--muted)">0</text>
+        <text x="42" y="120" text-anchor="end" font-size="9" fill="var(--muted)">50</text>
+        <text x="42" y="48" text-anchor="end" font-size="9" fill="var(--muted)">100</text>
+        <g>
+          <rect x="80" y="56" width="70" height="144" rx="4" fill="#5b8def" opacity="0.85"><title>Accuracy target 90%</title></rect>
+          <rect x="80" y="200" width="70" height="0" rx="4" fill="none" stroke="#5b8def" stroke-width="2" stroke-dasharray="6 4"/>
+          <text x="115" y="44" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">90%</text>
+          <text x="115" y="218" text-anchor="middle" font-size="10" fill="var(--muted)">Accuracy</text>
+        </g>
+        <g>
+          <rect x="180" y="62" width="70" height="138" rx="4" fill="#7c5cff" opacity="0.85"/>
+          <text x="215" y="50" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">88%</text>
+          <text x="215" y="218" text-anchor="middle" font-size="10" fill="var(--muted)">Recall</text>
+        </g>
+        <g>
+          <rect x="280" y="62" width="70" height="138" rx="4" fill="#34d399" opacity="0.85"/>
+          <text x="315" y="50" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">88%</text>
+          <text x="315" y="218" text-anchor="middle" font-size="10" fill="var(--muted)">Precision</text>
+        </g>
+        <g>
+          <rect x="380" y="62" width="70" height="138" rx="4" fill="#fbbf24" opacity="0.85"/>
+          <text x="415" y="50" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">88%</text>
+          <text x="415" y="218" text-anchor="middle" font-size="10" fill="var(--muted)">F1-Score</text>
+        </g>
+      </svg>
+      <p class="figure-hint">Update bar heights when observed metrics are measured. Export chart screenshot for manuscript.</p>
+    </figure>
+
+    <h2 id="findings">Summary of Findings</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Req ID</th><th>Requirement</th><th>Method</th><th>Result</th><th>Remarks</th></tr></thead>
+      <tbody>
+        <tr><td colspan="5" class="muted" style="text-align:center">Traceability matrix — populate after UAT</td></tr>
+      </tbody>
+    </table></div>
+  </main>
+</body>
+</html>

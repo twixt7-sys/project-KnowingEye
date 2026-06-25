@@ -116,7 +116,7 @@
 /* ---- wbs tree ---- */
 .wbs-tree { font-size: 0.9rem; }
 .wbs-node { border-bottom: 1px solid var(--border); }
-.wbs-row { display: grid; grid-template-columns: 1fr 130px 90px 110px; gap: 0.5rem; align-items: center; padding: 0.5rem 0.4rem; }
+.wbs-row { display: grid; grid-template-columns: 1fr 150px 90px 90px 110px; gap: 0.5rem; align-items: center; padding: 0.5rem 0.4rem; }
 .wbs-row .wbs-toggle { cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 0.4rem; }
 .wbs-caret { width: 0; height: 0; border-left: 5px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform 0.15s; }
 .wbs-caret.open { transform: rotate(90deg); }
@@ -131,6 +131,42 @@
 .gantt-toolbar { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .gantt-scroll { overflow: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
 .gantt-scroll svg { display: block; }
+.gantt-grid-wrap { overflow: auto; max-height: calc(100vh - 220px); padding: 0; }
+.gantt-grid { border-collapse: collapse; font-size: 0.78rem; width: max-content; min-width: 100%; }
+.gantt-grid th, .gantt-grid td { border: 1px solid var(--border); padding: 0; }
+.gantt-row-label { position: sticky; left: 0; z-index: 2; background: var(--surface); text-align: left; padding: 0.35rem 0.6rem !important; min-width: 220px; max-width: 280px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gantt-col-head { padding: 0.35rem 0.25rem !important; min-width: 28px; font-size: 0.7rem; color: var(--muted); background: var(--surface2); position: sticky; top: 0; z-index: 1; }
+.gantt-cell { width: 22px; min-width: 22px; height: 22px; background: var(--surface2); }
+.gantt-cell.on { cursor: pointer; }
+.gantt-cell.on.status-done { background: color-mix(in srgb, #34d399 55%, var(--surface2)); }
+.gantt-cell.on.status-in_progress { background: color-mix(in srgb, var(--accent) 55%, var(--surface2)); }
+.gantt-cell.on.status-todo { background: color-mix(in srgb, #8b95a8 35%, var(--surface2)); }
+.kanban-3 { grid-template-columns: repeat(3, 1fr); }
+
+/* ---- org chart (dashboard) ---- */
+.org-chart { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 0.5rem 0; }
+.org-level { display: flex; align-items: center; gap: 0.65rem; }
+.org-row { gap: 1.2rem; flex-wrap: wrap; justify-content: center; }
+.org-node { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.25rem; min-width: 120px; }
+.org-connector { width: 2px; height: 18px; background: var(--border-strong); }
+.org-fan { width: 60%; max-width: 320px; height: 2px; }
+.avatar-wrap { position: relative; width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: linear-gradient(135deg, var(--accent), var(--accent2)); flex-shrink: 0; }
+.avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-fallback { display: grid; place-items: center; width: 100%; height: 100%; font-weight: 700; color: #fff; font-size: 0.85rem; }
+.avatar-fallback[hidden] { display: none; }
+.avatar-img[hidden] + .avatar-fallback { display: grid; }
+
+/* ---- finish line ---- */
+.finish-line { display: block; max-width: 100%; }
+
+/* ---- gantt tree ---- */
+.gantt-caret, .gantt-caret-spacer { display: inline-block; width: 14px; height: 14px; margin-right: 2px; border: none; background: transparent; cursor: pointer; vertical-align: middle; }
+.gantt-caret::before { content: '▶'; font-size: 0.65rem; color: var(--muted); }
+.gantt-caret.open::before { content: '▼'; }
+.gantt-task-title { font-weight: 400; margin-left: 0.25rem; }
+.gantt-phase-head { background: var(--surface2); font-size: 0.72rem; font-weight: 600; padding: 0.35rem 0.25rem !important; cursor: pointer; white-space: nowrap; }
+.phase-toggle { border: none; background: transparent; cursor: pointer; color: var(--accent); margin-right: 0.2rem; font-size: 0.7rem; }
+.gantt-row[data-depth="0"] .gantt-row-label { font-weight: 600; }
 
 /* ---- heatmap ---- */
 .heatmap { border-collapse: separate; border-spacing: 3px; }

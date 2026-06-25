@@ -12,7 +12,7 @@ export async function mount(container, ctx) {
   for (const ch of chapters) for (const p of ch.pages) flat.push({ ...p, chapter: ch.title });
 
   // deep link: #/documents/<chapterId>/<pageIndex>
-  let current = flat.find((p) => p.file === 'chapter2/index.html') || flat[0];
+  let current = flat.find((p) => p.file === 'documentation/index.html') || flat[0];
   if (route?.params?.length) {
     const [chId, idx] = route.params;
     const ch = chapters.find((c) => c.id === chId);
@@ -34,7 +34,7 @@ export async function mount(container, ctx) {
 
   container.innerHTML = `
     <section class="module-page" style="max-width:100%">
-      <header class="page-head"><div><h1>Documentation</h1><p class="page-sub">Capstone manuscript, architecture, and machine-readable references. ${flat.length} documents indexed.</p></div></header>
+      <header class="page-head"><div><h1>Documentation</h1><p class="page-sub">Manuscript index, Chapter I &amp; II. Open <strong>Documentation Index</strong> for the full paper outline.</p></div></header>
       <div class="grid" style="grid-template-columns:280px 1fr;gap:1rem;align-items:start">
         <div class="card doc-list" style="position:sticky;top:0">
           <input id="doc-search" placeholder="Search documents…" style="margin-bottom:0.6rem">

@@ -22,5 +22,8 @@ figure.doc-fig figcaption { font-weight: 600; color: var(--text); margin-bottom:
 .graph-source { margin-top: 0.6rem; }
 .graph-source summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
 .graph-source pre { max-height: 320px; overflow: auto; font-size: 0.78rem; margin-top: 0.5rem; }
+.figure-template { max-width: 100%; height: auto; border-radius: 8px; }
+.figure-placeholder { padding: 3rem 1rem; background: var(--surface2); border: 2px dashed var(--border-strong); border-radius: 8px; color: var(--muted); font-size: 0.9rem; }
+.figure-hint { font-size: 0.78rem; color: var(--muted); margin-top: 0.5rem; }
 .two-col { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .two-col .card h4 { margin: 0 0 0.4rem; }

@@ -6,7 +6,7 @@
   <title>Part C — System Design · Knowing Eye</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../os/assets/styles.css" />
+  <link rel="stylesheet" href="../../os/assets/styles.css" />
   <link rel="stylesheet" href="assets/manuscript.css" />
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script defer src="assets/mermaid-init.js"></script>
@@ -82,7 +82,7 @@ erDiagram
   }
       </pre>
       <details class="graph-source"><summary>DBML source (export to PNG via dbdiagram.io)</summary>
-        <p style="padding:0.4rem 0;font-size:0.85rem"><a href="../architecture/graphs/database-erd.dbml" target="_blank">architecture/graphs/database-erd.dbml</a></p>
+        <p style="padding:0.4rem 0;font-size:0.85rem"><a href="assets/graphs/database-erd.dbml" target="_blank">assets/graphs/database-erd.dbml</a></p>
       </details>
     </figure>
 
@@ -137,7 +137,7 @@ erDiagram
         <tr><td>monitoring_identity_reference</td><td>session_id (1:1), embedding (JSON), backend</td><td>Enrolled face vector for identity verification</td></tr>
       </tbody>
     </table></div>
-    <p class="doc-lead" style="font-size:0.85rem">Full dictionary in the <a href="../architecture/04-database-design.html" target="_blank">Database Design reference</a> and <code>database/database_schema.json</code>.</p>
+    <p class="doc-lead" style="font-size:0.85rem">Full dictionary in <code>database/database_schema.json</code> and Django models under <code>backend/features/</code>.</p>
 
     <h2 id="technologies">Technologies, Concepts, and Theories</h2>
     <p>The AI monitoring subsystem implements a classical computer-vision pipeline: <strong>data collection → preprocessing → feature extraction → classification/scoring</strong>. Each tool below states its role, version where known, and rationale.</p>

@@ -1,7 +1,7 @@
 {
-  "seed_version": 2,
+  "seed_version": 4,
   "title": "Knowing Eye",
-  "full_title": "Knowing Eye: A Full-Stack Session-Guided Web-Based Examination Platform with Integrated Behavior Monitoring",
+  "full_title": "Knowing Eye: A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis",
   "slug": "knowing-eye",
   "type": "Capstone Project",
   "subject": "BSIT Capstone",
@@ -31,7 +31,7 @@
     { "label": "Frontend Prototype (Vercel)", "href": "https://project-knowing-eye.vercel.app/" },
     { "label": "Project Drive Folder", "href": "https://drive.google.com/drive/folders/1Vc7kXGmtGch1AQoMQbw3BXN14sLyG8on" },
     { "label": "Documentation Hub", "href": "#/documents" },
-    { "label": "Chapter II — Methodology", "href": "chapter2/index.html" },
-    { "label": "Architecture Graphs", "href": "architecture/graph-viewer.html" }
+    { "label": "Manuscript", "href": "documentation/index.html" },
+    { "label": "Chapter II — Methodology", "href": "documentation/chapter2/index.html" }
   ]
 }
