@@ -12,7 +12,7 @@ errors = []
 for f in ROOT.glob("os/**/*.js"):
     text = f.read_text(encoding="utf-8")
     for m in IMPORT_RE.finditer(text):
-        spec = m.group(1)
+        spec = m.group(1).split("?")[0]
         if not spec.startswith("."):
             continue
         target = (f.parent / spec).resolve()
