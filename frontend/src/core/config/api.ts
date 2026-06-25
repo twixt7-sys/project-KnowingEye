@@ -66,6 +66,15 @@ export interface PublishReadiness {
   total_points: number;
 }
 
+export interface QuestionAttachment {
+  id: number;
+  kind: "image" | "pdf" | "audio";
+  url: string;
+  caption: string;
+  order: number;
+  created_at?: string;
+}
+
 export interface Question {
   id: number;
   exam: number;
@@ -75,14 +84,16 @@ export interface Question {
   correct_answer?: string;
   points: number;
   order: number;
+  attachments?: QuestionAttachment[];
 }
 
 export interface ExamSession {
   id: string;
   user: number;
   exam: Exam;
-  status: "in_progress" | "completed" | "terminated" | "expired";
+  status: "setup" | "in_progress" | "completed" | "terminated" | "expired";
   started_at?: string;
+  exam_started_at?: string | null;
   submitted_at?: string;
   total_score?: number;
   percentage_score?: number;
@@ -113,16 +124,44 @@ export interface FrameMetrics {
   all_compliant: boolean;
 }
 
+export interface FrameAnalysisFace {
+  count: number;
+  head_yaw_deg?: number | null;
+  head_pitch_deg?: number | null;
+  bbox?: number[] | null;
+  bbox_norm?: number[] | null;
+  identity_distance?: number | null;
+}
+
+export interface FrameAnalysisPosture {
+  detected: boolean;
+  shoulder_tilt_ratio?: number | null;
+  spine_lean_ratio?: number | null;
+  guide_status?: "ok" | "no_pose" | "off_center";
+  posture_compliance_pct?: number;
+}
+
+export interface FrameAnalysisObject {
+  label: string;
+  confidence_pct: number;
+  bbox?: number[];
+  bbox_norm?: number[];
+}
+
 export interface FrameAnalysis {
   session_id: string | null;
   timestamp: string | null;
   frame_index: number | null;
+  frame_size?: [number, number] | null;
+  face?: FrameAnalysisFace;
+  posture?: FrameAnalysisPosture;
+  objects?: FrameAnalysisObject[];
   metrics: FrameMetrics;
   overall_compliance_pct: number;
   behavior_score: number;
   events: FrameEvent[];
   alerts: FrameAlert[];
-  pipeline_mode: string;
+  pipeline_mode?: string;
 }
 
 export interface FrameEvent {
@@ -498,12 +537,37 @@ class ApiClient {
     });
   }
 
+  async uploadQuestionAttachment(examId: number, questionId: number, file: File, caption?: string) {
+    const form = new FormData();
+    form.append("file", file);
+    if (caption) form.append("caption", caption);
+    return this.request<QuestionAttachment>(
+      `/exams/${examId}/questions/${questionId}/attachments/`,
+      { method: "POST", body: form }
+    );
+  }
+
+  async deleteQuestionAttachment(examId: number, questionId: number, attachmentId: number) {
+    return this.request<void>(
+      `/exams/${examId}/questions/${questionId}/attachments/${attachmentId}/`,
+      { method: "DELETE" }
+    );
+  }
+
   // ----- Sessions -----
   async startExamSession(examId: number) {
     const res = await this.request<{ session: ExamSession }>("/sessions/start/", {
       method: "POST",
       body: JSON.stringify({ exam: examId }),
     });
+    return res.session;
+  }
+
+  async beginExamSession(sessionId: string) {
+    const res = await this.request<{ session: ExamSession }>(
+      `/sessions/${sessionId}/begin/`,
+      { method: "POST" }
+    );
     return res.session;
   }
 
@@ -549,10 +613,20 @@ class ApiClient {
   }
 
   async enrollReference(body: { image: string; session_id: string }) {
-    return this.request<{ ok: boolean; pipeline_mode: string }>("/monitoring/enroll/", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 90_000);
+    try {
+      return await this.request<{ ok: boolean; message?: string; pipeline_mode: string }>(
+        "/monitoring/enroll/",
+        {
+          method: "POST",
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        }
+      );
+    } finally {
+      window.clearTimeout(timeout);
+    }
   }
 
   async getMonitoringHealth() {
@@ -695,6 +769,13 @@ export function buildMonitoringWsUrl(sessionId: string): string {
   const token = tokenStore.access;
   const q = token ? `?token=${encodeURIComponent(token)}` : "";
   return `${base}/ws/monitoring/${sessionId}/${q}`;
+}
+
+export function buildSessionObserverWsUrl(sessionId: string): string {
+  const base = API_BASE_URL.replace(/^http/, "ws").replace(/\/api\/?$/, "");
+  const token = tokenStore.access;
+  const q = token ? `?token=${encodeURIComponent(token)}` : "";
+  return `${base}/ws/monitoring/observe/${sessionId}/${q}`;
 }
 
 export function buildAdminAlertsWsUrl(): string {

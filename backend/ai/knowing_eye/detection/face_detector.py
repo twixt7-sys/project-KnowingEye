@@ -28,6 +28,37 @@ class DetectedFace:
     head_pitch_deg: float
 
 
+_MIN_FACE_PX = 56
+_MIN_FACE_AREA_RATIO = 0.012
+_MAX_FACE_AREA_RATIO = 0.72
+_MIN_ASPECT = 0.62
+_MAX_ASPECT = 1.28
+
+
+def _is_plausible_face(
+    bbox: tuple[int, int, int, int],
+    frame_w: int,
+    frame_h: int,
+    landmarks: np.ndarray | None = None,
+) -> bool:
+    x, y, bw, bh = bbox
+    if bw < _MIN_FACE_PX or bh < _MIN_FACE_PX:
+        return False
+    frame_area = max(frame_w * frame_h, 1)
+    face_area = bw * bh
+    ratio = face_area / frame_area
+    if ratio < _MIN_FACE_AREA_RATIO or ratio > _MAX_FACE_AREA_RATIO:
+        return False
+    aspect = bw / max(bh, 1)
+    if aspect < _MIN_ASPECT or aspect > _MAX_ASPECT:
+        return False
+    if landmarks is not None and len(landmarks) >= 20:
+        span_y = float(landmarks[:, 1].max() - landmarks[:, 1].min())
+        if span_y < bh * 0.45:
+            return False
+    return True
+
+
 class FaceDetector:
     def __init__(self) -> None:
         self._backend = "opencv"
@@ -43,7 +74,8 @@ class FaceDetector:
                     base_options=mp_python.BaseOptions(model_asset_path=str(model_path)),
                     running_mode=vision.RunningMode.IMAGE,
                     num_faces=3,
-                    min_face_detection_confidence=0.5,
+                    min_face_detection_confidence=0.62,
+                    output_facial_transformation_matrixes=True,
                 )
                 self._landmarker = vision.FaceLandmarker.create_from_options(options)
                 self._backend = "mediapipe"
@@ -63,7 +95,8 @@ class FaceDetector:
         faces: list[DetectedFace] = []
         if not result.face_landmarks:
             return faces
-        for face_lm in result.face_landmarks:
+        matrices = getattr(result, "facial_transformation_matrixes", None) or []
+        for i, face_lm in enumerate(result.face_landmarks):
             pts = np.array([(lm.x * w, lm.y * h) for lm in face_lm])
             x_min, y_min = pts.min(axis=0)
             x_max, y_max = pts.max(axis=0)
@@ -73,21 +106,30 @@ class FaceDetector:
             y0 = max(0, int(y_min - pad * bh))
             x1 = min(w, int(x_max + pad * bw))
             y1 = min(h, int(y_max + pad * bh))
-            yaw, pitch = _estimate_head_pose(pts)
-            faces.append(DetectedFace((x0, y0, x1 - x0, y1 - y0), pts, yaw, pitch))
+            bbox = (x0, y0, x1 - x0, y1 - y0)
+            if not _is_plausible_face(bbox, w, h, pts):
+                continue
+            if i < len(matrices):
+                yaw, pitch = _yaw_pitch_from_transform(matrices[i])
+            else:
+                yaw, pitch = _estimate_head_pose(pts, bbox)
+            faces.append(DetectedFace(bbox, pts, yaw, pitch))
         return faces
 
     def _detect_opencv(self, frame_bgr: np.ndarray) -> list[DetectedFace]:
         gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
-        rects = self._cascade.detectMultiScale(gray, 1.1, 5, minSize=(60, 60))
+        rects = self._cascade.detectMultiScale(gray, 1.08, 6, minSize=(72, 72))
         faces: list[DetectedFace] = []
         h, w = frame_bgr.shape[:2]
         for x, y, bw, bh in rects:
+            bbox = (int(x), int(y), int(bw), int(bh))
+            if not _is_plausible_face(bbox, w, h):
+                continue
             cx = x + bw / 2
             # Rough head-pose proxy from face position in frame
             yaw = float((cx - w / 2) / (w / 2) * 30)
             pitch = float((y + bh / 2 - h / 2) / (h / 2) * 20)
-            faces.append(DetectedFace((int(x), int(y), int(bw), int(bh)), None, yaw, pitch))
+            faces.append(DetectedFace(bbox, None, yaw, pitch))
         return faces
 
     def close(self) -> None:
@@ -95,17 +137,35 @@ class FaceDetector:
             self._landmarker.close()
 
 
-def _estimate_head_pose(landmarks: np.ndarray) -> tuple[float, float]:
-    idx = {"nose": 1, "chin": 152, "left_eye": 33, "right_eye": 263}
+def _yaw_pitch_from_transform(matrix) -> tuple[float, float]:
+    """Extract head yaw/pitch (degrees) from MediaPipe's 4×4 face transform."""
     try:
-        nose = landmarks[idx["nose"]]
-        chin = landmarks[idx["chin"]]
-        le = landmarks[idx["left_eye"]]
-        re = landmarks[idx["right_eye"]]
-    except IndexError:
+        mat = np.array(matrix, dtype=float).reshape(4, 4)
+        r = mat[:3, :3]
+        sy = float(np.sqrt(r[0, 0] ** 2 + r[1, 0] ** 2))
+        if sy >= 1e-6:
+            pitch = float(np.degrees(np.arctan2(-r[2, 0], sy)))
+            yaw = float(np.degrees(np.arctan2(r[1, 0], r[0, 0])))
+        else:
+            pitch = float(np.degrees(np.arctan2(-r[2, 0], sy)))
+            yaw = float(np.degrees(np.arctan2(-r[1, 2], r[1, 1])))
+        return yaw, pitch
+    except Exception:
         return 0.0, 0.0
-    eye_mid = (le + re) / 2
-    eye_dist = np.linalg.norm(re - le) + 1e-6
-    yaw = float(np.degrees(np.arctan2(nose[0] - eye_mid[0], eye_dist * 0.5)))
-    pitch = float(np.degrees(np.arctan2(chin[1] - nose[1], np.linalg.norm(chin - nose) + 1e-6)))
+
+
+def _estimate_head_pose(
+    landmarks: np.ndarray,
+    bbox: tuple[int, int, int, int],
+) -> tuple[float, float]:
+    """Fallback pose estimate from landmark geometry when no transform matrix."""
+    x0, y0, bw, bh = bbox
+    if len(landmarks) > 1:
+        nose = landmarks[1]
+    else:
+        nose = landmarks.mean(axis=0)
+    cx = x0 + bw / 2
+    cy = y0 + bh * 0.42
+    yaw = float((nose[0] - cx) / max(bw / 2, 1) * 28)
+    pitch = float((nose[1] - cy) / max(bh / 2, 1) * 22)
     return yaw, pitch

@@ -83,7 +83,12 @@ class BehaviorScorer:
         identity_match: bool | None,
     ) -> MetricScores:
         fp = face_presence_pct(face.count)
-        gp = gaze_focus_pct(face.head_yaw_deg, face.head_pitch_deg, self._gaze_yaw, self._gaze_pitch)
+        yaw = face.head_yaw_deg
+        pitch = face.head_pitch_deg
+        if fp > 0 and (yaw is None or pitch is None):
+            yaw = yaw if yaw is not None else 0.0
+            pitch = pitch if pitch is not None else 0.0
+        gp = gaze_focus_pct(yaw, pitch, self._gaze_yaw, self._gaze_pitch)
         pp = posture_compliance_pct(
             pose_detected,
             posture.shoulder_tilt_ratio,

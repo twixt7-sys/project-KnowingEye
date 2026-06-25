@@ -12,6 +12,7 @@ from ai.knowing_eye.types import (
     BehaviorEvent,
     BehaviorEventType,
     FrameAnalysisResult,
+    MetricScores,
 )
 
 
@@ -150,13 +151,33 @@ class BehaviorTemporalTracker:
                 severity_override="high",
             )
 
+        metrics = result.metrics
+        if face_count == 0:
+            from ai.knowing_eye.behavior.normalize import overall_compliance_pct
+
+            metrics = MetricScores(
+                face_presence_pct=0.0,
+                gaze_focus_pct=0.0,
+                posture_compliance_pct=result.metrics.posture_compliance_pct,
+                identity_match_pct=result.metrics.identity_match_pct,
+                object_clear_pct=result.metrics.object_clear_pct,
+                overall_compliance_pct=overall_compliance_pct(
+                    0.0,
+                    0.0,
+                    result.metrics.posture_compliance_pct,
+                    result.metrics.identity_match_pct,
+                    result.metrics.object_clear_pct,
+                ),
+                alert_threshold_pct=result.metrics.alert_threshold_pct,
+            )
+
         return FrameAnalysisResult(
             session_id=result.session_id,
             timestamp=result.timestamp,
             face=result.face,
             posture=result.posture,
             objects=result.objects,
-            metrics=result.metrics,
+            metrics=metrics,
             events=events,
             alerts=alerts,
             frame_index=result.frame_index,

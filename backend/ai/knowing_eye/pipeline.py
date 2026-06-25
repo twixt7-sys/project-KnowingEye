@@ -8,6 +8,7 @@ from typing import Any
 
 import numpy as np
 
+from ai.knowing_eye.behavior.overlay import norm_bbox_xywh, norm_bbox_xyxy, posture_guide_status
 from ai.knowing_eye.behavior.scoring import BehaviorScorer
 from ai.knowing_eye.behavior.temporal import BehaviorTemporalTracker
 from ai.knowing_eye.config import load_config, resolve_path
@@ -16,7 +17,13 @@ from ai.knowing_eye.detection.pose_detector import PoseDetector
 from ai.knowing_eye.detection.yolo_detector import YoloDetector
 from ai.knowing_eye.preprocessing.frame import prepare_frame
 from ai.knowing_eye.recognition.identity import IdentityVerifier
-from ai.knowing_eye.types import FrameAnalysisResult, utc_now_iso
+from ai.knowing_eye.types import (
+    FaceAnalysis,
+    FrameAnalysisResult,
+    ObjectDetection,
+    PostureAnalysis,
+    utc_now_iso,
+)
 
 
 class BehaviorPipeline:
@@ -88,6 +95,8 @@ class BehaviorPipeline:
         reference_embedding: list[float] | None = None,
     ) -> FrameAnalysisResult:
         frame = self._prepare(frame_bgr)
+        fh, fw = frame.shape[:2]
+
         faces = self._face.detect(frame)
         pose = self._pose.detect(frame)
         yolo_dets = self._yolo.detect(frame)
@@ -99,9 +108,41 @@ class BehaviorPipeline:
                 frame, faces[0].bbox, reference_embedding
             )
 
-        face_analysis = self._scorer.build_face_analysis(faces, identity_match, identity_distance)
-        posture_analysis = self._scorer.build_posture_analysis(pose)
-        objects = self._scorer.build_objects(yolo_dets)
+        primary = faces[0] if faces else None
+        face_bbox_norm = None
+        if primary and primary.bbox:
+            face_bbox_norm = norm_bbox_xywh(primary.bbox, fw, fh)
+
+        face_analysis = FaceAnalysis(
+            count=len(faces),
+            head_yaw_deg=primary.head_yaw_deg if primary else None,
+            head_pitch_deg=primary.head_pitch_deg if primary else None,
+            bbox=list(primary.bbox) if primary and primary.bbox else None,
+            bbox_norm=face_bbox_norm,
+            identity_distance=identity_distance,
+        )
+        posture_analysis = PostureAnalysis(
+            detected=pose.detected,
+            shoulder_tilt_ratio=pose.shoulder_tilt_ratio,
+            spine_lean_ratio=pose.spine_lean_ratio,
+            guide_status=posture_guide_status(
+                pose_detected=pose.detected,
+                face_count=len(faces),
+            ),
+        )
+        objects: list[ObjectDetection] = []
+        for d in self._scorer.build_objects(yolo_dets):
+            bbox_norm = None
+            if d.bbox and len(d.bbox) >= 4:
+                bbox_norm = norm_bbox_xyxy(d.bbox, fw, fh)
+            objects.append(
+                ObjectDetection(
+                    label=d.label,
+                    confidence=d.confidence,
+                    bbox=d.bbox,
+                    bbox_norm=bbox_norm,
+                )
+            )
 
         metrics, events, alerts = self._scorer.score(
             face_analysis,
@@ -122,6 +163,7 @@ class BehaviorPipeline:
             events=events,
             alerts=alerts,
             frame_index=self._frame_index,
+            frame_size=[fw, fh],
         )
         if session_id:
             result = self._temporal.apply(str(session_id), result, pose_detected=pose.detected)

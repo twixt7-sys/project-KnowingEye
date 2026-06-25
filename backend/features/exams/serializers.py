@@ -1,13 +1,32 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from .models import Exam, Question
+from .models import Exam, Question, QuestionAttachment
 
 User = get_user_model()
 
 
+class QuestionAttachmentSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = QuestionAttachment
+        fields = ["id", "kind", "url", "caption", "order", "created_at"]
+        read_only_fields = fields
+
+    def get_url(self, obj) -> str | None:
+        if not obj.file:
+            return None
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(obj.file.url)
+        return obj.file.url
+
+
 class QuestionTakeSerializer(serializers.ModelSerializer):
     """Examinee-safe question payload — no answer key."""
+
+    attachments = QuestionAttachmentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Question
@@ -18,12 +37,15 @@ class QuestionTakeSerializer(serializers.ModelSerializer):
             "options",
             "points",
             "order",
+            "attachments",
         ]
         read_only_fields = fields
 
 
 class QuestionSerializer(serializers.ModelSerializer):
     """Serializer for Question model (admin — includes answer key)."""
+
+    attachments = QuestionAttachmentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Question
@@ -36,6 +58,7 @@ class QuestionSerializer(serializers.ModelSerializer):
             "correct_answer",
             "points",
             "order",
+            "attachments",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
@@ -45,6 +68,7 @@ class QuestionDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for Question with all fields."""
 
     exam_title = serializers.CharField(source="exam.title", read_only=True)
+    attachments = QuestionAttachmentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Question
@@ -58,6 +82,7 @@ class QuestionDetailSerializer(serializers.ModelSerializer):
             "correct_answer",
             "points",
             "order",
+            "attachments",
             "created_at",
             "updated_at",
         ]

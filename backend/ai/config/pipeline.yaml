@@ -22,9 +22,9 @@ detection:
 recognition:
   embedding_backend: arcface
   arcface_model: buffalo_l
-  gaze_yaw_threshold_deg: 25
-  gaze_pitch_threshold_deg: 20
-  posture_shoulder_tilt_max: 0.12
+  gaze_yaw_threshold_deg: 40
+  gaze_pitch_threshold_deg: 35
+  posture_shoulder_tilt_max: 0.18
   posture_spine_lean_max: 0.55
   no_face_grace_seconds: 2.0
 

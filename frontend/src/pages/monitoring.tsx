@@ -2,9 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
-  CheckCircle,
-  Clock,
-  Eye,
   RefreshCw,
   ShieldAlert,
   Radio,
@@ -22,6 +19,7 @@ import { PageShell } from "../shared/components/layout/page-shell";
 import { SectionPanel } from "../shared/components/layout/section-panel";
 import { StatCard } from "../shared/components/layout/stat-card";
 import { Button } from "../shared/components/ui/button";
+import { LiveSessionCard } from "../features/monitoring/components/live-session-card";
 
 type LiveAlert = {
   ts: number;
@@ -242,51 +240,19 @@ export function Monitoring() {
         <SectionPanel
           className="xl:col-span-2"
           title="Active sessions"
-          description="Auto-refresh every 15 seconds."
+          description="Live snapshots via observer WebSocket; list refreshes every 15 seconds."
         >
-          <div className="divide-y divide-border">
-              {sessions.length === 0 && !loading && (
-                <div className="p-10 text-center text-sm text-muted-foreground">
-                  No active sessions right now.
-                </div>
-              )}
+          {sessions.length === 0 && !loading ? (
+            <div className="p-10 text-center text-sm text-muted-foreground">
+              No active sessions right now.
+            </div>
+          ) : (
+            <div className="grid gap-4 p-4 sm:grid-cols-2">
               {sessions.map((s) => (
-                <div key={s.id} className="p-5 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                    <Eye className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-semibold truncate">{s.user_full_name || s.user}</p>
-                      <span className="text-xs text-muted-foreground">·</span>
-                      <p className="text-xs text-muted-foreground truncate">{s.exam_title}</p>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(s.started_at).toLocaleTimeString()}
-                      </span>
-                      <span>{s.behavior_event_count} events</span>
-                      {s.unresolved_alert_count > 0 ? (
-                        <span className="text-rose-500">
-                          {s.unresolved_alert_count} unresolved alerts
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-emerald-600">
-                          <CheckCircle className="w-3 h-3" /> clean
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <Link
-                    to={`/monitoring/${s.id}`}
-                    className="text-sm rounded-lg px-3 py-1.5 border border-border hover:bg-accent transition-colors"
-                  >
-                    Inspect
-                  </Link>
-                </div>
+                <LiveSessionCard key={s.id} session={s} onTerminated={load} />
               ))}
             </div>
+          )}
         </SectionPanel>
 
         <SectionPanel

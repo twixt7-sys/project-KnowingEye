@@ -101,6 +101,16 @@ class SystemSmokeTests(APITestCase):
         start = self.client.post("/api/sessions/start/", {"exam": exam_id}, format="json")
         self.assertIn(start.status_code, (status.HTTP_200_OK, status.HTTP_201_CREATED))
         session_id = start.data["session"]["id"]
+        self.assertEqual(start.data["session"]["status"], "setup")
+
+        from ai.identity_store import store_reference
+        from features.session.models import ExamSession
+
+        session = ExamSession.objects.get(pk=session_id)
+        store_reference(session, [0.1] * 128, "test")
+        begin = self.client.post(f"/api/sessions/{session_id}/begin/", format="json")
+        self.assertEqual(begin.status_code, status.HTTP_200_OK)
+        self.assertEqual(begin.data["session"]["status"], "in_progress")
 
         detail = self.client.get(f"/api/sessions/{session_id}/")
         self.assertEqual(detail.status_code, status.HTTP_200_OK)

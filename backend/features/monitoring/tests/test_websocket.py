@@ -120,6 +120,70 @@ class MonitoringWebsocketTests(TransactionTestCase):
         async_to_sync(run)()
 
 
+class SessionObserverWebsocketTests(TransactionTestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="ws_observe_examinee",
+            email="ws_observe_examinee@test.local",
+            password="TestPass123!",
+            role=User.Role.EXAMINEE,
+        )
+        self.admin = User.objects.create_user(
+            username="ws_observe_admin",
+            email="ws_observe_admin@test.local",
+            password="TestPass123!",
+            role=User.Role.ADMIN,
+        )
+        exam = Exam.objects.create(
+            title="Observer Exam",
+            description="",
+            duration_minutes=10,
+            passing_score=50,
+            status=Exam.Status.ACTIVE,
+            created_by=self.admin,
+        )
+        self.session = ExamSession.objects.create(exam=exam, user=self.user)
+        self.user_token = _issue_token(self.user)
+        self.admin_token = _issue_token(self.admin)
+
+    def test_admin_observer_receives_analysis_broadcast(self):
+        async def run():
+            headers = [(b"origin", b"http://127.0.0.1")]
+            observer = WebsocketCommunicator(
+                application,
+                f"/ws/monitoring/observe/{self.session.id}/?token={self.admin_token}",
+                headers=headers,
+            )
+            examinee = WebsocketCommunicator(
+                application,
+                f"/ws/monitoring/{self.session.id}/?token={self.user_token}",
+                headers=headers,
+            )
+            try:
+                connected, _ = await observer.connect()
+                self.assertTrue(connected)
+                await observer.receive_from()  # welcome
+
+                connected, _ = await examinee.connect()
+                self.assertTrue(connected)
+                await examinee.receive_from()  # welcome
+
+                await examinee.send_to(
+                    text_data=json.dumps({"type": "frame", "image": _tiny_jpeg()})
+                )
+                await examinee.receive_from()  # direct analysis to examinee
+
+                msg = json.loads(await observer.receive_from(timeout=30))
+                self.assertEqual(msg["type"], "analysis")
+                self.assertIn("payload", msg)
+                self.assertIn("metrics", msg["payload"])
+            finally:
+                await examinee.disconnect()
+                await observer.disconnect()
+
+        async_to_sync(run)()
+
+
 class AdminAlertsWebsocketTests(TransactionTestCase):
     def setUp(self):
         self.admin = User.objects.create_user(

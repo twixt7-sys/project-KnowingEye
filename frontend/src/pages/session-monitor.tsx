@@ -1,53 +1,40 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router";
+import { Link, useParams } from "react-router";
 import {
   AlertTriangle,
   ArrowLeft,
-  CheckCircle2,
-  CircleAlert,
+  Loader2,
   Power,
   RefreshCw,
-  ScanFace,
-  Video,
-  VideoOff,
 } from "lucide-react";
 
-import { apiClient, type AlertRow, type BehaviorLogRow } from "../core/config/api";
-import { useMonitoring } from "../shared/hooks/use-monitoring";
+import { apiClient, formatApiError, type AlertRow, type BehaviorLogRow } from "../core/config/api";
+import { useSessionObserver } from "../features/monitoring/hooks/use-session-observer";
+import { Button } from "../shared/components/ui/button";
 
-const METRICS: { key: keyof MetricBag; label: string }[] = [
-  { key: "face_presence_pct", label: "Face presence" },
-  { key: "gaze_focus_pct", label: "Gaze focus" },
+const METRICS = [
+  { key: "face_presence_pct", label: "Face" },
+  { key: "gaze_focus_pct", label: "Head focus" },
   { key: "posture_compliance_pct", label: "Posture" },
-  { key: "identity_match_pct", label: "Identity match" },
-  { key: "object_clear_pct", label: "Object clear" },
-];
-
-interface MetricBag {
-  face_presence_pct: number;
-  gaze_focus_pct: number;
-  posture_compliance_pct: number;
-  identity_match_pct: number | null;
-  object_clear_pct: number;
-  overall_compliance_pct: number;
-}
+  { key: "identity_match_pct", label: "Identity" },
+  { key: "object_clear_pct", label: "Objects clear" },
+] as const;
 
 export function SessionMonitor() {
   const { sessionId } = useParams<{ sessionId: string }>();
-
-  const monitoring = useMonitoring({ sessionId, intervalMs: 1000 });
-  const { status, error, videoRef, analysis, alerts, start, stop, enrollReference } = monitoring;
-
-  const [history, setHistory] = useState<{ logs: BehaviorLogRow[]; alerts: AlertRow[] }>(
-    { logs: [], alerts: [] }
-  );
+  const observer = useSessionObserver(sessionId);
+  const [history, setHistory] = useState<{ logs: BehaviorLogRow[]; alerts: AlertRow[] }>({
+    logs: [],
+    alerts: [],
+  });
+  const [terminating, setTerminating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!sessionId) return;
-    apiClient
-      .getSessionReport(sessionId)
-      .then((res) => setHistory({ logs: res.behavior_logs, alerts: res.alerts }))
-      .catch(() => null);
+    observer.connect();
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   const refreshHistory = async () => {
@@ -56,7 +43,33 @@ export function SessionMonitor() {
     setHistory({ logs: res.behavior_logs, alerts: res.alerts });
   };
 
-  const isLive = status === "live" || status === "fallback-rest";
+  useEffect(() => {
+    refreshHistory().catch(() => null);
+  }, [sessionId]);
+
+  const metrics = observer.analysis?.metrics;
+
+  const handleResolve = async (alertId: string) => {
+    try {
+      await apiClient.resolveAlert(alertId);
+      await refreshHistory();
+    } catch (e) {
+      setError(formatApiError(e));
+    }
+  };
+
+  const handleTerminate = async () => {
+    if (!sessionId || !confirm("Terminate this session?")) return;
+    setTerminating(true);
+    try {
+      await apiClient.terminateSession(sessionId);
+      await refreshHistory();
+    } catch (e) {
+      setError(formatApiError(e));
+    } finally {
+      setTerminating(false);
+    }
+  };
 
   return (
     <div className="min-h-screen py-8">
@@ -68,235 +81,97 @@ export function SessionMonitor() {
           <ArrowLeft className="w-4 h-4" /> Back to monitoring
         </Link>
 
-        <header className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+        <header className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold">Session inspector</h1>
             <p className="text-muted-foreground text-sm">
-              Session <code className="text-xs">{sessionId}</code> · status{" "}
-              <strong className="text-foreground">{status}</strong>
+              Live observe · <code className="text-xs">{sessionId}</code> · {observer.status}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            {!isLive && (
-              <button
-                onClick={start}
-                className="inline-flex items-center gap-2 rounded-lg px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                <Video className="w-4 h-4" /> Start
-              </button>
-            )}
-            {isLive && (
-              <button
-                onClick={stop}
-                className="inline-flex items-center gap-2 rounded-lg px-4 py-2 bg-rose-500 text-white hover:bg-rose-600"
-              >
-                <VideoOff className="w-4 h-4" /> Stop
-              </button>
-            )}
-            <button
-              onClick={enrollReference}
-              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 border border-border hover:bg-accent text-sm"
-              disabled={!isLive}
-              title="Capture the current frame as the reference face for identity verification"
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => refreshHistory()}>
+              <RefreshCw className="w-4 h-4" />
+              Refresh log
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={terminating}
+              onClick={handleTerminate}
             >
-              <ScanFace className="w-4 h-4" /> Enroll reference
-            </button>
-            <button
-              onClick={refreshHistory}
-              className="inline-flex items-center gap-2 rounded-lg px-3 py-2 border border-border hover:bg-accent text-sm"
-            >
-              <RefreshCw className="w-4 h-4" /> Refresh history
-            </button>
+              {terminating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Power className="w-4 h-4" />}
+              Terminate
+            </Button>
           </div>
         </header>
 
         {error && (
-          <div className="mb-4 px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
-            <CircleAlert className="w-4 h-4" /> {error}
+          <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-card rounded-xl border border-border overflow-hidden">
-              <div className="aspect-video bg-black relative">
-                <video
-                  ref={videoRef}
-                  className="w-full h-full object-cover"
-                  muted
-                  playsInline
-                />
-                {!isLive && (
-                  <div className="absolute inset-0 flex items-center justify-center text-white/70 text-sm">
-                    <Power className="w-5 h-5 mr-2" /> Stream stopped
-                  </div>
-                )}
-                <div className="absolute top-3 left-3 flex items-center gap-2">
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      isLive
-                        ? "bg-emerald-500 text-white"
-                        : "bg-gray-700 text-gray-200"
-                    }`}
-                  >
-                    {isLive ? "LIVE" : "OFFLINE"}
-                  </span>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 rounded-xl border bg-card p-4">
+            <h2 className="font-semibold mb-3">Live feed</h2>
+            <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
+              {observer.snapshot ? (
+                <img src={observer.snapshot} alt="Live snapshot" className="h-full w-full object-contain" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
+                  Waiting for student frames…
                 </div>
-              </div>
+              )}
             </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
               {METRICS.map((m) => {
-                const v = analysis?.metrics?.[m.key as keyof MetricBag] as number | null;
+                const raw = metrics?.[m.key];
+                const val = typeof raw === "number" ? raw : null;
                 return (
-                  <MetricCard key={m.key} label={m.label} value={v} />
+                  <div key={m.key} className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">{m.label}</p>
+                    <p className="text-lg font-semibold">{val === null ? "—" : `${val.toFixed(0)}%`}</p>
+                  </div>
                 );
               })}
-              <MetricCard
-                label="Overall compliance"
-                value={analysis?.overall_compliance_pct ?? null}
-                highlight
-              />
-            </div>
-
-            <div className="bg-card rounded-xl border border-border">
-              <div className="p-4 border-b border-border">
-                <h2 className="text-lg font-semibold">Recent behavior events</h2>
-              </div>
-              <ul className="divide-y divide-border max-h-96 overflow-y-auto">
-                {history.logs.length === 0 && (
-                  <li className="p-6 text-center text-sm text-muted-foreground">
-                    No behavior events recorded yet.
-                  </li>
-                )}
-                {history.logs.slice(0, 50).map((log) => (
-                  <li key={log.id} className="p-4 flex items-start gap-3 text-sm">
-                    <AlertTriangle className="w-4 h-4 text-amber-500 mt-1 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="font-medium">{log.event_type}</p>
-                      <p className="text-xs text-muted-foreground">
-                        score {(log.score * 100).toFixed(0)}% · confidence{" "}
-                        {(log.confidence * 100).toFixed(0)}%
-                      </p>
-                    </div>
-                    <time className="text-xs text-muted-foreground">
-                      {new Date(log.timestamp).toLocaleTimeString()}
-                    </time>
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-card rounded-xl border border-border">
-              <div className="p-4 border-b border-border">
-                <h2 className="text-lg font-semibold">Live alerts</h2>
-              </div>
-              <ul className="divide-y divide-border max-h-72 overflow-y-auto">
-                {alerts.length === 0 && (
-                  <li className="p-6 text-center text-sm text-muted-foreground">
-                    No live alerts yet.
-                  </li>
-                )}
-                {alerts.map((a, idx) => (
-                  <li key={idx} className="p-4 text-sm">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-medium">{a.type}</span>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          a.severity === "high"
-                            ? "bg-red-500/10 text-red-600"
-                            : a.severity === "medium"
-                            ? "bg-amber-500/10 text-amber-600"
-                            : "bg-blue-500/10 text-blue-600"
-                        }`}
+          <div className="rounded-xl border bg-card p-4 space-y-4">
+            <h2 className="font-semibold flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              Alerts
+            </h2>
+            <ul className="space-y-2 max-h-96 overflow-y-auto text-sm">
+              {history.alerts.slice(0, 20).map((a) => (
+                <li key={a.id} className="rounded border px-3 py-2">
+                  <p className="font-medium">{a.message}</p>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-muted-foreground capitalize">{a.severity}</p>
+                    {!a.resolved && (
+                      <button
+                        type="button"
+                        onClick={() => void handleResolve(a.id)}
+                        className="text-xs text-emerald-600 hover:underline"
                       >
-                        {a.severity}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{a.message}</p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="bg-card rounded-xl border border-border">
-              <div className="p-4 border-b border-border">
-                <h2 className="text-lg font-semibold">Historical alerts</h2>
-              </div>
-              <ul className="divide-y divide-border max-h-72 overflow-y-auto">
-                {history.alerts.length === 0 && (
-                  <li className="p-6 text-center text-sm text-muted-foreground">
-                    No alerts recorded.
-                  </li>
-                )}
-                {history.alerts.map((a) => (
-                  <li key={a.id} className="p-4 text-sm flex items-start gap-3">
-                    {a.resolved ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-1" />
-                    ) : (
-                      <AlertTriangle className="w-4 h-4 text-rose-500 mt-1" />
+                        Resolve
+                      </button>
                     )}
-                    <div className="flex-1">
-                      <p className="font-medium">{a.alert_type}</p>
-                      <p className="text-xs text-muted-foreground">{a.message}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {new Date(a.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                  </div>
+                </li>
+              ))}
+              {observer.alerts.slice(0, 10).map((a, i) => (
+                <li key={`live-${a.type}-${i}`} className="rounded border border-amber-500/30 px-3 py-2">
+                  <p className="font-medium">{a.message}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{a.severity} · live</p>
+                </li>
+              ))}
+              {!observer.alerts.length && !history.alerts.length && (
+                <li className="text-muted-foreground">No alerts yet.</li>
+              )}
+            </ul>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  highlight = false,
-}: {
-  label: string;
-  value: number | null | undefined;
-  highlight?: boolean;
-}) {
-  const numeric = typeof value === "number" ? value : null;
-  const formatted = numeric == null ? "—" : `${numeric.toFixed(1)}%`;
-  const color =
-    numeric == null
-      ? "text-muted-foreground"
-      : numeric >= 90
-      ? "text-emerald-600"
-      : numeric >= 75
-      ? "text-amber-500"
-      : "text-rose-500";
-
-  return (
-    <div
-      className={`p-4 rounded-xl border ${
-        highlight ? "border-primary/40 bg-primary/5" : "border-border bg-card"
-      }`}
-    >
-      <p className="text-xs text-muted-foreground mb-1">{label}</p>
-      <p className={`text-2xl font-semibold ${color}`}>{formatted}</p>
-      <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full ${
-            numeric == null
-              ? "bg-muted-foreground/30 w-0"
-              : numeric >= 90
-              ? "bg-emerald-500"
-              : numeric >= 75
-              ? "bg-amber-500"
-              : "bg-rose-500"
-          }`}
-          style={{ width: `${numeric ?? 0}%` }}
-        />
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
 from django.contrib.auth import get_user_model
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from features.exams.models import Exam, Question
+from features.exams.models import Exam, Question, QuestionAttachment
 
 User = get_user_model()
 
@@ -89,3 +90,18 @@ class ExamsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(response.data), 1)
         self.assertIn("correct_answer", response.data[0])
+
+    def test_upload_question_attachment(self):
+        question = Question.objects.get(exam=self.exam)
+        png = SimpleUploadedFile("chart.png", b"\x89PNG\r\n\x1a\n", content_type="image/png")
+        response = self.client.post(
+            f"/api/exams/{self.exam.id}/questions/{question.id}/attachments/",
+            {"file": png},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["kind"], QuestionAttachment.Kind.IMAGE)
+        self.assertIn("url", response.data)
+
+        list_q = self.client.get(f"/api/exams/{self.exam.id}/questions/")
+        self.assertEqual(len(list_q.data[0]["attachments"]), 1)

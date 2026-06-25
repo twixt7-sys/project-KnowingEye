@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   apiClient,
+  ApiError,
   buildMonitoringWsUrl,
   type FrameAlert,
   type FrameAnalysis,
@@ -19,9 +20,13 @@ export interface UseMonitoringOptions {
   sessionId: string | undefined;
   intervalMs?: number;
   jpegQuality?: number;
+  /** Max width for captured frames (reduces encode cost). */
+  captureMaxWidth?: number;
   videoConstraints?: MediaStreamConstraints["video"];
   /** Force REST POSTs even if a WebSocket would work. */
   forceRest?: boolean;
+  /** Called when the backend rejects frames because the session is no longer active. */
+  onSessionInactive?: () => void;
 }
 
 export interface UseMonitoringResult {
@@ -32,11 +37,12 @@ export interface UseMonitoringResult {
   alerts: FrameAlert[];
   start: () => Promise<void>;
   stop: () => void;
-  enrollReference: () => Promise<boolean>;
+  enrollReference: () => Promise<{ ok: boolean; message?: string }>;
 }
 
 const DEFAULT_INTERVAL = 1000; // ms — 1 fps is plenty for behaviour scoring
 const DEFAULT_QUALITY = 0.6;
+const DEFAULT_CAPTURE_MAX_WIDTH = 480;
 const DEFAULT_VIDEO: MediaStreamConstraints["video"] = {
   width: { ideal: 640 },
   height: { ideal: 480 },
@@ -51,8 +57,10 @@ export function useMonitoring({
   sessionId,
   intervalMs = DEFAULT_INTERVAL,
   jpegQuality = DEFAULT_QUALITY,
+  captureMaxWidth = DEFAULT_CAPTURE_MAX_WIDTH,
   videoConstraints = DEFAULT_VIDEO,
   forceRest = false,
+  onSessionInactive,
 }: UseMonitoringOptions): UseMonitoringResult {
   const [status, setStatus] = useState<MonitoringStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -63,27 +71,78 @@ export function useMonitoring({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const intervalRef = useRef<number | null>(null);
+  const frameTimerRef = useRef<number | null>(null);
   const sendingRef = useRef(false);
+  const frameBusyRef = useRef(false);
+  const closedRef = useRef(false);
+  const enrollingRef = useRef(false);
+  const onSessionInactiveRef = useRef(onSessionInactive);
+  onSessionInactiveRef.current = onSessionInactive;
+
+  const clearFrameTimer = useCallback(() => {
+    if (frameTimerRef.current !== null) {
+      window.clearTimeout(frameTimerRef.current);
+      frameTimerRef.current = null;
+    }
+  }, []);
+
+  const handleSessionInactive = useCallback(() => {
+    clearFrameTimer();
+    onSessionInactiveRef.current?.();
+  }, [clearFrameTimer]);
+
+  const attachStreamToVideo = useCallback(async () => {
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (!video || !stream) return;
+    const track = stream.getVideoTracks()[0];
+    if (!track || track.readyState === "ended") return;
+    if (video.srcObject !== stream) {
+      video.srcObject = stream;
+    }
+    if (video.paused) {
+      await video.play().catch(() => {});
+    }
+  }, []);
 
   const captureFrame = useCallback((): string | null => {
     const video = videoRef.current;
     if (!video || video.readyState < 2) return null;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) return null;
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track || track.readyState === "ended" || !track.enabled) return null;
     if (!canvasRef.current) canvasRef.current = document.createElement("canvas");
     const canvas = canvasRef.current;
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    const scale = vw > captureMaxWidth ? captureMaxWidth / vw : 1;
+    canvas.width = Math.round(vw * scale);
+    canvas.height = Math.round(vh * scale);
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL("image/jpeg", jpegQuality);
-  }, [jpegQuality]);
+  }, [captureMaxWidth, jpegQuality]);
+
+  const sendFrameOverWs = useCallback(() => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN || frameBusyRef.current || enrollingRef.current) {
+      return;
+    }
+    frameBusyRef.current = true;
+    try {
+      const image = captureFrame();
+      if (image) {
+        ws.send(JSON.stringify({ type: "frame", image }));
+      }
+    } finally {
+      frameBusyRef.current = false;
+    }
+  }, [captureFrame]);
 
   const stop = useCallback(() => {
-    if (intervalRef.current) {
-      window.clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
+    closedRef.current = true;
+    clearFrameTimer();
     if (wsRef.current) {
       try {
         wsRef.current.close();
@@ -97,7 +156,7 @@ export function useMonitoring({
       streamRef.current = null;
     }
     setStatus("closed");
-  }, []);
+  }, [clearFrameTimer]);
 
   const sendViaRest = useCallback(async () => {
     if (!sessionId || sendingRef.current) return;
@@ -111,11 +170,31 @@ export function useMonitoring({
         setAlerts((prev) => [...res.analysis.alerts, ...prev].slice(0, 50));
       }
     } catch (e) {
+      if (e instanceof ApiError && e.status === 400) {
+        const msg = e.detail().toLowerCase();
+        if (msg.includes("expired") || msg.includes("not active")) {
+          handleSessionInactive();
+          return;
+        }
+      }
       console.warn("frame send failed", e);
     } finally {
       sendingRef.current = false;
     }
-  }, [captureFrame, sessionId]);
+  }, [captureFrame, handleSessionInactive, sessionId]);
+
+  const scheduleNextFrame = useCallback(
+    (tick: () => void) => {
+      clearFrameTimer();
+      if (closedRef.current) return;
+      frameTimerRef.current = window.setTimeout(() => {
+        frameTimerRef.current = null;
+        tick();
+        scheduleNextFrame(tick);
+      }, intervalMs);
+    },
+    [clearFrameTimer, intervalMs]
+  );
 
   const start = useCallback(async () => {
     if (!sessionId) {
@@ -123,7 +202,18 @@ export function useMonitoring({
       setStatus("error");
       return;
     }
+    // Keep stream alive across setup step transitions (camera → enroll → ready).
+    if (streamRef.current) {
+      await attachStreamToVideo();
+      if (
+        wsRef.current?.readyState === WebSocket.OPEN ||
+        (frameTimerRef.current !== null && status !== "closed" && status !== "error")
+      ) {
+        return;
+      }
+    }
     setError(null);
+    closedRef.current = false;
     setStatus("requesting-camera");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -131,11 +221,7 @@ export function useMonitoring({
         audio: false,
       });
       streamRef.current = stream;
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = stream;
-        await video.play().catch(() => {});
-      }
+      await attachStreamToVideo();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Camera unavailable";
       setError(msg);
@@ -158,6 +244,11 @@ export function useMonitoring({
               if (incoming?.length) {
                 setAlerts((prev) => [...incoming, ...prev].slice(0, 50));
               }
+            } else if (msg.type === "error") {
+              const message = String(msg.message ?? "").toLowerCase();
+              if (message.includes("expired") || message.includes("not active")) {
+                handleSessionInactive();
+              }
             } else if (msg.type === "alert") {
               setAlerts((prev) => [msg.payload as FrameAlert, ...prev].slice(0, 50));
             }
@@ -169,23 +260,17 @@ export function useMonitoring({
           // Will likely be followed by close → fallback below.
         };
         ws.onclose = () => {
-          if (intervalRef.current) {
-            window.clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
+          clearFrameTimer();
           wsRef.current = null;
-          if (status !== "closed") {
+          if (!closedRef.current) {
             setStatus("fallback-rest");
-            intervalRef.current = window.setInterval(sendViaRest, intervalMs);
+            scheduleNextFrame(() => {
+              void sendViaRest();
+            });
           }
         };
 
-        intervalRef.current = window.setInterval(() => {
-          if (ws.readyState !== WebSocket.OPEN) return;
-          const image = captureFrame();
-          if (!image) return;
-          ws.send(JSON.stringify({ type: "frame", image }));
-        }, intervalMs);
+        scheduleNextFrame(sendFrameOverWs);
         return;
       } catch (e) {
         console.warn("websocket failed, falling back to REST", e);
@@ -193,29 +278,61 @@ export function useMonitoring({
     }
 
     setStatus("fallback-rest");
-    intervalRef.current = window.setInterval(sendViaRest, intervalMs);
+    scheduleNextFrame(() => {
+      void sendViaRest();
+    });
   }, [
-    captureFrame,
+    attachStreamToVideo,
+    clearFrameTimer,
     forceRest,
-    intervalMs,
+    scheduleNextFrame,
+    sendFrameOverWs,
     sendViaRest,
+    handleSessionInactive,
     sessionId,
-    status,
     videoConstraints,
+    status,
   ]);
 
-  const enrollReference = useCallback(async () => {
-    if (!sessionId) return false;
-    const image = captureFrame();
-    if (!image) return false;
+  const enrollReference = useCallback(async (): Promise<{ ok: boolean; message?: string }> => {
+    if (!sessionId) {
+      return { ok: false, message: "Missing session id" };
+    }
+    if (enrollingRef.current) {
+      return { ok: false, message: "Enrollment already in progress." };
+    }
+    enrollingRef.current = true;
     try {
+      await attachStreamToVideo();
+      let image: string | null = null;
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        image = captureFrame();
+        if (image) break;
+        await new Promise((r) => window.setTimeout(r, 100));
+      }
+      if (!image) {
+        return { ok: false, message: "Camera is not ready — check that your webcam is on." };
+      }
+
+      // REST enroll avoids WS timeout races with the frame loop (first ML inference can take 30s+).
       const res = await apiClient.enrollReference({ image, session_id: sessionId });
-      return !!res.ok;
+      return { ok: !!res.ok, message: res.message };
     } catch (e) {
       console.warn("enroll failed", e);
-      return false;
+      if (e instanceof DOMException && e.name === "AbortError") {
+        return { ok: false, message: "Enrollment timed out — try Capture identity now again." };
+      }
+      return { ok: false, message: "Enrollment request failed — try again." };
+    } finally {
+      enrollingRef.current = false;
     }
-  }, [captureFrame, sessionId]);
+  }, [attachStreamToVideo, captureFrame, sessionId]);
+
+  useEffect(() => {
+    if (status === "live" || status === "fallback-rest") {
+      void attachStreamToVideo();
+    }
+  }, [attachStreamToVideo, status]);
 
   useEffect(() => {
     return () => stop();

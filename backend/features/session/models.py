@@ -16,6 +16,7 @@ class ExamSession(models.Model):
     """
 
     class Status(models.TextChoices):
+        SETUP = 'setup', 'Setup'
         IN_PROGRESS = 'in_progress', 'In Progress'
         COMPLETED = 'completed', 'Completed'
         TERMINATED = 'terminated', 'Terminated'
@@ -36,7 +37,12 @@ class ExamSession(models.Model):
     )
     started_at = models.DateTimeField(
         auto_now_add=True,
-        help_text='When the session started'
+        help_text='When the session record was created'
+    )
+    exam_started_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the examinee began the timed exam portion',
     )
     submitted_at = models.DateTimeField(
         null=True,
@@ -50,7 +56,7 @@ class ExamSession(models.Model):
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
-        default=Status.IN_PROGRESS,
+        default=Status.SETUP,
         help_text='Current session status'
     )
     ip_address = models.GenericIPAddressField(
@@ -94,7 +100,7 @@ class ExamSession(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['exam', 'user'],
-                condition=models.Q(status__in=['in_progress']),
+                condition=models.Q(status__in=['in_progress', 'setup']),
                 name='unique_active_session_per_exam_user'
             )
         ]
@@ -109,27 +115,37 @@ class ExamSession(models.Model):
 
     @property
     def time_elapsed(self):
-        """Time elapsed since session started."""
+        """Time elapsed since the timed exam began (or since record creation in setup)."""
+        anchor = self.exam_started_at or self.started_at
         if self.submitted_at:
-            return (self.submitted_at - self.started_at).total_seconds()
-        return (timezone.now() - self.started_at).total_seconds()
+            return (self.submitted_at - anchor).total_seconds()
+        if self.status == self.Status.SETUP:
+            return 0.0
+        return (timezone.now() - anchor).total_seconds()
 
     @property
     def time_remaining_seconds(self):
         """Calculate remaining time in seconds."""
         if self.status == self.Status.COMPLETED:
             return self.time_remaining
+        if self.status == self.Status.SETUP:
+            return self.duration_seconds
         elapsed = self.time_elapsed
         total = self.duration_seconds
-        return max(0, total - elapsed)
+        return max(0, int(total - elapsed))
 
     def is_expired(self):
-        """Check if the session has expired."""
-        return self.time_remaining_seconds <= 0 and self.status == self.Status.IN_PROGRESS
+        """Check if the timed exam portion has expired."""
+        if self.status != self.Status.IN_PROGRESS:
+            return False
+        return self.time_remaining_seconds <= 0
 
     def can_submit(self):
         """Check if the session can be submitted."""
         return self.status == self.Status.IN_PROGRESS
+
+    def can_begin_exam(self):
+        return self.status == self.Status.SETUP
 
     def submit_session(self, time_remaining=None):
         """Mark session as completed and calculate final score."""
@@ -261,6 +277,7 @@ class SessionLog(models.Model):
         EXPIRED = 'expired', 'Session Expired'
         RESUMED = 'resumed', 'Session Resumed'
         PAUSED = 'paused', 'Session Paused'
+        EXAM_BEGAN = 'exam_began', 'Exam Began'
 
     session = models.ForeignKey(
         ExamSession,

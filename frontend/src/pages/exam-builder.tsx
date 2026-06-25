@@ -7,6 +7,9 @@ import {
   ArrowUp,
   CheckCircle2,
   ClipboardList,
+  FileAudio,
+  FileImage,
+  FileText,
   Loader2,
   Plus,
   Save,
@@ -19,6 +22,7 @@ import {
   type Exam,
   type PublishReadiness,
   type Question,
+  type QuestionAttachment,
 } from "../core/config/api";
 
 type Tab = "settings" | "questions" | "publish";
@@ -99,6 +103,9 @@ export function ExamBuilder() {
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [questionDraft, setQuestionDraft] = useState<QuestionDraft>(EMPTY_QUESTION);
+  const [questionAttachments, setQuestionAttachments] = useState<QuestionAttachment[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [importCsv, setImportCsv] = useState(CSV_TEMPLATE);
   const [importBusy, setImportBusy] = useState(false);
 
@@ -165,6 +172,8 @@ export function ExamBuilder() {
   const openNewQuestion = () => {
     setEditingQuestion(null);
     setQuestionDraft({ ...EMPTY_QUESTION, options: ["", "", "", ""] });
+    setQuestionAttachments([]);
+    setPendingFiles([]);
     setShowQuestionForm(true);
   };
 
@@ -177,7 +186,50 @@ export function ExamBuilder() {
       correct_answer: q.correct_answer ?? "",
       points: q.points,
     });
+    setQuestionAttachments(q.attachments ?? []);
+    setPendingFiles([]);
     setShowQuestionForm(true);
+  };
+
+  const uploadAttachment = async (questionId: number, file: File) => {
+    if (!exam) return;
+    setAttachmentBusy(true);
+    try {
+      const attachment = await apiClient.uploadQuestionAttachment(exam.id, questionId, file);
+      setQuestionAttachments((prev) => [...prev, attachment]);
+    } catch (e: unknown) {
+      const err = e as { detail?: () => string; message?: string };
+      setError(err?.detail?.() ?? err?.message ?? "Attachment upload failed");
+    } finally {
+      setAttachmentBusy(false);
+    }
+  };
+
+  const removeAttachment = async (attachment: QuestionAttachment) => {
+    if (!exam || !editingQuestion) return;
+    if (!confirm("Remove this attachment?")) return;
+    setAttachmentBusy(true);
+    try {
+      await apiClient.deleteQuestionAttachment(exam.id, editingQuestion.id, attachment.id);
+      setQuestionAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
+    } catch (e: unknown) {
+      const err = e as { detail?: () => string; message?: string };
+      setError(err?.detail?.() ?? err?.message ?? "Could not delete attachment");
+    } finally {
+      setAttachmentBusy(false);
+    }
+  };
+
+  const handleAttachmentPick = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const picked = Array.from(files);
+    if (editingQuestion) {
+      for (const file of picked) {
+        await uploadAttachment(editingQuestion.id, file);
+      }
+    } else {
+      setPendingFiles((prev) => [...prev, ...picked]);
+    }
   };
 
   const saveQuestion = async () => {
@@ -198,7 +250,10 @@ export function ExamBuilder() {
       if (editingQuestion) {
         await apiClient.updateQuestion(exam.id, editingQuestion.id, payload);
       } else {
-        await apiClient.createQuestion(exam.id, payload);
+        const created = await apiClient.createQuestion(exam.id, payload);
+        for (const file of pendingFiles) {
+          await apiClient.uploadQuestionAttachment(exam.id, created.id, file);
+        }
       }
       setShowQuestionForm(false);
       await load();
@@ -499,6 +554,7 @@ export function ExamBuilder() {
                       {q.question_type === "multiple_choice" && q.options?.length
                         ? ` · ${q.options.length} options`
                         : ""}
+                      {q.attachments?.length ? ` · ${q.attachments.length} attachment(s)` : ""}
                     </p>
                   </div>
                   {isDraft && (
@@ -712,6 +768,63 @@ export function ExamBuilder() {
                 </Field>
               )}
 
+              <div className="rounded-lg border border-border p-4 space-y-3">
+                <p className="text-sm font-medium">Attachments (image, PDF, audio)</p>
+                <p className="text-xs text-muted-foreground">
+                  Max 10 MB each. Shown to examinees above the question text.
+                </p>
+                <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border p-4 hover:bg-accent/50">
+                  <Upload className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    {attachmentBusy ? "Uploading…" : "Click to add files"}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf,audio/mpeg,audio/wav,audio/*"
+                    multiple
+                    className="hidden"
+                    disabled={attachmentBusy}
+                    onChange={(e) => {
+                      void handleAttachmentPick(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+                <ul className="space-y-2 text-sm">
+                  {questionAttachments.map((a) => (
+                    <li key={a.id} className="flex items-center gap-2 rounded border px-3 py-2">
+                      <AttachmentIcon kind={a.kind} />
+                      <span className="flex-1 truncate">{a.caption || a.url.split("/").pop()}</span>
+                      {editingQuestion && (
+                        <button
+                          type="button"
+                          onClick={() => void removeAttachment(a)}
+                          className="text-red-500 hover:text-red-600"
+                          aria-label="Remove attachment"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                  {pendingFiles.map((f, i) => (
+                    <li key={`pending-${i}`} className="flex items-center gap-2 rounded border px-3 py-2">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      <span className="flex-1 truncate">{f.name}</span>
+                      <span className="text-xs text-muted-foreground">pending save</span>
+                      <button
+                        type="button"
+                        onClick={() => setPendingFiles((prev) => prev.filter((_, j) => j !== i))}
+                        className="text-red-500"
+                        aria-label="Remove pending file"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() => setShowQuestionForm(false)}
@@ -733,6 +846,12 @@ export function ExamBuilder() {
       )}
     </div>
   );
+}
+
+function AttachmentIcon({ kind }: { kind: QuestionAttachment["kind"] }) {
+  if (kind === "image") return <FileImage className="w-4 h-4 text-muted-foreground" />;
+  if (kind === "audio") return <FileAudio className="w-4 h-4 text-muted-foreground" />;
+  return <FileText className="w-4 h-4 text-muted-foreground" />;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

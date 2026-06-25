@@ -5,6 +5,10 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
+def _question_attachment_path(instance: "QuestionAttachment", filename: str) -> str:
+    return f"questions/{instance.question.exam_id}/{instance.question_id}/{filename}"
+
+
 class Exam(models.Model):
     """
     Exam model representing an examination.
@@ -165,4 +169,31 @@ class Question(models.Model):
         """Update parent exam question count when question is saved."""
         super().save(*args, **kwargs)
         self.exam.update_question_count()
+
+
+class QuestionAttachment(models.Model):
+    """Media file attached to an exam question."""
+
+    class Kind(models.TextChoices):
+        IMAGE = "image", "Image"
+        PDF = "pdf", "PDF"
+        AUDIO = "audio", "Audio"
+
+    question = models.ForeignKey(
+        Question,
+        on_delete=models.CASCADE,
+        related_name="attachments",
+    )
+    file = models.FileField(upload_to=_question_attachment_path)
+    kind = models.CharField(max_length=16, choices=Kind.choices)
+    caption = models.CharField(max_length=255, blank=True, default="")
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "exams_question_attachment"
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"Attachment {self.kind} for Q{self.question.order}"
 

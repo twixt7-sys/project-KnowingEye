@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate, useParams } from "react-router";
 import {
   Camera,
   AlertTriangle,
@@ -10,6 +10,10 @@ import {
   ChevronUp,
   Flag,
   Loader2,
+  CornerDownLeft,
+  CornerDownRight,
+  CornerUpLeft,
+  CornerUpRight,
   ScanFace,
   UserCheck,
   Eye,
@@ -19,10 +23,15 @@ import {
 } from "lucide-react";
 import {
   examAPI,
+  apiClient,
   type ExamSession,
+  type Question,
   type ResponseData,
   type FrameMetrics,
+  type QuestionAttachment,
 } from "../core/config/api";
+import { MonitoringVideoOverlay } from "../shared/components/monitoring/monitoring-video-overlay";
+import { Textarea } from "../shared/components/ui/textarea";
 import { useMonitoring } from "../shared/hooks/use-monitoring";
 
 /**
@@ -39,14 +48,151 @@ const DETECTION_PARAMS: {
 }[] = [
   { metricKey: "face_presence_pct", flagKey: "face_presence", label: "Face presence", icon: ScanFace },
   { metricKey: "identity_match_pct", flagKey: "identity", label: "Identity match", icon: UserCheck },
-  { metricKey: "gaze_focus_pct", flagKey: "gaze_focus", label: "Eye gaze focus", icon: Eye },
-  { metricKey: "posture_compliance_pct", flagKey: "posture", label: "Posture", icon: PersonStanding },
+  { metricKey: "gaze_focus_pct", flagKey: "gaze_focus", label: "Head facing camera", icon: Eye },
+  { metricKey: "posture_compliance_pct", flagKey: "posture", label: "Upper body visible", icon: PersonStanding },
   { metricKey: "object_clear_pct", flagKey: "object_clear", label: "No prohibited objects", icon: Smartphone },
 ];
+
+type MonitoringDockPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
+
+const DOCK_POSITIONS: {
+  id: MonitoringDockPosition;
+  label: string;
+  className: string;
+  icon: typeof CornerDownRight;
+}[] = [
+  { id: "bottom-right", label: "Bottom right", className: "bottom-4 right-4", icon: CornerDownRight },
+  { id: "bottom-left", label: "Bottom left", className: "bottom-4 left-4", icon: CornerDownLeft },
+  { id: "top-right", label: "Top right", className: "top-20 right-4", icon: CornerUpRight },
+  { id: "top-left", label: "Top left", className: "top-20 left-4", icon: CornerUpLeft },
+];
+
+const DOCK_STORAGE_KEY = "knowing-eye-monitoring-dock-position";
+
+function choiceOptions(question: Question): string[] {
+  if (question.question_type === "true_false") {
+    return question.options?.length >= 2 ? question.options : ["True", "False"];
+  }
+  return question.options ?? [];
+}
+
+function QuestionAnswerFields({
+  question,
+  value,
+  onChange,
+}: {
+  question: Question;
+  value: string;
+  onChange: (answer: string) => void;
+}) {
+  const qtype = question.question_type;
+
+  if (qtype === "short_answer") {
+    return (
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-muted-foreground" htmlFor={`answer-${question.id}`}>
+          Your answer
+        </label>
+        <input
+          id={`answer-${question.id}`}
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Type your answer here…"
+          className="w-full rounded-lg border border-border bg-background px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary/40"
+        />
+      </div>
+    );
+  }
+
+  if (qtype === "essay") {
+    return (
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-muted-foreground" htmlFor={`answer-${question.id}`}>
+          Your response
+        </label>
+        <Textarea
+          id={`answer-${question.id}`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Write your essay response here…"
+          rows={8}
+          className="min-h-40"
+        />
+        <p className="text-xs text-muted-foreground">
+          Essay responses may be flagged for manual review.
+        </p>
+      </div>
+    );
+  }
+
+  const options = choiceOptions(question);
+  if (options.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+        This question has no answer choices configured. You can skip it or contact your instructor.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {options.map((option, index) => (
+        <button
+          key={`${question.id}-${index}`}
+          type="button"
+          onClick={() => onChange(option)}
+          className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+            value === option
+              ? "border-primary bg-primary/5"
+              : "border-border hover:border-primary/50 hover:bg-accent/50"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                value === option ? "border-primary bg-primary" : "border-muted-foreground"
+              }`}
+            >
+              {value === option && <div className="w-2 h-2 rounded-full bg-white" />}
+            </div>
+            <span>{option}</span>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function QuestionAttachments({ attachments }: { attachments?: QuestionAttachment[] }) {
+  if (!attachments?.length) return null;
+  return (
+    <div className="mb-6 space-y-3">
+      {attachments.map((att) => (
+        <div key={att.id} className="rounded-lg border bg-muted/30 p-3">
+          {att.kind === "image" && (
+            <img src={att.url} alt={att.caption || "Question image"} className="max-h-64 rounded-md mx-auto" />
+          )}
+          {att.kind === "pdf" && (
+            <a href={att.url} target="_blank" rel="noreferrer" className="text-sm text-primary underline">
+              Open PDF{att.caption ? `: ${att.caption}` : ""}
+            </a>
+          )}
+          {att.kind === "audio" && (
+            <audio controls src={att.url} className="w-full">
+              Audio attachment
+            </audio>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function ExamTakingWithBackend() {
   const { examId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Backend integration state
   const [session, setSession] = useState<ExamSession | null>(null);
@@ -64,46 +210,57 @@ export function ExamTakingWithBackend() {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [behaviorAlerts, setBehaviorAlerts] = useState<string[]>([]);
   const [feedOpen, setFeedOpen] = useState(true);
-  const [identityStatus, setIdentityStatus] = useState<
-    "pending" | "enrolling" | "enrolled" | "failed"
-  >("pending");
-  const identityEnrolledRef = useRef(false);
+  const [dockPosition, setDockPosition] = useState<MonitoringDockPosition>(() => {
+    const saved = localStorage.getItem(DOCK_STORAGE_KEY);
+    if (saved === "bottom-left" || saved === "top-right" || saved === "top-left") return saved;
+    return "bottom-right";
+  });
   const monitoring = useMonitoring({
     sessionId: session?.id,
-    intervalMs: 3000,
+    intervalMs: 1000,
   });
   const webcamActive =
     monitoring.status === "live" || monitoring.status === "fallback-rest";
 
-  // Load exam session on component mount
+  // Load in-progress session (must complete setup first)
   useEffect(() => {
     const loadExamSession = async () => {
+      const eid = parseInt(examId!, 10);
       try {
         setLoading(true);
-        const examSession = await examAPI.startSession(parseInt(examId!, 10));
+        const fromState = (location.state as { session?: ExamSession } | null)?.session;
+        let examSession = fromState;
+        if (!examSession || examSession.status !== "in_progress") {
+          const sessions = await apiClient.listSessions({
+            exam: eid,
+            status: "in_progress",
+          });
+          examSession = sessions[0];
+        }
+        if (!examSession || examSession.status !== "in_progress") {
+          navigate(`/examinee/exam/${eid}/setup`, { replace: true });
+          return;
+        }
+        const fresh = await apiClient.getSession(examSession.id);
         setSession({
-          ...examSession,
-          time_remaining: examSession.time_remaining_seconds ?? examSession.exam.duration_minutes * 60,
-          duration: examSession.exam.duration_minutes * 60,
-        } as ExamSession);
+          ...fresh,
+          time_remaining: fresh.time_remaining_seconds ?? fresh.exam.duration_minutes * 60,
+        } as ExamSession & { time_remaining?: number });
 
-        // Initialize time spent tracking for each question
         const initialTimeSpent: { [key: number]: number } = {};
-        examSession.exam.questions.forEach((_: any, index: number) => {
+        fresh.exam.questions?.forEach((_, index) => {
           initialTimeSpent[index] = 0;
         });
         setTimeSpent(initialTimeSpent);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to start exam');
+        setError(err instanceof Error ? err.message : "Failed to load exam");
       } finally {
         setLoading(false);
       }
     };
 
-    if (examId) {
-      loadExamSession();
-    }
-  }, [examId]);
+    if (examId) loadExamSession();
+  }, [examId, location.state, navigate]);
 
   // Timer countdown (now uses session duration)
   useEffect(() => {
@@ -150,30 +307,6 @@ export function ExamTakingWithBackend() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.id]);
 
-  // Identity enrollment: once the camera is live, capture a single reference
-  // frame for this session. Every later frame is then verified against it so
-  // the examinee's identity stays consistent (Objective 3.1 / 4.3).
-  useEffect(() => {
-    if (identityEnrolledRef.current) return;
-    if (!webcamActive) return;
-
-    let cancelled = false;
-    setIdentityStatus("enrolling");
-    // Small delay lets the webcam expose/auto-focus before we snapshot.
-    const timer = window.setTimeout(async () => {
-      const ok = await monitoring.enrollReference();
-      if (cancelled) return;
-      identityEnrolledRef.current = ok;
-      setIdentityStatus(ok ? "enrolled" : "failed");
-    }, 2500);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [webcamActive]);
-
   // Surface any alerts coming from the monitoring hook to the UI banner.
   useEffect(() => {
     if (!monitoring.alerts.length) return;
@@ -181,13 +314,6 @@ export function ExamTakingWithBackend() {
       monitoring.alerts.slice(0, 3).map((a) => a.message || "Compliance alert")
     );
   }, [monitoring.alerts]);
-
-  const retryEnroll = async () => {
-    setIdentityStatus("enrolling");
-    const ok = await monitoring.enrollReference();
-    identityEnrolledRef.current = ok;
-    setIdentityStatus(ok ? "enrolled" : "failed");
-  };
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -295,10 +421,18 @@ export function ExamTakingWithBackend() {
     );
   }
 
-  const questions = session.exam.questions;
-  const answeredCount = Object.keys(answers).filter(key => answers[parseInt(key)]).length;
-  const progress = (answeredCount / questions.length) * 100;
+  const questions = session.exam.questions as Question[];
+  const activeQuestion = questions[currentQuestion];
+  const activeAnswer = answers[activeQuestion?.id ?? 0] ?? "";
+  const answeredCount = questions.filter((q) => (answers[q.id] ?? "").trim().length > 0).length;
+  const progress = questions.length ? (answeredCount / questions.length) * 100 : 0;
   const timeRemaining = session.time_remaining || 0;
+  const dockLayout = DOCK_POSITIONS.find((p) => p.id === dockPosition) ?? DOCK_POSITIONS[0];
+
+  const setMonitoringDockPosition = (pos: MonitoringDockPosition) => {
+    setDockPosition(pos);
+    localStorage.setItem(DOCK_STORAGE_KEY, pos);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -360,55 +494,35 @@ export function ExamTakingWithBackend() {
                     Question {currentQuestion + 1} of {questions.length}
                   </h2>
                   <button
-                    onClick={() => toggleFlag(currentQuestion)}
+                    onClick={() => toggleFlag(activeQuestion.id)}
                     className={`p-2 rounded-lg transition-colors ${
-                      flaggedQuestions.has(currentQuestion)
+                      flaggedQuestions.has(activeQuestion.id)
                         ? "bg-orange-500/10 text-orange-600 dark:text-orange-400"
                         : "hover:bg-accent"
                     }`}
                   >
                     <Flag
                       className={`w-5 h-5 ${
-                        flaggedQuestions.has(currentQuestion) ? "fill-current" : ""
+                        flaggedQuestions.has(activeQuestion.id) ? "fill-current" : ""
                       }`}
                     />
                   </button>
                 </div>
-                <p className="text-lg mb-6">
-                  {questions[currentQuestion].question_text}
+                <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                  {activeQuestion.question_type.replace("_", " ")}
                 </p>
+                <p className="text-lg mb-6">
+                  {activeQuestion.question_text}
+                </p>
+                <QuestionAttachments attachments={activeQuestion.attachments} />
               </div>
 
-              {/* Options */}
-              <div className="space-y-3 mb-8">
-                {questions[currentQuestion].options.map((option: any, index: number) => (
-                  <button
-                    key={index}
-                    onClick={() =>
-                      handleAnswerSelect(currentQuestion, option)
-                    }
-                    className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                      answers[currentQuestion] === option
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50 hover:bg-accent/50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          answers[currentQuestion] === option
-                            ? "border-primary bg-primary"
-                            : "border-muted-foreground"
-                        }`}
-                      >
-                        {answers[currentQuestion] === option && (
-                          <div className="w-2 h-2 rounded-full bg-white" />
-                        )}
-                      </div>
-                      <span>{option}</span>
-                    </div>
-                  </button>
-                ))}
+              <div className="mb-8">
+                <QuestionAnswerFields
+                  question={activeQuestion}
+                  value={activeAnswer}
+                  onChange={(answer) => handleAnswerSelect(activeQuestion.id, answer)}
+                />
               </div>
 
               {/* Navigation */}
@@ -468,20 +582,20 @@ export function ExamTakingWithBackend() {
               <div className="bg-card rounded-xl border border-border p-6">
                 <h3 className="font-semibold mb-4">All Questions</h3>
                 <div className="grid grid-cols-5 gap-2">
-                  {questions.map((_: any, index: number) => (
+                  {questions.map((q, index) => (
                     <button
-                      key={index}
+                      key={q.id}
                       onClick={() => setCurrentQuestion(index)}
                       className={`aspect-square rounded-lg text-sm font-medium transition-all relative ${
                         currentQuestion === index
                           ? "bg-primary text-white ring-2 ring-primary ring-offset-2 ring-offset-background"
-                          : answers[index]
+                          : (answers[q.id] ?? "").trim()
                           ? "bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20"
                           : "bg-muted text-muted-foreground hover:bg-accent"
                       }`}
                     >
                       {index + 1}
-                      {flaggedQuestions.has(index) && (
+                      {flaggedQuestions.has(q.id) && (
                         <Flag className="w-3 h-3 absolute -top-1 -right-1 fill-orange-500 text-orange-500" />
                       )}
                     </button>
@@ -493,144 +607,148 @@ export function ExamTakingWithBackend() {
         </div>
       </div>
 
-      {/* Floating monitoring feed with live detection parameters */}
-      <div className="fixed bottom-4 right-4 z-40 w-72 max-w-[calc(100vw-2rem)]">
+      {/* Floating monitoring feed — repositionable, video + metrics side by side */}
+      <div
+        className={`fixed z-40 max-w-[calc(100vw-2rem)] ${dockLayout.className} ${
+          feedOpen ? "w-[min(520px,calc(100vw-2rem))]" : "w-72"
+        }`}
+      >
         <div className="bg-card/95 backdrop-blur border border-border rounded-xl shadow-xl shadow-black/20 overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setFeedOpen((v) => !v)}
-            className="w-full flex items-center justify-between gap-2 px-4 py-3 hover:bg-accent/50 transition-colors"
-          >
-            <span className="flex items-center gap-2">
-              <Camera className="w-4 h-4 text-primary" />
-              <span className="font-semibold text-sm">Monitoring feed</span>
-            </span>
-            <span className="flex items-center gap-2">
-              <span
-                className={`text-xs font-medium ${
-                  monitoring.analysis && monitoring.analysis.overall_compliance_pct < 80
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {monitoring.analysis
-                  ? `${monitoring.analysis.overall_compliance_pct.toFixed(0)}%`
-                  : "…"}
+          <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/60">
+            <button
+              type="button"
+              onClick={() => setFeedOpen((v) => !v)}
+              className="flex flex-1 items-center justify-between gap-2 py-1 hover:opacity-80 transition-opacity min-w-0"
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <Camera className="w-4 h-4 text-primary shrink-0" />
+                <span className="font-semibold text-sm truncate">Monitoring feed</span>
               </span>
-              {feedOpen ? (
-                <ChevronDown className="w-4 h-4 text-muted-foreground" />
-              ) : (
-                <ChevronUp className="w-4 h-4 text-muted-foreground" />
-              )}
-            </span>
-          </button>
-
-          {feedOpen && (
-            <div className="px-3 pb-3 space-y-3 border-t border-border pt-3">
-              {/* Live camera */}
-              <div className="aspect-video bg-black rounded-lg relative overflow-hidden">
-                <video
-                  ref={monitoring.videoRef}
-                  className="w-full h-full object-cover"
-                  muted
-                  playsInline
-                />
-                {!webcamActive && (
-                  <Camera className="absolute inset-0 m-auto w-10 h-10 text-muted-foreground" />
-                )}
-                <div
-                  className={`absolute top-2 left-2 px-2 py-0.5 text-[10px] rounded-full flex items-center gap-1 ${
-                    webcamActive ? "bg-red-500 text-white" : "bg-gray-700 text-gray-200"
+              <span className="flex items-center gap-2 shrink-0">
+                <span
+                  className={`text-xs font-medium ${
+                    monitoring.analysis && monitoring.analysis.overall_compliance_pct < 80
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-muted-foreground"
                   }`}
                 >
-                  <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  {monitoring.status === "live"
-                    ? "Recording (WebSocket)"
-                    : monitoring.status === "fallback-rest"
-                    ? "Recording (REST)"
-                    : monitoring.status}
-                </div>
-              </div>
+                  {monitoring.analysis
+                    ? `${monitoring.analysis.overall_compliance_pct.toFixed(0)}%`
+                    : "…"}
+                </span>
+                {feedOpen ? (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                )}
+              </span>
+            </button>
+            <div className="flex items-center gap-0.5 shrink-0 border-l border-border pl-2">
+              {DOCK_POSITIONS.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  title={`Move panel: ${label}`}
+                  aria-label={`Move panel: ${label}`}
+                  onClick={() => setMonitoringDockPosition(id)}
+                  className={`p-1.5 rounded-md transition-colors ${
+                    dockPosition === id
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                </button>
+              ))}
+            </div>
+          </div>
 
-              {/* Detection parameters (study objectives 3 & 4) */}
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">
-                  Detected parameters
-                </p>
-                <div className="space-y-2">
-                  {DETECTION_PARAMS.map((param) => {
-                    const metrics = monitoring.analysis?.metrics;
-                    const raw = metrics ? metrics[param.metricKey] : null;
-                    const value = typeof raw === "number" ? raw : null;
-                    const flagged = metrics?.flagged_metrics?.includes(param.flagKey);
-                    return (
-                      <div key={param.metricKey}>
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span className="flex items-center gap-1.5 text-muted-foreground">
-                            <param.icon className="w-3.5 h-3.5" />
-                            {param.label}
-                          </span>
-                          <span
-                            className={`font-medium ${
-                              flagged
-                                ? "text-red-600 dark:text-red-400"
-                                : value === null
-                                ? "text-muted-foreground"
-                                : "text-foreground"
-                            }`}
-                          >
-                            {value === null ? "n/a" : `${value.toFixed(0)}%`}
-                          </span>
-                        </div>
-                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-300 ${
-                              flagged
-                                ? "bg-red-500"
-                                : "bg-gradient-to-r from-primary to-secondary"
-                            }`}
-                            style={{ width: `${value ?? 0}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+          {feedOpen && (
+            <div className="p-3">
+              <div className="flex flex-row gap-3 items-stretch">
+                {/* Live camera */}
+                <div className="w-[44%] min-w-[140px] shrink-0">
+                  <div className="aspect-[3/4] bg-black rounded-lg relative overflow-hidden h-full min-h-[160px]">
+                    <video
+                      ref={monitoring.videoRef}
+                      className="h-full w-full object-cover scale-x-[-1]"
+                      autoPlay
+                      muted
+                      playsInline
+                    />
+                    <MonitoringVideoOverlay
+                      videoRef={monitoring.videoRef}
+                      analysis={monitoring.analysis}
+                      showPostureGuide
+                      guideSize="compact"
+                      mirrored
+                    />
+                    {!webcamActive && (
+                      <Camera className="absolute inset-0 m-auto w-10 h-10 text-muted-foreground" />
+                    )}
+                    <div
+                      className={`absolute top-2 left-2 px-2 py-0.5 text-[10px] rounded-full flex items-center gap-1 ${
+                        webcamActive ? "bg-red-500 text-white" : "bg-gray-700 text-gray-200"
+                      }`}
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      {monitoring.status === "live"
+                        ? "Live"
+                        : monitoring.status === "fallback-rest"
+                        ? "REST"
+                        : monitoring.status}
+                    </div>
+                  </div>
                 </div>
-                <div className="mt-3 flex items-center gap-2 text-[11px]">
-                  <UserCheck
-                    className={`w-3.5 h-3.5 ${
-                      identityStatus === "enrolled"
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : identityStatus === "failed"
-                        ? "text-red-600 dark:text-red-400"
-                        : "text-muted-foreground"
-                    }`}
-                  />
-                  {identityStatus === "enrolling" && (
-                    <span className="text-muted-foreground">Enrolling reference face…</span>
-                  )}
-                  {identityStatus === "pending" && (
-                    <span className="text-muted-foreground">Waiting for camera…</span>
-                  )}
-                  {identityStatus === "enrolled" && (
-                    <span className="text-emerald-600 dark:text-emerald-400">
-                      Identity reference enrolled
-                    </span>
-                  )}
-                  {identityStatus === "failed" && (
-                    <>
-                      <span className="text-red-600 dark:text-red-400">
-                        No face captured
-                      </span>
-                      <button
-                        type="button"
-                        onClick={retryEnroll}
-                        className="ml-auto underline hover:no-underline text-muted-foreground"
-                      >
-                        Retry
-                      </button>
-                    </>
-                  )}
+
+                {/* Detection parameters */}
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-2">
+                    Detected parameters
+                  </p>
+                  <div className="space-y-2">
+                    {DETECTION_PARAMS.map((param) => {
+                      const metrics = monitoring.analysis?.metrics;
+                      const raw = metrics ? metrics[param.metricKey] : null;
+                      const value = typeof raw === "number" ? raw : null;
+                      const flagged = metrics?.flagged_metrics?.includes(param.flagKey);
+                      return (
+                        <div key={param.metricKey}>
+                          <div className="flex items-center justify-between text-xs mb-0.5 gap-2">
+                            <span className="flex items-center gap-1 text-muted-foreground min-w-0 truncate">
+                              <param.icon className="w-3 h-3 shrink-0" />
+                              <span className="truncate">{param.label}</span>
+                            </span>
+                            <span
+                              className={`font-medium shrink-0 ${
+                                flagged
+                                  ? "text-red-600 dark:text-red-400"
+                                  : value === null
+                                  ? "text-muted-foreground"
+                                  : "text-foreground"
+                              }`}
+                            >
+                              {value === null ? "n/a" : `${value.toFixed(0)}%`}
+                            </span>
+                          </div>
+                          <div className="h-1 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-300 ${
+                                flagged
+                                  ? "bg-red-500"
+                                  : "bg-gradient-to-r from-primary to-secondary"
+                              }`}
+                              style={{ width: `${value ?? 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400">
+                    <UserCheck className="w-3 h-3 shrink-0" />
+                    Identity verified during setup
+                  </div>
                 </div>
               </div>
             </div>

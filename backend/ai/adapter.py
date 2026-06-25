@@ -195,6 +195,40 @@ def _apply_temporal_stub(session_id: str, payload: dict[str, Any]) -> dict[str, 
 
 _STUB_IDENTITY_THRESHOLD = 0.15
 _ALERT_THRESHOLD_PCT = 80.0
+_STUB_CASCADE = None
+
+
+def _stub_detect_face_count(frame_bgr) -> int:
+    global _STUB_CASCADE
+    if not hasattr(frame_bgr, "shape"):
+        return 0
+    try:
+        import cv2
+
+        if _STUB_CASCADE is None:
+            _STUB_CASCADE = cv2.CascadeClassifier(
+                cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+            )
+        gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+        if float(gray.mean()) < 10:
+            return 0
+        h, w = gray.shape[:2]
+        rects = _STUB_CASCADE.detectMultiScale(gray, 1.08, 6, minSize=(72, 72))
+        count = 0
+        for x, y, bw, bh in rects:
+            if _is_plausible_face_stub((int(x), int(y), int(bw), int(bh)), w, h):
+                count += 1
+        return count
+    except Exception:  # noqa: BLE001
+        return 0
+
+
+def _is_plausible_face_stub(bbox: tuple[int, int, int, int], frame_w: int, frame_h: int) -> bool:
+    _, _, bw, bh = bbox
+    if bw < 56 or bh < 56:
+        return False
+    ratio = (bw * bh) / max(frame_w * frame_h, 1)
+    return 0.012 <= ratio <= 0.72
 
 
 class _StubPipeline:
@@ -208,9 +242,18 @@ class _StubPipeline:
             import numpy as np
 
             gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
-            if float(gray.mean()) < 40:
+            if float(gray.mean()) < 12:
                 return None
-            small = cv2.resize(gray, (16, 16)).astype("float32").flatten()
+
+            # Prefer a center-weighted crop so enrollment works when the face
+            # fills the middle of the frame (typical webcam framing).
+            h, w = gray.shape[:2]
+            y0, y1 = int(h * 0.08), int(h * 0.92)
+            x0, x1 = int(w * 0.12), int(w * 0.88)
+            crop = gray[y0:y1, x0:x1]
+            source = crop if crop.size and float(crop.mean()) >= float(gray.mean()) else gray
+
+            small = cv2.resize(source, (16, 16)).astype("float32").flatten()
             norm = float(np.linalg.norm(small))
             if norm < 1e-6:
                 return None
@@ -224,24 +267,23 @@ class _StubPipeline:
         session_id: str | None = None,
         reference_embedding: list[float] | None = None,
     ) -> dict[str, Any]:
-        h, w = (frame_bgr.shape[:2] if hasattr(frame_bgr, "shape") else (0, 0))
-        try:
-            brightness = float(frame_bgr.mean()) if hasattr(frame_bgr, "mean") else 0.0
-        except Exception:
-            brightness = 0.0
-        face_ok = brightness > 40
+        face_count = _stub_detect_face_count(frame_bgr)
+        from ai.knowing_eye.behavior.normalize import (
+            face_presence_pct,
+            gaze_focus_pct,
+            object_clear_pct,
+            overall_compliance_pct,
+            posture_compliance_pct,
+        )
 
-        face_presence = 95.0 if face_ok else 40.0
-        gaze = 90.0 if face_ok else 50.0
-        posture = 88.0
-        object_clear = 100.0
+        face_presence = face_presence_pct(face_count)
+        gaze = gaze_focus_pct(0.0 if face_count else None, 0.0 if face_count else None, 40, 35)
+        posture = posture_compliance_pct(face_count > 0, None, None, 0.18)
+        object_clear = object_clear_pct(0.0)
 
         identity_pct, identity_distance = self._identity_score(frame_bgr, reference_embedding)
 
-        metric_vals = [face_presence, gaze, posture, object_clear]
-        if identity_pct is not None:
-            metric_vals.append(identity_pct)
-        overall = round(sum(metric_vals) / len(metric_vals), 1)
+        overall = overall_compliance_pct(face_presence, gaze, posture, identity_pct, object_clear)
 
         t = _ALERT_THRESHOLD_PCT
         flagged: list[str] = []
@@ -268,9 +310,12 @@ class _StubPipeline:
             "all_compliant": len(flagged) == 0,
         }
 
+        h, w = (frame_bgr.shape[:2] if hasattr(frame_bgr, "shape") else (0, 0))
+        face_ok = face_count >= 1
+
         events: list[dict[str, Any]] = []
         alerts: list[dict[str, Any]] = []
-        if not face_ok:
+        if face_count == 0:
             events.append(
                 {
                     "event_type": "no_face",
@@ -321,17 +366,21 @@ class _StubPipeline:
             "timestamp": None,
             "frame_index": None,
             "face": {
-                "count": 1 if face_ok else 0,
+                "count": face_count,
                 "head_yaw_deg": 0.0 if face_ok else None,
                 "head_pitch_deg": 0.0 if face_ok else None,
                 "identity_distance": identity_distance,
+                "bbox": [int(w * 0.25), int(h * 0.15), int(w * 0.5), int(h * 0.55)] if face_ok and w and h else None,
+                "bbox_norm": [0.25, 0.15, 0.5, 0.55] if face_ok else None,
             },
             "posture": {
                 "detected": face_ok,
                 "shoulder_tilt_ratio": 0.05 if face_ok else None,
                 "spine_lean_ratio": 0.1 if face_ok else None,
+                "guide_status": "ok" if face_ok else "no_pose",
             },
             "objects": [],
+            "frame_size": [w, h] if w and h else None,
             "metrics": metrics,
             "overall_compliance_pct": overall,
             "behavior_score": round(overall / 100.0, 4),
@@ -407,9 +456,51 @@ def analyze_frame_bgr(frame_bgr, session_id: str | None = None) -> dict[str, Any
     return payload
 
 
+def _guaranteed_setup_embedding(frame_bgr) -> list[float] | None:
+    """Last-resort embedding for proctoring setup when ML detectors fail."""
+    if not hasattr(frame_bgr, "shape"):
+        return None
+    try:
+        import cv2
+        import numpy as np
+
+        gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+        h, w = gray.shape[:2]
+        cy, cx = h // 2, w // 2
+        y0, y1 = max(0, cy - h // 3), min(h, cy + h // 3)
+        x0, x1 = max(0, cx - w // 3), min(w, cx + w // 3)
+        crop = gray[y0:y1, x0:x1]
+        if crop.size == 0 or float(crop.mean()) < 8:
+            return None
+        small = cv2.resize(crop, (16, 16)).astype("float32").flatten()
+        norm = float(np.linalg.norm(small))
+        if norm < 1e-6:
+            return None
+        return (small / norm).tolist()
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def enroll_reference(frame_bgr, session=None) -> dict[str, Any]:
     mode = get_pipeline_mode()
-    embedding = compute_embedding(frame_bgr)
+    embedding: list[float] | None = None
+    embedding_backend = mode
+
+    try:
+        embedding = compute_embedding(frame_bgr)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("compute_embedding failed during enroll: %s", exc)
+
+    if not embedding:
+        embedding = _StubPipeline().compute_embedding(frame_bgr)
+        if embedding:
+            embedding_backend = "stub"
+
+    if not embedding:
+        embedding = _guaranteed_setup_embedding(frame_bgr)
+        if embedding:
+            embedding_backend = "appearance_fallback"
+
     if not embedding:
         return {
             "ok": False,
@@ -422,7 +513,13 @@ def enroll_reference(frame_bgr, session=None) -> dict[str, Any]:
         try:
             from ai.identity_store import store_reference
 
-            store_reference(session, embedding, mode)
+            store_reference(session, embedding, embedding_backend)
+            logger.info(
+                "identity enrolled session=%s dims=%d backend=%s",
+                session.id,
+                len(embedding),
+                embedding_backend,
+            )
         except Exception as exc:  # noqa: BLE001
             logger.exception("store_reference failed: %s", exc)
             return {
@@ -436,7 +533,7 @@ def enroll_reference(frame_bgr, session=None) -> dict[str, Any]:
         "ok": True,
         "enrolled": True,
         "pipeline_mode": mode,
-        "backend": mode,
+        "backend": embedding_backend,
         "dims": len(embedding),
         "message": "Reference face enrolled.",
     }

@@ -182,7 +182,7 @@ export function StudentDashboard() {
               </Button>
               <Button asChild className="flex-1">
                 <Link
-                  to={`/examinee/exam/${selectedExam.id}`}
+                  to={`/examinee/exam/${selectedExam.id}/setup`}
                   onClick={() => setShowExamInstructions(false)}
                 >
                   Begin exam

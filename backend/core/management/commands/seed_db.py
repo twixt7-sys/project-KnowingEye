@@ -8,21 +8,10 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.db.models import Q
 from django.utils import timezone
 
 from features.exams.models import Exam, Question
 from features.session.models import ExamSession, Response
-
-
-def models_q_in_exams_or_users(exam_ids, user_ids):
-    """Build a Q for sessions belonging to any seeded exam or user."""
-    q = Q(pk__in=[])
-    if exam_ids:
-        q |= Q(exam_id__in=exam_ids)
-    if user_ids:
-        q |= Q(user_id__in=user_ids)
-    return q
 
 
 class Command(BaseCommand):
@@ -257,33 +246,33 @@ class Command(BaseCommand):
 
     def flush_data(self):
         data_dir = self.get_data_dir()
-        self.stdout.write('Removing seeded CSV test data...')
+        self.stdout.write('Removing all exam data and seeded users...')
 
-        question_ids = self.read_csv_ids(data_dir / 'questions.csv', id_field='id', cls=int)
-        exam_ids = self.read_csv_ids(data_dir / 'exams.csv', id_field='id', cls=int)
         user_ids = self.read_csv_ids(data_dir / 'users.csv', id_field='id', cls=int)
 
-        # Cascade: drop every session that references a seed exam or seed user,
-        # not just the ones present in the CSV. This is needed because dev work
-        # often creates extra sessions which would otherwise block exam deletion
-        # (Exam -> ExamSession is PROTECT).
-        sessions = ExamSession.objects.filter(
-            models_q_in_exams_or_users(exam_ids, user_ids)
-        )
-        deleted_sessions = sessions.count()
-        sessions.delete()
+        deleted_sessions = ExamSession.objects.count()
+        ExamSession.objects.all().delete()
         if deleted_sessions:
             self.stdout.write(f'Deleted {deleted_sessions} session(s).')
 
-        if question_ids:
-            Question.objects.filter(id__in=question_ids).delete()
-        if exam_ids:
-            Exam.objects.filter(id__in=exam_ids).delete()
+        deleted_questions = Question.objects.count()
+        Question.objects.all().delete()
+        if deleted_questions:
+            self.stdout.write(f'Deleted {deleted_questions} question(s).')
+
+        deleted_exams = Exam.objects.count()
+        Exam.objects.all().delete()
+        if deleted_exams:
+            self.stdout.write(f'Deleted {deleted_exams} exam(s).')
+
         if user_ids:
+            removed = self.user_model.objects.filter(id__in=user_ids).count()
             self.user_model.objects.filter(id__in=user_ids).delete()
+            if removed:
+                self.stdout.write(f'Deleted {removed} seeded user(s).')
 
         self.reset_sequences()
-        self.stdout.write(self.style.SUCCESS('Seeded CSV data removed.'))
+        self.stdout.write(self.style.SUCCESS('Database cleared for reseed.'))
 
     def reset_sequences(self):
         """Bump PostgreSQL sequences after rows inserted with explicit IDs."""

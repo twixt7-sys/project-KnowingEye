@@ -106,10 +106,11 @@ class FaceAnalysis:
     head_yaw_deg: float | None
     head_pitch_deg: float | None
     bbox: list[int] | None = None
+    bbox_norm: list[float] | None = None
     identity_distance: float | None = None
 
     def to_dict(self, metrics: MetricScores) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "count": self.count,
             "head_yaw_deg": self.head_yaw_deg,
             "head_pitch_deg": self.head_pitch_deg,
@@ -119,6 +120,9 @@ class FaceAnalysis:
             "gaze_focus_pct": metrics.gaze_focus_pct,
             "identity_match_pct": metrics.identity_match_pct,
         }
+        if self.bbox_norm is not None:
+            out["bbox_norm"] = self.bbox_norm
+        return out
 
 
 @dataclass
@@ -126,6 +130,7 @@ class PostureAnalysis:
     detected: bool
     shoulder_tilt_ratio: float | None
     spine_lean_ratio: float | None
+    guide_status: str = "no_pose"
 
     def to_dict(self, metrics: MetricScores) -> dict[str, Any]:
         return {
@@ -133,6 +138,7 @@ class PostureAnalysis:
             "shoulder_tilt_ratio": self.shoulder_tilt_ratio,
             "spine_lean_ratio": self.spine_lean_ratio,
             "posture_compliance_pct": metrics.posture_compliance_pct,
+            "guide_status": self.guide_status,
         }
 
 
@@ -141,13 +147,17 @@ class ObjectDetection:
     label: str
     confidence: float
     bbox: list[int]
+    bbox_norm: list[float] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "label": self.label,
             "confidence_pct": round(self.confidence * 100, 1),
             "bbox": self.bbox,
         }
+        if self.bbox_norm is not None:
+            out["bbox_norm"] = self.bbox_norm
+        return out
 
 
 @dataclass
@@ -161,6 +171,7 @@ class FrameAnalysisResult:
     events: list[BehaviorEvent]
     alerts: list[Alert]
     frame_index: int | None = None
+    frame_size: list[int] | None = None
 
     @property
     def behavior_score(self) -> float:
@@ -168,7 +179,7 @@ class FrameAnalysisResult:
         return self.metrics.overall_compliance_pct / 100.0
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "session_id": self.session_id,
             "timestamp": self.timestamp,
             "frame_index": self.frame_index,
@@ -181,6 +192,9 @@ class FrameAnalysisResult:
             "events": [e.to_dict() for e in self.events],
             "alerts": [a.to_dict() for a in self.alerts],
         }
+        if self.frame_size is not None:
+            payload["frame_size"] = self.frame_size
+        return payload
 
 
 def utc_now_iso() -> str:

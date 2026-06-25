@@ -11,7 +11,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from . import services
-from .models import Exam, Question
+from .attachment_utils import validate_attachment_file
+from .models import Exam, Question, QuestionAttachment
 from .exam_service import ExamService
 from .permissions import IsAdminOrReadOnly, IsExamOwnerOrAdmin
 from .repositories import QuestionRepository
@@ -23,6 +24,7 @@ from .serializers import (
     QuestionCreateUpdateSerializer,
     QuestionDetailSerializer,
     QuestionImportSerializer,
+    QuestionAttachmentSerializer,
     QuestionReorderSerializer,
     QuestionSerializer,
 )
@@ -40,7 +42,10 @@ class ExamViewSet(viewsets.ModelViewSet):
     exam_service = ExamService()
 
     def get_queryset(self):
-        return self.exam_service.visible_to(self.request.user)
+        qs = self.exam_service.visible_to(self.request.user)
+        if self.action == "retrieve":
+            qs = qs.prefetch_related("questions__attachments")
+        return qs
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -129,7 +134,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         exam_id = self.kwargs.get("exam_id")
-        return self.question_repo.for_exam(exam_id)
+        return self.question_repo.for_exam(exam_id).prefetch_related("attachments")
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -166,4 +171,36 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         services.delete_question(self.get_object(), request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["post"], url_path="attachments")
+    def upload_attachment(self, request, exam_id=None, pk=None):
+        question = self.get_object()
+        services.assert_can_modify_exam(question.exam, request.user)
+        uploaded = request.FILES.get("file")
+        if not uploaded:
+            return Response({"file": ["No file provided."]}, status=status.HTTP_400_BAD_REQUEST)
+        kind = validate_attachment_file(uploaded)
+        order = question.attachments.count()
+        attachment = QuestionAttachment.objects.create(
+            question=question,
+            file=uploaded,
+            kind=kind,
+            caption=(request.data.get("caption") or "")[:255],
+            order=order,
+        )
+        ser = QuestionAttachmentSerializer(attachment, context={"request": request})
+        return Response(ser.data, status=status.HTTP_201_CREATED)
+
+    @action(
+        detail=True,
+        methods=["delete"],
+        url_path=r"attachments/(?P<attachment_id>[^/.]+)",
+    )
+    def delete_attachment(self, request, exam_id=None, pk=None, attachment_id=None):
+        question = self.get_object()
+        services.assert_can_modify_exam(question.exam, request.user)
+        attachment = get_object_or_404(question.attachments, pk=attachment_id)
+        attachment.file.delete(save=False)
+        attachment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

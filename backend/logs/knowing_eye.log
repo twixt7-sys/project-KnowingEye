@@ -2809,3 +2809,474 @@ ValueError: invalid literal for int() with base 10: 'true'
 2026-06-22 02:17:16,373 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'exam_code': [ErrorDetail(string='Exam with this exam code already exists.', code='unique')]}
 2026-06-22 02:17:16,381 [WARNING] django.request: Bad Request: /api/exams/
 2026-06-22 02:19:24,169 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-22 02:45:11,410 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-06-22 02:45:11,415 [WARNING] django.request: Bad Request: /api/sessions/9993dc2b-35a2-409f-95ae-082d731f9d7a/begin/
+2026-06-22 02:45:14,099 [WARNING] django.request: Bad Request: /api/sessions/cc3e79a9-1025-455e-b735-6608526c58dc/submit/
+2026-06-22 02:45:23,349 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:45:26,108 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:45:26,114 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 02:45:28,838 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:45:28,846 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 02:45:31,894 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 02:45:34,703 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:45:34,710 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 02:45:37,534 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:45:37,541 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 02:45:40,709 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:45:47,577 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 02:45:52,006 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-22 02:47:17,650 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-06-22 02:47:17,653 [WARNING] django.request: Bad Request: /api/sessions/7ef003f9-d483-46f0-93a3-5beab3135a1e/begin/
+2026-06-22 02:47:21,587 [WARNING] django.request: Bad Request: /api/sessions/60aa15ba-5638-445c-bc54-f3b50bbbcdbb/submit/
+2026-06-22 02:47:30,158 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:47:33,169 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:47:37,692 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:47:41,388 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:47:44,245 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:47:47,654 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:47:50,191 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:48:07,010 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-22 02:50:24,533 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:50:28,573 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:50:33,992 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:50:36,961 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:50:40,076 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:50:44,481 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:50:58,844 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:51:30,345 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-22 02:51:58,086 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-06-22 02:51:58,087 [WARNING] django.request: Bad Request: /api/sessions/169fe110-3a0c-41bc-862c-d21173ed072e/begin/
+2026-06-22 02:52:03,688 [WARNING] django.request: Bad Request: /api/sessions/6ff3191b-ff26-4962-bd2f-e06d042de8b2/submit/
+2026-06-22 02:58:11,103 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-22 02:58:11,104 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-22 02:58:11,105 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-22 02:58:11,106 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-22 02:59:58,145 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 02:59:59,986 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:00:03,539 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:00:05,553 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:00:07,452 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:00:09,335 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:00:11,398 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:00:18,013 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-22 03:00:27,243 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-06-22 03:00:27,244 [WARNING] django.request: Bad Request: /api/sessions/a2f5846d-ce31-48c2-b0c0-0a7c204fddd6/begin/
+2026-06-22 03:00:29,113 [WARNING] django.request: Bad Request: /api/sessions/b34df1da-65e0-4409-b783-64d1f21366bf/submit/
+2026-06-22 03:01:57,359 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:01:57,361 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-22 03:01:57,361 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:01:57,362 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-22 03:03:51,615 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:03:53,854 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:03:57,757 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:04:00,022 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:04:02,809 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:04:04,933 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:04:07,308 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:04:15,634 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-22 03:04:26,301 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-06-22 03:04:26,301 [WARNING] django.request: Bad Request: /api/sessions/d8c533d5-197c-4326-b795-d88676abbada/begin/
+2026-06-22 03:04:28,552 [WARNING] django.request: Bad Request: /api/sessions/414bd79a-1675-4abe-9f09-975bb10a2ab4/submit/
+2026-06-22 03:08:08,558 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:08:08,559 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-22 03:08:08,559 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:08:08,560 [CRITICAL] daphne.server: Listen failure: Couldn't listen on 127.0.0.1:8000: [WinError 10048] Only one usage of each socket address (protocol/network address/port) is normally permitted.
+2026-06-22 03:08:45,535 [WARNING] knowing_eye.api.errors: API error [token_not_valid] UserProfileViewSet.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-22 03:08:45,630 [WARNING] django.request: Unauthorized: /api/auth/profile/me/
+2026-06-22 03:11:30,376 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': ErrorDetail(string='You already have an active session for this exam (ID: 489efc9a-9279-4a31-92a9-39506dd46c3c).', code='invalid')}
+2026-06-22 03:11:30,405 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-22 03:11:38,750 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': ErrorDetail(string='You already have an active session for this exam (ID: b10dd073-7f7e-4058-8300-9dc1c15ff93e).', code='invalid')}
+2026-06-22 03:11:38,769 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-22 03:12:51,496 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-22 03:13:05,702 [WARNING] daphne.server: Application instance <Task pending name='Task-221' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 51968] path=b'/ws/monitoring/7014fbf6-0b96-4881-819c-ced3bd19ba84/'> took too long to shut down and was killed.
+2026-06-22 03:15:17,894 [WARNING] daphne.server: Application instance <Task pending name='Task-301' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 61943] path=b'/ws/monitoring/7014fbf6-0b96-4881-819c-ced3bd19ba84/'> took too long to shut down and was killed.
+2026-06-22 03:18:21,063 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:18:21,065 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-22 03:18:21,065 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:18:21,066 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-22 03:19:07,537 [WARNING] knowing_eye.api.errors: API error [authentication_failed] CustomTokenObtainPairView.POST status=401 detail={'detail': ErrorDetail(string='No active account found with the given credentials', code='no_active_account')}
+2026-06-22 03:19:07,544 [WARNING] django.request: Unauthorized: /api/auth/token/
+2026-06-22 03:19:26,278 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-22 03:24:27,782 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:24:30,034 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:24:32,612 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:24:36,547 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:24:42,570 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:24:44,936 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:24:47,068 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:24:55,482 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-22 03:24:57,670 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-06-22 03:24:57,671 [WARNING] django.request: Bad Request: /api/sessions/43c12f5a-8581-419b-aa47-f7bc7f12a750/begin/
+2026-06-22 03:24:59,935 [WARNING] django.request: Bad Request: /api/sessions/63a48186-5e61-4dcf-961f-e95c064bb9f2/submit/
+2026-06-22 03:26:08,673 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:26:10,893 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:26:14,283 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:26:16,502 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:26:19,420 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:26:21,699 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:26:23,845 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:26:31,219 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-22 03:27:38,343 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:27:38,344 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-22 03:27:38,345 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:27:38,346 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-22 03:27:55,517 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-22 03:33:42,630 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:33:42,632 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-22 03:33:42,633 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:33:42,636 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-22 03:33:42,705 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:34:40,484 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-22 03:41:11,104 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:41:11,116 [INFO] knowing_eye.ai.adapter: identity enrolled session=0b9ab2e3-e667-4ad7-8d4d-19f8f591cb80 dims=256 backend=disabled
+2026-06-22 03:41:11,116 [INFO] knowing_eye.monitoring.views: enroll session=0b9ab2e3-e667-4ad7-8d4d-19f8f591cb80 ok=True backend=disabled
+2026-06-22 03:41:13,679 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:41:13,683 [INFO] knowing_eye.ai.adapter: identity enrolled session=d7e62479-eada-41e3-9dff-4ddb9fe79e15 dims=256 backend=disabled
+2026-06-22 03:41:13,683 [INFO] knowing_eye.monitoring.views: enroll session=d7e62479-eada-41e3-9dff-4ddb9fe79e15 ok=True backend=disabled
+2026-06-22 03:41:18,052 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:41:18,054 [INFO] knowing_eye.ai.adapter: identity enrolled session=2c1dbe8c-b4b3-4a02-bf19-95ba0ea6f6fe dims=256 backend=disabled
+2026-06-22 03:41:18,055 [INFO] knowing_eye.monitoring.views: enroll session=2c1dbe8c-b4b3-4a02-bf19-95ba0ea6f6fe ok=True backend=disabled
+2026-06-22 03:41:20,620 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:41:22,781 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:41:22,784 [INFO] knowing_eye.ai.adapter: identity enrolled session=98621621-d7f4-49bc-b6c6-c8b251a76dee dims=256 backend=disabled
+2026-06-22 03:41:22,785 [INFO] knowing_eye.monitoring.views: enroll session=98621621-d7f4-49bc-b6c6-c8b251a76dee ok=True backend=disabled
+2026-06-22 03:41:25,433 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:41:25,435 [INFO] knowing_eye.ai.adapter: identity enrolled session=3bfa23e4-a021-4747-8075-310953f2bc3a dims=256 backend=disabled
+2026-06-22 03:41:25,436 [INFO] knowing_eye.monitoring.views: enroll session=3bfa23e4-a021-4747-8075-310953f2bc3a ok=True backend=disabled
+2026-06-22 03:41:29,267 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:41:29,270 [INFO] knowing_eye.ai.adapter: identity enrolled session=661ad7b5-45d5-450a-b9d3-9ebf2619d86c dims=256 backend=disabled
+2026-06-22 03:41:29,271 [INFO] knowing_eye.monitoring.views: enroll session=661ad7b5-45d5-450a-b9d3-9ebf2619d86c ok=True backend=disabled
+2026-06-22 03:41:41,364 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-22 03:45:59,926 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:45:59,927 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-22 03:45:59,928 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:45:59,929 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-22 03:46:27,681 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-22 03:46:30,880 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:31,710 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:32,725 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:33,771 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:34,858 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:35,863 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:36,949 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:37,957 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:38,999 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:40,058 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:40,957 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:41,912 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:42,926 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:43,979 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:44,952 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:46,032 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:47,042 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:48,043 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:49,143 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:49,170 [INFO] knowing_eye.ai.adapter: identity enrolled session=7014fbf6-0b96-4881-819c-ced3bd19ba84 dims=256 backend=production
+2026-06-22 03:46:49,171 [INFO] knowing_eye.monitoring.views: enroll session=7014fbf6-0b96-4881-819c-ced3bd19ba84 ok=True backend=production
+2026-06-22 03:46:50,014 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:51,104 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:52,082 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:53,070 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:54,145 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:55,146 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:56,129 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:57,211 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:58,216 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:46:58,812 [WARNING] django.request: Bad Request: /api/sessions/7014fbf6-0b96-4881-819c-ced3bd19ba84/begin/
+2026-06-22 03:46:59,160 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:00,162 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:01,173 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:01,432 [WARNING] django.request: Bad Request: /api/sessions/7014fbf6-0b96-4881-819c-ced3bd19ba84/begin/
+2026-06-22 03:47:02,304 [WARNING] django.request: Bad Request: /api/sessions/7014fbf6-0b96-4881-819c-ced3bd19ba84/begin/
+2026-06-22 03:47:02,308 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:03,216 [WARNING] django.request: Bad Request: /api/sessions/7014fbf6-0b96-4881-819c-ced3bd19ba84/begin/
+2026-06-22 03:47:03,266 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:04,191 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:05,251 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:06,250 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:07,233 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:08,443 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:09,466 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:10,394 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:11,390 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:12,483 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:13,951 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:17,075 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:20,224 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:21,166 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:21,992 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:23,033 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:24,229 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:25,080 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:26,138 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:27,045 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:28,094 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:29,270 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:30,124 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:31,121 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:32,119 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:33,141 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:34,198 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:35,410 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:36,201 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:37,224 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:38,219 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:39,233 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:40,234 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:41,359 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:42,271 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:43,287 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:44,292 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:45,306 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:46,560 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:47,568 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:48,377 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:49,454 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:50,524 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:51,547 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:52,615 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:53,543 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:54,598 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:55,639 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:56,642 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:57,720 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:47:58,896 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:00,845 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:01,896 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:02,886 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:04,015 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:05,274 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:06,158 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:07,247 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:08,071 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:09,058 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:10,104 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:11,067 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:12,890 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:13,316 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:14,340 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:15,210 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:16,296 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:17,230 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:18,313 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:19,422 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:20,526 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:21,457 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:22,298 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:23,283 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:24,520 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:25,311 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:26,971 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:27,548 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:28,579 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:29,414 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:30,418 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:31,400 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:32,694 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:33,558 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:34,447 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:35,552 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:37,338 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:37,793 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:39,145 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:39,879 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:40,825 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:41,902 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:42,885 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:43,780 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:44,983 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:45,846 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:46,823 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:47,942 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:49,243 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:50,112 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:51,309 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:52,068 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:53,201 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:54,238 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:55,195 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:56,305 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:57,486 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:58,476 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:48:59,443 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:00,575 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:01,270 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:02,408 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:03,552 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:04,649 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:05,566 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:06,522 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:07,427 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:08,524 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:09,945 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:10,527 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:11,566 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:13,157 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:13,805 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:14,782 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:15,949 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:17,007 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:17,896 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:18,954 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:19,857 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:21,015 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:22,343 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:23,164 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:25,893 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:27,111 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:28,315 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:29,242 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:30,372 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:31,372 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:32,333 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:33,300 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:34,603 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:35,282 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:36,410 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:37,298 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:38,259 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:39,734 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:42,598 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:44,422 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:45,800 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:47,540 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:51,072 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:52,788 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:54,337 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:55,169 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:56,108 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:57,171 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:49:58,160 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:00,037 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:02,350 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:03,489 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:04,565 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:06,033 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:07,371 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:07,936 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:09,325 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:13,318 [WARNING] django.request: Bad Request: /api/sessions/7014fbf6-0b96-4881-819c-ced3bd19ba84/begin/
+2026-06-22 03:50:15,149 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:16,398 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:17,824 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:18,481 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:19,519 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:22,155 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:24,091 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:25,109 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:26,480 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-22 03:50:54,306 [INFO] knowing_eye.ai.adapter: identity enrolled session=226cca85-0ef2-4dc8-bed3-208859be88bd dims=256 backend=production
+2026-06-22 03:50:54,314 [INFO] knowing_eye.monitoring.views: enroll session=226cca85-0ef2-4dc8-bed3-208859be88bd ok=True backend=production
+2026-06-22 03:52:54,340 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-06-22 03:52:54,348 [WARNING] django.request: Bad Request: /api/sessions/dc3130e9-990e-4715-a2ed-f95d1fbb16cf/begin/
+2026-06-22 03:52:57,420 [WARNING] django.request: Bad Request: /api/sessions/369f6784-3e9d-4150-91e6-e21080c8b4ef/submit/
+2026-06-22 03:53:10,760 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:53:10,771 [INFO] knowing_eye.ai.adapter: identity enrolled session=8975b6f4-0394-4878-b963-a127ddd852e6 dims=256 backend=disabled
+2026-06-22 03:53:10,772 [INFO] knowing_eye.monitoring.views: enroll session=8975b6f4-0394-4878-b963-a127ddd852e6 ok=True backend=disabled
+2026-06-22 03:53:13,781 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:53:13,783 [INFO] knowing_eye.ai.adapter: identity enrolled session=51a3363a-62fd-496b-b793-fa3ed457d588 dims=256 backend=disabled
+2026-06-22 03:53:13,784 [INFO] knowing_eye.monitoring.views: enroll session=51a3363a-62fd-496b-b793-fa3ed457d588 ok=True backend=disabled
+2026-06-22 03:53:18,087 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:53:18,089 [INFO] knowing_eye.ai.adapter: identity enrolled session=7421604a-9819-4622-8b5e-32415afda666 dims=256 backend=disabled
+2026-06-22 03:53:18,090 [INFO] knowing_eye.monitoring.views: enroll session=7421604a-9819-4622-8b5e-32415afda666 ok=True backend=disabled
+2026-06-22 03:53:20,346 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:53:22,481 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:53:22,484 [INFO] knowing_eye.ai.adapter: identity enrolled session=866ff6d0-1e65-4ab7-bca0-6589a15cb8a7 dims=256 backend=disabled
+2026-06-22 03:53:22,484 [INFO] knowing_eye.monitoring.views: enroll session=866ff6d0-1e65-4ab7-bca0-6589a15cb8a7 ok=True backend=disabled
+2026-06-22 03:53:25,024 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:53:25,026 [INFO] knowing_eye.ai.adapter: identity enrolled session=8f694cc0-1601-479f-95a8-6d0db3534031 dims=256 backend=disabled
+2026-06-22 03:53:25,026 [INFO] knowing_eye.monitoring.views: enroll session=8f694cc0-1601-479f-95a8-6d0db3534031 ok=True backend=disabled
+2026-06-22 03:53:27,997 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-06-22 03:53:27,999 [INFO] knowing_eye.ai.adapter: identity enrolled session=fc5ee6c8-dbb6-4e5d-981f-a9289241645c dims=256 backend=disabled
+2026-06-22 03:53:27,999 [INFO] knowing_eye.monitoring.views: enroll session=fc5ee6c8-dbb6-4e5d-981f-a9289241645c ok=True backend=disabled
+2026-06-22 03:53:35,416 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-06-22 03:54:13,785 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-06-22 03:54:13,790 [WARNING] django.request: Bad Request: /api/sessions/3d28860a-c93f-4282-87b9-a7f6d7210514/begin/
+2026-06-22 03:54:18,324 [WARNING] django.request: Bad Request: /api/sessions/633b531c-96bc-4922-839b-0948db81ad0b/submit/
+2026-06-22 03:55:24,852 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:55:24,857 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-22 03:55:24,859 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-22 03:55:24,862 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-22 03:56:10,204 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-22 03:56:24,940 [INFO] knowing_eye.ai.adapter: identity enrolled session=226cca85-0ef2-4dc8-bed3-208859be88bd dims=256 backend=production
+2026-06-22 03:56:24,941 [INFO] knowing_eye.monitoring.views: enroll session=226cca85-0ef2-4dc8-bed3-208859be88bd ok=True backend=production
+2026-06-22 03:56:46,848 [WARNING] daphne.server: Application instance <Task pending name='Task-13' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 56494] path=b'/ws/monitoring/226cca85-0ef2-4dc8-bed3-208859be88bd/'> took too long to shut down and was killed.
+2026-06-22 04:01:35,421 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': {'exam': ErrorDetail(string='Maximum attempts (1) reached for this exam.', code='invalid')}}
+2026-06-22 04:01:35,483 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-22 04:02:38,266 [INFO] knowing_eye.ai.adapter: identity enrolled session=64160b09-197d-47f5-9417-4b352d4c75d1 dims=256 backend=production
+2026-06-22 04:02:38,271 [INFO] knowing_eye.monitoring.views: enroll session=64160b09-197d-47f5-9417-4b352d4c75d1 ok=True backend=production
+2026-06-22 04:03:12,418 [WARNING] daphne.server: Application instance <Task pending name='Task-229' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 58279] path=b'/ws/monitoring/64160b09-197d-47f5-9417-4b352d4c75d1/'> took too long to shut down and was killed.
+2026-06-22 04:19:03,708 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-22 04:19:03,709 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-22 04:19:03,709 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-22 04:19:03,711 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-22 04:19:26,547 [WARNING] knowing_eye.api.errors: API error [token_not_valid] UserProfileViewSet.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-22 04:19:26,559 [WARNING] django.request: Unauthorized: /api/auth/profile/me/
+2026-06-22 04:19:31,722 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-22 04:19:49,979 [WARNING] daphne.server: Application instance <Task pending name='Task-29' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 54569] path=b'/ws/monitoring/64160b09-197d-47f5-9417-4b352d4c75d1/'> took too long to shut down and was killed.
+2026-06-22 04:20:10,929 [INFO] knowing_eye.ai.adapter: identity enrolled session=cb391d3a-e41a-4ce0-9963-cfe53bddfe37 dims=256 backend=production
+2026-06-22 04:20:10,930 [INFO] knowing_eye.monitoring.views: enroll session=cb391d3a-e41a-4ce0-9963-cfe53bddfe37 ok=True backend=production
+2026-06-22 04:23:02,099 [WARNING] daphne.server: Application instance <Task pending name='Task-101' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 53500] path=b'/ws/monitoring/cb391d3a-e41a-4ce0-9963-cfe53bddfe37/'> took too long to shut down and was killed.
+2026-06-22 04:23:46,542 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': {'exam': ErrorDetail(string='Maximum attempts (1) reached for this exam.', code='invalid')}}
+2026-06-22 04:23:46,557 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-22 04:24:12,872 [INFO] knowing_eye.ai.adapter: identity enrolled session=350e912b-156b-4320-b167-b9b2459b2ccc dims=256 backend=production
+2026-06-22 04:24:12,873 [INFO] knowing_eye.monitoring.views: enroll session=350e912b-156b-4320-b167-b9b2459b2ccc ok=True backend=production
+2026-06-22 04:24:59,673 [WARNING] daphne.server: Application instance <Task pending name='Task-544' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 51127] path=b'/ws/monitoring/350e912b-156b-4320-b167-b9b2459b2ccc/'> took too long to shut down and was killed.
+2026-06-22 04:26:33,000 [WARNING] knowing_eye.api.errors: API error [token_not_valid] UserProfileViewSet.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-22 04:26:33,080 [WARNING] django.request: Unauthorized: /api/auth/profile/me/
+2026-06-22 04:26:34,928 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': {'exam': ErrorDetail(string='Maximum attempts (1) reached for this exam.', code='invalid')}}
+2026-06-22 04:26:34,945 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-22 04:32:28,214 [WARNING] daphne.server: Application instance <Task pending name='Task-688' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 52396] path=b'/ws/monitoring/350e912b-156b-4320-b167-b9b2459b2ccc/'> took too long to shut down and was killed.
+2026-06-22 08:59:58,083 [WARNING] knowing_eye.api.errors: API error [token_not_valid] UserProfileViewSet.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-22 08:59:58,122 [WARNING] django.request: Unauthorized: /api/auth/profile/me/
+2026-06-22 10:01:30,964 [WARNING] knowing_eye.api.errors: API error [token_not_valid] UserProfileViewSet.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-22 10:01:31,028 [WARNING] django.request: Unauthorized: /api/auth/profile/me/
+2026-06-23 13:33:35,883 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-23 13:33:35,885 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-23 13:33:35,885 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-23 13:33:35,888 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-23 13:33:42,582 [WARNING] knowing_eye.api.errors: API error [token_not_valid] UserProfileViewSet.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-23 13:33:42,593 [WARNING] django.request: Unauthorized: /api/auth/profile/me/
+2026-06-23 13:34:47,478 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-23 13:34:55,848 [INFO] knowing_eye.ai.adapter: identity enrolled session=b8db87c1-eceb-44a5-adfb-4c4f87b167bd dims=256 backend=production
+2026-06-23 13:34:55,849 [INFO] knowing_eye.monitoring.views: enroll session=b8db87c1-eceb-44a5-adfb-4c4f87b167bd ok=True backend=production
+2026-06-23 13:35:29,568 [WARNING] daphne.server: Application instance <Task pending name='Task-93' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 52366] path=b'/ws/monitoring/b8db87c1-eceb-44a5-adfb-4c4f87b167bd/'> took too long to shut down and was killed.
+2026-06-23 13:37:33,600 [WARNING] daphne.server: Application instance <Task pending name='Task-139' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 61029] path=b'/ws/monitoring/b8db87c1-eceb-44a5-adfb-4c4f87b167bd/'> took too long to shut down and was killed.
+2026-06-23 13:38:00,927 [WARNING] daphne.server: Application instance <Task pending name='Task-718' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 59373] path=b'/ws/monitoring/b8db87c1-eceb-44a5-adfb-4c4f87b167bd/'> took too long to shut down and was killed.
+2026-06-23 15:44:57,569 [WARNING] knowing_eye.api.errors: API error [authentication_failed] CustomTokenObtainPairView.POST status=401 detail={'detail': ErrorDetail(string='No active account found with the given credentials', code='no_active_account')}
+2026-06-23 15:44:57,589 [WARNING] django.request: Unauthorized: /api/auth/token/
+2026-06-23 15:48:31,704 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': ErrorDetail(string='You already have an active session for this exam (ID: 489efc9a-9279-4a31-92a9-39506dd46c3c).', code='invalid')}
+2026-06-23 15:48:31,738 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-23 15:49:13,930 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': {'exam': ErrorDetail(string='Maximum attempts (1) reached for this exam.', code='invalid')}}
+2026-06-23 15:49:13,981 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-23 15:50:12,578 [INFO] knowing_eye.ai.adapter: identity enrolled session=ca6114ee-8c7d-4e73-ba63-8bcdcb12ef4e dims=256 backend=production
+2026-06-23 15:50:12,581 [INFO] knowing_eye.monitoring.views: enroll session=ca6114ee-8c7d-4e73-ba63-8bcdcb12ef4e ok=True backend=production
+2026-06-23 15:50:31,933 [WARNING] daphne.server: Application instance <Task pending name='Task-965' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 64134] path=b'/ws/monitoring/ca6114ee-8c7d-4e73-ba63-8bcdcb12ef4e/'> took too long to shut down and was killed.
+2026-06-23 15:54:28,976 [WARNING] daphne.server: Application instance <Task pending name='Task-1021' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 58275] path=b'/ws/monitoring/ca6114ee-8c7d-4e73-ba63-8bcdcb12ef4e/'> took too long to shut down and was killed.
+2026-06-23 16:22:49,516 [WARNING] daphne.server: Application instance <Task pending name='Task-1458' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 56289] path=b'/ws/monitoring/ca6114ee-8c7d-4e73-ba63-8bcdcb12ef4e/'> took too long to shut down and was killed.
+2026-06-23 16:50:13,790 [WARNING] knowing_eye.api.errors: API error [token_not_valid] ExamSessionViewSet.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-23 16:50:13,854 [WARNING] django.request: Unauthorized: /api/sessions/ca6114ee-8c7d-4e73-ba63-8bcdcb12ef4e/
+2026-06-23 16:50:19,253 [WARNING] django.request: Bad Request: /api/monitoring/frame/
+2026-06-24 15:54:22,464 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-06-24 15:54:22,470 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-06-24 15:54:22,472 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-06-24 15:54:22,480 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-06-24 15:54:35,455 [WARNING] knowing_eye.api.errors: API error [token_not_valid] UserProfileViewSet.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-24 15:54:35,505 [WARNING] django.request: Unauthorized: /api/auth/profile/me/
+2026-06-24 15:54:50,379 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': {'exam': ErrorDetail(string='Maximum attempts (1) reached for this exam.', code='invalid')}}
+2026-06-24 15:54:50,402 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-06-24 15:55:57,567 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-06-24 15:56:26,311 [INFO] knowing_eye.ai.adapter: identity enrolled session=da9b0b5e-c531-468a-8b42-7914bb2bb9b3 dims=256 backend=production
+2026-06-24 15:56:26,313 [INFO] knowing_eye.monitoring.views: enroll session=da9b0b5e-c531-468a-8b42-7914bb2bb9b3 ok=True backend=production
+2026-06-24 15:56:46,152 [WARNING] daphne.server: Application instance <Task pending name='Task-65' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 63707] path=b'/ws/monitoring/da9b0b5e-c531-468a-8b42-7914bb2bb9b3/'> took too long to shut down and was killed.
+2026-06-24 15:56:52,284 [WARNING] daphne.server: Application instance <Task pending name='Task-93' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 62489] path=b'/ws/monitoring/da9b0b5e-c531-468a-8b42-7914bb2bb9b3/'> took too long to shut down and was killed.
+2026-06-24 22:09:32,790 [WARNING] knowing_eye.api.errors: API error [token_not_valid] AlertViewSet.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-24 22:09:32,946 [WARNING] django.request: Unauthorized: /api/behavior/alerts/
+2026-06-25 00:16:48,422 [WARNING] knowing_eye.api.errors: API error [token_not_valid] list_session_reports.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-25 00:16:48,323 [WARNING] knowing_eye.api.errors: API error [token_not_valid] analytics_timeseries.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-25 00:16:48,809 [WARNING] knowing_eye.api.errors: API error [token_not_valid] report_summary.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-25 00:16:48,349 [WARNING] knowing_eye.api.errors: API error [token_not_valid] AlertViewSet.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-06-25 00:16:49,288 [WARNING] django.request: Unauthorized: /api/reports/timeseries/
+2026-06-25 00:16:49,292 [WARNING] django.request: Unauthorized: /api/reports/sessions/
+2026-06-25 00:16:49,333 [WARNING] django.request: Unauthorized: /api/reports/summary/
+2026-06-25 00:16:49,491 [WARNING] django.request: Unauthorized: /api/behavior/alerts/

@@ -59,7 +59,10 @@ def receive_frame(request):
     if err:
         return err
 
-    from features.session.services import ensure_active_session
+    from features.session.services import ensure_active_session, touch_setup_activity
+
+    if session.status == ExamSession.Status.SETUP:
+        touch_setup_activity(session)
 
     if not ensure_active_session(session):
         session.refresh_from_db()
@@ -68,7 +71,10 @@ def receive_frame(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    if session.status != ExamSession.Status.IN_PROGRESS:
+    if session.status not in (
+        ExamSession.Status.SETUP,
+        ExamSession.Status.IN_PROGRESS,
+    ):
         return Response(
             {"error": "Session is not active"}, status=status.HTTP_400_BAD_REQUEST
         )
@@ -116,7 +122,25 @@ def enroll_reference_view(request):
     if frame is None:
         return Response({"error": "invalid image"}, status=status.HTTP_400_BAD_REQUEST)
 
+    from features.session.services import ensure_active_session, touch_setup_activity
+
+    if session.status == ExamSession.Status.SETUP:
+        touch_setup_activity(session)
+
+    if not ensure_active_session(session):
+        session.refresh_from_db()
+        return Response(
+            {"error": "Session has expired — return to the dashboard and start setup again."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     result = _enroll_reference(frame, session=session)
+    logger.info(
+        "enroll session=%s ok=%s backend=%s",
+        session_id,
+        result.get("ok"),
+        result.get("backend"),
+    )
     return Response({**result, "session_id": str(session_id)})
 
 

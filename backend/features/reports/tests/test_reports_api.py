@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -26,7 +27,12 @@ class ReportsAPITests(APITestCase):
             status=Exam.Status.ACTIVE,
             created_by=self.admin,
         )
-        self.session = ExamSession.objects.create(exam=exam, user=self.admin)
+        self.session = ExamSession.objects.create(
+            exam=exam,
+            user=self.admin,
+            status=ExamSession.Status.IN_PROGRESS,
+            exam_started_at=timezone.now(),
+        )
         Alert.objects.create(
             session=self.session,
             alert_type="multiple_faces",

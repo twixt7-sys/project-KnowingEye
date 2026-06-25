@@ -5,6 +5,7 @@ from features.exams import services as exam_services
 from features.exams.serializers import ExamDetailSerializer, ExamTakeSerializer
 
 from .models import ExamSession, Response, SessionLog
+from .services import get_or_create_setup_session
 
 
 class ResponseSerializer(serializers.ModelSerializer):
@@ -82,6 +83,7 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
             "user_name",
             "user_email",
             "started_at",
+            "exam_started_at",
             "submitted_at",
             "time_remaining",
             "status",
@@ -97,6 +99,7 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "started_at",
+            "exam_started_at",
             "submitted_at",
             "total_score",
             "percentage_score",
@@ -127,41 +130,18 @@ class ExamSessionStartSerializer(serializers.ModelSerializer):
         """Validate that exam is active and user can take it."""
         user = self.context["request"].user
         exam_services.assert_exam_available_for_user(value, user)
-
-        active_session = ExamSession.objects.filter(
-            exam=value,
-            user=user,
-            status="in_progress",
-        ).first()
-
-        if active_session:
-            raise serializers.ValidationError(
-                f"You already have an active session for this exam (ID: {active_session.id})"
-            )
-
         return value
 
     def create(self, validated_data):
-        """Create a new exam session."""
+        """Create or resume a setup-phase session."""
         request = self.context['request']
         exam = validated_data['exam']
-
-        session = ExamSession.objects.create(
-            exam=exam,
-            user=request.user,
+        session, _created = get_or_create_setup_session(
+            request.user,
+            exam,
             ip_address=self._get_client_ip(request),
             user_agent=request.META.get('HTTP_USER_AGENT', ''),
-            status=ExamSession.Status.IN_PROGRESS
         )
-
-        # Log session start
-        SessionLog.objects.create(
-            session=session,
-            event_type=SessionLog.EventType.STARTED,
-            ip_address=session.ip_address,
-            details={'exam_title': exam.title, 'duration_minutes': exam.duration_minutes}
-        )
-
         return session
 
     def _get_client_ip(self, request):

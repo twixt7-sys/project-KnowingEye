@@ -8,6 +8,7 @@ import { About } from "../../pages/about";
 import { Login } from "../../pages/login";
 import { NotFound } from "../../pages/not-found";
 import { ExamTakingWithBackend } from "../../pages/exam-taking-backend";
+import { ExamSetup } from "../../pages/exam-setup";
 import { ExamSubmitted } from "../../pages/exam-submitted";
 import { ExamResults } from "../../pages/exam-results";
 import { ExamSummary } from "../../pages/exam-summary";
@@ -52,7 +53,7 @@ export const router = createBrowserRouter([
       {
         path: "monitoring/:sessionId",
         element: (
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="ADMIN">
             <SessionMonitor />
           </ProtectedRoute>
         ),
@@ -85,6 +86,14 @@ export const router = createBrowserRouter([
       },
 
       // Examinee exam flow
+      {
+        path: "examinee/exam/:examId/setup",
+        element: (
+          <ProtectedRoute requiredRole="EXAMINEE">
+            <ExamSetup />
+          </ProtectedRoute>
+        ),
+      },
       {
         path: "examinee/exam/:examId",
         element: (
