@@ -1,0 +1,68 @@
+{
+  "diagram_id": "Fig-2.5",
+  "title": "Frontend Component Architecture",
+  "section": "2.3",
+  "description": "React 18 feature-based SPA structure with core providers, pages, and shared UI layer.",
+  "format": "component_diagram",
+  "technology_stack": {
+    "framework": "React 18",
+    "build": "Vite",
+    "language": "TypeScript",
+    "styling": "Tailwind CSS",
+    "ui_library": "shadcn/ui (Radix primitives)",
+    "charts": "Recharts",
+    "routing": "React Router v6",
+    "server_state": "TanStack React Query"
+  },
+  "layers": [
+    {
+      "name": "Core",
+      "path": "frontend/src/core/",
+      "modules": [
+        { "name": "router", "role": "Public + protected routes, role guards" },
+        { "name": "providers", "role": "Auth, Theme, Query, WebSocket context" },
+        { "name": "config", "role": "env.ts, api.ts, constants" }
+      ]
+    },
+    {
+      "name": "Features",
+      "path": "frontend/src/features/",
+      "modules": [
+        { "name": "auth", "pages": ["login", "register"], "api": "token, profile" },
+        { "name": "exams", "pages": ["dashboard list", "create modal"], "api": "CRUD" },
+        { "name": "session", "pages": ["exam-taking-backend"], "api": "start, submit" },
+        { "name": "monitoring", "hooks": ["use-monitoring"], "api": "WS + REST frame" },
+        { "name": "behavior", "role": "Alert/score display in inspector" },
+        { "name": "reports", "pages": ["reports"], "api": "summary, CSV, timeseries" },
+        { "name": "profile", "pages": ["profile"], "api": "avatar, password" }
+      ]
+    },
+    {
+      "name": "Pages (thin routing layer)",
+      "path": "frontend/src/pages/",
+      "public": ["home", "login", "register", "about", "features"],
+      "protected_admin": ["dashboard", "monitoring", "session-monitor", "reports"],
+      "protected_examinee": ["exam-taking-backend", "profile"]
+    },
+    {
+      "name": "Shared",
+      "path": "frontend/src/shared/",
+      "modules": [
+        "components/ui/* (shadcn)",
+        "hooks (use-debounce, use-local-storage, use-monitoring)",
+        "utils/helpers.ts",
+        "types/global.d.ts"
+      ]
+    }
+  ],
+  "providers": [
+    { "name": "AuthProvider", "state": "user, tokens, login/logout, auto-refresh" },
+    { "name": "ThemeProvider", "state": "dark/light mode" },
+    { "name": "QueryProvider", "state": "React Query cache" },
+    { "name": "WebSocketProvider", "state": "monitoring connections (where used)" }
+  ],
+  "role_based_routing": {
+    "ADMIN": ["/dashboard", "/monitoring", "/reports", "/exams", "/profile"],
+    "EXAMINEE": ["/dashboard", "/exam/:id", "/profile", "/results"]
+  }
+}

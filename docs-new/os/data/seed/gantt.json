@@ -1,0 +1,23 @@
+{
+  "config": { "zoom": "month", "start_date": "2026-04-16", "end_date": "2026-07-10" },
+  "tasks": [
+    { "id": "GNT-100", "title": "Phase 1 — Planning", "start": "2026-04-16", "end": "2026-05-02", "progress": 1.0, "assignee": "All", "dependencies": [], "milestone": false, "wbs_ref": "1" },
+    { "id": "GNT-110", "title": "Define goals & scope", "start": "2026-04-16", "end": "2026-04-20", "progress": 1.0, "assignee": "Tamera", "dependencies": [], "milestone": false, "wbs_ref": "1.1" },
+    { "id": "GNT-120", "title": "Capture requirements", "start": "2026-04-16", "end": "2026-04-21", "progress": 1.0, "assignee": "Tamera", "dependencies": ["GNT-110"], "milestone": false, "wbs_ref": "1.2" },
+
+    { "id": "GNT-210", "title": "System Architecture Design", "start": "2026-05-03", "end": "2026-05-09", "progress": 0.99, "assignee": "Ancog & Tamera", "dependencies": ["GNT-100"], "milestone": false, "wbs_ref": "2.1" },
+    { "id": "GNT-220", "title": "Backend Development", "start": "2026-05-10", "end": "2026-05-22", "progress": 1.0, "assignee": "Ancog & Tamera", "dependencies": ["GNT-210"], "milestone": false, "wbs_ref": "2.2" },
+    { "id": "GNT-230", "title": "Frontend Development", "start": "2026-05-10", "end": "2026-06-05", "progress": 1.0, "assignee": "Cavan", "dependencies": ["GNT-210"], "milestone": false, "wbs_ref": "2.4" },
+    { "id": "GNT-240", "title": "AI Module Development", "start": "2026-05-23", "end": "2026-06-05", "progress": 1.0, "assignee": "Cadiente", "dependencies": ["GNT-220"], "milestone": false, "wbs_ref": "2.3" },
+
+    { "id": "GNT-300", "title": "Integration & System Testing", "start": "2026-06-06", "end": "2026-06-21", "progress": 0.85, "assignee": "Tamera", "dependencies": ["GNT-220", "GNT-230", "GNT-240"], "milestone": false, "wbs_ref": "3" },
+
+    { "id": "GNT-400", "title": "Documentation & Outline", "start": "2026-06-01", "end": "2026-07-04", "progress": 0.6, "assignee": "Cadiente & Tamera", "dependencies": [], "milestone": false, "wbs_ref": "0" },
+    { "id": "GNT-410", "title": "Review of Related Literature (RRL)", "start": "2026-06-10", "end": "2026-06-26", "progress": 0.75, "assignee": "Cadiente", "dependencies": [], "milestone": false, "wbs_ref": "0.2" },
+    { "id": "GNT-420", "title": "Chapter 2 — Methodology write-up", "start": "2026-06-15", "end": "2026-07-02", "progress": 0.5, "assignee": "Cadiente & Tamera", "dependencies": [], "milestone": false, "wbs_ref": "0.5" },
+
+    { "id": "GNT-510", "title": "Outline Requirements Submission", "start": "2026-06-27", "end": "2026-06-27", "progress": 0.0, "assignee": "All", "dependencies": ["GNT-410"], "milestone": true, "wbs_ref": "" },
+    { "id": "GNT-520", "title": "Outline Defense", "start": "2026-06-30", "end": "2026-06-30", "progress": 0.0, "assignee": "All", "dependencies": ["GNT-510"], "milestone": true, "wbs_ref": "" },
+    { "id": "GNT-530", "title": "Outline Submission", "start": "2026-07-04", "end": "2026-07-04", "progress": 0.0, "assignee": "All", "dependencies": ["GNT-520", "GNT-420"], "milestone": true, "wbs_ref": "" }
+  ]
+}

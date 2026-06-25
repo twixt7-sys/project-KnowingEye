@@ -1,0 +1,215 @@
+{
+  "frontend": {
+    "framework": "React 18 with Vite",
+    "language": "TypeScript",
+    "architecture": "Feature-Based Modular Architecture",
+    "build_tool": "Vite",
+    "routing": "React Router v6 (role-based protected routes)",
+    "state_management": {
+      "local": "React Hooks (useState, useEffect)",
+      "server_state": "React Query (TanStack Query)",
+      "global_optional": "Zustand or Context API"
+    },
+    "real_time": {
+      "protocol": "WebSocket",
+      "provider": "Custom WebSocket Provider",
+      "usage": "Monitoring, alerts, live updates"
+    }
+  },
+
+  "core_layer": {
+    "description": "Global application foundation handling routing, providers, and configuration",
+    "modules": [
+      "Router (public and protected routes)",
+      "Auth Provider (user session handling)",
+      "WebSocket Provider (real-time communication)",
+      "Theme Provider (dark/light mode)",
+      "Query Provider (data fetching and caching)",
+      "Global configuration (API base URL, environment variables)"
+    ]
+  },
+
+  "feature_modules": {
+    "auth": {
+      "description": "Handles authentication and user session management",
+      "features": [
+        "User login and registration",
+        "Session persistence",
+        "Role-based access control (examiner, examinee)"
+      ]
+    },
+
+    "exams": {
+      "description": "Manages exam creation and configuration",
+      "features": [
+        "Exam creation (Google Forms-style builder)",
+        "Question management",
+        "Exam listing and overview",
+        "Exam assignment"
+      ]
+    },
+
+    "session": {
+      "description": "Handles live exam-taking experience",
+      "features": [
+        "Real-time exam session handling",
+        "Timer management",
+        "Answer submission",
+        "Question navigation",
+        "Auto-save functionality"
+      ]
+    },
+
+    "monitoring": {
+      "description": "Real-time behavioral monitoring system",
+      "features": [
+        "Webcam stream capture",
+        "Frame extraction and streaming",
+        "WebSocket-based real-time communication",
+        "Live student monitoring grid",
+        "Alert visualization (face, posture, anomalies)"
+      ],
+      "status": {
+        "current": "Mock alerts and UI indicators",
+        "planned": [
+          "Actual webcam integration",
+          "Frame streaming to backend",
+          "Real-time AI feedback integration"
+        ]
+      }
+    },
+
+    "behavior": {
+      "description": "Displays AI-generated behavioral analysis results",
+      "features": [
+        "Suspicion score visualization",
+        "Behavior logs display",
+        "Anomaly indicators and flags"
+      ]
+    },
+
+    "dashboard": {
+      "description": "Provides system overview for users",
+      "features": [
+        "Examiner dashboard (stats, exams, alerts)",
+        "Examinee dashboard (available exams, history)",
+        "Overview cards and summaries",
+        "Recent alerts display"
+      ]
+    },
+
+    "reports": {
+      "description": "Displays and exports monitoring and exam reports",
+      "features": [
+        "Session logs viewing",
+        "Behavioral reports",
+        "Flagged event summaries",
+        "Export functionality (CSV/PDF)"
+      ]
+    },
+
+    "profile": {
+      "description": "User profile management",
+      "features": [
+        "Profile editing",
+        "Avatar upload",
+        "User information management"
+      ]
+    }
+  },
+
+  "shared_layer": {
+    "description": "Reusable components, hooks, utilities, and types",
+    "components": [
+      "UI components (shadcn/ui)",
+      "Layout components (header, footer, sidebar)",
+      "Common states (loading, error, empty)"
+    ],
+    "hooks": [
+      "Reusable hooks (debounce, local storage)"
+    ],
+    "utils": [
+      "Date formatting",
+      "Helper functions"
+    ],
+    "types": [
+      "Global TypeScript definitions"
+    ]
+  },
+
+  "pages_structure": {
+    "description": "Thin routing layer that connects features to routes",
+    "public_pages": [
+      "Landing page",
+      "Login page",
+      "Register page"
+    ],
+    "examiner_pages": [
+      "Dashboard",
+      "Exams management",
+      "Monitoring dashboard",
+      "Reports",
+      "Profile"
+    ],
+    "examinee_pages": [
+      "Dashboard",
+      "Exam taking",
+      "Results",
+      "Profile"
+    ]
+  },
+
+  "exam_flow": {
+    "sequence": [
+      "Login → Dashboard",
+      "Select Exam → Start Session",
+      "Exam Session → Answer Questions",
+      "Monitoring runs in parallel",
+      "Submit or auto-submit",
+      "View results and summary"
+    ],
+    "features": [
+      "Real-time timer",
+      "Question navigation",
+      "Auto-save answers",
+      "Progress tracking",
+      "Integrated monitoring feedback"
+    ]
+  },
+
+  "real_time_monitoring_flow": {
+    "description": "Frontend real-time behavior monitoring pipeline",
+    "steps": [
+      "Webcam capture via browser",
+      "Frame extraction using hooks",
+      "Frame sent via WebSocket or REST fallback",
+      "Backend processes frame with AI pipeline",
+      "Analysis result returned via WebSocket",
+      "Frontend updates monitoring state",
+      "UI reflects alerts and scores"
+    ]
+  },
+
+  "ui_components": {
+    "library": "shadcn/ui (Radix UI)",
+    "additional": "Material-UI (optional)",
+    "icons": "Lucide React",
+    "theme": "Dark/Light mode with theme provider"
+  },
+
+  "responsive_design": {
+    "approach": "Mobile-first",
+    "layout": "Flexbox and Grid",
+    "behavior": "Adaptive components for different screen sizes"
+  },
+
+  "accessibility": {
+    "standards": "WCAG guidelines",
+    "features": [
+      "Keyboard navigation",
+      "Screen reader compatibility",
+      "Focus management",
+      "High contrast support"
+    ]
+  }
+}

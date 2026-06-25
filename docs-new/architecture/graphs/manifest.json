@@ -1,0 +1,13 @@
+{
+  "graphs": [
+    { "id": "system-architecture", "diagram_id": "Fig-2.1", "title": "High-Level System Architecture", "format": "directed_graph", "kind": "rest", "description": "Four-component modular monolith: SPA, Django REST + WebSocket, AI pipeline, database." },
+    { "id": "backend-layers", "diagram_id": "Fig-2.2", "title": "Backend Layered Architecture", "format": "layered_component", "kind": "rest", "description": "Feature-based modular monolith with service-repository pattern." },
+    { "id": "ai-pipeline-component", "diagram_id": "Fig-2.3", "title": "AI / Computer Vision Module", "format": "component_diagram", "kind": "ai", "description": "Internal structure of backend/ai/knowing_eye and adapter boundary." },
+    { "id": "deployment-topology", "diagram_id": "Fig-2.4", "title": "Deployment Architecture", "format": "deployment_topology", "kind": "db", "description": "Production topology with TLS, ASGI workers, PostgreSQL, and Redis." },
+    { "id": "frontend-component", "diagram_id": "Fig-2.5", "title": "Frontend Component Architecture", "format": "component_diagram", "kind": "ws", "description": "React 18 feature-based SPA with providers, pages, and shared UI." },
+    { "id": "sequence-exam-flow", "diagram_id": "Fig-3.1", "title": "Exam Session Sequence Flow", "format": "sequence_diagram", "kind": "rest", "description": "End-to-end login through exam completion with parallel monitoring." },
+    { "id": "data-flow-monitoring", "diagram_id": "Fig-3.2", "title": "Real-Time Monitoring Data Flow", "format": "data_flow_diagram", "kind": "ws", "description": "Frame capture through AI analysis, persistence, and alert broadcast." },
+    { "id": "rest-api-catalog", "diagram_id": "Fig-3.3", "title": "REST API Surface Map", "format": "api_catalog", "kind": "rest", "description": "Complete REST endpoint catalog grouped by feature module." },
+    { "id": "database-erd", "diagram_id": "Fig-4.1", "title": "Database Entity-Relationship Diagram", "format": "dbml", "kind": "db", "description": "Relational schema across users, exams, sessions, behavior, and monitoring." }
+  ]
+}

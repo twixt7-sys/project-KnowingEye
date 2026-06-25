@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Part C — System Design · Knowing Eye</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../os/assets/styles.css" />
+  <link rel="stylesheet" href="assets/manuscript.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script defer src="assets/mermaid-init.js"></script>
+</head>
+<body>
+  <main class="doc-wrap">
+    <div class="doc-nav">
+      <a class="btn btn-sm" href="02-system-analysis.html">← Part B</a>
+      <a class="btn btn-sm" href="04-system-testing.html">Part D — System Testing →</a>
+    </div>
+    <p class="doc-eyebrow">Chapter II · <span class="part-badge">Part C</span></p>
+    <h1>System Design</h1>
+    <p class="doc-lead">Database structure, data dictionary, and the technologies, models, and algorithms used for data collection through classification in the Knowing Eye platform.</p>
+
+    <h2 id="erd">Entity-Relationship Diagram (ERD)</h2>
+    <p>Knowing Eye uses a <strong>relational SQL database</strong> (SQLite in development, PostgreSQL in production). The ERD reflects Django models under <code>backend/features/</code>.</p>
+    <figure class="doc-fig">
+      <figcaption>Figure 2.5 — Entity-Relationship Diagram</figcaption>
+      <pre class="mermaid">
+erDiagram
+  AUTHENTICATION_USER ||--o{ EXAMS_EXAM : creates
+  AUTHENTICATION_USER ||--o{ EXAM_SESSION : takes
+  EXAMS_EXAM ||--o{ EXAMS_QUESTION : contains
+  EXAMS_EXAM ||--o{ EXAM_SESSION : has
+  EXAM_SESSION ||--o{ RESPONSE : has
+  EXAMS_QUESTION ||--o{ RESPONSE : answered_by
+  EXAM_SESSION ||--o{ SESSION_LOG : logs
+  EXAM_SESSION ||--o{ BEHAVIOR_LOG : monitors
+  EXAM_SESSION ||--o{ BEHAVIOR_ALERT : triggers
+  EXAM_SESSION ||--o| IDENTITY_REFERENCE : enrolls
+  AUTHENTICATION_USER {
+    int id PK
+    string username UK
+    string email UK
+    string role
+    string password
+  }
+  EXAMS_EXAM {
+    int id PK
+    string title
+    int duration_minutes
+    int passing_score
+    string status
+    int created_by_id FK
+  }
+  EXAMS_QUESTION {
+    int id PK
+    int exam_id FK
+    text question_text
+    string question_type
+    json options
+  }
+  EXAM_SESSION {
+    uuid id PK
+    int exam_id FK
+    int user_id FK
+    string status
+    datetime started_at
+    decimal percentage_score
+  }
+  BEHAVIOR_LOG {
+    uuid id PK
+    uuid session_id FK
+    string event_type
+    float score
+    json metadata
+  }
+  BEHAVIOR_ALERT {
+    uuid id PK
+    uuid session_id FK
+    string severity
+    boolean resolved
+  }
+      </pre>
+      <details class="graph-source"><summary>DBML source (export to PNG via dbdiagram.io)</summary>
+        <p style="padding:0.4rem 0;font-size:0.85rem"><a href="../architecture/graphs/database-erd.dbml" target="_blank">architecture/graphs/database-erd.dbml</a></p>
+      </details>
+    </figure>
+
+    <h2 id="json-schema">JSON Schema Diagram</h2>
+    <div class="note">
+      <strong>Omitted.</strong> Knowing Eye persists structured data in SQL tables via the Django ORM. JSON fields (<code>options</code>, <code>metadata</code>, <code>embedding</code>) are embedded columns validated at the application layer, not standalone JSON document stores. Per capstone guidelines, JSON Schema diagrams are omitted for SQL-based databases.
+    </div>
+    <p>The API response contract for frame analysis (used by the frontend and WebSocket) follows this structure:</p>
+    <pre><code>{
+  "metrics": { "face_presence_pct", "gaze_focus_pct", "posture_compliance_pct",
+               "identity_match_pct", "object_clear_pct", "overall_compliance_pct" },
+  "events": [{ "event_type", "score_pct", "confidence_pct", "metadata" }],
+  "alerts": [{ "type", "severity", "message", "metric_pct" }]
+}</code></pre>
+
+    <h2 id="data-dictionary">Data Dictionary</h2>
+    <h3>authentication_user</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>INTEGER</td><td>PK, auto</td><td>Unique user identifier</td></tr>
+        <tr><td>username</td><td>VARCHAR(150)</td><td>UNIQUE, NOT NULL</td><td>Login username</td></tr>
+        <tr><td>email</td><td>VARCHAR(254)</td><td>UNIQUE, NOT NULL</td><td>Contact email</td></tr>
+        <tr><td>password</td><td>VARCHAR(128)</td><td>NOT NULL</td><td>Hashed password (PBKDF2)</td></tr>
+        <tr><td>role</td><td>VARCHAR(20)</td><td>ADMIN | EXAMINEE</td><td>RBAC role</td></tr>
+        <tr><td>is_active</td><td>BOOLEAN</td><td>DEFAULT true</td><td>Account enabled flag</td></tr>
+        <tr><td>created_at, updated_at</td><td>DATETIME</td><td>auto</td><td>Audit timestamps</td></tr>
+      </tbody>
+    </table></div>
+    <h3>exams_exam &amp; exams_question</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>exam.title</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Exam name</td></tr>
+        <tr><td>exam.duration_minutes</td><td>INTEGER</td><td>DEFAULT 120</td><td>Time limit</td></tr>
+        <tr><td>exam.passing_score</td><td>INTEGER</td><td>0–100</td><td>Minimum % to pass</td></tr>
+        <tr><td>exam.status</td><td>VARCHAR(20)</td><td>draft | active | archived</td><td>Lifecycle state</td></tr>
+        <tr><td>question.question_type</td><td>VARCHAR(20)</td><td>MCQ, T/F, etc.</td><td>Answer format</td></tr>
+        <tr><td>question.options</td><td>JSON</td><td>DEFAULT []</td><td>MCQ choices</td></tr>
+        <tr><td>question.correct_answer</td><td>TEXT</td><td>NOT NULL</td><td>Scoring key</td></tr>
+      </tbody>
+    </table></div>
+    <h3>exam_session, responses, logs, behavior &amp; identity</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Table</th><th>Key Fields</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>exam_session</td><td>id (UUID), exam_id, user_id, status, percentage_score, passed</td><td>Timed attempt; UUID used in WebSocket URL</td></tr>
+        <tr><td>responses</td><td>session_id, question_id, answer_text, is_correct, time_spent</td><td>Per-question answers</td></tr>
+        <tr><td>session_logs</td><td>session_id, event_type, details, timestamp</td><td>Lifecycle audit (started, submitted, terminated)</td></tr>
+        <tr><td>behavior_log</td><td>session_id, event_type, score, confidence, metadata</td><td>AI-detected behavioral events</td></tr>
+        <tr><td>behavior_alert</td><td>session_id, alert_type, severity, resolved</td><td>Flagged integrity violations</td></tr>
+        <tr><td>monitoring_identity_reference</td><td>session_id (1:1), embedding (JSON), backend</td><td>Enrolled face vector for identity verification</td></tr>
+      </tbody>
+    </table></div>
+    <p class="doc-lead" style="font-size:0.85rem">Full dictionary in the <a href="../architecture/04-database-design.html" target="_blank">Database Design reference</a> and <code>database/database_schema.json</code>.</p>
+
+    <h2 id="technologies">Technologies, Concepts, and Theories</h2>
+    <p>The AI monitoring subsystem implements a classical computer-vision pipeline: <strong>data collection → preprocessing → feature extraction → classification/scoring</strong>. Each tool below states its role, version where known, and rationale.</p>
+
+    <div class="grid" style="gap:0.9rem">
+      <article class="tech-card">
+        <figure class="tech-visual"><img src="assets/tech/vscode.svg" alt="Visual Studio Code logo" width="64" height="64" /></figure>
+        <div><h3>Visual Studio Code</h3><p>Primary IDE for the team, providing integrated Git, debugging, and extensions for Python, TypeScript, and React across the backend and frontend codebases.</p></div>
+      </article>
+      <article class="tech-card">
+        <figure class="tech-visual"><img src="assets/tech/django.svg" alt="Django logo" width="64" height="64" /></figure>
+        <div><h3>Django 6 &amp; DRF + Channels</h3><p>Implements the backend as a feature-based modular monolith: ORM, JWT authentication, REST APIs, and the ASGI WebSocket layer (served by Daphne) that powers real-time monitoring.</p></div>
+      </article>
+      <article class="tech-card">
+        <figure class="tech-visual"><img src="assets/tech/react.svg" alt="React logo" width="64" height="64" /></figure>
+        <div><h3>React 18 + Vite</h3><p>Builds the single-page application with a feature-based modular architecture: exam-taking flow, live monitoring dashboard, and reporting views with role-based protected routing.</p></div>
+      </article>
+      <article class="tech-card">
+        <figure class="tech-visual"><img src="assets/tech/typescript.svg" alt="TypeScript logo" width="64" height="64" /></figure>
+        <div><h3>TypeScript</h3><p>Static typing across the frontend improves maintainability and catches integration errors against the API contract at compile time.</p></div>
+      </article>
+      <article class="tech-card">
+        <figure class="tech-visual"><img src="assets/tech/postgresql.svg" alt="PostgreSQL logo" width="64" height="64" /></figure>
+        <div><h3>PostgreSQL (SQLite dev)</h3><p>Production relational database; SQLite is used in development. The schema is portable between both engines via the Django ORM.</p></div>
+      </article>
+      <article class="tech-card">
+        <figure class="tech-visual"><img src="assets/tech/yolo.svg" alt="YOLO logo" width="64" height="64" /></figure>
+        <div><h3>YOLOv8 (Ultralytics)</h3><p>Detects persons and prohibited objects (e.g., mobile phones) within webcam frames, contributing object-presence signals to the behavioral compliance score.</p></div>
+      </article>
+      <article class="tech-card">
+        <figure class="tech-visual"><img src="assets/tech/mediapipe.svg" alt="MediaPipe logo" width="64" height="64" /></figure>
+        <div><h3>MediaPipe</h3><p>Face and pose solutions extract facial landmarks and body keypoints used for gaze estimation and posture analysis in the behavior pipeline.</p></div>
+      </article>
+      <article class="tech-card">
+        <figure class="tech-visual"><img src="assets/tech/arcface.svg" alt="ArcFace logo" width="64" height="64" /></figure>
+        <div><h3>ArcFace / InsightFace</h3><p>512-D angular-margin embeddings provide examinee identity verification by cosine-distance matching against an enrolled reference, flagging identity mismatches.</p></div>
+      </article>
+    </div>
+
+    <h3>CV Pipeline Stages</h3>
+    <div class="two-col">
+      <div class="card"><h4>1. Data Collection</h4><p class="muted" style="font-size:0.9rem">Browser <code>getUserMedia()</code> captures webcam video; canvas encodes JPEG/base64 at ~1 FPS. Transport: WebSocket <code>/ws/monitoring/{session_id}/</code> (REST <code>/api/monitoring/frame/</code> fallback).</p></div>
+      <div class="card"><h4>2. Pre-processing</h4><p class="muted" style="font-size:0.9rem">Base64 → BGR; resize to ≤640px; optional denoise; YCbCr histogram equalization. Config: <code>backend/ai/config/pipeline.yaml</code>.</p></div>
+      <div class="card"><h4>3. Feature Extraction</h4><p class="muted" style="font-size:0.9rem">MediaPipe (468 face landmarks, head yaw/pitch, posture ratios), YOLOv8 object detections, ArcFace identity embedding.</p></div>
+      <div class="card"><h4>4. Classification &amp; Scoring</h4><p class="muted" style="font-size:0.9rem">Threshold-based 0–100% metrics, rule-based event flags, sliding-window temporal patterns, and weighted aggregation into <code>overall_compliance_pct</code>.</p></div>
+    </div>
+
+    <div class="doc-nav" style="margin-top:2.5rem">
+      <a class="btn btn-sm" href="02-system-analysis.html">← Part B</a>
+      <a class="btn-primary btn-sm" href="04-system-testing.html">Part D — System Testing →</a>
+    </div>
+  </main>
+</body>
+</html>

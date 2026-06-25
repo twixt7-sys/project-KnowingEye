@@ -1,0 +1,43 @@
+{
+  "nodes": [
+    { "id": "WBS-0", "code": "0", "title": "General Tasks (Documentation)", "parent_id": null, "level": 1, "owner": "All", "status": "in_progress", "progress": 0.69, "deliverable": "Outline manuscript components" },
+    { "id": "WBS-0.1", "code": "0.1", "title": "Completed Setup Tasks", "parent_id": "WBS-0", "level": 2, "owner": "All", "status": "done", "progress": 1.0, "deliverable": "Client contact, templates, Chapter 1, drive" },
+    { "id": "WBS-0.2", "code": "0.2", "title": "Review of Related Literature & Works", "parent_id": "WBS-0", "level": 2, "owner": "Cadiente", "status": "in_progress", "progress": 0.75, "deliverable": "RRL sheets + synthesis" },
+    { "id": "WBS-0.3", "code": "0.3", "title": "Synthesis", "parent_id": "WBS-0", "level": 2, "owner": "Cadiente & Tamera", "status": "in_progress", "progress": 0.15, "deliverable": "RRL synthesis" },
+    { "id": "WBS-0.4", "code": "0.4", "title": "Definition of Terms", "parent_id": "WBS-0", "level": 2, "owner": "Cadiente & Tamera", "status": "todo", "progress": 0.1, "deliverable": "Operational terms" },
+    { "id": "WBS-0.5", "code": "0.5", "title": "Chapter 2 — Methodology", "parent_id": "WBS-0", "level": 2, "owner": "Cadiente & Tamera", "status": "in_progress", "progress": 0.45, "deliverable": "Parts A–E write-up" },
+    { "id": "WBS-0.6", "code": "0.6", "title": "Updated References", "parent_id": "WBS-0", "level": 2, "owner": "Cadiente & Tamera", "status": "todo", "progress": 0.1, "deliverable": "IEEE references" },
+
+    { "id": "WBS-1", "code": "1", "title": "Planning", "parent_id": null, "level": 1, "owner": "All", "status": "done", "progress": 1.0, "deliverable": "Approved plan & requirements" },
+    { "id": "WBS-1.1", "code": "1.1", "title": "Define core product goals and scope", "parent_id": "WBS-1", "level": 2, "owner": "Tamera", "status": "done", "progress": 1.0, "deliverable": "Scope statement, user roles, deployment target" },
+    { "id": "WBS-1.2", "code": "1.2", "title": "Capture project requirements", "parent_id": "WBS-1", "level": 2, "owner": "Tamera", "status": "done", "progress": 1.0, "deliverable": "FR/NFR, IPO objectives, schema mapping" },
+
+    { "id": "WBS-2", "code": "2", "title": "System Development", "parent_id": null, "level": 1, "owner": "Ancog & Tamera", "status": "in_progress", "progress": 0.99, "deliverable": "Working full-stack system" },
+    { "id": "WBS-2.1", "code": "2.1", "title": "System Architecture Design", "parent_id": "WBS-2", "level": 2, "owner": "Ancog & Tamera", "status": "done", "progress": 0.99, "deliverable": "Architecture, backend/frontend/AI design, ERD" },
+    { "id": "WBS-2.1.1", "code": "2.1.1", "title": "High-Level Architecture", "parent_id": "WBS-2.1", "level": 3, "owner": "Ancog & Tamera", "status": "done", "progress": 1.0, "deliverable": "Modular monolith, components, protocols" },
+    { "id": "WBS-2.1.2", "code": "2.1.2", "title": "Backend Architecture", "parent_id": "WBS-2.1", "level": 3, "owner": "Ancog & Tamera", "status": "done", "progress": 1.0, "deliverable": "Django + DRF + Channels, service-repository" },
+    { "id": "WBS-2.1.3", "code": "2.1.3", "title": "Frontend Architecture", "parent_id": "WBS-2.1", "level": 3, "owner": "Ancog & Tamera", "status": "done", "progress": 1.0, "deliverable": "React + Vite, routing, state" },
+    { "id": "WBS-2.1.4", "code": "2.1.4", "title": "AI & Monitoring Architecture", "parent_id": "WBS-2.1", "level": 3, "owner": "Ancog & Tamera", "status": "in_progress", "progress": 0.94, "deliverable": "AI pipeline, model integration, output format" },
+    { "id": "WBS-2.1.5", "code": "2.1.5", "title": "Database Design", "parent_id": "WBS-2.1", "level": 3, "owner": "Ancog & Tamera", "status": "done", "progress": 1.0, "deliverable": "Relational schema, constraints, indexing" },
+
+    { "id": "WBS-2.2", "code": "2.2", "title": "Backend Development", "parent_id": "WBS-2", "level": 2, "owner": "Ancog & Tamera", "status": "done", "progress": 1.0, "deliverable": "REST + WebSocket API" },
+    { "id": "WBS-2.2.1", "code": "2.2.1", "title": "Core System Setup", "parent_id": "WBS-2.2", "level": 3, "owner": "Ancog & Tamera", "status": "done", "progress": 1.0, "deliverable": "Django + ASGI + Channels + middleware" },
+    { "id": "WBS-2.2.2", "code": "2.2.2", "title": "Shared Modules", "parent_id": "WBS-2.2", "level": 3, "owner": "Ancog & Tamera", "status": "done", "progress": 1.0, "deliverable": "Repositories, services, DTOs, mixins" },
+    { "id": "WBS-2.2.3", "code": "2.2.3", "title": "Feature Development", "parent_id": "WBS-2.2", "level": 3, "owner": "Ancog & Tamera", "status": "done", "progress": 1.0, "deliverable": "Auth, exams, sessions, monitoring, behavior, reports, profile" },
+
+    { "id": "WBS-2.3", "code": "2.3", "title": "AI Module Development", "parent_id": "WBS-2", "level": 2, "owner": "Cadiente", "status": "done", "progress": 1.0, "deliverable": "Behavior analysis pipeline" },
+    { "id": "WBS-2.3.1", "code": "2.3.1", "title": "Data Processing", "parent_id": "WBS-2.3", "level": 3, "owner": "Cadiente", "status": "done", "progress": 1.0, "deliverable": "Frame capture & preprocessing" },
+    { "id": "WBS-2.3.2", "code": "2.3.2", "title": "Model Integration", "parent_id": "WBS-2.3", "level": 3, "owner": "Cadiente", "status": "done", "progress": 1.0, "deliverable": "YOLO, MediaPipe, ArcFace" },
+    { "id": "WBS-2.3.3", "code": "2.3.3", "title": "Behavioral Analysis", "parent_id": "WBS-2.3", "level": 3, "owner": "Cadiente", "status": "done", "progress": 1.0, "deliverable": "Gaze, posture, scoring, classification" },
+    { "id": "WBS-2.3.4", "code": "2.3.4", "title": "Output & Integration", "parent_id": "WBS-2.3", "level": 3, "owner": "Cadiente", "status": "done", "progress": 1.0, "deliverable": "Structured outputs + fallback" },
+
+    { "id": "WBS-2.4", "code": "2.4", "title": "Frontend Development", "parent_id": "WBS-2", "level": 2, "owner": "Cavan", "status": "done", "progress": 1.0, "deliverable": "React SPA" },
+    { "id": "WBS-2.4.1", "code": "2.4.1", "title": "Core Setup", "parent_id": "WBS-2.4", "level": 3, "owner": "Cavan", "status": "done", "progress": 1.0, "deliverable": "Vite, routing, state, API client" },
+    { "id": "WBS-2.4.2", "code": "2.4.2", "title": "Feature Modules", "parent_id": "WBS-2.4", "level": 3, "owner": "Cavan", "status": "done", "progress": 1.0, "deliverable": "Auth, exams, monitoring, reports, profile UIs" },
+    { "id": "WBS-2.4.3", "code": "2.4.3", "title": "Shared Components", "parent_id": "WBS-2.4", "level": 3, "owner": "Cavan", "status": "done", "progress": 1.0, "deliverable": "Layout, reusable UI, hooks" },
+
+    { "id": "WBS-3", "code": "3", "title": "Integration & System Testing", "parent_id": null, "level": 1, "owner": "Tamera", "status": "in_progress", "progress": 0.85, "deliverable": "Test reports" },
+    { "id": "WBS-3.1", "code": "3.1", "title": "Automated Backend Tests", "parent_id": "WBS-3", "level": 2, "owner": "Ancog & Tamera", "status": "done", "progress": 1.0, "deliverable": "37 passing tests" },
+    { "id": "WBS-3.2", "code": "3.2", "title": "Performance & UAT", "parent_id": "WBS-3", "level": 2, "owner": "Tamera", "status": "in_progress", "progress": 0.6, "deliverable": "Load testing, UTAUT, ArcFace benchmark" }
+  ]
+}

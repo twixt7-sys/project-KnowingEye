@@ -1,0 +1,159 @@
+knowing_eye_backend/
+│
+├── manage.py
+├── requirements.txt
+├── .env
+│
+├── core/                         # ⚙️ GLOBAL SYSTEM LAYER
+│   ├── config/
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   ├── asgi.py
+│   │   └── wsgi.py
+│   │
+│   ├── database/
+│   │   └── base_model.py        # abstract models (timestamps, etc.)
+│   │
+│   ├── security/
+│   │   ├── permissions.py
+│   │   └── authentication.py
+│   │
+│   ├── exceptions/
+│   │   └── handlers.py
+│   │
+│   └── utils/
+│       ├── helpers.py
+│       └── constants.py
+│
+│   # PURPOSE:
+│   # System-wide logic, configs, and foundations
+│
+├── features/                     # 💥 MAIN BUSINESS DOMAINS
+│
+│   ├── auth/
+│   │   ├── models/
+│   │   ├── repositories/
+│   │   │   └── user_repository.py
+│   │   │
+│   │   ├── services/
+│   │   │   └── auth_service.py
+│   │   │
+│   │   ├── actions/
+│   │   │   ├── login_action.py
+│   │   │   └── register_action.py
+│   │   │
+│   │   ├── api/
+│   │   │   ├── views.py
+│   │   │   ├── serializers.py
+│   │   │   └── urls.py
+│   │   │
+│   │   └── types.py
+│
+│   ├── exams/
+│   │   ├── models/
+│   │   │   ├── exam.py
+│   │   │   └── question.py
+│   │   │
+│   │   ├── repositories/
+│   │   ├── services/
+│   │   ├── actions/
+│   │   │   ├── create_exam_action.py
+│   │   │   └── update_exam_action.py
+│   │   │
+│   │   ├── api/
+│   │   └── types.py
+│
+│   ├── session/
+│   │   ├── models/
+│   │   │   └── session.py
+│   │   │
+│   │   ├── repositories/
+│   │   ├── services/
+│   │   ├── actions/
+│   │   │   ├── start_session_action.py
+│   │   │   ├── submit_answer_action.py
+│   │   │   └── end_session_action.py
+│   │   │
+│   │   ├── api/
+│   │   └── types.py
+│
+│   ├── monitoring/              # 🎥 YOUR CORE FEATURE
+│   │   ├── services/
+│   │   │   └── monitoring_service.py
+│   │   │
+│   │   ├── actions/
+│   │   │   └── process_frame_action.py
+│   │   │
+│   │   ├── websocket/
+│   │   │   ├── consumers.py
+│   │   │   └── routing.py
+│   │   │
+│   │   ├── api/
+│   │   │   └── views.py         # fallback REST endpoint
+│   │   │
+│   │   └── types.py
+│
+│   ├── behavior/                # 🧠 AI RESULT INTERPRETATION
+│   │   ├── models/
+│   │   │   └── behavior_log.py
+│   │   │
+│   │   ├── repositories/
+│   │   ├── services/
+│   │   │   └── scoring_service.py
+│   │   │
+│   │   ├── actions/
+│   │   │   └── evaluate_behavior_action.py
+│   │   │
+│   │   └── types.py
+│
+│   ├── reports/
+│   │   ├── repositories/
+│   │   ├── services/
+│   │   │   └── report_service.py
+│   │   │
+│   │   ├── actions/
+│   │   │   └── generate_report_action.py
+│   │   │
+│   │   ├── api/
+│   │   └── types.py
+│
+│   ├── profile/
+│   │   ├── models/
+│   │   ├── repositories/
+│   │   ├── services/
+│   │   ├── actions/
+│   │   ├── api/
+│   │   └── types.py
+│
+│   # PURPOSE:
+│   # Each folder = one feature (just like frontend)
+│
+├── shared/                      # 🔁 CROSS-FEATURE UTILITIES
+│   ├── dto/
+│   │   └── base_dto.py
+│   │
+│   ├── mixins/
+│   │   └── timestamp_mixin.py
+│   │
+│   ├── services/
+│   │   └── base_service.py
+│   │
+│   ├── repositories/
+│   │   └── base_repository.py
+│   │
+│   └── utils/
+│       └── validators.py
+│
+│   # PURPOSE:
+│   # Shared reusable logic across features
+│
+├── ai/                          # 🤖 AI ENGINE (ISOLATED BRAIN)
+│   ├── preprocessing/
+│   ├── detection/
+│   ├── recognition/
+│   ├── pipeline.py
+│   └── config.py
+│
+├── media/
+├── logs/
+└── static/

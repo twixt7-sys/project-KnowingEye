@@ -1,0 +1,125 @@
+============================================================
+ KNOWING EYE : STUDY OBJECTIVES PROGRESS TRACKER
+ Web-Based Examination Platform with Behavior Monitoring
+ Using Facial and Postural Analysis
+------------------------------------------------------------
+ Sources:
+   - Objectives: ANG MANGHILABOT MA GABAAN (project document)
+   - Status basis: docs/general/workflow.tree (Work Breakdown Structure)
+ Last updated: 2026-06-14
+============================================================
+
+LEGEND
+  [x] = done / verified in current codebase
+  [~] = partial / in progress / environment-dependent
+  [ ] = pending / not yet implemented
+  (NN%) = completion estimate derived from the WBS status flags
+
+------------------------------------------------------------
+ OVERALL PROGRESS: ~76%
+------------------------------------------------------------
+
+[~] GENERAL OBJECTIVE (~76%)
+    Develop "Knowing Eye" to enhance examination integrity,
+    monitoring efficiency, and assessment reliability.
+
+
+============================================================
+ SPECIFIC OBJECTIVES
+============================================================
+
+[x] OBJECTIVE 1: Centralized web-based examination platform (100%)
+    Manage exam creation, administration, and monitoring in one system.
+    [x] Exam creation, configuration, publish / archive ........ 100%
+    [x] Session lifecycle, timer, submission, scoring ......... 100%
+    [x] Unified navigation across admin and examinee views .... 100%
+    WBS refs: 3.1, 3.3.2, 3.3.3, 5.2.2, 5.2.5
+
+[x] OBJECTIVE 2: Monitoring and data management system (100%)
+    Capture and store examination-related data.
+    [x] WebSocket consumer + REST frame fallback ............. 100%
+    [x] Relational schema (users, exams, sessions, logs) ..... 100%
+    [x] Behavior log persistence and retrieval ............... 100%
+    WBS refs: 2.5, 3.3.1, 3.3.4, 3.3.6
+
+[~] OBJECTIVE 3: Computer vision for real-time behavior analysis (~55%)
+    [~] 3.1 Detect facial presence and identity consistency .. ~50%
+        [~] Face detection in frames ........................ partial
+        [~] Identity consistency checks (FaceNet/ArcFace) ... partial
+    [~] 3.2 Track head movement, eye gaze, and posture ....... ~45%
+        [~] Head orientation analysis ...................... partial
+        [ ] Eye gaze tracking ............................. pending
+        [~] Posture detection ............................. partial
+    [~] 3.3 Identify abnormal / suspicious patterns .......... ~50%
+        [~] Behavior classification ....................... partial
+        [~] Anomaly flagging .............................. partial
+    Note: pipeline runs in "playground" mode with a deterministic
+    stub fallback, so the API contract is always honored.
+    WBS refs: 4.2.3, 4.3.1, 4.3.2, 4.3.3, 4.3.4, 4.3.5
+
+[~] OBJECTIVE 4: Integrate deep learning algorithms (~50%)
+    [x] 4.1 YOLO for face and posture detection ............. 100%
+    [ ] 4.2 CNN for feature extraction ..................... pending
+    [~] 4.3 FaceNet / ArcFace identity verification ........ ~50%
+    WBS refs: 4.2.1, 4.2.2, 4.2.3
+
+[x] OBJECTIVE 5: Behavior monitoring and scoring module (~95%)
+    [x] 5.1 Flag potential anomalies during sessions ........ 100%
+    [x] 5.2 Generate behavioral indicators .................. 100%
+    [x] 5.3 Support admin review of flagged events .......... 100%
+    Note: scoring/alerting module is complete; quality of inputs
+    depends on Objective 3/4 CV maturity.
+    WBS refs: 3.3.5, 5.2.4
+
+[x] OBJECTIVE 6: Administrative dashboard and visualization (100%)
+    [x] 6.1 Review examination sessions ..................... 100%
+    [x] 6.2 Analyze behavioral reports (charts, exports) .... 100%
+    [x] 6.3 Support integrity decision-making .............. 100%
+    WBS refs: 5.2.3, 5.2.5, 5.2.6, 3.3.6
+
+[~] OBJECTIVE 7: Evaluate functionality, usability, effectiveness (~35%)
+    [x] Backend unit / integration tests ................... done
+    [~] Frontend component and interaction tests .......... partial
+    [~] End-to-end exam flow testing ...................... partial
+    [ ] Performance and stress testing ................... pending
+    [ ] Usability testing and user feedback .............. pending
+    WBS refs: 6.1, 6.2, 6.3, 6.4, 8.1
+
+
+============================================================
+ WBS PHASE ROLLUP (from workflow.tree)
+============================================================
+[x] 1. Project Initiation and Planning .................. 100%
+[x] 2. System Architecture Design ....................... 100%
+[x] 3. Backend Development ............................... ~98%
+[~] 4. AI Module Development ............................. ~55%
+[x] 5. Frontend Development .............................. 100%
+[~] 6. Integration and System Testing ................... ~65%
+[~] 7. Deployment and Release ........................... ~65%
+[ ] 8. Evaluation and Continuous Improvement ............ 0%
+
+
+============================================================
+ UI / BRANDING REFRESH (this iteration)
+============================================================
+[x] Green academic theme across light and dark modes .... 100%
+[x] Theme tokens centralized in styles/theme.css ........ 100%
+[x] App logo + institution logo placeholders ............ 100%
+[x] Single-source brand config (core/config/brand.ts) ... 100%
+[x] Page accents aligned to green palette ............... 100%
+    Where to change logos:
+      - frontend/src/core/config/brand.ts (names + paths + toggle)
+      - frontend/public/branding/app-logo.svg
+      - frontend/public/branding/institution-logo.svg
+
+
+============================================================
+ NOT YET COMPLETE (focus list)
+============================================================
+[ ] CNN feature-extraction stage (Objective 4.2)
+[ ] Eye gaze tracking (Objective 3.2)
+[~] Full FaceNet/ArcFace identity verification (Objective 4.3)
+[~] Frontend component tests (Objective 7)
+[ ] Performance / stress testing (Objective 7)
+[ ] Usability testing and feedback collection (Objective 7)
+[ ] Production deployment execution (WBS 7.2)

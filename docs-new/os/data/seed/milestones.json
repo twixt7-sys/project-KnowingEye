@@ -1,0 +1,13 @@
+{
+  "milestones": [
+    { "id": "MS-1", "title": "Project Start", "date": "2026-04-16", "category": "institutional", "status": "completed", "description": "Capstone kickoff and scope definition." },
+    { "id": "MS-2", "title": "Planning Phase Complete", "date": "2026-05-02", "category": "technical", "status": "completed", "description": "Goals, scope, and requirements finalized (Phase 1)." },
+    { "id": "MS-3", "title": "Architecture & Database Design", "date": "2026-05-09", "category": "technical", "status": "completed", "description": "System architecture, ERD, and API contract defined." },
+    { "id": "MS-4", "title": "Backend Development Complete", "date": "2026-05-22", "category": "technical", "status": "completed", "description": "REST + WebSocket API, all feature modules." },
+    { "id": "MS-5", "title": "Frontend & AI Module Complete", "date": "2026-06-05", "category": "technical", "status": "completed", "description": "React SPA and AI behavior pipeline integrated." },
+    { "id": "MS-6", "title": "System Testing Complete", "date": "2026-06-21", "category": "technical", "status": "at_risk", "description": "Integration, automated tests, and performance validation." },
+    { "id": "MS-7", "title": "Outline Requirements Submission", "date": "2026-06-27", "category": "institutional", "status": "upcoming", "description": "Submission of outline requirements to the panel." },
+    { "id": "MS-8", "title": "Outline Defense", "date": "2026-06-30", "category": "institutional", "status": "upcoming", "description": "Defense of the capstone outline." },
+    { "id": "MS-9", "title": "Outline Submission", "date": "2026-07-04", "category": "institutional", "status": "upcoming", "description": "Final outline manuscript submission." }
+  ]
+}

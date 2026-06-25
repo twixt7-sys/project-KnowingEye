@@ -1,0 +1,37 @@
+{
+  "seed_version": 2,
+  "title": "Knowing Eye",
+  "full_title": "Knowing Eye: A Full-Stack Session-Guided Web-Based Examination Platform with Integrated Behavior Monitoring",
+  "slug": "knowing-eye",
+  "type": "Capstone Project",
+  "subject": "BSIT Capstone",
+  "team_name": "",
+  "version_label": "June 2026 · codebase-aligned",
+  "vision": {
+    "problem_statement": "Online examination systems lack reliable real-time behavioral monitoring, resulting in increased cheating risks and heavy reliance on manual supervision.",
+    "solution": "A centralized web-based examination platform integrated with AI-powered behavioral monitoring using computer vision and deep learning.",
+    "core_goal": "Enhance examination integrity, automate proctoring, and provide data-driven behavioral insights."
+  },
+  "dates": { "started": "2026-04-16", "target": "2026-07-04" },
+  "institution": {
+    "name": "Legacy College of Compostela",
+    "department": "Institute of Information Technology",
+    "location": "Compostela, Davao de Oro, Philippines"
+  },
+  "advisor": { "name": "Lorjohn Raña", "title": "Project Adviser" },
+  "overall_progress": 0.89,
+  "implementation_status": {
+    "architecture": { "status": "Complete", "completion": 0.99 },
+    "backend": { "status": "Complete", "completion": 1.0 },
+    "frontend": { "status": "Complete", "completion": 1.0 },
+    "ai_pipeline": { "status": "Complete", "completion": 1.0 },
+    "documentation": { "status": "In Progress", "completion": 0.6 }
+  },
+  "quick_links": [
+    { "label": "Frontend Prototype (Vercel)", "href": "https://project-knowing-eye.vercel.app/" },
+    { "label": "Project Drive Folder", "href": "https://drive.google.com/drive/folders/1Vc7kXGmtGch1AQoMQbw3BXN14sLyG8on" },
+    { "label": "Documentation Hub", "href": "#/documents" },
+    { "label": "Chapter II — Methodology", "href": "chapter2/index.html" },
+    { "label": "Architecture Graphs", "href": "architecture/graph-viewer.html" }
+  ]
+}

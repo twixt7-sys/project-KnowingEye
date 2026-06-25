@@ -1,0 +1,48 @@
+{
+  "diagram_id": "Fig-2.1",
+  "title": "High-Level System Architecture",
+  "section": "2.1.1 / 2.1.2",
+  "description": "Modular monolith with four primary components: Frontend SPA, Django backend (REST + WebSocket), AI/CV pipeline module, and relational database. Redis supports horizontal WebSocket scaling in production.",
+  "format": "directed_graph",
+  "render_hints": {
+    "tools": ["draw.io", "Lucidchart", "Mermaid", "dbdiagram.io (for ERD only)"],
+    "mermaid_template": "flowchart TB\n  subgraph Client[\"Client Tier\"]\n    FE[React SPA]\n    CAM[Webcam API]\n  end\n  subgraph Edge[\"Edge Tier\"]\n    NG[Nginx TLS]\n  end\n  subgraph App[\"Application Tier\"]\n    API[Django DRF + Channels]\n    REDIS[(Redis)]\n    AI[AI Adapter → backend/ai/knowing_eye]\n  end\n  subgraph Data[\"Data Tier\"]\n    DB[(PostgreSQL)]\n  end\n  FE -->|REST| NG\n  FE -->|WebSocket| NG\n  CAM --> FE\n  NG --> API\n  API --> REDIS\n  API --> AI\n  API --> DB"
+  },
+  "nodes": [
+    { "id": "examinee_browser", "label": "Examinee Browser", "tier": "client", "technology": "Chrome/Edge/Firefox", "responsibilities": ["Exam UI", "Webcam capture", "WebSocket client"] },
+    { "id": "admin_browser", "label": "Administrator Browser", "tier": "client", "technology": "Chrome/Edge/Firefox", "responsibilities": ["Dashboard", "Live monitoring grid", "Reports"] },
+    { "id": "frontend_spa", "label": "Frontend SPA", "tier": "client", "technology": "React 18, Vite, TypeScript, Tailwind", "responsibilities": ["Routing", "Auth state", "API client", "Monitoring hooks"] },
+    { "id": "nginx", "label": "Reverse Proxy", "tier": "edge", "technology": "Nginx", "responsibilities": ["TLS termination", "Static SPA", "HTTP + WS proxy"] },
+    { "id": "django_asgi", "label": "Django ASGI Server", "tier": "application", "technology": "Daphne / Uvicorn", "responsibilities": ["HTTP REST", "WebSocket consumers"] },
+    { "id": "drf", "label": "Django REST Framework", "tier": "application", "technology": "DRF + SimpleJWT", "responsibilities": ["CRUD APIs", "JWT auth", "Serialization"] },
+    { "id": "channels", "label": "Django Channels", "tier": "application", "technology": "Channels 4", "responsibilities": ["WebSocket routing", "Group broadcast", "Async consumers"] },
+    { "id": "feature_modules", "label": "Feature Modules", "tier": "application", "technology": "Django apps", "responsibilities": ["auth", "exams", "session", "monitoring", "behavior", "reports"] },
+    { "id": "ai_adapter", "label": "AI Adapter", "tier": "application", "technology": "backend/ai/adapter.py", "responsibilities": ["Lazy pipeline load", "Stub fallback", "Thread-safe init"] },
+    { "id": "cv_pipeline", "label": "Behavior Pipeline", "tier": "ai", "technology": "backend/ai/knowing_eye", "responsibilities": ["Detection", "Recognition", "Scoring", "Alerts"] },
+    { "id": "redis", "label": "Redis", "tier": "infrastructure", "technology": "Redis 7", "responsibilities": ["Channel layer", "Optional cache"] },
+    { "id": "postgresql", "label": "PostgreSQL", "tier": "data", "technology": "PostgreSQL 15+ (SQLite dev)", "responsibilities": ["Users", "Exams", "Sessions", "Logs", "Alerts"] }
+  ],
+  "edges": [
+    { "from": "examinee_browser", "to": "frontend_spa", "protocol": "local", "label": "renders" },
+    { "from": "admin_browser", "to": "frontend_spa", "protocol": "local", "label": "renders" },
+    { "from": "frontend_spa", "to": "nginx", "protocol": "HTTPS", "label": "REST /api/*" },
+    { "from": "frontend_spa", "to": "nginx", "protocol": "WSS", "label": "WebSocket /ws/*" },
+    { "from": "nginx", "to": "django_asgi", "protocol": "HTTP/WS", "label": "proxy_pass" },
+    { "from": "django_asgi", "to": "drf", "protocol": "internal", "label": "HTTP views" },
+    { "from": "django_asgi", "to": "channels", "protocol": "internal", "label": "WS consumers" },
+    { "from": "drf", "to": "feature_modules", "protocol": "internal", "label": "views → services" },
+    { "from": "channels", "to": "feature_modules", "protocol": "internal", "label": "monitoring consumer" },
+    { "from": "feature_modules", "to": "ai_adapter", "protocol": "function_call", "label": "analyze_frame_bgr()" },
+    { "from": "ai_adapter", "to": "cv_pipeline", "protocol": "Python import", "label": "BehaviorPipeline" },
+    { "from": "feature_modules", "to": "postgresql", "protocol": "ORM/SQL", "label": "read/write" },
+    { "from": "channels", "to": "redis", "protocol": "Redis pub/sub", "label": "channel layer" }
+  ],
+  "layers": [
+    { "name": "Presentation", "nodes": ["examinee_browser", "admin_browser", "frontend_spa"] },
+    { "name": "Edge / Delivery", "nodes": ["nginx"] },
+    { "name": "Application", "nodes": ["django_asgi", "drf", "channels", "feature_modules", "ai_adapter"] },
+    { "name": "AI / Analytics", "nodes": ["cv_pipeline"] },
+    { "name": "Infrastructure", "nodes": ["redis"] },
+    { "name": "Persistence", "nodes": ["postgresql"] }
+  ]
+}

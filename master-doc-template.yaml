@@ -1,0 +1,1337 @@
+# =============================================================================
+# PROJECT OS + DOCUMENTATION GENERATOR — PROMPT TEMPLATE v2
+# =============================================================================
+# File type : YAML (structured, reusable, machine-parseable AI prompt)
+# Version   : 2.0.0
+# Purpose   : Generate a self-contained static "Project OS" that bundles:
+#             • Capstone / technical documentation (HTML chapters, architecture)
+#             • Project management (dashboard, Gantt, WBS, team, tasks, risks)
+#             • Zero-backend dynamics via JSON seeds + localStorage + IndexedDB
+#             • Push-to-deploy static hosting (GitHub Pages, Cloudflare, etc.)
+#
+# Usage:
+#   1. Copy → rename (e.g. myapp-project-os.prompt.yaml)
+#   2. Fill `variables` (search {{PLACEHOLDER}})
+#   3. Paste rendered `agent_prompt` into Cursor / Claude / ChatGPT
+#   4. Agent scans repo → generates {{DOCS_OUTPUT_DIR}}/ + deployment files
+#
+# Design goal: clone repo → push → live site updates. No servers. No databases.
+# =============================================================================
+
+schema_version: "2.0.0"
+kind: project-os-documentation-generator
+output_root: "{{DOCS_OUTPUT_DIR}}"
+
+# -----------------------------------------------------------------------------
+# TECHNOLOGY STACK (mandatory — do not substitute frameworks)
+# -----------------------------------------------------------------------------
+technology_stack:
+  frontend:
+    - HTML5
+    - CSS3
+    - "Vanilla JavaScript (ES6 Modules)"
+  storage:
+    committed_seed: "JSON files under os/data/seed/ (version-controlled truth)"
+    runtime_cache: localStorage
+    structured_data: IndexedDB
+    rule: "Never require a backend API. All reads/writes stay client-side."
+  visualization:
+    - "SVG-based charts (progress, burndown, status donuts)"
+    - "SVG-based Gantt rendering (custom renderer, no paid libs required)"
+    - "Optional: Mermaid for sequence/flow (CDN, graceful offline fallback)"
+  deployment:
+    primary: [GitHub Pages, Cloudflare Pages]
+    also_supported: [Netlify, Vercel]
+  cicd:
+    - GitHub Actions
+  configuration:
+    - JSON
+  architecture:
+    - Static Site Architecture
+    - Plugin-Based Module System
+
+# -----------------------------------------------------------------------------
+# VARIABLES — customize per project
+# -----------------------------------------------------------------------------
+variables:
+  project:
+    title: "{{PROJECT_TITLE}}"
+    full_title: "{{PROJECT_FULL_TITLE}}"
+    slug: "{{PROJECT_SLUG}}"                      # kebab-case, used in storage keys
+    type: "{{PROJECT_TYPE}}"
+    date_started: "{{DATE_STARTED}}"
+    date_target: "{{DATE_TARGET}}"                  # e.g. 2026-03 defense date
+    version_label: "{{DOC_VERSION}}"
+
+  institution:
+    name: "{{INSTITUTION_NAME}}"
+    department: "{{DEPARTMENT}}"
+    location: "{{LOCATION}}"
+
+  team:
+    - name: "{{TEAM_MEMBER_1}}"
+      role: "{{ROLE_1}}"                          # e.g. Project Lead / Backend
+      email: "{{EMAIL_1}}"
+    - name: "{{TEAM_MEMBER_2}}"
+      role: "{{ROLE_2}}"
+      email: "{{EMAIL_2}}"
+    - name: "{{TEAM_MEMBER_3}}"
+      role: "{{ROLE_3}}"
+      email: "{{EMAIL_3}}"
+
+  advisor:
+    name: "{{ADVISOR_NAME}}"
+    title: "{{ADVISOR_TITLE}}"
+
+  vision:
+    problem_statement: "{{PROBLEM_STATEMENT}}"
+    solution: "{{SOLUTION_SUMMARY}}"
+    core_goal: "{{CORE_GOAL}}"
+
+  repository:
+    root: "{{REPO_ROOT}}"
+    components:
+      - path: "{{COMPONENT_1_PATH}}"
+        role: "{{COMPONENT_1_ROLE}}"
+        stack: "{{COMPONENT_1_STACK}}"
+      - path: "{{COMPONENT_2_PATH}}"
+        role: "{{COMPONENT_2_ROLE}}"
+        stack: "{{COMPONENT_2_STACK}}"
+      - path: "{{COMPONENT_3_PATH}}"
+        role: "{{COMPONENT_3_ROLE}}"
+        stack: "{{COMPONENT_3_STACK}}"
+
+  deployment:
+    site_name: "{{PROJECT_TITLE}} Project OS"
+    publish_directory: "{{DOCS_OUTPUT_DIR}}"      # folder GitHub Pages serves
+    base_path: "{{BASE_PATH}}"                    # "" for user.github.io/repo OR "/repo" for project pages
+    default_branch: main
+  #   hosting_target: github-pages | cloudflare-pages | netlify | vercel
+
+  project_os:
+    enabled: true
+    modules:
+      # enabled: true|false per module; order = sidebar order
+      - id: dashboard
+        label: Dashboard
+        icon: grid
+        enabled: true
+      - id: tasks
+        label: Tasks
+        icon: check-square
+        enabled: true
+      - id: gantt
+        label: Gantt Chart
+        icon: timeline
+        enabled: true
+      - id: wbs
+        label: WBS
+        icon: tree
+        enabled: true
+      - id: team
+        label: Team
+        icon: users
+        enabled: true
+      - id: milestones
+        label: Milestones
+        icon: flag
+        enabled: true
+      - id: risks
+        label: Risks & Issues
+        icon: alert
+        enabled: true
+      - id: documents
+        label: Documentation
+        icon: book
+        enabled: true
+      - id: architecture
+        label: Architecture
+        icon: layers
+        enabled: true
+      - id: testing
+        label: Testing
+        icon: flask
+        enabled: true
+      - id: reports
+        label: Reports
+        icon: file-text
+        enabled: true
+      - id: settings
+        label: Settings
+        icon: gear
+        enabled: true
+
+  manuscript:
+    chapters:
+      - id: chapter1
+        enabled: true
+        title: "Chapter I — Introduction"
+        slug: chapter1
+        pages:
+          - { file: 01-introduction.html, title: Introduction }
+      - id: chapter2
+        enabled: true
+        title: "Chapter II — Methodology"
+        slug: chapter2
+        outline_source: "docs/Outline-Alignment.docx"
+        pages:
+          - { file: index.html, title: Chapter II Index, kind: index }
+          - { file: 01-system-planning.html, title: System Planning, part: "Part A" }
+          - { file: 02-system-analysis.html, title: System Analysis, part: "Part B" }
+          - { file: 03-system-design.html, title: System Design, part: "Part C" }
+          - { file: 04-system-testing.html, title: System Testing and Implementation, part: "Part D" }
+          - { file: 05-system-maintenance.html, title: System Maintenance, part: "Part E" }
+
+  architecture:
+    pattern: "{{ARCH_PATTERN}}"
+    pages:
+      - 01-high-level-architecture.html
+      - 02-system-components.html
+      - 03-communication-protocols.html
+      - 04-database-design.html
+      - 05-ai-pipeline.html
+      - 06-deployment.html
+      - 07-workflows-diagrams.html
+    graphs:
+      - { id: system-architecture, diagram_id: "Fig-2.1", format: directed_graph }
+      - { id: backend-layers, diagram_id: "Fig-2.2", format: layered_graph }
+      - { id: rest-api-catalog, diagram_id: "Fig-2.3", format: catalog }
+      - { id: database-erd, diagram_id: "Fig-2.4", format: dbml, extension: dbml }
+      - { id: deployment-topology, diagram_id: "Fig-2.5", format: directed_graph }
+      - { id: frontend-component, diagram_id: "Fig-2.6", format: component_tree }
+      - { id: ai-pipeline-component, diagram_id: "Fig-2.7", format: pipeline, optional: true }
+
+  testing_packs:
+    - { id: ieee, folder: "testing(IEEE)", enabled: true }
+    - { id: utaut, folder: "testing(UTAUT)", enabled: false }
+
+# -----------------------------------------------------------------------------
+# INSTITUTIONAL OUTLINE ALIGNMENT (from docs/Outline-Alignment.docx)
+# Maps capstone manuscript sections to generated HTML, diagrams, and Project OS modules.
+# -----------------------------------------------------------------------------
+outline_alignment:
+  source_document: "docs/Outline-Alignment.docx"
+  citation_style: IEEE
+
+  chapter1_supplement:
+    review_of_related_literature_and_works:
+      description: |
+        Critical analysis of existing studies and systems. Related Literature = scholarly
+        sources aligned with objectives; Related Works = comparable systems.
+      requirements:
+        - "Minimum 16 resources (journals, papers, technical reports) not older than 10 years"
+        - "Tabular comparison of related works: functionalities, algorithms, parameters, metrics"
+        - "IEEE in-text citations throughout"
+    definition_of_terms:
+      description: |
+        Operational and technical terms used in the project; alphabetically ordered;
+        each definition explains application within the system (with citation).
+
+  chapter2_methodology:
+    title: "Chapter II — Methodology"
+    introduction: |
+      Methodology is the systematic approach, techniques, and processes used to carry out
+      the study and develop the system. Briefly justify the chosen software process model
+      (e.g. Agile, Waterfall, Scrum, Spiral, V-Model, Iterative, RAD, DevOps, XP, Prototype).
+    software_process_models_reference:
+      - Agile
+      - Waterfall
+      - Scrum
+      - Kanban
+      - Spiral Model
+      - "V-Model (Verification and Validation Model)"
+      - Iterative Model
+      - Incremental Model
+      - Rapid Application Development (RAD)
+      - DevOps
+      - Lean Software Development
+      - Extreme Programming (XP)
+      - Prototype Model
+      - Big Bang Model
+
+    sections:
+      - id: system_planning
+        title: System Planning
+        html_page: chapter2/01-system-planning.html
+        part: "Part A"
+        description: Planning phase and project conception.
+        project_os_links:
+          - { module: team, subsection: "Project Team Organization" }
+          - { module: wbs, subsection: "Work Breakdown Structure" }
+          - { module: gantt, subsection: "Gantt Chart" }
+        subsections:
+          - id: project_team_organization
+            title: Project Team Organization
+            requirements:
+              - "Organizational chart showing team composition"
+              - "Include member photos and adviser at top of hierarchy"
+            deliverables:
+              - "Org chart figure (SVG or embedded image)"
+              - "Table of roles and responsibilities"
+              - "Link to Project OS Team module (#/team) and seed team.json"
+          - id: work_breakdown_structure
+            title: Work Breakdown Structure
+            requirements:
+              - "Phase-based breakdown of all activities"
+              - "Preferably aligned with PADIM stages (Planning, Analysis, Design, Implementation, Maintenance)"
+            deliverables:
+              - "WBS outline table in HTML"
+              - "Link to Project OS WBS module (#/wbs) seeded from wbs.json"
+          - id: gantt_chart
+            title: Gantt Chart
+            requirements:
+              - "Schedule derived from WBS tasks"
+              - "Month and year axis formatting"
+            deliverables:
+              - "Embedded SVG Gantt snapshot or link to Project OS Gantt (#/gantt)"
+              - "Milestone markers for defense dates"
+
+      - id: system_analysis
+        title: System Analysis
+        html_page: chapter2/02-system-analysis.html
+        part: "Part B"
+        subsections:
+          - id: system_architecture
+            title: System Architecture
+            requirements:
+              - "Conceptual framework: hardware, software, data, users, interactions"
+              - "Supported with diagrams"
+            optional_variants:
+              - Conceptual framework
+              - "Prototype (with IoT or Infrastructure)"
+              - "Floor Plan (Physical Layout Design)"
+            deliverables:
+              - { figure_id: "Fig-2.1", file: "architecture/graphs/system-architecture.json", title: "Conceptual System Architecture" }
+              - "Component table (layer, technology, interaction)"
+          - id: requirements
+            title: Functional and Non-Functional Requirements
+            requirements:
+              - "Brief discussion plus numbered lists"
+              - "Functional = expected behaviors; Non-functional = quality attributes"
+            deliverables:
+              - "FR-NNN and NFR-NNN numbered requirement tables"
+              - "Traceability hooks to testing module and IEEE pack"
+          - id: use_case_diagram
+            title: Use Case Diagram
+            requirements:
+              - "Actors and their interactions with the system"
+            deliverables:
+              - { figure_id: "Fig-2.2", file: "chapter2/graphs/use-case.json", format: use_case }
+          - id: dfd_level0
+            title: Context Flow Diagram (Level 0 DFD)
+            requirements:
+              - "Business actions and data flow with external entities"
+              - "Physical DFD optional for game-development projects"
+            deliverables:
+              - { figure_id: "Fig-2.3", file: "chapter2/graphs/dfd-level0.json", format: dfd_level0 }
+          - id: dfd_level1
+            title: Level 1 DFD
+            requirements:
+              - "Expands Level 0: modules, subprocesses, detailed data flows"
+              - "Gane and Sarson notation for logical diagrams"
+            deliverables:
+              - { figure_id: "Fig-2.4", file: "chapter2/graphs/dfd-level1.json", format: dfd_level1 }
+
+      - id: system_design
+        title: System Design
+        html_page: chapter2/03-system-design.html
+        part: "Part C"
+        subsections:
+          - id: erd
+            title: Entity Relationship Diagram
+            requirements:
+              - "Database entities and relationships"
+              - "Omit if using NoSQL-only persistence"
+            deliverables:
+              - { figure_id: "Fig-2.5", file: "architecture/graphs/database-erd.dbml", format: dbml }
+              - "Link to architecture/04-database-design.html"
+          - id: json_schema
+            title: JSON Schema Diagram
+            requirements:
+              - "Structure of JSON documents for validation and automated testing"
+              - "Omit for SQL-only relational databases"
+            deliverables:
+              - "Note omission with rationale when SQL-based (Django ORM / PostgreSQL)"
+              - "Optional: API request/response schema from backend/API_structure.json"
+          - id: data_dictionary
+            title: Data Dictionary
+            requirements:
+              - "Table of all tables, fields, types, constraints, descriptions"
+            deliverables:
+              - "Generated from database/database_schema.json or migrations scan"
+          - id: technologies_concepts_theories
+            title: Technologies, Concepts, and Theories
+            requirements:
+              - "Models, algorithms, frameworks, and tools used in the system"
+              - "Data lifecycle discussion where applicable"
+              - "One entry per technology/concept/theory using the card format below"
+            entry_format:
+              pattern: |
+                Repeat for each item (VS Code, Django, React, PostgreSQL, MediaPipe, etc.):
+                  1. Heading — technology or concept name (h3)
+                  2. Visual — logo icon or screenshot (<img> in chapter2/assets/tech/)
+                  3. Body — paragraph(s) explaining role in the project, version, and rationale
+              html_structure: |
+                <article class="tech-card">
+                  <h3>VS Code</h3>
+                  <figure class="tech-visual">
+                    <img src="assets/tech/vscode.png" alt="Visual Studio Code logo" width="64" height="64" />
+                  </figure>
+                  <p>VS Code will serve as the primary integrated development environment …</p>
+                </article>
+              css_class: tech-card
+              assets_folder: "{{DOCS_OUTPUT_DIR}}/chapter2/assets/tech/"
+              scan_sources:
+                - "package.json, requirements.txt, pyproject.toml"
+                - "README and architecture docs"
+                - "backend/ and frontend/ stack manifests"
+            data_lifecycle_topics:
+              type_of_data: [primary, secondary]
+              data_sources:
+                - "User inputs (forms, transactions)"
+                - "System-generated data (logs, records)"
+                - "External sources (APIs, datasets)"
+                - "IoT devices (if applicable)"
+              data_collection_method: [manual_input, automated_collection]
+              time_of_collection: [real_time, periodic, one_time]
+              dataset_overview: [record_counts, expected_growth]
+              data_structure: [key_fields, grouped_categories]
+              processing_stages:
+                - Data Cleaning
+                - Data Transformation
+                - Data Integration
+                - Data Reduction
+                - Data Validation
+
+      - id: system_testing
+        title: System Testing and Implementation
+        html_page: chapter2/04-system-testing.html
+        part: "Part D"
+        subsections:
+          - id: testing_results
+            title: Testing Results
+            requirements:
+              - "Define fields/columns used to determine a successful result"
+              - "State confidence level for findings"
+              - "Layered strategy: unit/API, integration, WebSocket, AI pipeline, UAT"
+              - "Include classification performance metrics for AI/ML components where applicable"
+            classification_metrics_table:
+              tag: tables-results-syst-test
+              css_class: tables-results-syst-test
+              caption: "Table — System Testing Results (Classification Metrics)"
+              required_metrics:
+                - Accuracy
+                - Recall
+                - Precision
+                - F1-Score
+              columns: [Metric, Value, Target, Interpretation, Status]
+              notes: |
+                Populate from real evaluation runs (confusion matrix, held-out frames, or
+                labeled test set). Do not fabricate values — cite dataset size and method.
+              charts:
+                - id: classification-metrics-bar
+                  title: "Fig-2.6 — Classification Metrics (Accuracy, Recall, Precision, F1-Score)"
+                  type: grouped_bar
+                  metrics: [Accuracy, Recall, Precision, F1-Score]
+                  renderer: "os/assets/charts/svg-charts.js or inline SVG in chapter2/assets/"
+                  data_source: classification_metrics_table
+                - id: classification-metrics-comparison
+                  title: "Fig-2.7 — Per-Class or Per-Scenario F1 Comparison (optional)"
+                  type: bar
+                  optional: true
+            deliverables:
+              - "Tagged results table (.tables-results-syst-test): metric, expected, actual, pass/fail"
+              - "Classification metrics table: Accuracy, Recall, Precision, F1-Score"
+              - "SVG bar chart(s) visualizing the four classification metrics"
+              - "Link to testing/testing(IEEE)/ and automated test suite counts from repo"
+              - "Link to Project OS Testing module (#/testing)"
+          - id: summary_of_findings
+            title: Summary of Findings
+            requirements:
+              - "Tabular summary of defects, coverage, open risks, and metric interpretation"
+            deliverables:
+              - "Findings table with severity, module, resolution status"
+              - "Brief narrative on whether Accuracy / Recall / Precision / F1 meet targets"
+
+      - id: system_maintenance
+        title: System Maintenance
+        html_page: chapter2/05-system-maintenance.html
+        part: "Part E"
+        tense: future
+        voice: |
+          Entire section written in future tense — e.g. "will be implemented", "shall be
+          performed", "will ensure", "plans to deploy". Describes post-deployment sustainment.
+        subsections:
+          - id: systems_security_plan
+            title: Systems Security Plan
+            intro_paragraph: |
+              One generalized opening paragraph (future tense) stating that the system will
+              adopt a defense-in-depth security posture across authentication, transport,
+              application, and data layers to protect examinee privacy, exam integrity, and
+              institutional data throughout the operational lifecycle.
+            requirements:
+              - "Preventive, detective, and corrective controls across auth, transport, app, data"
+              - "Future-tense phrasing for all planned controls and maintenance actions"
+            deliverables:
+              - "Generalized intro paragraph (future tense) before detail tables"
+              - "Control tables: layer, threat, mitigation, maintenance action"
+          - id: systems_maintenance_plan
+            title: Systems Maintenance Plan
+            intro_paragraph: |
+              One generalized opening paragraph (future tense) stating that ongoing
+              corrective, adaptive, perfective, and preventive maintenance will be carried
+              out to preserve availability, incorporate security patches, and evolve the
+              platform in response to user feedback and institutional policy changes.
+            requirements:
+              - "Corrective, adaptive, perfective, preventive maintenance schedule"
+              - "Future-tense phrasing for all scheduled activities"
+            deliverables:
+              - "Generalized intro paragraph (future tense) before detail tables"
+              - "Maintenance activity table with frequency, owner, tooling"
+
+  chapter2_graphs:
+    folder: "{{DOCS_OUTPUT_DIR}}/chapter2/graphs/"
+    viewer: "{{DOCS_OUTPUT_DIR}}/architecture/graph-viewer.html"
+    files:
+      - { id: use-case, diagram_id: "Fig-2.2", file: use-case.json, section: system_analysis }
+      - { id: dfd-level0, diagram_id: "Fig-2.3", file: dfd-level0.json, section: system_analysis }
+      - { id: dfd-level1, diagram_id: "Fig-2.4", file: dfd-level1.json, section: system_analysis }
+    testing_charts:
+      - { id: classification-metrics-bar, diagram_id: "Fig-2.6", section: system_testing, metrics: [Accuracy, Recall, Precision, F1-Score] }
+      - { id: classification-metrics-comparison, diagram_id: "Fig-2.7", section: system_testing, optional: true }
+
+# -----------------------------------------------------------------------------
+# PROJECT OS — ARCHITECTURE SPEC (reusable across all future projects)
+# -----------------------------------------------------------------------------
+project_os_spec:
+  concept: |
+    A single static master shell (SPA) that acts as the project's operating system.
+    Documentation pages, diagrams, and PM tools are plugins loaded into one layout.
+    Committed JSON seeds provide the default state; IndexedDB holds user edits;
+    localStorage holds UI preferences. Push to main → CI deploys → site updates.
+
+  entry_points:
+    primary: "{{DOCS_OUTPUT_DIR}}/index.html"     # Master shell (Project OS)
+    legacy_hub: "{{DOCS_OUTPUT_DIR}}/hub.html"    # Optional flat link index fallback
+
+  shell_layout:
+    regions:
+      - id: sidebar
+        contains: [project_logo, module_nav, doc_quick_links, theme_toggle]
+      - id: topbar
+        contains: [breadcrumb, search, sync_status, export_actions]
+      - id: main
+        contains: [module_viewport]                # dynamic plugin mount point
+      - id: footer
+        contains: [version, last_sync, deploy_info]
+
+  routing:
+    strategy: "hash-router"                       # #/dashboard, #/gantt, #/documents/chapter2
+    fallback: "dashboard"
+    deep_linking: true
+    module_pattern: "#/module/{moduleId}"
+    document_pattern: "#/documents/{section}/{page}"
+
+  plugin_contract:
+    required_exports:
+      - id: string                                # matches modules[].id
+      - label: string
+      - icon: string                              # SVG sprite name
+      - mount: "async (container, context) => void"
+      - unmount: "optional (container) => void"
+    context_injected:
+      - store                                     # DataStore instance
+      - router
+      - config                                    # os/config/project.json
+      - events                                    # pub/sub bus
+      - utils                                     # dates, ids, csv export
+
+  data_layer:
+    seed_files:                                   # committed, deployed with site
+      - os/data/seed/project.json
+      - os/data/seed/team.json
+      - os/data/seed/tasks.json
+      - os/data/seed/wbs.json
+      - os/data/seed/gantt.json
+      - os/data/seed/milestones.json
+      - os/data/seed/risks.json
+      - os/data/seed/documents-index.json
+    indexeddb:
+      database_name: "{{PROJECT_SLUG}}-project-os"
+      version: 1
+      stores: [tasks, wbs_nodes, gantt_tasks, milestones, risks, team_overrides, activity_log]
+    localStorage_keys:
+      - "{{PROJECT_SLUG}}:theme"
+      - "{{PROJECT_SLUG}}:sidebar_collapsed"
+      - "{{PROJECT_SLUG}}:last_route"
+      - "{{PROJECT_SLUG}}:seed_version"
+    sync_strategy: |
+      On first load: if IndexedDB empty → import all seed JSON.
+      On subsequent loads: compare seed manifest version in project.json;
+        if seed version bumped → merge non-destructively (keep user edits, add new seed rows).
+      Settings module: "Reset to seed" and "Export all data as JSON" actions.
+      Show sync badge: "Synced from repo" vs "Local changes (not in git until export)".
+
+  module_specifications:
+    dashboard:
+      widgets:
+        - project_health_score                      # computed from tasks/milestones/risks
+        - milestone_countdown                       # days to {{DATE_TARGET}}
+        - task_summary                              # todo / in-progress / done counts
+        - team_workload_chart                       # SVG bar chart per member
+        - recent_activity_feed
+        - implementation_status                     # from general/Project.json
+        - quick_links                               # defense docs, repo, live demo
+      data_sources: [tasks.json, milestones.json, team.json, general/Project.json]
+
+    tasks:
+      features:
+        - kanban_columns: [backlog, todo, in_progress, review, done]
+        - fields: [id, title, description, assignee, priority, status, due_date, tags, wbs_ref]
+        - filter_by_assignee, filter_by_sprint, filter_by_priority
+        - drag_drop_status_change                   # persists to IndexedDB
+        - bulk_import_from_wbs
+      id_pattern: "TASK-{{NNN}}"
+
+    gantt:
+      features:
+        - svg_timeline_renderer                     # NO external Gantt SaaS
+        - zoom: [week, month, quarter]
+        - drag_resize_tasks                         # updates start/end in IndexedDB
+        - dependency_arrows                         # finish-to-start links
+        - milestone_diamonds
+        - today_line
+        - export_svg, export_png_via_canvas
+      renderer_requirements: |
+        Pure SVG + vanilla JS. ViewBox scaling for responsive layout.
+        Row height 32px, bar radius 4px, dependency lines with arrow markers.
+        Color bars by status or assignee. Tooltip on hover with dates.
+
+    wbs:
+      features:
+        - hierarchical_tree                         # expandable nodes
+        - fields: [id, code, title, parent_id, level, owner, status, deliverable]
+        - drag_reparent                             # updates tree in IndexedDB
+        - roll_up_progress                          # % from child tasks
+        - export_outline_text, export_json
+      id_pattern: "WBS-{{N.N.N}}"
+
+    team:
+      features:
+        - member_cards_with_roles
+        - responsibility_matrix                     # RACI-lite: R/A/C/I per WBS area
+        - contact_links
+        - workload_from_tasks
+        - advisor_panel
+      seed_from: variables.team + variables.advisor
+
+    milestones:
+      features:
+        - institutional_milestones                    # title defense, pre-oral, final defense
+        - technical_milestones                        # MVP, integration, UAT, deploy
+        - status: [upcoming, at_risk, completed, missed]
+        - countdown_and_overdue_highlight
+
+    risks:
+      features:
+        - risk_register_table
+        - fields: [id, title, category, probability, impact, score, mitigation, owner, status]
+        - heat_map_svg                                # probability × impact grid
+        - link_to_tasks
+
+    documents:
+      features:
+        - embedded_navigator_for_all_static_html
+        - renders manuscript chapters in iframe OR fetches and inlines content
+        - full_text_search_across_json_manifest       # client-side index built at load
+        - links_to_general_Project.json
+        - chapter2_methodology_toc                    # Part A–E from outline_alignment
+        - cross_link_planning_to_pm_modules             # team, wbs, gantt from System Planning page
+
+    architecture:
+      features:
+        - embed_graph_viewer_module
+        - diagram_gallery_from_graph_manifest
+        - link_to_architecture_html_pages
+
+    testing:
+      features:
+        - ieee_test_case_summary_table
+        - traceability_matrix_view
+        - link_to_chapter2_04_and_testing_packs         # chapter2/04-system-testing.html
+
+    reports:
+      features:
+        - generate_status_report_preview              # HTML snapshot in new window
+        - export_project_summary_json
+        - export_gantt_svg
+        - export_wbs_outline
+        - print_friendly_css
+
+    settings:
+      features:
+        - theme_toggle                                # light/dark
+        - seed_version_display
+        - reset_to_seed, export_all_data, import_json_backup
+        - deployment_info                             # last deploy URL, hosting target
+        - about_project_os
+
+# -----------------------------------------------------------------------------
+# TARGET FOLDER TREE
+# -----------------------------------------------------------------------------
+folder_structure:
+  repository_root:
+    - path: ".github/workflows/deploy.yml"
+      role: CI/CD — auto-deploy on push to main
+    - path: "deploy.sh"
+      role: Unix one-command local preview + deploy helper
+    - path: "deploy.bat"
+      role: Windows one-command local preview + deploy helper
+    - path: "README.md"
+      role: Setup, local dev, deployment, Project OS usage (repo root)
+
+  project_os_core:
+    - path: "{{DOCS_OUTPUT_DIR}}/index.html"
+      role: Master shell — Project OS SPA entry
+    - path: "{{DOCS_OUTPUT_DIR}}/os/app.js"
+      role: Bootstrap, plugin loader, hash router init
+    - path: "{{DOCS_OUTPUT_DIR}}/os/config/project.json"
+      role: Runtime config (modules, theme, base_path, seed_version)
+    - path: "{{DOCS_OUTPUT_DIR}}/os/core/router.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/core/store.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/core/events.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/core/plugin-registry.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/core/utils.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/assets/os.css"
+      role: App shell layout (sidebar, topbar, grid)
+    - path: "{{DOCS_OUTPUT_DIR}}/os/assets/styles.css"
+      role: Shared doc + OS theme tokens
+    - path: "{{DOCS_OUTPUT_DIR}}/os/assets/theme.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/assets/icons.svg"
+      role: Inline SVG sprite for module icons
+    - path: "{{DOCS_OUTPUT_DIR}}/os/assets/charts/svg-charts.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/assets/charts/svg-gantt.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/modules/dashboard/module.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/modules/tasks/module.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/modules/gantt/module.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/modules/wbs/module.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/modules/team/module.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/modules/milestones/module.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/modules/risks/module.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/modules/documents/module.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/modules/architecture/module.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/modules/testing/module.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/modules/reports/module.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/modules/settings/module.js"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/data/seed/*.json"
+    - path: "{{DOCS_OUTPUT_DIR}}/os/data/schema/*.json"
+
+  documentation:
+    - path: "{{DOCS_OUTPUT_DIR}}/general/Project.json"
+    - path: "{{DOCS_OUTPUT_DIR}}/general/Implementation_Status_Summary.md"
+    - path: "{{DOCS_OUTPUT_DIR}}/general/Study_Objectives_IPO.md"
+    - path: "{{DOCS_OUTPUT_DIR}}/deployment.md"
+    - path: "{{DOCS_OUTPUT_DIR}}/todo"
+    - path: "{{DOCS_OUTPUT_DIR}}/chapter1/"
+    - path: "{{DOCS_OUTPUT_DIR}}/chapter2/index.html"
+    - path: "{{DOCS_OUTPUT_DIR}}/chapter2/01-system-planning.html"
+    - path: "{{DOCS_OUTPUT_DIR}}/chapter2/02-system-analysis.html"
+    - path: "{{DOCS_OUTPUT_DIR}}/chapter2/03-system-design.html"
+    - path: "{{DOCS_OUTPUT_DIR}}/chapter2/04-system-testing.html"
+    - path: "{{DOCS_OUTPUT_DIR}}/chapter2/05-system-maintenance.html"
+    - path: "{{DOCS_OUTPUT_DIR}}/chapter2/assets/"
+    - path: "{{DOCS_OUTPUT_DIR}}/chapter2/assets/tech/"
+    - path: "{{DOCS_OUTPUT_DIR}}/chapter2/graphs/"
+    - path: "{{DOCS_OUTPUT_DIR}}/architecture/"
+    - path: "{{DOCS_OUTPUT_DIR}}/backend/"
+    - path: "{{DOCS_OUTPUT_DIR}}/frontend/"
+    - path: "{{DOCS_OUTPUT_DIR}}/database/"
+    - path: "{{DOCS_OUTPUT_DIR}}/testing/"
+
+# -----------------------------------------------------------------------------
+# DEPLOYMENT REQUIREMENTS
+# -----------------------------------------------------------------------------
+deployment_requirements:
+  principle: |
+    save file → git push → website updates automatically.
+    Zero manual deploy steps after one-time hosting setup.
+    Entire application is a static site. No backend. No database server.
+
+  supported_targets:
+  #   github-pages:
+  #     config: publish from /docs folder OR GitHub Actions artifact
+  #     base_path: "/{{REPO_NAME}}" for project pages
+  #   cloudflare-pages:
+  #     config: build command = none; output = {{DOCS_OUTPUT_DIR}}
+  #   netlify:
+  #     config: publish dir = {{DOCS_OUTPUT_DIR}}; no build
+  #   vercel:
+  #     config: static output; vercel.json routes SPA fallback to index.html
+
+  files_to_generate:
+    github_workflow:
+      path: .github/workflows/deploy.yml
+      triggers: [push main, workflow_dispatch]
+      jobs:
+        - validate_json_seed_files
+        - optional_lint_html
+        - deploy_github_pages
+      permissions: { contents: read, pages: write, id-token: write }
+
+    deploy_sh:
+      path: deploy.sh
+      actions:
+        - print_prerequisites
+        - serve_locally_python_or_npx                              # python -m http.server
+        - optional_gh_pages_deploy_instructions
+        - chmod_plus_x_self
+
+    deploy_bat:
+      path: deploy.bat
+      actions:
+        - serve_locally_python_or_npx
+        - open_browser_localhost
+        - print_gh_pages_instructions
+
+    readme_sections:
+      - Project overview
+      - Project OS features (dashboard, Gantt, WBS, team, etc.)
+      - Local development (./deploy.sh or deploy.bat)
+      - One-time GitHub Pages setup
+      - Cloudflare Pages setup (alternative)
+      - Data model (seed JSON vs IndexedDB edits)
+      - How to export/back up local changes
+      - Folder structure
+      - Adding a new plugin module
+      - Documentation sections (chapters, architecture)
+      - License / team credits
+
+  spa_fallback:
+    rule: |
+      For hash-router, no server rewrite is strictly required.
+      For History API mode (optional), provide _redirects (Netlify) or vercel.json rewrite.
+      Default to hash-router to maximize host compatibility.
+
+  post_deploy_verification:
+    - index.html loads without console errors
+    - all enabled modules mount via sidebar click
+    - seed JSON fetch succeeds (relative paths work with base_path)
+    - Gantt SVG renders at least one bar
+    - WBS tree expands
+    - documents module opens chapter1
+    - theme toggle persists after reload
+
+# -----------------------------------------------------------------------------
+# MASTER SHELL HTML TEMPLATE
+# -----------------------------------------------------------------------------
+master_shell_template: |
+  <!DOCTYPE html>
+  <html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="{{PROJECT_FULL_TITLE}} — Project OS" />
+    <title>{{PROJECT_TITLE}} — Project OS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="os/assets/styles.css" />
+    <link rel="stylesheet" href="os/assets/os.css" />
+    <script type="module" src="os/app.js"></script>
+  </head>
+  <body class="project-os">
+    <div id="app" class="app-shell">
+      <aside id="sidebar" class="sidebar" aria-label="Main navigation">
+        <div class="sidebar-brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <strong>{{PROJECT_TITLE}}</strong>
+            <small>Project OS</small>
+          </div>
+        </div>
+        <nav id="module-nav" class="module-nav"></nav>
+        <div class="sidebar-docs">
+          <p class="sidebar-label">Documentation</p>
+          <a href="#/documents">All docs</a>
+          <a href="architecture/graph-viewer.html" target="_blank" rel="noopener">Graph Viewer</a>
+        </div>
+      </aside>
+      <div class="shell-main">
+        <header id="topbar" class="topbar">
+          <div id="breadcrumb" class="breadcrumb"></div>
+          <div class="topbar-actions">
+            <span id="sync-status" class="sync-badge" title="Data sync status"></span>
+            <button type="button" id="btn-export" class="btn-ghost">Export</button>
+          </div>
+        </header>
+        <main id="module-viewport" class="module-viewport" role="main"></main>
+        <footer class="shell-footer">
+          <span>{{DOC_VERSION}}</span>
+          <span id="deploy-info"></span>
+        </footer>
+      </div>
+    </div>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" id="icon-sprite"></svg>
+  </body>
+  </html>
+
+# -----------------------------------------------------------------------------
+# JSON SCHEMA SNIPPETS
+# -----------------------------------------------------------------------------
+schemas:
+  os_config_project_json:
+    shape: |
+      {
+        "schema_version": "1.0",
+        "project": { "title": "", "slug": "", "full_title": "", "seed_version": 1 },
+        "deployment": { "base_path": "", "hosting": "github-pages" },
+        "modules": [{ "id": "dashboard", "enabled": true, "path": "./modules/dashboard/module.js" }],
+        "theme": { "default": "dark", "accent": "#3b82f6" },
+        "institution": {},
+        "dates": { "started": "", "target": "" }
+      }
+
+  seed_gantt_json:
+    shape: |
+      {
+        "tasks": [{
+          "id": "GNT-001", "title": "", "start": "2025-09-01", "end": "2025-10-15",
+          "progress": 0.75, "assignee": "", "dependencies": [], "milestone": false
+        }],
+        "config": { "zoom": "month", "start_date": "2025-09-01", "end_date": "2026-03-30" }
+      }
+
+  seed_wbs_json:
+    shape: |
+      {
+        "nodes": [{
+          "id": "WBS-1", "code": "1.0", "title": "Project Management", "parent_id": null,
+          "level": 1, "owner": "", "status": "in_progress", "progress": 0.6
+        }]
+      }
+
+  Project.json:
+    top_level: [project, vision, objectives, system_scope, implementation_status, api_summary, testing_summary, project_management]
+
+  graph_json:
+    required_fields: [diagram_id, title, section, description, format, nodes, edges]
+
+  seed_documents_index_json:
+    shape: |
+      {
+        "chapters": [{
+          "id": "chapter2",
+          "title": "Chapter II — Methodology",
+          "outline_source": "docs/Outline-Alignment.docx",
+          "pages": [
+            { "file": "chapter2/index.html", "title": "Index" },
+            { "file": "chapter2/01-system-planning.html", "title": "System Planning", "part": "A" },
+            { "file": "chapter2/02-system-analysis.html", "title": "System Analysis", "part": "B" },
+            { "file": "chapter2/03-system-design.html", "title": "System Design", "part": "C" },
+            { "file": "chapter2/04-system-testing.html", "title": "System Testing and Implementation", "part": "D" },
+            { "file": "chapter2/05-system-maintenance.html", "title": "System Maintenance", "part": "E" }
+          ]
+        }]
+      }
+
+# -----------------------------------------------------------------------------
+# CONVENTIONS
+# -----------------------------------------------------------------------------
+conventions:
+  javascript:
+    modules: "ES6 import/export only — no bundler required for deployment"
+    no_frameworks: "No React, Vue, Angular, jQuery"
+    naming: "camelCase functions, PascalCase only for future classes, kebab-case files"
+    error_handling: "Graceful degradation; console.warn + user-visible toast"
+  css:
+    tokens: "CSS custom properties in :root and [data-theme=light]"
+    layout: "CSS Grid for shell; flex for components"
+    responsive: "Sidebar collapses to overlay below 900px"
+  documentation_html:
+    numbering: "NN-kebab-case.html"
+    may_be_standalone: true
+    also_linked_from: "documents module and architecture module"
+    tech_card:
+      css_class: tech-card
+      structure: "h3 title → figure.tech-visual (icon/screenshot) → paragraph(s)"
+      assets: "chapter2/assets/tech/<slug>.png"
+    testing_results_table:
+      css_class: tables-results-syst-test
+      required_metrics: [Accuracy, Recall, Precision, F1-Score]
+      include_charts: true
+    maintenance_voice: future_tense
+  reusability:
+    rule: |
+      The os/ folder must be copy-paste portable to another repo with only
+      os/config/project.json and os/data/seed/*.json changed.
+      No hardcoded project names in core/ files.
+
+# -----------------------------------------------------------------------------
+# AGENT PROMPT — primary instruction block
+# -----------------------------------------------------------------------------
+agent_prompt: |
+  # Role
+  You are a senior full-stack architect, technical writer, and UI engineer building a
+  **self-contained static Project OS** — a reusable project management + documentation
+  platform that deploys with zero backend infrastructure.
+
+  # Project context
+  - Title: {{PROJECT_TITLE}}
+  - Full title: {{PROJECT_FULL_TITLE}}
+  - Slug: {{PROJECT_SLUG}}
+  - Institution: {{INSTITUTION_NAME}}, {{DEPARTMENT}}, {{LOCATION}}
+  - Target date: {{DATE_TARGET}}
+  - Repository root: {{REPO_ROOT}}
+  - Output directory: {{DOCS_OUTPUT_DIR}}/
+  - Publish directory for static hosting: {{DOCS_OUTPUT_DIR}}/
+  - Base path: {{BASE_PATH}}
+  - Version: {{DOC_VERSION}}
+
+  # Technology stack (STRICT — do not deviate)
+  - Frontend: HTML5, CSS3, Vanilla JavaScript (ES6 Modules)
+  - Storage: committed JSON seeds + localStorage + IndexedDB
+  - Visualization: SVG charts, SVG Gantt (custom renderer, no paid dependencies)
+  - Deployment: static site → GitHub Pages / Cloudflare Pages (also Netlify, Vercel)
+  - CI/CD: GitHub Actions
+  - Configuration: JSON
+  - Architecture: Static Site + Plugin-Based Module System
+  - NO backend servers. NO databases. NO npm build step required for deployment.
+
+  # Mission
+  Generate a complete `{{DOCS_OUTPUT_DIR}}/` folder that serves as both:
+  1. **Project OS** — dynamic master shell with dashboard, Gantt, WBS, team, tasks,
+     milestones, risks, reports, settings
+  2. **Technical documentation** — capstone chapters, architecture, API/DB references, testing packs
+
+  Plus repository-root deployment automation for push-to-deploy workflow.
+
+  # Target structure
+
+  ```
+  .github/workflows/deploy.yml
+  deploy.sh
+  deploy.bat
+  README.md
+
+  {{DOCS_OUTPUT_DIR}}/
+  ├── index.html                    # MASTER SHELL — Project OS SPA (primary entry)
+  ├── os/
+  │   ├── app.js                    # bootstrap + plugin loader + hash router
+  │   ├── config/project.json
+  │   ├── core/
+  │   │   ├── router.js
+  │   │   ├── store.js              # IndexedDB + seed import + localStorage prefs
+  │   │   ├── events.js
+  │   │   ├── plugin-registry.js
+  │   │   └── utils.js
+  │   ├── assets/
+  │   │   ├── os.css                # shell layout
+  │   │   ├── styles.css            # shared theme
+  │   │   ├── theme.js
+  │   │   ├── icons.svg
+  │   │   └── charts/
+  │   │       ├── svg-charts.js     # bar, donut, sparkline
+  │   │       └── svg-gantt.js      # full Gantt renderer
+  │   ├── modules/
+  │   │   ├── dashboard/module.js
+  │   │   ├── tasks/module.js
+  │   │   ├── gantt/module.js
+  │   │   ├── wbs/module.js
+  │   │   ├── team/module.js
+  │   │   ├── milestones/module.js
+  │   │   ├── risks/module.js
+  │   │   ├── documents/module.js
+  │   │   ├── architecture/module.js
+  │   │   ├── testing/module.js
+  │   │   ├── reports/module.js
+  │   │   └── settings/module.js
+  │   └── data/
+  │       ├── seed/                 # version-controlled defaults
+  │       │   ├── project.json
+  │       │   ├── team.json
+  │       │   ├── tasks.json
+  │       │   ├── wbs.json
+  │       │   ├── gantt.json
+  │       │   ├── milestones.json
+  │       │   ├── risks.json
+  │       │   └── documents-index.json
+  │       └── schema/               # JSON Schema for validation in CI
+  ├── general/                      # manifest + markdown summaries
+  ├── chapter1/ … chapter2/         # manuscript HTML (Ch. II = Methodology, Parts A–E)
+  │   └── chapter2/
+  │       ├── index.html
+  │       ├── 01-system-planning.html … 05-system-maintenance.html
+  │       └── graphs/               # use-case, dfd-level0, dfd-level1 JSON
+  ├── architecture/                 # tech docs + graph viewer
+  ├── backend/ … frontend/ … database/
+  ├── testing/
+  ├── deployment.md
+  └── todo
+  ```
+
+  # Execution phases (follow in order)
+
+  ## Phase 0 — Scaffold Project OS core (highest priority)
+  1. Create master `index.html` shell (sidebar + topbar + module viewport + footer).
+  2. Implement `os/core/store.js`:
+     - openIndexedDB("{{PROJECT_SLUG}}-project-os")
+     - importSeedIfNeeded() — fetch `os/data/seed/*.json` on first visit
+     - CRUD helpers per entity type
+     - localStorage for theme, route, sidebar state
+  3. Implement `os/core/router.js` — hash routes `#/dashboard`, `#/gantt`, etc.
+  4. Implement `os/core/plugin-registry.js` — dynamic `import()` of enabled modules.
+  5. Implement `os/app.js` — wire store, router, registry; render sidebar from config.
+  6. Build shared `os/assets/styles.css` + `os/assets/os.css` with CSS variables,
+     light/dark themes, responsive sidebar, card/table/form components.
+  7. Each module exports `{ id, label, icon, mount, unmount }` and renders into viewport.
+
+  ## Phase 1 — Project management modules
+  Implement all enabled modules with real UI (not placeholders):
+
+  **Dashboard** — health score, milestone countdown, task counts, team workload SVG bar chart,
+  implementation status from Project.json, activity feed, quick links.
+
+  **Tasks** — kanban board (5 columns), CRUD forms, filters, IndexedDB persistence,
+  link tasks to WBS codes.
+
+  **Gantt** — pure SVG renderer in `svg-gantt.js`:
+  - timeline header (weeks/months), task rows, draggable bars, dependency arrows,
+    milestone diamonds, today line, zoom controls, export SVG.
+
+  **WBS** — expandable tree, drag-reparent, roll-up progress %, export outline.
+
+  **Team** — member cards, roles, RACI matrix, workload from tasks, advisor panel.
+
+  **Milestones** — defense dates + technical milestones, status badges, overdue alerts.
+
+  **Risks** — register table, auto risk score (probability × impact), SVG heat map.
+
+  **Reports** — status report preview, export JSON/SVG, print stylesheet.
+
+  **Settings** — theme, seed version, reset/import/export data, deployment info.
+
+  Seed all `os/data/seed/*.json` from scanned repo + capstone timeline (realistic dates).
+
+  ## Phase 2 — Discover codebase
+  1. Scan repository: README, manifests, routes, migrations, tests, team info.
+  2. Extract real API endpoints, DB tables, test counts — never fabricate.
+  3. Read capstone PDF / title doc if present.
+
+  ## Phase 3 — Manifest & machine-readable references
+  1. `general/Project.json` — single source of truth; add `project_management` section
+     linking to seed files and module config.
+  2. `backend/API_structure.json`, `database/database_schema.json`, structure trees.
+  3. `general/Implementation_Status_Summary.md`, `Study_Objectives_IPO.md`.
+
+  ## Phase 4 — Documentation pack
+  1. Architecture HTML pages (01–07), graph JSON sources, graph-viewer.html.
+  2. **Chapter II — Methodology** per `outline_alignment.chapter2_methodology`:
+     - `chapter2/index.html` — institutional TOC (Parts A–E)
+     - `01-system-planning.html` — team org chart, WBS summary, Gantt snapshot;
+       cross-link to Project OS `#/team`, `#/wbs`, `#/gantt` modules
+     - `02-system-analysis.html` — architecture, FR/NFR tables, use case, DFD L0/L1
+     - `03-system-design.html` — ERD, JSON schema (or omission note), data dictionary,
+       technologies/concepts/theories as `.tech-card` blocks (name → icon/screenshot → paragraph)
+     - `04-system-testing.html` — System Testing and Implementation: tagged results table
+       (`.tables-results-syst-test`) with Accuracy, Recall, Precision, F1-Score; SVG bar
+       charts for classification metrics; confidence level; summary of findings
+     - `05-system-maintenance.html` — future-tense generalized intro paragraph for security
+       and maintenance, then systems security plan and systems maintenance plan tables
+     - `chapter2/graphs/*.json` for use case and DFD diagrams (Fig-2.2–Fig-2.4)
+  3. Chapter I HTML with shared theme (reference `os/assets/styles.css` paths).
+  4. `documents` module indexes all HTML + JSON reference files per manuscript.chapters.
+  5. `architecture` module embeds graph viewer navigation.
+  6. `testing` module links IEEE pack + traceability from chapter2/04-system-testing.html.
+
+  ## Phase 5 — Deployment automation
+  Generate these files at repository root:
+
+  **`.github/workflows/deploy.yml`**
+  ```yaml
+  # Trigger on push to main
+  # Job 1: validate JSON in {{DOCS_OUTPUT_DIR}}/os/data/seed/
+  # Job 2: deploy to GitHub Pages (actions/configure-pages + upload-pages-artifact)
+  # permissions: pages: write, id-token: write
+  # No build step — static files only
+  ```
+
+  **`deploy.sh`** (chmod +x)
+  - Check Python 3 or npx serve available
+  - `cd {{DOCS_OUTPUT_DIR}} && python -m http.server 8080` (or npx serve)
+  - Print URL http://localhost:8080
+  - Print one-time `gh` Pages enable instructions
+
+  **`deploy.bat`**
+  - Same for Windows; `start http://localhost:8080`
+
+  **`README.md`**
+  - What Project OS is
+  - Feature list (dashboard, Gantt, WBS, team, docs, etc.)
+  - Quick start: clone → `./deploy.sh` → open browser
+  - Push-to-deploy: enable GitHub Pages from Actions
+  - Cloudflare Pages alt setup (build command: none, output: {{DOCS_OUTPUT_DIR}})
+  - Data model: seed JSON vs IndexedDB local edits
+  - Export/backup workflow
+  - How to copy `os/` to another project
+  - Plugin development guide
+
+  ## Phase 6 — Validation
+  - [ ] `index.html` loads; no module import errors in console
+  - [ ] Every sidebar module mounts and unmounts cleanly
+  - [ ] Gantt SVG renders with ≥3 tasks from seed
+  - [ ] WBS tree has ≥2 levels
+  - [ ] Task kanban drag updates IndexedDB (verify via reload)
+  - [ ] Theme toggle persists
+  - [ ] documents module opens chapter pages
+  - [ ] graph-viewer still works standalone
+  - [ ] All seed JSON valid (CI workflow would pass)
+  - [ ] `deploy.sh` / `deploy.bat` instructions are accurate
+  - [ ] Relative paths work with `base_path: "{{BASE_PATH}}"`
+  - [ ] No hardcoded "{{PROJECT_TITLE}}" in os/core/ (only in config/seed)
+  - [ ] README explains push → auto-deploy flow
+
+  # Plugin module template (every module must follow)
+
+  ```javascript
+  // os/modules/example/module.js
+  export const id = 'example';
+  export const label = 'Example';
+  export const icon = 'grid';
+
+  export async function mount(container, { store, config, events, utils }) {
+    container.innerHTML = `<section class="module-page"><h1>${label}</h1><div id="example-root"></div></section>`;
+    const data = await store.getAll('example_store');
+    // render UI, bind events, persist via store.put()
+  }
+
+  export function unmount(container) {
+    container.innerHTML = '';
+  }
+  ```
+
+  # SVG Gantt requirements
+  - Renderer class `SvgGantt` in `os/assets/charts/svg-gantt.js`
+  - Constructor accepts `{ tasks, config, onTaskChange }`
+  - Methods: `render(container)`, `setZoom(level)`, `exportSvg()`
+  - Mouse: drag bar to shift dates; resize handles on bar ends
+  - Dependencies: SVG `<path>` with arrow marker
+  - Must work without internet after first load
+
+  # Data persistence rules
+  | Layer            | Purpose                                      | Git tracked |
+  |------------------|----------------------------------------------|-------------|
+  | os/data/seed/    | Default project data shipped with deploy     | Yes         |
+  | IndexedDB        | User edits (tasks moved, risks added)        | No          |
+  | localStorage     | UI prefs only                                | No          |
+  | general/Project.json | Codebase-aligned manifest               | Yes         |
+
+  Users export IndexedDB → JSON via Settings to commit team updates if desired.
+
+  # Documentation quality (unchanged standards)
+  - Codebase-aligned API/DB/test claims
+  - Formal capstone tone in chapter HTML
+  - Chapter II must follow `outline_alignment` (docs/Outline-Alignment.docx):
+    System Planning → System Analysis → System Design → System Testing and Implementation → System Maintenance
+  - Technologies section: each tool as `.tech-card` — heading, icon/screenshot, explanatory paragraph
+  - System Testing: `.tables-results-syst-test` table with Accuracy, Recall, Precision, F1-Score + SVG charts
+  - System Maintenance: future tense throughout; one generalized intro paragraph before each plan subsection
+  - Tables for requirements, traceability, test results
+  - status-pass / status-warn / status-fail classes
+  - Cross-linked nav across chapters and architecture
+  - System Planning page must embed or link Project OS team/WBS/Gantt data from seed JSON
+
+  # Reusability contract
+  To reuse in a future project, only replace:
+  - `variables` / seed JSON / `general/Project.json`
+  - `os/config/project.json`
+  - Documentation HTML content
+  Keep `os/core/`, `os/assets/charts/`, deployment workflow identical.
+
+  # Scalability
+  - New PM module → add `os/modules/<name>/module.js` + seed JSON + config entry
+  - New doc chapter → add `chapterN/` + row in `documents-index.json`
+  - New diagram → add `architecture/graphs/<id>.json` + manifest entry
+  - New testing pack → add `testing/testing(<NAME>)/` + testing module link
+
+  Begin with Phase 0 (Project OS core), then Phase 1 (modules), then documentation,
+  then deployment files. Deliver a working static site openable via `./deploy.sh`.
+
+# -----------------------------------------------------------------------------
+# DEPLOYMENT FILE TEMPLATES (agent must expand with project values)
+# -----------------------------------------------------------------------------
+deployment_templates:
+  github_workflow_outline: |
+    name: Deploy Project OS
+    on:
+      push:
+        branches: [main]
+      workflow_dispatch:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    jobs:
+      validate:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+          - name: Validate seed JSON
+            run: |
+              for f in {{DOCS_OUTPUT_DIR}}/os/data/seed/*.json; do
+                python -m json.tool "$f" > /dev/null
+              done
+      deploy:
+        needs: validate
+        runs-on: ubuntu-latest
+        environment:
+          name: github-pages
+          url: ${{ steps.deployment.outputs.page_url }}
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/configure-pages@v4
+          - uses: actions/upload-pages-artifact@v3
+            with:
+              path: '{{DOCS_OUTPUT_DIR}}'
+          - id: deployment
+            uses: actions/deploy-pages@v4
+
+  deploy_sh_outline: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ROOT="$(cd "$(dirname "$0")" && pwd)"
+    DOCS="{{DOCS_OUTPUT_DIR}}"
+    PORT="${PORT:-8080}"
+    echo "Serving Project OS from $ROOT/$DOCS at http://localhost:$PORT"
+    cd "$ROOT/$DOCS"
+    if command -v python3 &>/dev/null; then
+      exec python3 -m http.server "$PORT"
+    elif command -v python &>/dev/null; then
+      exec python -m http.server "$PORT"
+    elif command -v npx &>/dev/null; then
+      exec npx --yes serve -l "$PORT"
+    else
+      echo "Install Python 3 or Node.js (npx serve)." >&2
+      exit 1
+    fi
+
+# -----------------------------------------------------------------------------
+# EXAMPLES & INVOCATION
+# -----------------------------------------------------------------------------
+example_filled_variables:
+  PROJECT_TITLE: PigHealth
+  PROJECT_SLUG: pighealth
+  PROJECT_FULL_TITLE: "PigHealth: A Computer Vision and GIS-Based Pig Disease Detection and Farm Monitoring"
+  DOCS_OUTPUT_DIR: docs
+  BASE_PATH: "/Capstone-Project"
+  DOC_VERSION: "June 2026 · codebase-aligned"
+  DATE_TARGET: "2026-03-15"
+  ARCH_PATTERN: "Three-Tier Distributed (Laravel + FastAPI ML + Dual Clients)"
+
+cursor_invocation: |
+  Read `docs/templates/generate-documentation.prompt.yaml` v2. Fill variables for [PROJECT NAME].
+  Scan this repository and generate the complete Project OS + documentation per `agent_prompt`.
+  Priority: master shell (index.html + os/) with working dashboard, Gantt SVG, WBS tree, team,
+  tasks, milestones, risks — then capstone docs — then .github/workflows/deploy.yml, deploy.sh,
+  deploy.bat, README.md. Static only. ES6 modules. No backend. Push-to-deploy ready.

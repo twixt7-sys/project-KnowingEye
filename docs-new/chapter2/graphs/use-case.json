@@ -1,0 +1,27 @@
+{
+  "diagram_id": "Fig-2.2-UC",
+  "title": "Use Case Diagram — Knowing Eye",
+  "section": "Chapter II · System Analysis",
+  "format": "use_case",
+  "actors": [
+    { "id": "admin", "name": "Administrator (Examiner)", "type": "primary" },
+    { "id": "examinee", "name": "Examinee", "type": "primary" },
+    { "id": "webcam", "name": "Webcam Device", "type": "secondary" },
+    { "id": "ai", "name": "AI Pipeline", "type": "system" }
+  ],
+  "use_cases": [
+    { "id": "UC01", "name": "Authenticate", "actors": ["admin", "examinee"] },
+    { "id": "UC02", "name": "Manage Exams & Questions", "actors": ["admin"] },
+    { "id": "UC03", "name": "Publish / Archive Exam", "actors": ["admin"] },
+    { "id": "UC04", "name": "Manage Users", "actors": ["admin"] },
+    { "id": "UC05", "name": "Start Exam Session", "actors": ["examinee"] },
+    { "id": "UC06", "name": "Take Exam & Submit Answers", "actors": ["examinee"] },
+    { "id": "UC07", "name": "Enroll Reference Face", "actors": ["examinee", "webcam", "ai"] },
+    { "id": "UC08", "name": "Stream Monitoring Frames", "actors": ["examinee", "webcam", "ai"] },
+    { "id": "UC09", "name": "View Live Alerts", "actors": ["admin"] },
+    { "id": "UC10", "name": "Resolve Alerts", "actors": ["admin"] },
+    { "id": "UC11", "name": "View Reports & Analytics", "actors": ["admin"] },
+    { "id": "UC12", "name": "Export Session CSV", "actors": ["admin"] },
+    { "id": "UC13", "name": "View Own Results", "actors": ["examinee"] }
+  ]
+}

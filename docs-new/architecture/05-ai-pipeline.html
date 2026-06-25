@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ch.5 — AI / Computer Vision Module</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="assets/theme.js"></script>
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="page">
+    <nav class="site-nav">
+      <a href="index.html">Index</a>
+      <a href="01-high-level-architecture.html">§2.1 Overview</a>
+      <a href="02-system-components.html">Components</a>
+      <a href="03-communication-protocols.html">Protocols</a>
+      <a href="04-database-design.html">Database</a>
+      <a href="05-ai-pipeline.html" class="active">AI Module</a>
+      <a href="06-deployment.html">Deployment</a>
+      <a href="07-workflows-diagrams.html">Workflows</a>
+    </nav>
+
+    <header class="doc-header">
+      <p class="eyebrow">Chapter 5 · §2.1.2.3 AI Module</p>
+      <h1>Computer Vision &amp; Behavior Analysis Pipeline</h1>
+    </header>
+
+    <section>
+      <h2>Module Overview</h2>
+      <p>The AI module lives in <code>backend/ai/knowing_eye/</code> and is integrated into Django through <code>backend/ai/adapter.py</code>. It processes webcam frames and returns structured metrics, behavioral events, and alerts without storing raw video in the database.</p>
+      <table>
+        <thead><tr><th>Pipeline Mode</th><th>Condition</th></tr></thead>
+        <tbody>
+          <tr><td><code>production</code></td><td>ML dependencies installed (mediapipe, ultralytics, etc.)</td></tr>
+          <tr><td><code>stub</code></td><td>Deterministic fallback when imports fail</td></tr>
+          <tr><td><code>disabled</code></td><td><code>KE_ENABLE_PIPELINE=False</code> in settings</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Internal Package Structure</h2>
+      <table>
+        <thead><tr><th>Package</th><th>Module</th><th>Function</th></tr></thead>
+        <tbody>
+          <tr><td>preprocessing</td><td>frame.py</td><td>Resize, normalize, BGR conversion</td></tr>
+          <tr><td>detection</td><td>face_detector.py</td><td>MediaPipe face detection / mesh</td></tr>
+          <tr><td>detection</td><td>pose_detector.py</td><td>Body keypoints, shoulder tilt, spine lean</td></tr>
+          <tr><td>detection</td><td>yolo_detector.py</td><td>YOLOv8 — person + cell phone (COCO 0, 67)</td></tr>
+          <tr><td>recognition</td><td>identity.py, arcface_backend.py</td><td>Face embedding vs session reference</td></tr>
+          <tr><td>behavior</td><td>scoring.py</td><td>Weighted compliance metrics and event flags</td></tr>
+          <tr><td>behavior</td><td>temporal.py</td><td>Sliding-window suspicious pattern detection</td></tr>
+          <tr><td>behavior</td><td>normalize.py</td><td>Metric normalization to 0–100%</td></tr>
+          <tr><td>—</td><td>pipeline.py</td><td>BehaviorPipeline orchestrator</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Models &amp; Libraries</h2>
+      <table>
+        <thead><tr><th>Model</th><th>Library</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td>YOLOv8n</td><td>Ultralytics</td><td>Object detection (person, phone)</td></tr>
+          <tr><td>MediaPipe Face</td><td>Google MediaPipe</td><td>Face presence and landmarks</td></tr>
+          <tr><td>MediaPipe Pose</td><td>Google MediaPipe</td><td>Posture estimation</td></tr>
+          <tr><td>ArcFace (buffalo_l)</td><td>InsightFace / ONNX Runtime</td><td>Identity embedding (primary)</td></tr>
+          <tr><td>face_recognition</td><td>dlib-based (optional)</td><td>Legacy embedding backend</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Configuration (<code>pipeline.yaml</code>)</h2>
+      <table>
+        <thead><tr><th>Key</th><th>Default</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td>pipeline.target_fps</td><td>5</td><td>Target analysis rate</td></tr>
+          <tr><td>pipeline.alert_threshold_pct</td><td>80</td><td>Alert when compliance drops below</td></tr>
+          <tr><td>recognition.identity_match_threshold</td><td>0.42</td><td>ArcFace cosine distance threshold</td></tr>
+          <tr><td>recognition.gaze_yaw_threshold_deg</td><td>25</td><td>Looking-away detection</td></tr>
+          <tr><td>behavior.metric_weights</td><td>face 0.25, gaze 0.25, …</td><td>Overall compliance formula</td></tr>
+          <tr><td>behavior.suspicious_pattern</td><td>60s window, 3 flags</td><td>Temporal anomaly escalation</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Analysis Output Schema</h2>
+      <h3>Metrics (0–100%)</h3>
+      <p>face_pct, gaze_pct, posture_pct, identity_pct, object_pct, overall_compliance_pct</p>
+      <h3>Events</h3>
+      <p>Array of { event_type, score, confidence, metadata }</p>
+      <h3>Alerts</h3>
+      <p>Array of { type, severity (low|medium|high), message, metric_pct }</p>
+    </section>
+
+    <section>
+      <h2>Integration Flow</h2>
+      <ol>
+        <li>WebSocket consumer receives base64 frame</li>
+        <li><code>decode_base64_image()</code> → BGR numpy array</li>
+        <li><code>analyze_frame_bgr(frame, session_id)</code> → pipeline</li>
+        <li><code>persist_analysis()</code> writes BehaviorLog and Alert rows</li>
+        <li>JSON analysis + alerts returned to client; alerts broadcast to admin group</li>
+      </ol>
+    </section>
+
+    <figure class="diagram">
+      <figcaption>Figure 2.3 — AI Pipeline Component Diagram</figcaption>
+      <div class="diagram-placeholder"><span class="fig-id">Fig-2.3 · PLACEHOLDER</span><a href="graphs/ai-pipeline-component.json">ai-pipeline-component.json</a></div>
+      <details class="graph-source"><summary>JSON source</summary><pre id="json-ai"></pre></details>
+    </figure>
+
+    <footer class="doc-footer"><a href="04-database-design.html">← Previous</a> · <a href="06-deployment.html">Next: Deployment →</a></footer>
+  </div>
+  <script>
+    fetch('graphs/ai-pipeline-component.json').then(r=>r.text()).then(t=>{
+      document.getElementById('json-ai').textContent=t;
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+# Backend commands (Knowing Eye)
+
+All commands assume you are in the `backend/` directory with the virtualenv activated.
+
+## Setup
+
+```powershell
+python -m pip install -r requirements.txt
+$env:DJANGO_ENV = "development"
+$env:DB_ENGINE = "django.db.backends.sqlite3"
+python manage.py migrate
+python manage.py seed_db --noinput   # first run only
+```
+
+Production: set ``DJANGO_ENV=production`` and ``DJANGO_DEBUG=False``.
+
+## Development server
+
+Use **Daphne** (ASGI + WebSockets), not `runserver`:
+
+```powershell
+python -m daphne -b 127.0.0.1 -p 8000 core.config.asgi:application
+```
+
+Or from repo root: `start-dev.cmd`
+
+## Database utilities
+
+```powershell
+python manage.py seed_db --noinput
+python manage.py reset_db_sequences   # after manual CSV imports
+```
+
+## Tests
+
+```powershell
+$env:DB_ENGINE = "django.db.backends.sqlite3"
+$env:OPENBLAS_NUM_THREADS = "1"
+python manage.py test features
+```
+
+## Optional ML stack
+
+```powershell
+pip install -r requirements-cv.txt
+pip install -r requirements-identity.txt
+```
+
+## Session maintenance
+
+```powershell
+python manage.py expire_stale_sessions
+```

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Knowing Eye: A Full-Stack Session-Guided Web-Based Examination Platform with Integrated Behavior Monitoring — Project OS" />
+  <title>Knowing Eye — Project OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="os/assets/styles.css" />
+  <link rel="stylesheet" href="os/assets/os.css" />
+  <script type="module" src="os/app.js"></script>
+</head>
+<body class="project-os">
+  <div id="app" class="app-shell">
+    <aside id="sidebar" class="sidebar" aria-label="Main navigation">
+      <div class="sidebar-brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </span>
+        <div>
+          <strong>Knowing Eye</strong>
+          <small>Project OS</small>
+        </div>
+      </div>
+      <nav id="module-nav" class="module-nav"></nav>
+      <div class="sidebar-docs">
+        <p class="sidebar-label">Documentation</p>
+        <a href="#/documents">All docs</a>
+        <a href="chapter2/index.html" target="_blank" rel="noopener">Chapter II — Methodology</a>
+        <a href="architecture/graph-viewer.html" target="_blank" rel="noopener">Graph Viewer</a>
+      </div>
+    </aside>
+    <div class="shell-main">
+      <header id="topbar" class="topbar">
+        <button type="button" id="btn-sidebar" class="btn-icon btn-sidebar" aria-label="Toggle navigation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+        <div id="breadcrumb" class="breadcrumb"></div>
+        <div class="topbar-actions">
+          <span id="sync-status" class="sync-badge" title="Data sync status">…</span>
+          <button type="button" id="btn-theme" class="btn-icon" aria-label="Toggle theme" title="Toggle theme">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          <button type="button" id="btn-export" class="btn-ghost">Export</button>
+        </div>
+      </header>
+      <main id="module-viewport" class="module-viewport" role="main">
+        <section class="module-page"><div class="empty-state"><h2>Loading Project OS…</h2></div></section>
+      </main>
+      <footer class="shell-footer">
+        <span class="footer-version"></span>
+        <span id="deploy-info"></span>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "risks": [
+    { "id": "RISK-001", "title": "Outline manuscript not finished before submission deadline", "category": "Schedule", "probability": 4, "impact": 5, "mitigation": "Parallelize Chapter 2 write-up across members; lock scope; daily progress check against the Gantt outline milestones.", "owner": "Twixt Jasley J. Tamera", "status": "open" },
+    { "id": "RISK-002", "title": "RRL below required source count / depth", "category": "Documentation", "probability": 3, "impact": 4, "mitigation": "Complete RRL sheets first; target min. 16 recent sources with comparison table.", "owner": "Kervy N. Cadiente", "status": "mitigating" },
+    { "id": "RISK-003", "title": "Examinee privacy & data protection concerns", "category": "Compliance", "probability": 3, "impact": 5, "mitigation": "Consent flow, KE_STORE_FRAMES=False by default, session-scoped embeddings, defense-in-depth security plan.", "owner": "Twixt Jasley J. Tamera", "status": "mitigating" },
+    { "id": "RISK-004", "title": "AI accuracy / latency on real exam footage", "category": "Technical", "probability": 3, "impact": 4, "mitigation": "1 FPS throttle, async pipeline, stub fallback; ArcFace benchmarking and threshold tuning planned for UAT.", "owner": "Kervy N. Cadiente", "status": "mitigating" },
+    { "id": "RISK-005", "title": "Performance under concurrent load untested", "category": "Performance", "probability": 3, "impact": 4, "mitigation": "Load test 30+ sessions on PostgreSQL + Redis; document results before final defense.", "owner": "Twixt Jasley J. Tamera", "status": "open" },
+    { "id": "RISK-006", "title": "Frontend prototype deployment out of date", "category": "Operational", "probability": 4, "impact": 2, "mitigation": "Redeploy updated build to Vercel; note current prototype is not updated.", "owner": "Khrisha Marie O. Cavan", "status": "open" },
+    { "id": "RISK-007", "title": "SQLite→PostgreSQL migration regressions", "category": "Technical", "probability": 2, "impact": 3, "mitigation": "DB-agnostic schema, migration scripts, staging verification.", "owner": "Saturnino C. Ancog III", "status": "open" },
+    { "id": "RISK-008", "title": "Adviser-issued revisions require rework", "category": "Documentation", "probability": 3, "impact": 3, "mitigation": "Incorporate feedback early; keep manuscript modular for quick edits.", "owner": "Twixt Jasley J. Tamera", "status": "mitigating" }
+  ]
+}

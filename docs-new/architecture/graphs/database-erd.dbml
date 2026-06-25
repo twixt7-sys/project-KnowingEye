@@ -1,0 +1,196 @@
+// Knowing Eye — Entity-Relationship Diagram (DBML)
+// Source: Django models in backend/features/
+// Render at: https://dbdiagram.io  |  Export PNG/SVG for paper figures
+// Figure ID: Fig-4.1
+
+Project KnowingEye {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Production: PostgreSQL 15+
+    Development: SQLite (django.db.backends.sqlite3)
+    Naming: snake_case table names via db_table Meta
+  '''
+}
+
+// ─── Authentication ───────────────────────────────────────────────────────────
+
+Table authentication_user {
+  id integer [pk, increment, note: 'Django AutoField PK']
+  username varchar(150) [unique, not null]
+  email varchar(254) [unique, not null]
+  password varchar(128) [not null, note: 'Hashed via Django auth']
+  first_name varchar(150)
+  last_name varchar(150)
+  role varchar(20) [not null, default: 'EXAMINEE', note: 'ADMIN | EXAMINEE']
+  avatar varchar(100) [null, note: 'ImageField → media/avatars/']
+  phone varchar(32)
+  institution varchar(255)
+  student_id varchar(64)
+  is_active boolean [default: true]
+  is_staff boolean [default: false]
+  is_superuser boolean [default: false]
+  last_login datetime [null]
+  last_seen_at datetime [null]
+  date_joined datetime
+  created_at datetime
+  updated_at datetime
+
+  indexes {
+    role
+  }
+}
+
+// ─── Exams ────────────────────────────────────────────────────────────────────
+
+Table exams_exam {
+  id integer [pk, increment]
+  title varchar(255) [not null]
+  description text
+  instructions text
+  duration_minutes integer [default: 120]
+  total_questions integer [default: 0]
+  passing_score integer [default: 40, note: 'Percentage 0–100']
+  exam_code varchar(32) [unique, null]
+  available_from datetime [null]
+  available_until datetime [null]
+  max_attempts integer [default: 1]
+  status varchar(20) [default: 'draft', note: 'draft | active | archived']
+  created_by_id integer [not null, ref: > authentication_user.id]
+  created_at datetime
+  updated_at datetime
+
+  indexes {
+    (status, created_at)
+    created_by_id
+    exam_code
+    (available_from, available_until)
+  }
+}
+
+Table exams_question {
+  id integer [pk, increment]
+  exam_id integer [not null, ref: > exams_exam.id]
+  question_text text [not null]
+  question_type varchar(20) [default: 'multiple_choice', note: 'multiple_choice | true_false | short_answer | essay']
+  options json [default: '[]', note: 'MCQ option list']
+  correct_answer text [not null]
+  points integer [default: 1]
+  order integer [default: 0]
+  created_at datetime
+  updated_at datetime
+
+  indexes {
+    (exam_id, order) [unique]
+  }
+}
+
+// ─── Sessions & Responses ─────────────────────────────────────────────────────
+
+Table user_sessions_exam_session {
+  id uuid [pk, note: 'UUID primary key']
+  exam_id integer [not null, ref: > exams_exam.id]
+  user_id integer [not null, ref: > authentication_user.id]
+  started_at datetime [not null]
+  submitted_at datetime [null]
+  time_remaining integer [default: 0, note: 'Seconds remaining at submit']
+  status varchar(20) [default: 'in_progress', note: 'in_progress | completed | terminated | expired']
+  ip_address varchar(45) [null]
+  user_agent text [null]
+  total_score integer [null]
+  percentage_score decimal(5,2) [null]
+  passed boolean [null]
+
+  indexes {
+    (exam_id, user_id)
+    (status, started_at)
+    (user_id, started_at)
+  }
+
+  Note: 'Unique constraint: one in_progress session per (exam, user)'
+}
+
+Table user_sessions_response {
+  id integer [pk, increment]
+  session_id uuid [not null, ref: > user_sessions_exam_session.id]
+  question_id integer [not null, ref: > exams_question.id]
+  answer_text text [not null]
+  is_correct boolean [default: false]
+  time_spent integer [default: 0, note: 'Seconds on question']
+  answered_at datetime
+  flagged_for_review boolean [default: false]
+
+  indexes {
+    (session_id, question_id) [unique]
+    is_correct
+    flagged_for_review
+  }
+}
+
+Table user_sessions_session_log {
+  id integer [pk, increment]
+  session_id uuid [not null, ref: > user_sessions_exam_session.id]
+  event_type varchar(20) [note: 'started | submitted | terminated | expired | resumed | paused']
+  timestamp datetime
+  details json [default: '{}']
+  ip_address varchar(45) [null]
+
+  indexes {
+    (session_id, timestamp)
+    (event_type, timestamp)
+  }
+}
+
+// ─── Behavior & Monitoring ────────────────────────────────────────────────────
+
+Table behavior_log {
+  id uuid [pk]
+  session_id uuid [not null, ref: > user_sessions_exam_session.id]
+  event_type varchar(32) [note: 'no_face | multiple_faces | looking_away | bad_posture | leaving_seat | object_detected | identity_mismatch | suspicious_pattern']
+  score float [note: 'Compliance 0.0–1.0']
+  confidence float [default: 0]
+  metadata json [default: '{}']
+  timestamp datetime
+
+  indexes {
+    (session_id, timestamp)
+    event_type
+  }
+}
+
+Table behavior_alert {
+  id uuid [pk]
+  session_id uuid [not null, ref: > user_sessions_exam_session.id]
+  alert_type varchar(64)
+  severity varchar(16) [default: 'medium', note: 'low | medium | high']
+  message text
+  metric_pct float [null]
+  resolved boolean [default: false]
+  created_at datetime
+
+  indexes {
+    (session_id, created_at)
+    resolved
+  }
+}
+
+Table monitoring_identity_reference {
+  id uuid [pk]
+  session_id uuid [unique, not null, ref: - user_sessions_exam_session.id, note: 'OneToOne per session']
+  embedding json [default: '[]', note: 'Serialised face embedding vector']
+  backend varchar(32) [default: 'stub', note: 'stub | playground | arcface']
+  dims integer [default: 0]
+  created_at datetime
+  updated_at datetime
+}
+
+// ─── Relationship summary (for paper narrative) ─────────────────────────────
+// authentication_user 1──* exams_exam (created_by)
+// exams_exam          1──* exams_question
+// exams_exam          1──* user_sessions_exam_session
+// authentication_user 1──* user_sessions_exam_session
+// user_sessions_exam_session 1──* user_sessions_response
+// exams_question      1──* user_sessions_response
+// user_sessions_exam_session 1──* user_sessions_session_log
+// user_sessions_exam_session 1──* behavior_log
+// user_sessions_exam_session 1──* behavior_alert
+// user_sessions_exam_session 1──1 monitoring_identity_reference

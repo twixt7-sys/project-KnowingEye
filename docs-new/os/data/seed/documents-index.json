@@ -1,0 +1,49 @@
+{
+  "chapters": [
+    {
+      "id": "chapter1",
+      "title": "Chapter I — Introduction",
+      "pages": [
+        { "file": "chapter1/01-introduction.html", "title": "Introduction" }
+      ]
+    },
+    {
+      "id": "chapter2",
+      "title": "Chapter II — Methodology",
+      "outline_source": "docs/Outline-Alignment.docx",
+      "pages": [
+        { "file": "chapter2/index.html", "title": "Chapter II Index", "kind": "index" },
+        { "file": "chapter2/01-system-planning.html", "title": "System Planning", "part": "A" },
+        { "file": "chapter2/02-system-analysis.html", "title": "System Analysis", "part": "B" },
+        { "file": "chapter2/03-system-design.html", "title": "System Design", "part": "C" },
+        { "file": "chapter2/04-system-testing.html", "title": "System Testing and Implementation", "part": "D" },
+        { "file": "chapter2/05-system-maintenance.html", "title": "System Maintenance", "part": "E" }
+      ]
+    },
+    {
+      "id": "architecture",
+      "title": "Architecture & Technical Reference",
+      "pages": [
+        { "file": "architecture/01-high-level-architecture.html", "title": "High-Level Architecture" },
+        { "file": "architecture/02-system-components.html", "title": "System Components" },
+        { "file": "architecture/03-communication-protocols.html", "title": "Communication Protocols" },
+        { "file": "architecture/04-database-design.html", "title": "Database Design" },
+        { "file": "architecture/05-ai-pipeline.html", "title": "AI Pipeline" },
+        { "file": "architecture/06-deployment.html", "title": "Deployment" },
+        { "file": "architecture/07-workflows-diagrams.html", "title": "Workflows & Diagrams" },
+        { "file": "architecture/graph-viewer.html", "title": "Graph Viewer", "kind": "tool" }
+      ]
+    },
+    {
+      "id": "references",
+      "title": "Machine-Readable References",
+      "pages": [
+        { "file": "general/Project.json", "title": "Project Manifest (JSON)", "kind": "json" },
+        { "file": "backend/API_structure.json", "title": "API Structure (JSON)", "kind": "json" },
+        { "file": "database/database_schema.json", "title": "Database Schema (JSON)", "kind": "json" },
+        { "file": "general/Implementation_Status_Summary.md", "title": "Implementation Status", "kind": "markdown" },
+        { "file": "general/Study_Objectives_IPO.md", "title": "Study Objectives (IPO)", "kind": "markdown" }
+      ]
+    }
+  ]
+}

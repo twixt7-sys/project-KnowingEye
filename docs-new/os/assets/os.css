@@ -1,0 +1,172 @@
+/* =========================================================================
+   Project OS shell layout — sidebar + topbar + viewport grid.
+   ========================================================================= */
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 264px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---- sidebar ---- */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0.85rem;
+  gap: 1rem;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.35rem 0.5rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+.brand-mark {
+  display: grid; place-items: center;
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+}
+.brand-mark svg { width: 22px; height: 22px; }
+.sidebar-brand strong { display: block; font-size: 1.02rem; }
+.sidebar-brand small { color: var(--muted); font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.module-nav { display: flex; flex-direction: column; gap: 0.15rem; }
+.nav-item {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 9px;
+  color: var(--text);
+  font-size: 0.92rem;
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--surface2); text-decoration: none; }
+.nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.nav-icon { display: inline-grid; place-items: center; width: 20px; height: 20px; color: inherit; }
+.nav-icon svg { width: 18px; height: 18px; }
+
+.sidebar-docs { margin-top: auto; padding-top: 0.85rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.35rem; }
+.sidebar-label { margin: 0 0 0.2rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.sidebar-docs a { font-size: 0.85rem; color: var(--muted); }
+.sidebar-docs a:hover { color: var(--accent); }
+
+/* ---- main column ---- */
+.shell-main { display: flex; flex-direction: column; overflow: hidden; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1.4rem;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  backdrop-filter: blur(8px);
+}
+.btn-sidebar { display: none; }
+
+.breadcrumb { display: flex; align-items: center; gap: 0.45rem; font-size: 0.9rem; flex: 1; min-width: 0; flex-wrap: wrap; }
+.crumb-root { color: var(--muted); }
+.crumb-sep { color: var(--muted); }
+.crumb { font-weight: 600; }
+.crumb-sub { font-weight: 400; color: var(--muted); }
+
+.topbar-actions { display: flex; align-items: center; gap: 0.6rem; }
+.sync-badge {
+  font-size: 0.76rem; padding: 0.25rem 0.6rem;
+  border-radius: 999px; border: 1px solid var(--border-strong);
+  color: var(--muted);
+}
+.sync-badge.sync-ok { color: var(--ok); border-color: var(--ok); }
+.sync-badge.sync-warn { color: var(--warn); border-color: var(--warn); }
+
+.module-viewport { overflow-y: auto; padding: 1.6rem; flex: 1; }
+
+.module-page { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+.module-page > header.page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.module-page h1 { margin: 0; font-size: 1.6rem; }
+.module-page .page-sub { color: var(--muted); margin: 0.25rem 0 0; }
+
+.shell-footer {
+  display: flex; justify-content: space-between;
+  padding: 0.6rem 1.4rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem; color: var(--muted);
+}
+
+/* ---- kanban ---- */
+.kanban { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 0.85rem; align-items: start; }
+.kanban-col { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 0.7rem; min-height: 120px; }
+.kanban-col.drag-over { outline: 2px dashed var(--accent); }
+.kanban-col h3 { margin: 0 0 0.6rem; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); display: flex; justify-content: space-between; }
+.kanban-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.6rem 0.7rem; margin-bottom: 0.55rem; cursor: grab; font-size: 0.86rem;
+}
+.kanban-card:active { cursor: grabbing; }
+.kanban-card .kc-title { font-weight: 600; }
+.kanban-card .kc-meta { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.4rem; font-size: 0.72rem; color: var(--muted); }
+
+/* ---- wbs tree ---- */
+.wbs-tree { font-size: 0.9rem; }
+.wbs-node { border-bottom: 1px solid var(--border); }
+.wbs-row { display: grid; grid-template-columns: 1fr 130px 90px 110px; gap: 0.5rem; align-items: center; padding: 0.5rem 0.4rem; }
+.wbs-row .wbs-toggle { cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 0.4rem; }
+.wbs-caret { width: 0; height: 0; border-left: 5px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform 0.15s; }
+.wbs-caret.open { transform: rotate(90deg); }
+.wbs-code { color: var(--muted); font-family: "JetBrains Mono", monospace; font-size: 0.8rem; margin-right: 0.4rem; }
+
+/* ---- team cards ---- */
+.member-card { display: flex; flex-direction: column; gap: 0.4rem; }
+.member-avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; display: grid; place-items: center; font-weight: 700; }
+.member-card .focus-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+
+/* ---- gantt ---- */
+.gantt-toolbar { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.gantt-scroll { overflow: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.gantt-scroll svg { display: block; }
+
+/* ---- heatmap ---- */
+.heatmap { border-collapse: separate; border-spacing: 3px; }
+.heatmap td { width: 54px; height: 44px; text-align: center; border-radius: 6px; font-size: 0.78rem; border: none; color: #0a0e17; font-weight: 600; }
+
+/* ---- doc iframe ---- */
+.doc-frame { width: 100%; height: calc(100vh - 230px); border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+.doc-list a { display: block; padding: 0.5rem 0.6rem; border-radius: 8px; }
+.doc-list a:hover { background: var(--surface2); text-decoration: none; }
+
+/* ---- modal ---- */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(5, 8, 15, 0.6); backdrop-filter: blur(3px);
+  display: grid; place-items: center; padding: 1rem;
+}
+.modal { width: min(560px, 100%); max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; }
+.modal h2 { font-size: 1.15rem; }
+
+/* ---- documents ---- */
+.doc-group { margin-bottom: 0.85rem; }
+.doc-link { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.55rem; border-radius: 8px; color: var(--text); font-size: 0.86rem; }
+.doc-link:hover { background: var(--surface2); text-decoration: none; }
+.doc-link.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.doc-link .badge { font-size: 0.66rem; padding: 0.05rem 0.4rem; }
+
+/* ---- responsive ---- */
+@media (max-width: 900px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed; inset: 0 auto 0 0; width: 264px; z-index: 50;
+    transform: translateX(-110%); transition: transform 0.2s ease;
+  }
+  .app-shell.sidebar-open .sidebar { transform: translateX(0); }
+  .btn-sidebar { display: inline-grid; }
+  .kanban { grid-template-columns: 1fr; }
+  .wbs-row { grid-template-columns: 1fr 90px; }
+  .wbs-row .wbs-owner, .wbs-row .wbs-status { display: none; }
+}

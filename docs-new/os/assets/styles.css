@@ -1,0 +1,244 @@
+/* =========================================================================
+   Knowing Eye Project OS — shared theme tokens + reusable components.
+   Portable: no hardcoded project names. Drives both OS shell and doc pages.
+   ========================================================================= */
+
+:root,
+[data-theme="dark"] {
+  --bg: #0a0e17;
+  --surface: #121826;
+  --surface2: #1a2234;
+  --surface3: #222d44;
+  --border: rgba(99, 140, 255, 0.18);
+  --border-strong: rgba(99, 140, 255, 0.34);
+  --text: #e8ecf4;
+  --muted: #8b95a8;
+  --accent: #5b8def;
+  --accent2: #7c5cff;
+  --accent-soft: rgba(91, 141, 239, 0.15);
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --rest: #38bdf8;
+  --ws: #a78bfa;
+  --db: #fb923c;
+  --ai: #f472b6;
+  --code-bg: #0d1117;
+  --code-text: #c9d1d9;
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  --body-gradient-a: rgba(91, 141, 239, 0.12);
+  --body-gradient-b: rgba(124, 92, 255, 0.08);
+}
+
+[data-theme="light"] {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface2: #eef2f9;
+  --surface3: #e2e8f4;
+  --border: rgba(37, 99, 235, 0.18);
+  --border-strong: rgba(37, 99, 235, 0.34);
+  --text: #0f172a;
+  --muted: #475569;
+  --accent: #2563eb;
+  --accent2: #6d28d9;
+  --accent-soft: rgba(37, 99, 235, 0.1);
+  --ok: #059669;
+  --warn: #d97706;
+  --danger: #dc2626;
+  --rest: #0284c7;
+  --ws: #7c3aed;
+  --db: #ea580c;
+  --ai: #db2777;
+  --code-bg: #f1f5f9;
+  --code-text: #1e293b;
+  --shadow: 0 8px 30px rgba(15, 23, 42, 0.12);
+  --body-gradient-a: rgba(37, 99, 235, 0.07);
+  --body-gradient-b: rgba(109, 40, 217, 0.05);
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: "DM Sans", system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+code, pre, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+code {
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 0.12em 0.4em;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+
+pre {
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 1rem;
+  border-radius: 10px;
+  overflow: auto;
+  border: 1px solid var(--border);
+}
+
+h1, h2, h3, h4 { line-height: 1.25; font-weight: 700; }
+
+/* ---- cards ---- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
+  box-shadow: var(--shadow);
+}
+.card-title { margin: 0 0 0.75rem; font-size: 0.95rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.grid { display: grid; gap: 1rem; }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.grid-3 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+/* ---- stat tiles ---- */
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.stat .stat-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+.stat .stat-label { color: var(--muted); font-size: 0.85rem; }
+.stat .stat-sub { font-size: 0.8rem; color: var(--muted); }
+
+/* ---- buttons ---- */
+.btn, .btn-ghost, .btn-primary {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 9px;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--border-strong);
+  background: var(--surface2);
+  color: var(--text);
+  transition: all 0.15s ease;
+}
+.btn:hover, .btn-ghost:hover { background: var(--surface3); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-ghost { background: transparent; }
+.btn-icon {
+  display: inline-grid; place-items: center;
+  width: 36px; height: 36px; padding: 0;
+  border-radius: 9px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text); cursor: pointer;
+}
+.btn-icon svg { width: 18px; height: 18px; }
+.btn-icon:hover { background: var(--surface3); }
+.btn-sm { padding: 0.3rem 0.6rem; font-size: 0.82rem; }
+.btn-danger { border-color: var(--danger); color: var(--danger); background: transparent; }
+.btn-danger:hover { background: var(--danger); color: #fff; }
+
+input, select, textarea {
+  font: inherit;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.5rem 0.65rem;
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+label { font-size: 0.82rem; color: var(--muted); display: block; margin-bottom: 0.25rem; }
+.field { margin-bottom: 0.85rem; }
+
+/* ---- tables ---- */
+table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+th, td { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; }
+tbody tr:hover { background: var(--accent-soft); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+
+/* ---- badges & status ---- */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  border: 1px solid var(--border-strong);
+  background: var(--surface2);
+}
+.status-pass, .status-done, .status-completed { color: var(--ok); border-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.status-warn, .status-at_risk, .status-in_progress, .status-mitigating, .status-review { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+.status-fail, .status-missed, .status-open { color: var(--danger); border-color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+.status-upcoming, .status-todo, .status-backlog, .status-targeted, .status-planned { color: var(--muted); }
+
+.pill-rest { color: var(--rest); }
+.pill-ws { color: var(--ws); }
+.pill-db { color: var(--db); }
+.pill-ai { color: var(--ai); }
+
+.muted { color: var(--muted); }
+.text-ok { color: var(--ok); }
+.text-warn { color: var(--warn); }
+.text-danger { color: var(--danger); }
+
+/* ---- progress ---- */
+.progress { background: var(--surface3); border-radius: 999px; height: 8px; overflow: hidden; }
+.progress > span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 999px; }
+
+/* ---- empty state ---- */
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+.empty-state h2 { color: var(--text); }
+
+/* ---- toast ---- */
+.toast-host { position: fixed; bottom: 1.25rem; right: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; z-index: 9999; }
+.toast {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  box-shadow: var(--shadow);
+  opacity: 0; transform: translateY(8px);
+  transition: all 0.25s ease;
+  max-width: 320px;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast-ok { border-left-color: var(--ok); }
+.toast-warn { border-left-color: var(--warn); }
+.toast-error { border-left-color: var(--danger); }
+
+/* ---- tech cards (documentation) ---- */
+.tech-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.tech-card .tech-visual { margin: 0; flex: 0 0 auto; }
+.tech-card .tech-visual img { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; background: var(--surface2); padding: 6px; }
+.tech-card h3 { margin: 0 0 0.35rem; }
+
+/* ---- testing results table ---- */
+.tables-results-syst-test th { background: var(--surface2); }
+.tables-results-syst-test .status-pass td:last-child { color: var(--ok); }
+
+/* responsive helpers */
+.row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+.scroll-x { overflow-x: auto; }

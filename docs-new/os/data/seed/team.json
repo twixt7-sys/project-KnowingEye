@@ -1,0 +1,42 @@
+{
+  "team_name": "",
+  "advisor": {
+    "name": "Lorjohn Raña",
+    "title": "Project Adviser",
+    "institution": "Legacy College of Compostela"
+  },
+  "members": [
+    {
+      "id": "TM-1",
+      "name": "Saturnino C. Ancog III",
+      "role": "Project Manager",
+      "email": "",
+      "focus": ["Project management", "Backend (Django REST)", "Architecture"],
+      "raci": { "planning": "A", "architecture": "R", "backend": "R", "frontend": "C", "ai": "C", "testing": "A", "docs": "C" }
+    },
+    {
+      "id": "TM-2",
+      "name": "Khrisha Marie O. Cavan",
+      "role": "System Designer",
+      "email": "",
+      "focus": ["UI/UX design", "Frontend (React)", "Visual assets"],
+      "raci": { "planning": "C", "architecture": "C", "backend": "I", "frontend": "R", "ai": "I", "testing": "C", "docs": "C" }
+    },
+    {
+      "id": "TM-3",
+      "name": "Twixt Jasley J. Tamera",
+      "role": "System Developer",
+      "email": "",
+      "focus": ["Full-stack development", "Integration", "Documentation"],
+      "raci": { "planning": "R", "architecture": "C", "backend": "R", "frontend": "C", "ai": "C", "testing": "R", "docs": "A" }
+    },
+    {
+      "id": "TM-4",
+      "name": "Kervy N. Cadiente",
+      "role": "System Architect",
+      "email": "",
+      "focus": ["AI / Computer Vision", "Pipeline design", "Literature review"],
+      "raci": { "planning": "C", "architecture": "A", "backend": "C", "frontend": "I", "ai": "R", "testing": "C", "docs": "R" }
+    }
+  ]
+}

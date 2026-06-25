@@ -1,0 +1,72 @@
+{
+  "diagram_id": "Fig-3.2",
+  "title": "Real-Time Monitoring Data Flow",
+  "section": "2.1.3.2",
+  "description": "Frame capture through AI analysis, persistence, and alert broadcast to examinee and administrator clients.",
+  "format": "data_flow_diagram",
+  "levels": [
+    {
+      "level": 0,
+      "name": "Context",
+      "processes": ["Knowing Eye Monitoring System"],
+      "external_entities": ["Examinee Webcam", "Examinee UI", "Administrator Dashboard"],
+      "data_stores": ["Session DB"]
+    },
+    {
+      "level": 1,
+      "processes": [
+        { "id": "P1", "label": "Capture Frame", "component": "Browser MediaDevices API" },
+        { "id": "P2", "label": "Encode & Stream", "component": "use-monitoring hook" },
+        { "id": "P3", "label": "Receive Frame", "component": "MonitoringConsumer" },
+        { "id": "P4", "label": "Decode Image", "component": "ai/frame_utils.py" },
+        { "id": "P5", "label": "Run CV Pipeline", "component": "BehaviorPipeline" },
+        { "id": "P6", "label": "Score & Alert", "component": "behavior/scoring.py" },
+        { "id": "P7", "label": "Persist Events", "component": "behavior/services.py" },
+        { "id": "P8", "label": "Broadcast Alerts", "component": "Channels group_send" }
+      ],
+      "data_flows": [
+        { "from": "Examinee Webcam", "to": "P1", "data": "video stream" },
+        { "from": "P1", "to": "P2", "data": "canvas JPEG snapshot" },
+        { "from": "P2", "to": "P3", "data": "JSON { type: frame, image: base64 }", "protocol": "WebSocket" },
+        { "from": "P2", "to": "P3", "data": "POST /api/monitoring/frame/", "protocol": "REST fallback", "optional": true },
+        { "from": "P3", "to": "P4", "data": "raw base64 string" },
+        { "from": "P4", "to": "P5", "data": "BGR numpy frame" },
+        { "from": "P5", "to": "P6", "data": "detections, pose, gaze, identity match" },
+        { "from": "P6", "to": "P7", "data": "analysis dict (metrics, events, alerts)" },
+        { "from": "P7", "to": "Session DB", "data": "behavior_log rows, alert rows" },
+        { "from": "P6", "to": "P3", "data": "analysis payload" },
+        { "from": "P3", "to": "Examinee UI", "data": "{ type: analysis, payload }", "protocol": "WebSocket" },
+        { "from": "P8", "to": "Administrator Dashboard", "data": "{ type: alert, payload }", "protocol": "WebSocket /ws/monitoring/alerts/" }
+      ]
+    }
+  ],
+  "pipeline_stages": [
+    { "stage": 1, "module": "preprocessing/frame.py", "output": "Normalized BGR frame" },
+    { "stage": 2, "module": "detection/face_detector.py", "output": "Face bounding boxes, count" },
+    { "stage": 3, "module": "detection/pose_detector.py", "output": "Body keypoints, posture metrics" },
+    { "stage": 4, "module": "detection/yolo_detector.py", "output": "Person/phone object detections" },
+    { "stage": 5, "module": "recognition/identity.py", "output": "Embedding vs reference match" },
+    { "stage": 6, "module": "behavior/scoring.py", "output": "Compliance %, weighted events" },
+    { "stage": 7, "module": "behavior/temporal.py", "output": "Suspicious pattern over time window" }
+  ],
+  "performance_targets": {
+    "target_fps": 5,
+    "latency_target_ms": 300,
+    "frame_handling_note": "Client throttles capture; server may skip frames under load"
+  },
+  "websocket_message_schema": {
+    "client_to_server": [
+      { "type": "frame", "fields": ["image"] },
+      { "type": "enroll", "fields": ["image"] },
+      { "type": "ping", "fields": [] }
+    ],
+    "server_to_client": [
+      { "type": "connected", "fields": ["session_id", "pipeline_mode"] },
+      { "type": "analysis", "fields": ["payload", "persisted"] },
+      { "type": "alert", "fields": ["payload"] },
+      { "type": "enroll_result", "fields": ["ok", "message?"] },
+      { "type": "pong", "fields": [] },
+      { "type": "error", "fields": ["message"] }
+    ]
+  }
+}

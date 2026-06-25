@@ -1,0 +1,26 @@
+/* Manuscript layout for Chapter pages — pairs with os/assets/styles.css tokens. */
+.doc-wrap { max-width: 900px; margin: 0 auto; padding: 2.2rem 1.5rem 4rem; }
+.doc-eyebrow { color: var(--accent); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.8rem; }
+.doc-wrap h1 { font-size: 1.9rem; margin: 0.2rem 0 0.3rem; }
+.doc-wrap h2 { margin-top: 2.1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; scroll-margin-top: 1rem; }
+.doc-wrap h3 { margin-top: 1.5rem; }
+.doc-wrap p, .doc-wrap li { font-size: 1rem; }
+.doc-lead { color: var(--muted); }
+.doc-nav { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+.part-badge { display: inline-block; background: var(--accent-soft); color: var(--accent); padding: 0.15rem 0.6rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; }
+figure.doc-fig { margin: 1.2rem 0; padding: 1rem; border: 1px dashed var(--border-strong); border-radius: 12px; background: var(--surface); text-align: center; }
+figure.doc-fig figcaption { color: var(--muted); font-size: 0.85rem; margin-top: 0.6rem; }
+.cross-links { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0; }
+.toc-grid { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.toc-card { display: block; padding: 1rem 1.2rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); }
+.toc-card:hover { border-color: var(--accent); text-decoration: none; }
+.future-note { border-left: 3px solid var(--accent2); padding: 0.5rem 0.9rem; background: var(--accent-soft); border-radius: 0 8px 8px 0; margin: 1rem 0; }
+.req-list li { margin-bottom: 0.3rem; }
+.note { border-left: 3px solid var(--warn); padding: 0.6rem 0.9rem; background: color-mix(in srgb, var(--warn) 10%, transparent); border-radius: 0 8px 8px 0; margin: 1rem 0; }
+figure.doc-fig .mermaid { display: flex; justify-content: center; background: var(--surface2); border-radius: 10px; padding: 1rem; overflow-x: auto; }
+figure.doc-fig figcaption { font-weight: 600; color: var(--text); margin-bottom: 0.6rem; }
+.graph-source { margin-top: 0.6rem; }
+.graph-source summary { cursor: pointer; color: var(--muted); font-size: 0.85rem; }
+.graph-source pre { max-height: 320px; overflow: auto; font-size: 0.78rem; margin-top: 0.5rem; }
+.two-col { display: grid; gap: 0.9rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.two-col .card h4 { margin: 0 0 0.4rem; }
