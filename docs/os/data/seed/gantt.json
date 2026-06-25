@@ -1,5 +1,18 @@
 {
-  "config": { "zoom": "month", "start_date": "2026-04-16", "end_date": "2026-07-10" },
+  "config": {
+    "zoom": "month",
+    "start_date": "2026-04-16",
+    "end_date": "2026-07-10",
+    "timeline_start": "2026-04-16",
+    "timeline_end": "2026-07-18",
+    "project_start": "2026-04-16",
+    "project_end": "2026-06-10"
+  },
+  "phases": [
+    { "id": "P1", "label": "P1 - Planning", "start": "2026-04-16", "end": "2026-05-02", "color": "#5b8def" },
+    { "id": "P2", "label": "P2 - System Development", "start": "2026-05-03", "end": "2026-06-21", "color": "#7c5cff" },
+    { "id": "P3", "label": "P3 - Testing & Docs", "start": "2026-06-22", "end": "2026-07-18", "color": "#34d399" }
+  ],
   "tasks": [
     { "id": "GNT-100", "title": "Phase 1 - Planning", "start": "2026-04-16", "end": "2026-05-02", "progress": 1.0, "assignee": "All", "dependencies": [], "milestone": false, "wbs_ref": "1" },
     { "id": "GNT-110", "title": "Define goals & scope", "start": "2026-04-16", "end": "2026-04-20", "progress": 1.0, "assignee": "Tamera", "dependencies": [], "milestone": false, "wbs_ref": "1.1" },

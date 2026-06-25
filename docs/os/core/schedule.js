@@ -1,4 +1,4 @@
-// Shared WBS tree + Gantt phase timeline (aligned with Gantt CSV).
+// Shared WBS tree + Gantt phase timeline (aligned with Gantt CSV / Sheet1).
 
 export const PHASES = [
   { id: 'P1', label: 'P1 - Planning', start: '2026-04-16', end: '2026-05-02', color: '#5b8def' },
@@ -13,7 +13,20 @@ export function parseDate(s) {
 }
 
 export function fmtIso(d) {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function todayDate() {
+  const n = new Date();
+  return new Date(n.getFullYear(), n.getMonth(), n.getDate(), 12);
+}
+
+export function sameDay(a, b) {
+  if (!a || !b) return false;
+  return fmtIso(a) === fmtIso(b);
 }
 
 export function addDays(d, n) {
@@ -33,8 +46,16 @@ export function eachDay(start, end) {
   return out;
 }
 
-export function weekLabel(d) {
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+export function dayOfWeekLetter(d) {
+  return d.toLocaleDateString('en-US', { weekday: 'narrow' }).slice(0, 1);
+}
+
+export function dayHeaderLabel(d) {
+  return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+}
+
+export function fmtDisplay(d) {
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export function buildWbsMaps(nodes) {
@@ -58,34 +79,71 @@ export function rollupProgress(node, byParent) {
   return children.reduce((s, c) => s + rollupProgress(c, byParent), 0) / children.length;
 }
 
-/** Week-start columns inside expanded phases. */
-export function buildWeekColumns(phases, expandedPhaseIds) {
+/** Daily columns inside expanded phases; one summary column when collapsed. */
+export function buildTimelineColumns(phases, expandedPhaseIds) {
   const cols = [];
   for (const ph of phases) {
-    const expanded = expandedPhaseIds.has(ph.id);
     const start = parseDate(ph.start);
     const end = parseDate(ph.end);
     if (!start || !end) continue;
-    if (!expanded) {
+    if (!expandedPhaseIds.has(ph.id)) {
       cols.push({ type: 'phase', phase: ph, key: ph.id, label: ph.label, start, end });
       continue;
     }
-    const days = eachDay(start, end);
-    for (let i = 0; i < days.length; i += 7) {
-      const wStart = days[i];
-      const wEnd = addDays(wStart, 6);
-      const cap = wEnd > end ? end : wEnd;
+    for (const d of eachDay(start, end)) {
       cols.push({
-        type: 'week',
+        type: 'day',
         phase: ph,
-        key: `${ph.id}-w${i}`,
-        label: weekLabel(wStart),
-        start: wStart,
-        end: cap,
+        key: `${ph.id}-${fmtIso(d)}`,
+        label: dayOfWeekLetter(d),
+        dateLabel: dayHeaderLabel(d),
+        start: d,
+        end: d,
       });
     }
   }
   return cols;
+}
+
+/** @deprecated use buildTimelineColumns */
+export function buildWeekColumns(phases, expandedPhaseIds) {
+  return buildTimelineColumns(phases, expandedPhaseIds);
+}
+
+export function groupColumnsByPhase(cols) {
+  const groups = [];
+  for (const col of cols) {
+    const last = groups[groups.length - 1];
+    if (last && last.phase.id === col.phase.id) {
+      last.cols.push(col);
+      last.end = col.end;
+    } else {
+      groups.push({
+        phase: col.phase,
+        cols: [col],
+        start: col.start,
+        end: col.end,
+        collapsed: col.type === 'phase',
+      });
+    }
+  }
+  return groups;
+}
+
+export function weekBandsForGroup(group) {
+  if (group.collapsed) {
+    return [{ label: group.phase.id, span: 1 }];
+  }
+  const bands = [];
+  for (let i = 0; i < group.cols.length; i += 7) {
+    const chunk = group.cols.slice(i, i + 7);
+    bands.push({
+      label: `W${Math.floor(i / 7) + 1}`,
+      span: chunk.length,
+      start: chunk[0].start,
+    });
+  }
+  return bands;
 }
 
 export function cellActive(node, colStart, colEnd) {
@@ -95,9 +153,15 @@ export function cellActive(node, colStart, colEnd) {
   return colStart <= e && colEnd >= s;
 }
 
-export function projectBounds(nodes) {
-  let min = parseDate('2026-04-16');
-  let max = parseDate('2026-07-18');
+export function projectBounds(nodes, phases = PHASES) {
+  let min = parseDate(phases[0]?.start) || parseDate('2026-04-16');
+  let max = parseDate(phases[phases.length - 1]?.end) || parseDate('2026-07-18');
+  for (const ph of phases) {
+    const s = parseDate(ph.start);
+    const e = parseDate(ph.end);
+    if (s && s < min) min = s;
+    if (e && e > max) max = e;
+  }
   for (const n of nodes) {
     const s = parseDate(n.start_date);
     const e = parseDate(n.end_date);
@@ -113,4 +177,9 @@ export function phaseForCode(code) {
   if (top === '1') return 'P1';
   if (top === '2') return 'P2';
   return 'P3';
+}
+
+export function resolvePhases(seedPhases) {
+  if (Array.isArray(seedPhases) && seedPhases.length) return seedPhases;
+  return PHASES;
 }

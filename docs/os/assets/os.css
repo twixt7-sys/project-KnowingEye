@@ -134,13 +134,17 @@
 .gantt-grid-wrap { overflow: auto; max-height: calc(100vh - 220px); padding: 0; }
 .gantt-grid { border-collapse: collapse; font-size: 0.78rem; width: max-content; min-width: 100%; }
 .gantt-grid th, .gantt-grid td { border: 1px solid var(--border); padding: 0; }
-.gantt-row-label { position: sticky; left: 0; z-index: 2; background: var(--surface); text-align: left; padding: 0.35rem 0.6rem !important; min-width: 220px; max-width: 280px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gantt-col-head { padding: 0.35rem 0.25rem !important; min-width: 28px; font-size: 0.7rem; color: var(--muted); background: var(--surface2); position: sticky; top: 0; z-index: 1; }
-.gantt-cell { width: 22px; min-width: 22px; height: 22px; background: var(--surface2); }
+.gantt-row-label { position: sticky; left: 0; z-index: 4; background: var(--surface); text-align: left; padding: 0.35rem 0.6rem !important; min-width: 240px; max-width: 320px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gantt-corner { z-index: 5; vertical-align: bottom; }
+.gantt-col-head { padding: 0.2rem 0 !important; min-width: 18px; width: 18px; font-size: 0.62rem; color: var(--muted); background: var(--surface2); position: sticky; top: 52px; z-index: 2; text-align: center; }
+.gantt-week-head { padding: 0.25rem 0.15rem !important; font-size: 0.65rem; color: var(--muted); background: var(--surface2); position: sticky; top: 26px; z-index: 2; text-align: center; font-weight: 600; }
+.gantt-cell { width: 18px; min-width: 18px; height: 20px; background: var(--surface2); }
 .gantt-cell.on { cursor: pointer; }
 .gantt-cell.on.status-done { background: color-mix(in srgb, #34d399 55%, var(--surface2)); }
 .gantt-cell.on.status-in_progress { background: color-mix(in srgb, var(--accent) 55%, var(--surface2)); }
 .gantt-cell.on.status-todo { background: color-mix(in srgb, #8b95a8 35%, var(--surface2)); }
+.gantt-col-today { box-shadow: inset 0 0 0 2px var(--accent2); background: color-mix(in srgb, var(--accent2) 12%, var(--surface2)) !important; }
+.gantt-col-collapsed { font-size: 0.7rem; min-width: 28px; width: 28px; }
 .kanban-3 { grid-template-columns: repeat(3, 1fr); }
 
 /* ---- org chart (dashboard) ---- */
@@ -160,13 +164,21 @@
 .finish-line { display: block; max-width: 100%; }
 
 /* ---- gantt tree ---- */
-.gantt-caret, .gantt-caret-spacer { display: inline-block; width: 14px; height: 14px; margin-right: 2px; border: none; background: transparent; cursor: pointer; vertical-align: middle; }
+.gantt-caret, .gantt-caret-spacer { display: inline-block; width: 14px; height: 14px; margin-right: 2px; border: none; background: transparent; cursor: pointer; vertical-align: middle; flex-shrink: 0; }
 .gantt-caret::before { content: '▶'; font-size: 0.65rem; color: var(--muted); }
 .gantt-caret.open::before { content: '▼'; }
-.gantt-task-title { font-weight: 400; margin-left: 0.25rem; }
-.gantt-phase-head { background: var(--surface2); font-size: 0.72rem; font-weight: 600; padding: 0.35rem 0.25rem !important; cursor: pointer; white-space: nowrap; }
-.phase-toggle { border: none; background: transparent; cursor: pointer; color: var(--accent); margin-right: 0.2rem; font-size: 0.7rem; }
+.gantt-task-title { font-weight: 400; margin-left: 0.15rem; }
+.gantt-code { opacity: 0.85; margin-right: 0.25rem; }
+.gantt-phase-head { background: var(--surface2); font-size: 0.72rem; font-weight: 600; padding: 0.35rem 0.5rem !important; cursor: pointer; white-space: nowrap; position: sticky; top: 0; z-index: 3; text-align: left; border-bottom-width: 3px !important; }
+.gantt-phase-head .gantt-caret { margin-right: 0.35rem; }
+.gantt-phase-label { font-weight: 700; margin-right: 0.35rem; }
+.gantt-phase-range { font-size: 0.68rem; font-weight: 400; }
 .gantt-row[data-depth="0"] .gantt-row-label { font-weight: 600; }
+.gantt-row[data-depth="1"] .gantt-row-label { font-weight: 500; }
+.gantt-row[data-depth="2"] .gantt-task-title { font-size: 0.77rem; }
+.gantt-row[data-depth="3"] .gantt-task-title,
+.gantt-row[data-depth="4"] .gantt-task-title,
+.gantt-row[data-depth="5"] .gantt-task-title { font-size: 0.75rem; color: var(--muted); }
 
 /* ---- heatmap ---- */
 .heatmap { border-collapse: separate; border-spacing: 3px; }

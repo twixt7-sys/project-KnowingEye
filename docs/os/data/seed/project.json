@@ -12,7 +12,7 @@
     "solution": "A centralized web-based examination platform integrated with AI-powered behavioral monitoring using computer vision and deep learning.",
     "core_goal": "Enhance examination integrity, automate proctoring, and provide data-driven behavioral insights."
   },
-  "dates": { "started": "2026-04-16", "target": "2026-07-04" },
+  "dates": { "started": "2026-04-16", "target": "2026-07-04", "timeline_end": "2026-07-18" },
   "institution": {
     "name": "Legacy College of Compostela",
     "department": "Institute of Information Technology",

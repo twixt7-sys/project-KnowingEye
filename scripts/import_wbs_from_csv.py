@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import WBS nodes from misc/Knowing Eye Gantt Chart - Sheet1.csv into docs-new/os/data/seed/wbs.json."""
+"""Import WBS nodes from misc/Knowing Eye Gantt Chart - Sheet1.csv into docs/os/data/seed/wbs.json."""
 import csv
 import json
 import re
@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CSV_PATH = ROOT / "misc" / "Knowing Eye Gantt Chart - Sheet1.csv"
-OUT_PATH = ROOT / "docs-new" / "os" / "data" / "seed" / "wbs.json"
+OUT_PATH = ROOT / "docs" / "os" / "data" / "seed" / "wbs.json"
 
 STATUS_MAP = {
     "complete": "done",
