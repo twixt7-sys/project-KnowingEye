@@ -4,6 +4,7 @@ import { Logo, InstitutionLogo } from "../shared/components/layout/logo";
 import { Eye, EyeOff, User, Lock, AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "../core/providers/auth-provider";
 import { brand } from "../core/config/brand";
+import { formatApiError } from "../core/config/api";
 
 export function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -70,8 +71,8 @@ export function Login() {
         });
         goHome(user.role);
       }
-    } catch (err: any) {
-      setError(err?.detail?.() ?? err?.message ?? "An error occurred");
+    } catch (err: unknown) {
+      setError(formatApiError(err, "An error occurred"));
     } finally {
       setIsSubmitting(false);
     }

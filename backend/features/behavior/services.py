@@ -13,7 +13,6 @@ EVENT_TYPE_MAP = {
     "looking_away": BehaviorLog.EventType.LOOKING_AWAY,
     "bad_posture": BehaviorLog.EventType.BAD_POSTURE,
     "leaving_seat": BehaviorLog.EventType.LEAVING_SEAT,
-    "object_detected": BehaviorLog.EventType.OBJECT_DETECTED,
     "identity_mismatch": BehaviorLog.EventType.IDENTITY_MISMATCH,
     "suspicious_pattern": BehaviorLog.EventType.SUSPICIOUS_PATTERN,
 }

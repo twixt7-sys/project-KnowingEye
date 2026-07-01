@@ -30,7 +30,6 @@ class BehaviorEventType:
     LOOKING_AWAY = "looking_away"
     BAD_POSTURE = "bad_posture"
     LEAVING_SEAT = "leaving_seat"
-    OBJECT_DETECTED = "object_detected"
     IDENTITY_MISMATCH = "identity_mismatch"
     SUSPICIOUS_PATTERN = "suspicious_pattern"
 

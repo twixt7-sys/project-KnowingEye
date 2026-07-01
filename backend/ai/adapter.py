@@ -122,7 +122,6 @@ def _apply_temporal_stub(session_id: str, payload: dict[str, Any]) -> dict[str, 
         FaceAnalysis,
         FrameAnalysisResult,
         MetricScores,
-        ObjectDetection,
         PostureAnalysis,
     )
 
@@ -135,7 +134,6 @@ def _apply_temporal_stub(session_id: str, payload: dict[str, Any]) -> dict[str, 
         gaze_focus_pct=float(metrics_raw.get("gaze_focus_pct", 0)),
         posture_compliance_pct=float(metrics_raw.get("posture_compliance_pct", 0)),
         identity_match_pct=metrics_raw.get("identity_match_pct"),
-        object_clear_pct=float(metrics_raw.get("object_clear_pct", 100)),
         overall_compliance_pct=float(metrics_raw.get("overall_compliance_pct", 0)),
         alert_threshold_pct=float(metrics_raw.get("alert_threshold_pct", 80)),
     )
@@ -169,17 +167,11 @@ def _apply_temporal_stub(session_id: str, payload: dict[str, Any]) -> dict[str, 
         )
         for a in payload.get("alerts", [])
     ]
-    objects = [
-        ObjectDetection(o["label"], o.get("confidence_pct", 0) / 100.0, o.get("bbox", []))
-        for o in payload.get("objects", [])
-    ]
-
     result = FrameAnalysisResult(
         session_id=session_id,
         timestamp=payload.get("timestamp"),
         face=face,
         posture=posture,
-        objects=objects,
         metrics=metrics,
         events=events,
         alerts=alerts,
@@ -271,7 +263,6 @@ class _StubPipeline:
         from ai.knowing_eye.behavior.normalize import (
             face_presence_pct,
             gaze_focus_pct,
-            object_clear_pct,
             overall_compliance_pct,
             posture_compliance_pct,
         )
@@ -279,11 +270,10 @@ class _StubPipeline:
         face_presence = face_presence_pct(face_count)
         gaze = gaze_focus_pct(0.0 if face_count else None, 0.0 if face_count else None, 40, 35)
         posture = posture_compliance_pct(face_count > 0, None, None, 0.18)
-        object_clear = object_clear_pct(0.0)
 
         identity_pct, identity_distance = self._identity_score(frame_bgr, reference_embedding)
 
-        overall = overall_compliance_pct(face_presence, gaze, posture, identity_pct, object_clear)
+        overall = overall_compliance_pct(face_presence, gaze, posture, identity_pct)
 
         t = _ALERT_THRESHOLD_PCT
         flagged: list[str] = []
@@ -295,15 +285,12 @@ class _StubPipeline:
             flagged.append("posture")
         if identity_pct is not None and identity_pct < t:
             flagged.append("identity")
-        if object_clear < t:
-            flagged.append("object_clear")
 
         metrics = {
             "face_presence_pct": face_presence,
             "gaze_focus_pct": gaze,
             "posture_compliance_pct": posture,
             "identity_match_pct": identity_pct,
-            "object_clear_pct": object_clear,
             "overall_compliance_pct": overall,
             "alert_threshold_pct": t,
             "flagged_metrics": flagged,
@@ -379,7 +366,6 @@ class _StubPipeline:
                 "spine_lean_ratio": 0.1 if face_ok else None,
                 "guide_status": "ok" if face_ok else "no_pose",
             },
-            "objects": [],
             "frame_size": [w, h] if w and h else None,
             "metrics": metrics,
             "overall_compliance_pct": overall,

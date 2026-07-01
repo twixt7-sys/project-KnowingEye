@@ -51,38 +51,31 @@ def identity_match_pct(
     return 100.0 if match else 0.0
 
 
-def object_clear_pct(max_phone_confidence: float) -> float:
-    return clamp_pct(100.0 * (1.0 - max_phone_confidence))
-
-
 def overall_compliance_pct(
     face_pct: float,
     gaze_pct: float,
     posture_pct: float,
     identity_pct: float | None,
-    object_clear: float,
     weights: dict[str, float] | None = None,
 ) -> float:
     w = weights or {
-        "face": 0.25,
-        "gaze": 0.25,
-        "posture": 0.2,
+        "face": 0.3,
+        "gaze": 0.3,
+        "posture": 0.25,
         "identity": 0.15,
-        "object": 0.15,
     }
-    total_w = w["face"] + w["gaze"] + w["posture"] + w["object"]
+    total_w = w["face"] + w["gaze"] + w["posture"]
     score = (
         face_pct * w["face"]
         + gaze_pct * w["gaze"]
         + posture_pct * w["posture"]
-        + object_clear * w["object"]
     )
     if identity_pct is not None:
         total_w += w["identity"]
         score += identity_pct * w["identity"]
     else:
-        # Redistribute identity weight across other metrics
-        bonus = w["identity"] / 4
-        score += (face_pct + gaze_pct + posture_pct + object_clear) * bonus
+        # Redistribute identity weight across the remaining metrics
+        bonus = w["identity"] / 3
+        score += (face_pct + gaze_pct + posture_pct) * bonus
         total_w += w["identity"]
     return clamp_pct(score / total_w)

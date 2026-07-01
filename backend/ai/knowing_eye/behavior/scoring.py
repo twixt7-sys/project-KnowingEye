@@ -8,13 +8,11 @@ from ai.knowing_eye.behavior.normalize import (
     face_presence_pct,
     gaze_focus_pct,
     identity_match_pct,
-    object_clear_pct,
     overall_compliance_pct,
     posture_compliance_pct,
 )
 from ai.knowing_eye.detection.face_detector import DetectedFace
 from ai.knowing_eye.detection.pose_detector import PoseResult
-from ai.knowing_eye.detection.yolo_detector import YoloDetection
 from ai.knowing_eye.types import (
     Alert,
     AlertSeverity,
@@ -22,7 +20,6 @@ from ai.knowing_eye.types import (
     BehaviorEventType,
     FaceAnalysis,
     MetricScores,
-    ObjectDetection,
     PostureAnalysis,
 )
 
@@ -67,18 +64,10 @@ class BehaviorScorer:
             spine_lean_ratio=pose.spine_lean_ratio,
         )
 
-    def build_objects(self, yolo_dets: list[YoloDetection]) -> list[ObjectDetection]:
-        return [
-            ObjectDetection(label=d.label, confidence=d.confidence, bbox=list(d.bbox))
-            for d in yolo_dets
-            if d.label == "cell_phone"
-        ]
-
     def compute_metrics(
         self,
         face: FaceAnalysis,
         posture: PostureAnalysis,
-        objects: list[ObjectDetection],
         pose_detected: bool,
         identity_match: bool | None,
     ) -> MetricScores:
@@ -97,15 +86,12 @@ class BehaviorScorer:
             self._lean_max,
         )
         ip = identity_match_pct(identity_match, face.identity_distance, self._identity_threshold)
-        phone_conf = max((o.confidence for o in objects), default=0.0)
-        oc = object_clear_pct(phone_conf)
-        overall = overall_compliance_pct(fp, gp, pp, ip, oc, self._metric_weights)
+        overall = overall_compliance_pct(fp, gp, pp, ip, self._metric_weights)
         return MetricScores(
             face_presence_pct=fp,
             gaze_focus_pct=gp,
             posture_compliance_pct=pp,
             identity_match_pct=ip,
-            object_clear_pct=oc,
             overall_compliance_pct=overall,
             alert_threshold_pct=self._alert_threshold_pct,
         )
@@ -114,11 +100,10 @@ class BehaviorScorer:
         self,
         face: FaceAnalysis,
         posture: PostureAnalysis,
-        objects: list[ObjectDetection],
         pose_detected: bool,
         identity_match: bool | None,
     ) -> tuple[MetricScores, list[BehaviorEvent], list[Alert]]:
-        metrics = self.compute_metrics(face, posture, objects, pose_detected, identity_match)
+        metrics = self.compute_metrics(face, posture, pose_detected, identity_match)
         events: list[BehaviorEvent] = []
         alerts: list[Alert] = []
         t = self._alert_threshold_pct
@@ -178,12 +163,6 @@ class BehaviorScorer:
             },
         )
 
-        maybe_flag(
-            BehaviorEventType.OBJECT_DETECTED,
-            metrics.object_clear_pct,
-            {"objects": [o.label for o in objects]},
-        )
-
         # Identity is only scored once a reference has been enrolled for the
         # session (otherwise identity_match_pct is None). A mismatch is a
         # high-severity integrity signal.
@@ -205,7 +184,6 @@ def _alert_message(etype: BehaviorEventType, pct: float) -> str:
         BehaviorEventType.LOOKING_AWAY: f"Head/gaze angle exceeds threshold ({pct:.0f}%)",
         BehaviorEventType.BAD_POSTURE: f"Upper-body posture abnormal ({pct:.0f}%)",
         BehaviorEventType.LEAVING_SEAT: f"Upper body not visible ({pct:.0f}%)",
-        BehaviorEventType.OBJECT_DETECTED: f"Prohibited object detected ({pct:.0f}%)",
         BehaviorEventType.IDENTITY_MISMATCH: (
             f"Different person - face embedding mismatch ({pct:.0f}%)"
         ),

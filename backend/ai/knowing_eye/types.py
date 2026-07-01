@@ -14,7 +14,6 @@ class BehaviorEventType(str, Enum):
     LOOKING_AWAY = "looking_away"
     BAD_POSTURE = "bad_posture"
     LEAVING_SEAT = "leaving_seat"
-    OBJECT_DETECTED = "object_detected"
     IDENTITY_MISMATCH = "identity_mismatch"
     SUSPICIOUS_PATTERN = "suspicious_pattern"
 
@@ -66,7 +65,6 @@ class MetricScores:
     gaze_focus_pct: float
     posture_compliance_pct: float
     identity_match_pct: float | None
-    object_clear_pct: float
     overall_compliance_pct: float
     alert_threshold_pct: float = 80.0
 
@@ -77,7 +75,6 @@ class MetricScores:
             "gaze_focus_pct": self.gaze_focus_pct,
             "posture_compliance_pct": self.posture_compliance_pct,
             "identity_match_pct": self.identity_match_pct,
-            "object_clear_pct": self.object_clear_pct,
             "overall_compliance_pct": self.overall_compliance_pct,
             "alert_threshold_pct": self.alert_threshold_pct,
             "flagged_metrics": flags,
@@ -95,8 +92,6 @@ class MetricScores:
             out.append("posture")
         if self.identity_match_pct is not None and self.identity_match_pct < t:
             out.append("identity")
-        if self.object_clear_pct < t:
-            out.append("object_clear")
         return out
 
 
@@ -143,30 +138,11 @@ class PostureAnalysis:
 
 
 @dataclass
-class ObjectDetection:
-    label: str
-    confidence: float
-    bbox: list[int]
-    bbox_norm: list[float] | None = None
-
-    def to_dict(self) -> dict[str, Any]:
-        out: dict[str, Any] = {
-            "label": self.label,
-            "confidence_pct": round(self.confidence * 100, 1),
-            "bbox": self.bbox,
-        }
-        if self.bbox_norm is not None:
-            out["bbox_norm"] = self.bbox_norm
-        return out
-
-
-@dataclass
 class FrameAnalysisResult:
     session_id: str | None
     timestamp: str
     face: FaceAnalysis
     posture: PostureAnalysis
-    objects: list[ObjectDetection]
     metrics: MetricScores
     events: list[BehaviorEvent]
     alerts: list[Alert]
@@ -185,7 +161,6 @@ class FrameAnalysisResult:
             "frame_index": self.frame_index,
             "face": self.face.to_dict(self.metrics),
             "posture": self.posture.to_dict(self.metrics),
-            "objects": [o.to_dict() for o in self.objects],
             "metrics": self.metrics.to_dict(),
             "overall_compliance_pct": self.metrics.overall_compliance_pct,
             "behavior_score": round(self.behavior_score, 4),

@@ -10,6 +10,7 @@ import {
 
 import { apiClient, formatApiError, type AlertRow, type BehaviorLogRow } from "../core/config/api";
 import { useSessionObserver } from "../features/monitoring/hooks/use-session-observer";
+import { useConfirm } from "../shared/components/common/confirm-dialog";
 import { Button } from "../shared/components/ui/button";
 
 const METRICS = [
@@ -17,12 +18,12 @@ const METRICS = [
   { key: "gaze_focus_pct", label: "Head focus" },
   { key: "posture_compliance_pct", label: "Posture" },
   { key: "identity_match_pct", label: "Identity" },
-  { key: "object_clear_pct", label: "Objects clear" },
 ] as const;
 
 export function SessionMonitor() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const observer = useSessionObserver(sessionId);
+  const confirm = useConfirm();
   const [history, setHistory] = useState<{ logs: BehaviorLogRow[]; alerts: AlertRow[] }>({
     logs: [],
     alerts: [],
@@ -59,7 +60,15 @@ export function SessionMonitor() {
   };
 
   const handleTerminate = async () => {
-    if (!sessionId || !confirm("Terminate this session?")) return;
+    if (!sessionId) return;
+    const confirmed = await confirm({
+      title: "Terminate session?",
+      description:
+        "This ends the live session immediately and logs the examinee out of the exam.",
+      confirmLabel: "Terminate",
+      destructive: true,
+    });
+    if (!confirmed) return;
     setTerminating(true);
     try {
       await apiClient.terminateSession(sessionId);

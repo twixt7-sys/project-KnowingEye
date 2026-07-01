@@ -11,6 +11,7 @@ import { Link } from "react-router";
 import {
   apiClient,
   buildAdminAlertsWsUrl,
+  formatApiError,
   type AlertRow,
   type SessionReportRow,
 } from "../core/config/api";
@@ -58,8 +59,8 @@ export function Monitoring() {
       setSessions(sessionsRes.results);
       setAlerts(alertsRes);
       if (health) setPipelineMode(health.pipeline_mode);
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Failed to load");
+    } catch (e: unknown) {
+      setError(formatApiError(e, "Failed to load"));
     } finally {
       setLoading(false);
     }
@@ -127,8 +128,8 @@ export function Monitoring() {
     try {
       await apiClient.resolveAlert(id);
       setAlerts((prev) => prev.filter((a) => a.id !== id));
-    } catch (e: any) {
-      console.warn(e);
+    } catch (e: unknown) {
+      setError(formatApiError(e, "Failed to resolve alert"));
     }
   };
 

@@ -64,17 +64,6 @@ export function MonitoringVideoOverlay({
       ctx.lineWidth = 1.25;
       ctx.strokeRect(drawX, y * h, bw * w, bh * h);
     }
-
-    for (const obj of analysis?.objects ?? []) {
-      const norm = obj.bbox_norm;
-      if (!norm || norm.length < 4) continue;
-      const [x1, y1, x2, y2] = norm;
-      const bw = x2 - x1;
-      const drawX1 = flipX(x1, bw, mirrored) * w;
-      ctx.strokeStyle = "rgba(239,68,68,0.7)";
-      ctx.lineWidth = 1.25;
-      ctx.strokeRect(drawX1, y1 * h, bw * w, (y2 - y1) * h);
-    }
   }, [analysis, faceCount, mirrored, videoRef]);
 
   useEffect(() => {

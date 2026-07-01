@@ -18,7 +18,6 @@ import {
   UserCheck,
   Eye,
   PersonStanding,
-  Smartphone,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -50,7 +49,6 @@ const DETECTION_PARAMS: {
   { metricKey: "identity_match_pct", flagKey: "identity", label: "Identity match", icon: UserCheck },
   { metricKey: "gaze_focus_pct", flagKey: "gaze_focus", label: "Head facing camera", icon: Eye },
   { metricKey: "posture_compliance_pct", flagKey: "posture", label: "Upper body visible", icon: PersonStanding },
-  { metricKey: "object_clear_pct", flagKey: "object_clear", label: "No prohibited objects", icon: Smartphone },
 ];
 
 type MonitoringDockPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";

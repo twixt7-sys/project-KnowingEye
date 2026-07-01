@@ -117,7 +117,6 @@ export interface FrameMetrics {
   gaze_focus_pct: number;
   posture_compliance_pct: number;
   identity_match_pct: number | null;
-  object_clear_pct: number;
   overall_compliance_pct: number;
   alert_threshold_pct: number;
   flagged_metrics: string[];
@@ -141,13 +140,6 @@ export interface FrameAnalysisPosture {
   posture_compliance_pct?: number;
 }
 
-export interface FrameAnalysisObject {
-  label: string;
-  confidence_pct: number;
-  bbox?: number[];
-  bbox_norm?: number[];
-}
-
 export interface FrameAnalysis {
   session_id: string | null;
   timestamp: string | null;
@@ -155,7 +147,6 @@ export interface FrameAnalysis {
   frame_size?: [number, number] | null;
   face?: FrameAnalysisFace;
   posture?: FrameAnalysisPosture;
-  objects?: FrameAnalysisObject[];
   metrics: FrameMetrics;
   overall_compliance_pct: number;
   behavior_score: number;
@@ -752,10 +743,20 @@ export class ApiError extends Error {
   }
 }
 
-export function formatApiError(err: unknown): string {
-  if (err instanceof ApiError) return err.detail();
-  if (err instanceof Error) return err.message;
-  return "Request failed";
+/**
+ * Normalize any thrown value into a user-facing error string.
+ *
+ * Centralizes error formatting so call sites do not reimplement
+ * `err?.detail?.() ?? err?.message ?? "..."` chains.
+ *
+ * @param err - The caught value (an {@link ApiError}, {@link Error}, or unknown).
+ * @param fallback - Message to use when no specific message can be derived.
+ * @returns A non-empty, human-readable error message.
+ */
+export function formatApiError(err: unknown, fallback = "Request failed"): string {
+  if (err instanceof ApiError) return err.detail() || fallback;
+  if (err instanceof Error) return err.message || fallback;
+  return fallback;
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

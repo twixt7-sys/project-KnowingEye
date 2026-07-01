@@ -160,13 +160,11 @@ class BehaviorTemporalTracker:
                 gaze_focus_pct=0.0,
                 posture_compliance_pct=result.metrics.posture_compliance_pct,
                 identity_match_pct=result.metrics.identity_match_pct,
-                object_clear_pct=result.metrics.object_clear_pct,
                 overall_compliance_pct=overall_compliance_pct(
                     0.0,
                     0.0,
                     result.metrics.posture_compliance_pct,
                     result.metrics.identity_match_pct,
-                    result.metrics.object_clear_pct,
                 ),
                 alert_threshold_pct=result.metrics.alert_threshold_pct,
             )
@@ -176,7 +174,6 @@ class BehaviorTemporalTracker:
             timestamp=result.timestamp,
             face=result.face,
             posture=result.posture,
-            objects=result.objects,
             metrics=metrics,
             events=events,
             alerts=alerts,

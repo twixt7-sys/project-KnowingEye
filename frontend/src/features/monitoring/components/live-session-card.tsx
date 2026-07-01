@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Eye, Loader2, Power } from "lucide-react";
+import { toast } from "sonner";
 
-import { apiClient, type SessionReportRow } from "../../../core/config/api";
+import { apiClient, formatApiError, type SessionReportRow } from "../../../core/config/api";
+import { useConfirm } from "../../../shared/components/common/confirm-dialog";
 import { Button } from "../../../shared/components/ui/button";
 import { useSessionObserver } from "../hooks/use-session-observer";
 
@@ -14,6 +16,7 @@ export function LiveSessionCard({
   onTerminated: () => void;
 }) {
   const observer = useSessionObserver(session.id);
+  const confirm = useConfirm();
   const [terminating, setTerminating] = useState(false);
 
   useEffect(() => {
@@ -26,13 +29,22 @@ export function LiveSessionCard({
   const metrics = observer.analysis?.metrics;
 
   const handleTerminate = async () => {
-    if (!confirm(`Terminate session for ${session.user_full_name || session.user}?`)) return;
+    const confirmed = await confirm({
+      title: "Terminate session?",
+      description: `This will end the active session for ${
+        session.user_full_name || session.user
+      }. They will be logged out of the exam.`,
+      confirmLabel: "Terminate",
+      destructive: true,
+    });
+    if (!confirmed) return;
     setTerminating(true);
     try {
       await apiClient.terminateSession(session.id);
+      toast.success("Session terminated.");
       onTerminated();
     } catch (e) {
-      console.warn(e);
+      toast.error(formatApiError(e));
     } finally {
       setTerminating(false);
     }

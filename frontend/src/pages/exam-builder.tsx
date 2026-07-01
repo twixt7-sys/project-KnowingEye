@@ -7,6 +7,7 @@ import {
   ArrowUp,
   CheckCircle2,
   ClipboardList,
+  Download,
   FileAudio,
   FileImage,
   FileText,
@@ -19,11 +20,13 @@ import {
 
 import {
   apiClient,
+  formatApiError,
   type Exam,
   type PublishReadiness,
   type Question,
   type QuestionAttachment,
 } from "../core/config/api";
+import { useConfirm } from "../shared/components/common/confirm-dialog";
 
 type Tab = "settings" | "questions" | "publish";
 
@@ -57,8 +60,9 @@ const EMPTY_QUESTION: QuestionDraft = {
 
 const CSV_TEMPLATE = `question_text,question_type,options,correct_answer,points
 What is 2 + 2?,multiple_choice,3|4|5,4,1
-The earth is round.,true_false,,true,1
-Define photosynthesis in one sentence.,short_answer,,process by which plants make food,2`;
+Water boils at 100 degrees Celsius at sea level.,true_false,,true,1
+Name the largest planet in our solar system.,short_answer,,Jupiter,2
+"Explain, in your own words, how photosynthesis works.",essay,,"Mentions sunlight, water, and carbon dioxide producing glucose and oxygen",5`;
 
 function toDatetimeLocal(iso?: string | null): string {
   if (!iso) return "";
@@ -89,6 +93,7 @@ function examToForm(exam: Exam): ExamForm {
 export function ExamBuilder() {
   const { examId } = useParams();
   const id = Number(examId);
+  const confirm = useConfirm();
 
   const [tab, setTab] = useState<Tab>("settings");
   const [exam, setExam] = useState<Exam | null>(null);
@@ -108,6 +113,7 @@ export function ExamBuilder() {
   const [attachmentBusy, setAttachmentBusy] = useState(false);
   const [importCsv, setImportCsv] = useState(CSV_TEMPLATE);
   const [importBusy, setImportBusy] = useState(false);
+  const [importErrors, setImportErrors] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     if (!id || Number.isNaN(id)) return;
@@ -124,8 +130,7 @@ export function ExamBuilder() {
       setQuestions(questionList.sort((a, b) => a.order - b.order));
       setReadiness(readinessData);
     } catch (e: unknown) {
-      const err = e as { detail?: () => string; message?: string };
-      setError(err?.detail?.() ?? err?.message ?? "Failed to load exam");
+      setError(formatApiError(e, "Failed to load exam"));
     } finally {
       setLoading(false);
     }
@@ -162,8 +167,8 @@ export function ExamBuilder() {
       setForm(examToForm(updated));
       setMessage("Exam settings saved.");
       await load();
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Could not save settings");
+    } catch (e: unknown) {
+      setError(formatApiError(e, "Could not save settings"));
     } finally {
       setSaving(false);
     }
@@ -198,8 +203,7 @@ export function ExamBuilder() {
       const attachment = await apiClient.uploadQuestionAttachment(exam.id, questionId, file);
       setQuestionAttachments((prev) => [...prev, attachment]);
     } catch (e: unknown) {
-      const err = e as { detail?: () => string; message?: string };
-      setError(err?.detail?.() ?? err?.message ?? "Attachment upload failed");
+      setError(formatApiError(e));
     } finally {
       setAttachmentBusy(false);
     }
@@ -207,14 +211,19 @@ export function ExamBuilder() {
 
   const removeAttachment = async (attachment: QuestionAttachment) => {
     if (!exam || !editingQuestion) return;
-    if (!confirm("Remove this attachment?")) return;
+    const confirmed = await confirm({
+      title: "Remove attachment?",
+      description: "This permanently deletes the attached file from the question.",
+      confirmLabel: "Remove",
+      destructive: true,
+    });
+    if (!confirmed) return;
     setAttachmentBusy(true);
     try {
       await apiClient.deleteQuestionAttachment(exam.id, editingQuestion.id, attachment.id);
       setQuestionAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
     } catch (e: unknown) {
-      const err = e as { detail?: () => string; message?: string };
-      setError(err?.detail?.() ?? err?.message ?? "Could not delete attachment");
+      setError(formatApiError(e));
     } finally {
       setAttachmentBusy(false);
     }
@@ -258,20 +267,27 @@ export function ExamBuilder() {
       setShowQuestionForm(false);
       await load();
       setMessage(editingQuestion ? "Question updated." : "Question added.");
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Could not save question");
+    } catch (e: unknown) {
+      setError(formatApiError(e));
     } finally {
       setSaving(false);
     }
   };
 
   const removeQuestion = async (q: Question) => {
-    if (!exam || !confirm(`Delete question ${q.order}?`)) return;
+    if (!exam) return;
+    const confirmed = await confirm({
+      title: `Delete question ${q.order}?`,
+      description: "This permanently removes the question and its attachments.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
     try {
       await apiClient.deleteQuestion(exam.id, q.id);
       await load();
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Delete failed");
+    } catch (e: unknown) {
+      setError(formatApiError(e));
     }
   };
 
@@ -287,21 +303,57 @@ export function ExamBuilder() {
         ids.map((q) => q.id)
       );
       setQuestions(reordered.sort((a, b) => a.order - b.order));
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Reorder failed");
+    } catch (e: unknown) {
+      setError(formatApiError(e, "Reorder failed"));
+    }
+  };
+
+  const downloadTemplate = () => {
+    const blob = new Blob([CSV_TEMPLATE], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "exam-questions-template.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCsvFile = async (file: File) => {
+    setError(null);
+    setImportErrors([]);
+    try {
+      const text = await file.text();
+      setImportCsv(text);
+      setMessage(`Loaded "${file.name}". Review the rows below, then import.`);
+    } catch {
+      setError("Could not read that file. Please upload a plain .csv file.");
     }
   };
 
   const runImport = async () => {
     if (!exam) return;
-    setImportBusy(true);
     setError(null);
+    setMessage(null);
+    setImportErrors([]);
+    if (!importCsv.trim()) {
+      setImportErrors([
+        "Add at least one question row, or download the template to get started.",
+      ]);
+      return;
+    }
+    setImportBusy(true);
     try {
       const res = await apiClient.importQuestions(exam.id, importCsv);
       setMessage(`Imported ${res.imported} question(s).`);
       await load();
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Import failed");
+    } catch (e: unknown) {
+      const payload = (e as { payload?: { errors?: unknown } } | null)?.payload;
+      const rowErrors = payload?.errors;
+      if (Array.isArray(rowErrors) && rowErrors.length) {
+        setImportErrors(rowErrors.map((m) => String(m)));
+      } else {
+        setError(formatApiError(e, "Import failed"));
+      }
     } finally {
       setImportBusy(false);
     }
@@ -315,8 +367,8 @@ export function ExamBuilder() {
       await apiClient.publishExam(exam.id);
       setMessage("Exam published - examinees can take it during the scheduled window.");
       await load();
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Publish failed");
+    } catch (e: unknown) {
+      setError(formatApiError(e, "Publish failed"));
       const r = await apiClient.getExamReadiness(exam.id);
       setReadiness(r);
     } finally {
@@ -581,24 +633,92 @@ export function ExamBuilder() {
             </div>
 
             {isDraft && (
-              <div className="bg-card border border-border rounded-xl p-6">
-                <h3 className="font-semibold mb-2 flex items-center gap-2">
-                  <Upload className="w-4 h-4" /> Bulk import (CSV)
-                </h3>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Columns: question_text, question_type, options (use | between choices), correct_answer, points.
-                  For true/false or short answer leave options empty.
-                </p>
-                <textarea
-                  rows={6}
-                  value={importCsv}
-                  onChange={(e) => setImportCsv(e.target.value)}
-                  className="field-input font-mono text-xs"
-                />
+              <div className="bg-card border border-border rounded-xl p-6 space-y-4">
+                <div>
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <Upload className="w-4 h-4" /> Bulk import from spreadsheet
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Download the template, fill in one question per row in Excel or Google
+                    Sheets, save as CSV, then upload it (or paste the rows below).
+                  </p>
+                </div>
+
+                <div className="grid gap-3 text-xs sm:grid-cols-2">
+                  <div className="rounded-lg border border-border p-3 space-y-1.5">
+                    <p className="font-medium text-foreground">Columns</p>
+                    <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                      <li><code>question_text</code> — the question (required)</li>
+                      <li><code>question_type</code> — multiple_choice, true_false, short_answer, or essay</li>
+                      <li><code>options</code> — choices separated by <code>|</code> (multiple choice only)</li>
+                      <li><code>correct_answer</code> — must match an option exactly; use true / false for true_false</li>
+                      <li><code>points</code> — whole number (defaults to 1)</li>
+                    </ul>
+                  </div>
+                  <div className="rounded-lg border border-border p-3 space-y-1.5">
+                    <p className="font-medium text-foreground">Tips</p>
+                    <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                      <li>Leave <code>options</code> empty for non–multiple-choice questions.</li>
+                      <li>Wrap any value that contains a comma in double quotes.</li>
+                      <li>Questions are added after existing ones, in row order.</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={downloadTemplate}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-accent text-sm"
+                  >
+                    <Download className="w-4 h-4" /> Download template
+                  </button>
+                  <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-accent text-sm cursor-pointer">
+                    <Upload className="w-4 h-4" /> Upload CSV file
+                    <input
+                      type="file"
+                      accept=".csv,text/csv"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) void handleCsvFile(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <label className="block text-sm">
+                  <span className="mb-1 block text-muted-foreground">
+                    CSV content (edit or paste here)
+                  </span>
+                  <textarea
+                    rows={7}
+                    value={importCsv}
+                    spellCheck={false}
+                    onChange={(e) => setImportCsv(e.target.value)}
+                    className="field-input font-mono text-xs"
+                  />
+                </label>
+
+                {importErrors.length > 0 && (
+                  <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4">
+                    <p className="font-medium text-red-600 mb-2 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" />
+                      Fix {importErrors.length} issue{importErrors.length === 1 ? "" : "s"} and import again
+                    </p>
+                    <ul className="list-disc pl-5 text-sm space-y-1 text-red-600 max-h-48 overflow-y-auto">
+                      {importErrors.map((err, i) => (
+                        <li key={i}>{err}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 <button
                   onClick={runImport}
                   disabled={importBusy}
-                  className="mt-3 px-4 py-2 rounded-lg border border-border hover:bg-accent"
+                  className="px-4 py-2 rounded-lg bg-primary text-primary-foreground disabled:opacity-50"
                 >
                   {importBusy ? "Importing…" : "Import questions"}
                 </button>

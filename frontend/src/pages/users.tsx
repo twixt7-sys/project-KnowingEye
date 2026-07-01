@@ -9,7 +9,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-import { apiClient, type ProfileUser, type Role, type UserStats } from "../core/config/api";
+import { apiClient, formatApiError, type ProfileUser, type Role, type UserStats } from "../core/config/api";
+import { useConfirm } from "../shared/components/common/confirm-dialog";
 import { DataTablePagination } from "../shared/components/common/data-table-pagination";
 import { ScrollableDataTable } from "../shared/components/common/scrollable-data-table";
 import { PageHeader } from "../shared/components/layout/page-header";
@@ -29,6 +30,7 @@ const ROLE_BADGE: Record<Role, string> = {
 const EMPTY_STATS: UserStats = { total: 0, admins: 0, examinees: 0, inactive: 0 };
 
 export function UsersAdmin() {
+  const confirm = useConfirm();
   const [users, setUsers] = useState<ProfileUser[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [stats, setStats] = useState<UserStats>(EMPTY_STATS);
@@ -56,8 +58,8 @@ export function UsersAdmin() {
       setUsers(res.results);
       setTotalCount(res.count);
       setStats(userStats);
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Failed to load users");
+    } catch (e: unknown) {
+      setError(formatApiError(e, "Failed to load users"));
     } finally {
       setLoading(false);
     }
@@ -75,8 +77,8 @@ export function UsersAdmin() {
       setUsers((prev) => prev.map((u) => (u.id === id ? updated : u)));
       const userStats = await apiClient.getUserStats();
       setStats(userStats);
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Action failed");
+    } catch (e: unknown) {
+      setError(formatApiError(e, "Action failed"));
     } finally {
       setActing(null);
     }
@@ -219,14 +221,18 @@ export function UsersAdmin() {
                     <div className="flex items-center justify-end gap-2">
                       <button
                         disabled={acting === u.id}
-                        onClick={() =>
-                          handleAction(u.id, () =>
-                            apiClient.setUserRole(
-                              u.id,
-                              u.role === "ADMIN" ? "EXAMINEE" : "ADMIN"
-                            )
-                          )
-                        }
+                        onClick={async () => {
+                          const nextRole = u.role === "ADMIN" ? "EXAMINEE" : "ADMIN";
+                          const confirmed = await confirm({
+                            title: "Change user role?",
+                            description: `${u.username} will become ${
+                              nextRole === "ADMIN" ? "an admin" : "an examinee"
+                            }. This changes their access across the platform.`,
+                            confirmLabel: "Change role",
+                          });
+                          if (!confirmed) return;
+                          handleAction(u.id, () => apiClient.setUserRole(u.id, nextRole));
+                        }}
                         className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent"
                         title="Toggle role"
                       >
@@ -236,9 +242,16 @@ export function UsersAdmin() {
                       {u.is_active ? (
                         <button
                           disabled={acting === u.id}
-                          onClick={() =>
-                            handleAction(u.id, () => apiClient.deactivateUser(u.id))
-                          }
+                          onClick={async () => {
+                            const confirmed = await confirm({
+                              title: "Deactivate user?",
+                              description: `${u.username} will be unable to sign in until reactivated.`,
+                              confirmLabel: "Deactivate",
+                              destructive: true,
+                            });
+                            if (!confirmed) return;
+                            handleAction(u.id, () => apiClient.deactivateUser(u.id));
+                          }}
                           className="rounded-md bg-rose-500/10 px-2 py-1 text-xs text-rose-700 hover:bg-rose-500/20 dark:text-rose-300"
                         >
                           Deactivate

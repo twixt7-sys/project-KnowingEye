@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Posture guide placeholder.
+  Swap this file to change the alignment outline shown over the webcam preview.
+  Referenced from code as `/branding/posture-silhouette.svg`.
+-->
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 120 160"
+  fill="none"
+  stroke="#ffffff"
+  stroke-width="2"
+  stroke-linejoin="round"
+  stroke-linecap="round"
+>
+  <!-- Head -->
+  <circle cx="60" cy="42" r="22" />
+  <!-- Shoulders / upper body -->
+  <path d="M18 156 C18 116 38 96 60 96 C82 96 102 116 102 156" />
+</svg>

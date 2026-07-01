@@ -3,7 +3,9 @@ import { router } from "./core/router";
 import { AuthProvider } from "./core/providers/auth-provider";
 import { ThemeProvider } from "./core/providers/theme-provider";
 import { QueryProvider } from "./core/providers/query-provider";
+import { ConfirmProvider } from "./shared/components/common/confirm-dialog";
 import { ErrorBoundary } from "./shared/components/common/error-boundary";
+import { Toaster } from "./shared/components/ui/sonner";
 
 export default function App() {
   return (
@@ -11,7 +13,10 @@ export default function App() {
       <ThemeProvider>
         <QueryProvider>
           <AuthProvider>
-            <RouterProvider router={router} />
+            <ConfirmProvider>
+              <RouterProvider router={router} />
+            </ConfirmProvider>
+            <Toaster />
           </AuthProvider>
         </QueryProvider>
       </ThemeProvider>

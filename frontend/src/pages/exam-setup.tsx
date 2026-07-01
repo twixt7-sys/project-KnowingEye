@@ -175,16 +175,14 @@ export function ExamSetup() {
   const postureOk =
     monitoring.analysis?.posture?.detected ||
     (monitoring.analysis?.face?.bbox_norm?.[3] ?? 0) >= 0.15;
-  const objectsOk = (metrics?.object_clear_pct ?? 100) >= 80;
 
   const checklist = useMemo(
     () => [
       { label: "Face detected", ok: faceDetected, hint: "Align your face inside the guide" },
       { label: "Identity enrolled", ok: identityOk, hint: "Reference photo captured securely" },
       { label: "Upper body visible", ok: postureOk, hint: "Shoulders and torso in frame" },
-      { label: "No prohibited objects", ok: objectsOk, hint: "Clear desk and background" },
     ],
-    [faceDetected, identityOk, postureOk, objectsOk]
+    [faceDetected, identityOk, postureOk]
   );
 
   const checklistScore = checklist.filter((c) => c.ok).length;

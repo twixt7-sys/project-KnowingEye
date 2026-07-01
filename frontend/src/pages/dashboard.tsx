@@ -17,6 +17,7 @@ import {
   type Exam,
 } from "../core/config/api";
 import { useDashboard } from "../features/dashboard/hooks/use-dashboard";
+import { useConfirm } from "../shared/components/common/confirm-dialog";
 import { PageHeader } from "../shared/components/layout/page-header";
 import { PageShell } from "../shared/components/layout/page-shell";
 import { SectionPanel } from "../shared/components/layout/section-panel";
@@ -46,6 +47,7 @@ const EMPTY_FORM: CreateExamForm = {
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const { summary, exams, activeSessions, error: loadError, reload } = useDashboard();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -93,6 +95,12 @@ export function Dashboard() {
   };
 
   const publish = async (exam: Exam) => {
+    const confirmed = await confirm({
+      title: "Publish exam?",
+      description: `"${exam.title}" will become available to examinees during its scheduled window.`,
+      confirmLabel: "Publish",
+    });
+    if (!confirmed) return;
     setActionError(null);
     try {
       await apiClient.publishExam(exam.id);
@@ -103,6 +111,13 @@ export function Dashboard() {
   };
 
   const archive = async (exam: Exam) => {
+    const confirmed = await confirm({
+      title: "Archive exam?",
+      description: `"${exam.title}" will no longer accept new attempts.`,
+      confirmLabel: "Archive",
+      destructive: true,
+    });
+    if (!confirmed) return;
     setActionError(null);
     try {
       await apiClient.archiveExam(exam.id);

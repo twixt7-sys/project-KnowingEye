@@ -8,19 +8,17 @@ from typing import Any
 
 import numpy as np
 
-from ai.knowing_eye.behavior.overlay import norm_bbox_xywh, norm_bbox_xyxy, posture_guide_status
+from ai.knowing_eye.behavior.overlay import norm_bbox_xywh, posture_guide_status
 from ai.knowing_eye.behavior.scoring import BehaviorScorer
 from ai.knowing_eye.behavior.temporal import BehaviorTemporalTracker
 from ai.knowing_eye.config import load_config, resolve_path
 from ai.knowing_eye.detection.face_detector import FaceDetector
 from ai.knowing_eye.detection.pose_detector import PoseDetector
-from ai.knowing_eye.detection.yolo_detector import YoloDetector
 from ai.knowing_eye.preprocessing.frame import prepare_frame
 from ai.knowing_eye.recognition.identity import IdentityVerifier
 from ai.knowing_eye.types import (
     FaceAnalysis,
     FrameAnalysisResult,
-    ObjectDetection,
     PostureAnalysis,
     utc_now_iso,
 )
@@ -33,23 +31,16 @@ class BehaviorPipeline:
 
     Model roles (§2.1.4.3):
       * MediaPipe - face landmarks, gaze angles, posture keypoints
-      * YOLOv8 - prohibited object detection (phone, person context)
       * ArcFace (InsightFace) - 512-D CNN embeddings for identity verification
     """
 
     def __init__(self, config_path: str | Path | None = None) -> None:
         self.config = load_config(config_path)
         rec = self.config.get("recognition", {})
-        det = self.config.get("detection", {})
 
         self._face = FaceDetector()
         self._pose = PoseDetector(
             shoulder_tilt_max=rec.get("posture_shoulder_tilt_max", 0.12),
-        )
-        self._yolo = YoloDetector(
-            model_path=det.get("yolo_model", "yolov8n.pt"),
-            confidence=det.get("yolo_confidence", 0.45),
-            target_classes=det.get("yolo_target_classes", [0, 67]),
         )
         pipe = self.config.get("pipeline", {})
         identity_threshold = rec.get(
@@ -99,7 +90,6 @@ class BehaviorPipeline:
 
         faces = self._face.detect(frame)
         pose = self._pose.detect(frame)
-        yolo_dets = self._yolo.detect(frame)
 
         identity_match: bool | None = None
         identity_distance: float | None = None
@@ -130,24 +120,9 @@ class BehaviorPipeline:
                 face_count=len(faces),
             ),
         )
-        objects: list[ObjectDetection] = []
-        for d in self._scorer.build_objects(yolo_dets):
-            bbox_norm = None
-            if d.bbox and len(d.bbox) >= 4:
-                bbox_norm = norm_bbox_xyxy(d.bbox, fw, fh)
-            objects.append(
-                ObjectDetection(
-                    label=d.label,
-                    confidence=d.confidence,
-                    bbox=d.bbox,
-                    bbox_norm=bbox_norm,
-                )
-            )
-
         metrics, events, alerts = self._scorer.score(
             face_analysis,
             posture_analysis,
-            objects,
             pose_detected=pose.detected,
             identity_match=identity_match,
         )
@@ -158,7 +133,6 @@ class BehaviorPipeline:
             timestamp=utc_now_iso(),
             face=face_analysis,
             posture=posture_analysis,
-            objects=objects,
             metrics=metrics,
             events=events,
             alerts=alerts,

@@ -105,8 +105,8 @@ export function Reports() {
           .map(([day, v]) => ({ day, ...v }))
           .sort((a, b) => a.day.localeCompare(b.day))
       );
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Failed to load reports");
+    } catch (e: unknown) {
+      setError(formatApiError(e, "Failed to load reports"));
     }
   };
 
@@ -121,8 +121,8 @@ export function Reports() {
       });
       setSessions(list.results);
       setSessionCount(list.count);
-    } catch (e: any) {
-      setError(e?.detail?.() ?? e?.message ?? "Failed to load session log");
+    } catch (e: unknown) {
+      setError(formatApiError(e, "Failed to load session log"));
     } finally {
       setTableLoading(false);
     }
