@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from features.exams.models import Exam, Question
+from features.exams.models import Department, Exam, Question
 
 User = get_user_model()
 
@@ -31,6 +31,10 @@ class SystemSmokeTests(APITestCase):
             password="TestPass123!",
             role=User.Role.EXAMINEE,
         )
+        self.department = Department.objects.create(
+            name="Smoke Test Department",
+            abbreviation="SMK",
+        )
 
     def test_full_exam_builder_and_reporting_flow(self):
         login = self.client.post(
@@ -44,6 +48,9 @@ class SystemSmokeTests(APITestCase):
         profile = self.client.get("/api/auth/profile/me/")
         self.assertEqual(profile.status_code, status.HTTP_200_OK)
 
+        departments = self.client.get("/api/departments/")
+        self.assertEqual(departments.status_code, status.HTTP_200_OK)
+
         create_exam = self.client.post(
             "/api/exams/",
             {
@@ -51,12 +58,14 @@ class SystemSmokeTests(APITestCase):
                 "description": "Smoke test exam",
                 "duration_minutes": 30,
                 "passing_score": 60,
+                "department_id": self.department.id,
                 "status": "draft",
             },
             format="json",
         )
         self.assertEqual(create_exam.status_code, status.HTTP_201_CREATED)
         exam_id = create_exam.data["id"]
+        self.assertRegex(create_exam.data["exam_code"], r"^SMK-\d{4}-A$")
 
         create_q = self.client.post(
             f"/api/exams/{exam_id}/questions/",

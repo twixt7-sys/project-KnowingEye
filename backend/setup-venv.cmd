@@ -40,7 +40,7 @@ echo Done. Activate with:  venv\Scripts\activate.bat
 echo Then run:            python manage.py migrate
 echo Or from repo root:   start-dev.cmd
 echo.
-pause
+if /i not "%~1"=="--nopause" pause
 exit /b 0
 
 :fail
@@ -48,5 +48,5 @@ echo.
 echo pip install failed. Try each stage manually with verbose output:
 echo   venv\Scripts\python.exe -m pip install -v -r requirements-core.txt
 echo.
-pause
+if /i not "%~1"=="--nopause" pause
 exit /b 1

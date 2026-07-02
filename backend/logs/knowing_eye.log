@@ -3302,3 +3302,143 @@ ValueError: invalid literal for int() with base 10: 'true'
 2026-06-28 10:59:19,467 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
 2026-06-28 10:59:19,468 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
 2026-06-28 10:59:19,469 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-07-02 06:55:12,581 [WARNING] knowing_eye.api.errors: API error [validation_error] RegisterView.POST status=400 detail={'avatar': [ErrorDetail(string='Upload a valid image. The file you uploaded was either not an image or a corrupted image.', code='invalid_image')]}
+2026-07-02 06:55:12,590 [WARNING] django.request: Bad Request: /api/auth/register/
+2026-07-02 06:55:17,473 [WARNING] knowing_eye.api.errors: API error [validation_error] RegisterView.POST status=400 detail={'avatar': [ErrorDetail(string='Upload a valid image. The file you uploaded was either not an image or a corrupted image.', code='invalid_image')]}
+2026-07-02 06:55:17,474 [WARNING] django.request: Bad Request: /api/auth/register/
+2026-07-02 06:55:31,063 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.PATCH status=400 detail={'department_id': [ErrorDetail(string='Department cannot be changed after creation.', code='invalid')]}
+2026-07-02 06:55:31,064 [WARNING] django.request: Bad Request: /api/exams/1/
+2026-07-02 06:55:34,682 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'department_id': [ErrorDetail(string='Select a department to create an exam.', code='invalid')]}
+2026-07-02 06:55:34,683 [WARNING] django.request: Bad Request: /api/exams/
+2026-07-02 06:55:44,111 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 06:55:44,120 [INFO] knowing_eye.ai.adapter: identity enrolled session=916ee510-840c-409d-9a58-711e91eece70 dims=256 backend=disabled
+2026-07-02 06:55:44,120 [INFO] knowing_eye.monitoring.views: enroll session=916ee510-840c-409d-9a58-711e91eece70 ok=True backend=disabled
+2026-07-02 06:55:46,106 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 06:55:46,109 [INFO] knowing_eye.ai.adapter: identity enrolled session=807b8c28-b3f2-48a4-a146-bef7f9169adf dims=256 backend=disabled
+2026-07-02 06:55:46,109 [INFO] knowing_eye.monitoring.views: enroll session=807b8c28-b3f2-48a4-a146-bef7f9169adf ok=True backend=disabled
+2026-07-02 06:55:49,135 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 06:55:49,137 [INFO] knowing_eye.ai.adapter: identity enrolled session=7f7cddd3-2b26-440d-86c8-e83da02049cb dims=256 backend=disabled
+2026-07-02 06:55:49,137 [INFO] knowing_eye.monitoring.views: enroll session=7f7cddd3-2b26-440d-86c8-e83da02049cb ok=True backend=disabled
+2026-07-02 06:55:51,458 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 06:55:53,664 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 06:55:53,666 [INFO] knowing_eye.ai.adapter: identity enrolled session=36c4bd56-5c38-4c4b-abc2-664a6ac2e167 dims=256 backend=disabled
+2026-07-02 06:55:53,666 [INFO] knowing_eye.monitoring.views: enroll session=36c4bd56-5c38-4c4b-abc2-664a6ac2e167 ok=True backend=disabled
+2026-07-02 06:55:55,628 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 06:55:55,630 [INFO] knowing_eye.ai.adapter: identity enrolled session=e28cb8f5-00ac-45f1-ba87-a1b4fba6c025 dims=256 backend=disabled
+2026-07-02 06:55:55,631 [INFO] knowing_eye.monitoring.views: enroll session=e28cb8f5-00ac-45f1-ba87-a1b4fba6c025 ok=True backend=disabled
+2026-07-02 06:55:57,775 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 06:55:57,777 [INFO] knowing_eye.ai.adapter: identity enrolled session=1a6dffc4-6b05-4863-bd88-7afebcb06d21 dims=256 backend=disabled
+2026-07-02 06:55:57,777 [INFO] knowing_eye.monitoring.views: enroll session=1a6dffc4-6b05-4863-bd88-7afebcb06d21 ok=True backend=disabled
+2026-07-02 06:56:06,639 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-07-02 06:56:23,201 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-07-02 06:56:23,202 [WARNING] django.request: Bad Request: /api/sessions/2cc9d789-01b4-4391-85c2-f6c5cf384390/begin/
+2026-07-02 06:56:26,078 [WARNING] django.request: Bad Request: /api/sessions/1bdeaab9-30bb-450b-8976-f1355107d777/submit/
+2026-07-02 06:56:40,773 [WARNING] django.request: Bad Request: /api/sessions/dbbcc74a-17b8-4ac5-b85f-0532f6cb0b09/begin/
+2026-07-02 06:57:52,017 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-07-02 06:57:52,020 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-07-02 06:57:52,021 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-07-02 06:57:52,024 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-07-02 06:58:29,590 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.PATCH status=400 detail={'department_id': [ErrorDetail(string='Department cannot be changed after creation.', code='invalid')]}
+2026-07-02 06:58:29,593 [WARNING] django.request: Bad Request: /api/exams/1/
+2026-07-02 06:58:32,859 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'department_id': [ErrorDetail(string='Select a department to create an exam.', code='invalid')]}
+2026-07-02 06:58:32,861 [WARNING] django.request: Bad Request: /api/exams/
+2026-07-02 06:58:58,696 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-07-02 06:59:34,727 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.PATCH status=400 detail={'department_id': [ErrorDetail(string='Department cannot be changed after creation.', code='invalid')]}
+2026-07-02 06:59:34,731 [WARNING] django.request: Bad Request: /api/exams/1/
+2026-07-02 06:59:38,597 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'department_id': [ErrorDetail(string='Select a department to create an exam.', code='invalid')]}
+2026-07-02 06:59:38,598 [WARNING] django.request: Bad Request: /api/exams/
+2026-07-02 06:59:49,277 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 06:59:49,285 [INFO] knowing_eye.ai.adapter: identity enrolled session=7a71e47c-0721-4809-9507-7aed50abc6e2 dims=256 backend=disabled
+2026-07-02 06:59:49,285 [INFO] knowing_eye.monitoring.views: enroll session=7a71e47c-0721-4809-9507-7aed50abc6e2 ok=True backend=disabled
+2026-07-02 06:59:51,649 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 06:59:51,651 [INFO] knowing_eye.ai.adapter: identity enrolled session=5a83267d-4fa9-4f89-9184-c03956f7dd12 dims=256 backend=disabled
+2026-07-02 06:59:51,652 [INFO] knowing_eye.monitoring.views: enroll session=5a83267d-4fa9-4f89-9184-c03956f7dd12 ok=True backend=disabled
+2026-07-02 06:59:54,277 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 06:59:54,280 [INFO] knowing_eye.ai.adapter: identity enrolled session=26fc416d-b2ca-4d45-8c15-c727c6c9af8d dims=256 backend=disabled
+2026-07-02 06:59:54,281 [INFO] knowing_eye.monitoring.views: enroll session=26fc416d-b2ca-4d45-8c15-c727c6c9af8d ok=True backend=disabled
+2026-07-02 06:59:56,513 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 06:59:59,032 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 06:59:59,033 [INFO] knowing_eye.ai.adapter: identity enrolled session=f64c73df-074d-4422-8137-aad521188fee dims=256 backend=disabled
+2026-07-02 06:59:59,034 [INFO] knowing_eye.monitoring.views: enroll session=f64c73df-074d-4422-8137-aad521188fee ok=True backend=disabled
+2026-07-02 07:00:01,389 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:00:01,392 [INFO] knowing_eye.ai.adapter: identity enrolled session=a496b518-0826-4339-ac6d-235ef29f4bdc dims=256 backend=disabled
+2026-07-02 07:00:01,392 [INFO] knowing_eye.monitoring.views: enroll session=a496b518-0826-4339-ac6d-235ef29f4bdc ok=True backend=disabled
+2026-07-02 07:00:03,656 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:00:03,659 [INFO] knowing_eye.ai.adapter: identity enrolled session=1e8dd146-8e1c-4f7d-abbf-c373a366d7d8 dims=256 backend=disabled
+2026-07-02 07:00:03,660 [INFO] knowing_eye.monitoring.views: enroll session=1e8dd146-8e1c-4f7d-abbf-c373a366d7d8 ok=True backend=disabled
+2026-07-02 07:00:11,581 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-07-02 07:00:23,497 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-07-02 07:00:23,498 [WARNING] django.request: Bad Request: /api/sessions/fc8cfb38-4e32-4aed-a259-d1116a6cacdf/begin/
+2026-07-02 07:00:25,619 [WARNING] django.request: Bad Request: /api/sessions/1682fb2c-8d30-44aa-9aee-78cb60475eec/submit/
+2026-07-02 07:00:37,428 [WARNING] django.request: Bad Request: /api/sessions/469d1ebd-9429-44de-8e60-6f0243edb322/begin/
+2026-07-02 07:05:39,746 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'department_id': [ErrorDetail(string='Select a department to create an exam.', code='invalid')]}
+2026-07-02 07:05:39,751 [WARNING] django.request: Bad Request: /api/exams/
+2026-07-02 07:05:39,755 [WARNING] knowing_eye.api.errors: API error [validation_error] _DummyView.GET status=400 detail={'field': [ErrorDetail(string='bad', code='invalid')]}
+2026-07-02 07:14:28,731 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.PATCH status=400 detail={'department_id': [ErrorDetail(string='Department cannot be changed after creation.', code='invalid')]}
+2026-07-02 07:14:28,739 [WARNING] django.request: Bad Request: /api/exams/1/
+2026-07-02 07:14:36,367 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'department_id': [ErrorDetail(string='Select a department to create an exam.', code='invalid')]}
+2026-07-02 07:14:36,368 [WARNING] django.request: Bad Request: /api/exams/
+2026-07-02 07:14:58,990 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:14:59,017 [INFO] knowing_eye.ai.adapter: identity enrolled session=f541aa03-6eac-4dd4-babe-cae29c2c2f0e dims=256 backend=disabled
+2026-07-02 07:14:59,019 [INFO] knowing_eye.monitoring.views: enroll session=f541aa03-6eac-4dd4-babe-cae29c2c2f0e ok=True backend=disabled
+2026-07-02 07:15:03,646 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:15:03,649 [INFO] knowing_eye.ai.adapter: identity enrolled session=d96bffa6-03b8-474f-9e69-88636263fe76 dims=256 backend=disabled
+2026-07-02 07:15:03,649 [INFO] knowing_eye.monitoring.views: enroll session=d96bffa6-03b8-474f-9e69-88636263fe76 ok=True backend=disabled
+2026-07-02 07:15:11,738 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:15:11,742 [INFO] knowing_eye.ai.adapter: identity enrolled session=81b583bc-c759-4e13-aa48-ff8f15f735cc dims=256 backend=disabled
+2026-07-02 07:15:11,743 [INFO] knowing_eye.monitoring.views: enroll session=81b583bc-c759-4e13-aa48-ff8f15f735cc ok=True backend=disabled
+2026-07-02 07:15:16,860 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:15:25,475 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:15:25,482 [INFO] knowing_eye.ai.adapter: identity enrolled session=148a6b3d-89e7-40a5-b340-272c26a1c956 dims=256 backend=disabled
+2026-07-02 07:15:25,487 [INFO] knowing_eye.monitoring.views: enroll session=148a6b3d-89e7-40a5-b340-272c26a1c956 ok=True backend=disabled
+2026-07-02 07:15:32,798 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:15:32,801 [INFO] knowing_eye.ai.adapter: identity enrolled session=09725865-3b3a-488f-85f2-dd2f378ce6d6 dims=256 backend=disabled
+2026-07-02 07:15:32,802 [INFO] knowing_eye.monitoring.views: enroll session=09725865-3b3a-488f-85f2-dd2f378ce6d6 ok=True backend=disabled
+2026-07-02 07:15:37,753 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:15:37,756 [INFO] knowing_eye.ai.adapter: identity enrolled session=3b427a90-2fc8-4933-80df-4f7a6f725d62 dims=256 backend=disabled
+2026-07-02 07:15:37,757 [INFO] knowing_eye.monitoring.views: enroll session=3b427a90-2fc8-4933-80df-4f7a6f725d62 ok=True backend=disabled
+2026-07-02 07:15:51,228 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-07-02 07:16:04,372 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-07-02 07:16:04,373 [WARNING] django.request: Bad Request: /api/sessions/2bef3442-3780-446a-9259-6f9af1cef380/begin/
+2026-07-02 07:16:07,392 [WARNING] django.request: Bad Request: /api/sessions/5d390f0c-15dd-41c2-ac18-d3593aa5e4f9/submit/
+2026-07-02 07:16:27,244 [WARNING] django.request: Bad Request: /api/sessions/811873d9-358b-41d2-bd72-cc529faec772/begin/
+2026-07-02 07:16:32,626 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'department_id': [ErrorDetail(string='Select a department to create an exam.', code='invalid')]}
+2026-07-02 07:16:32,627 [WARNING] django.request: Bad Request: /api/exams/
+2026-07-02 07:16:52,326 [WARNING] knowing_eye.api.errors: API error [validation_error] _DummyView.GET status=400 detail={'field': [ErrorDetail(string='bad', code='invalid')]}
+2026-07-02 07:21:07,220 [WARNING] knowing_eye.api.errors: API error [validation_error] RegisterView.POST status=400 detail={'avatar': [ErrorDetail(string='No file was submitted.', code='required')]}
+2026-07-02 07:21:07,236 [WARNING] django.request: Bad Request: /api/auth/register/
+2026-07-02 07:21:20,461 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.PATCH status=400 detail={'department_id': [ErrorDetail(string='Department cannot be changed after creation.', code='invalid')]}
+2026-07-02 07:21:20,462 [WARNING] django.request: Bad Request: /api/exams/1/
+2026-07-02 07:21:24,394 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'department_id': [ErrorDetail(string='Select a department to create an exam.', code='invalid')]}
+2026-07-02 07:21:24,395 [WARNING] django.request: Bad Request: /api/exams/
+2026-07-02 07:21:37,323 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:21:37,336 [INFO] knowing_eye.ai.adapter: identity enrolled session=2c190f54-3e23-4132-8d13-ae434e955fd0 dims=256 backend=disabled
+2026-07-02 07:21:37,337 [INFO] knowing_eye.monitoring.views: enroll session=2c190f54-3e23-4132-8d13-ae434e955fd0 ok=True backend=disabled
+2026-07-02 07:21:39,795 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:21:39,798 [INFO] knowing_eye.ai.adapter: identity enrolled session=c07c711f-a399-4c62-bc9a-9342faa9f4ea dims=256 backend=disabled
+2026-07-02 07:21:39,798 [INFO] knowing_eye.monitoring.views: enroll session=c07c711f-a399-4c62-bc9a-9342faa9f4ea ok=True backend=disabled
+2026-07-02 07:21:42,613 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:21:42,616 [INFO] knowing_eye.ai.adapter: identity enrolled session=99ceed77-631d-4bb1-9013-a3a47aeee061 dims=256 backend=disabled
+2026-07-02 07:21:42,617 [INFO] knowing_eye.monitoring.views: enroll session=99ceed77-631d-4bb1-9013-a3a47aeee061 ok=True backend=disabled
+2026-07-02 07:21:45,220 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:21:47,907 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:21:47,910 [INFO] knowing_eye.ai.adapter: identity enrolled session=0037bda9-cc4f-4e9e-ae91-45ade6f81909 dims=256 backend=disabled
+2026-07-02 07:21:47,910 [INFO] knowing_eye.monitoring.views: enroll session=0037bda9-cc4f-4e9e-ae91-45ade6f81909 ok=True backend=disabled
+2026-07-02 07:21:50,340 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:21:50,344 [INFO] knowing_eye.ai.adapter: identity enrolled session=a4eabe4a-963b-47cc-85df-11b4764841f5 dims=256 backend=disabled
+2026-07-02 07:21:50,345 [INFO] knowing_eye.monitoring.views: enroll session=a4eabe4a-963b-47cc-85df-11b4764841f5 ok=True backend=disabled
+2026-07-02 07:21:53,750 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-07-02 07:21:53,753 [INFO] knowing_eye.ai.adapter: identity enrolled session=a8ecedf5-a166-4a4b-aa04-7397c1bb2e1f dims=256 backend=disabled
+2026-07-02 07:21:53,755 [INFO] knowing_eye.monitoring.views: enroll session=a8ecedf5-a166-4a4b-aa04-7397c1bb2e1f ok=True backend=disabled
+2026-07-02 07:22:03,141 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-07-02 07:22:14,677 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-07-02 07:22:14,677 [WARNING] django.request: Bad Request: /api/sessions/5d0e6826-a643-4d8b-a2d5-15e4e2f53414/begin/
+2026-07-02 07:22:17,274 [WARNING] django.request: Bad Request: /api/sessions/b6f30a5d-be14-42bd-8359-03ecadde0b40/submit/
+2026-07-02 07:22:31,985 [WARNING] django.request: Bad Request: /api/sessions/89798e44-e236-4604-ac03-9c091bb85ba6/begin/
+2026-07-02 07:22:52,228 [WARNING] knowing_eye.api.errors: API error [validation_error] _DummyView.GET status=400 detail={'field': [ErrorDetail(string='bad', code='invalid')]}
+2026-07-02 08:11:36,101 [WARNING] knowing_eye.api.errors: API error [token_not_valid] UserProfileViewSet.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-07-02 08:11:36,166 [WARNING] django.request: Unauthorized: /api/auth/profile/me/
+2026-07-02 08:12:27,699 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-07-02 08:12:27,700 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-07-02 08:12:27,700 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-07-02 08:12:27,703 [CRITICAL] daphne.server: Listen failure: Couldn't listen on 127.0.0.1:8000: [WinError 10048] Only one usage of each socket address (protocol/network address/port) is normally permitted.

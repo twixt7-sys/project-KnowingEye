@@ -5,28 +5,27 @@ set "ROOT=%~dp0"
 set DB_ENGINE=django.db.backends.sqlite3
 set OPENBLAS_NUM_THREADS=1
 set OMP_NUM_THREADS=1
+set MKL_NUM_THREADS=1
+
+set "PY=%ROOT%backend\venv\Scripts\python.exe"
+if not exist "%PY%" (
+  echo [ERROR] Backend venv not found. Run start-setup.cmd first.
+  goto :fail
+)
 
 echo.
-echo === Backend (Django) ===
+echo === Backend (Django: features, core, shared, ai) ===
 cd /d "%ROOT%backend"
-python manage.py test features
-if errorlevel 1 goto :fail
-
-echo.
-echo === AI pipeline (pytest) ===
-cd /d "%ROOT%backend"
-python -m pytest ai/tests/ -q
-if errorlevel 1 goto :fail
-
-echo.
-echo === Backend smoke (API) ===
-cd /d "%ROOT%backend"
-python manage.py test core.tests.test_smoke_api --verbosity 1
+"%PY%" manage.py test features core shared ai --verbosity=1
 if errorlevel 1 goto :fail
 
 echo.
 echo === Frontend (Vitest) ===
 cd /d "%ROOT%frontend"
+if not exist "node_modules\" (
+  echo [ERROR] Frontend node_modules missing. Run start-setup.cmd or npm install.
+  goto :fail
+)
 call npm test
 if errorlevel 1 goto :fail
 

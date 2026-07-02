@@ -10,55 +10,68 @@ os.makedirs(out_dir, exist_ok=True)
 
 NOW = datetime(2026, 6, 1, 9, 0, 0)
 
-users = [
-    {
-        "id": 1,
-        "username": "admin",
-        "email": "admin@knowingeye.test",
-        "first_name": "Admin",
-        "last_name": "User",
-        "role": "ADMIN",
-        "is_active": "True",
-        "created_at": NOW.isoformat(sep=" "),
-        "updated_at": NOW.isoformat(sep=" "),
-        "raw_password": "adminpass",
-    },
-    {
-        "id": 2,
-        "username": "student",
-        "email": "student@knowingeye.test",
-        "first_name": "Sam",
-        "last_name": "Student",
-        "role": "EXAMINEE",
-        "is_active": "True",
-        "created_at": NOW.isoformat(sep=" "),
-        "updated_at": NOW.isoformat(sep=" "),
-        "raw_password": "pass001",
-    },
-    {
-        "id": 3,
-        "username": "student2",
-        "email": "student2@knowingeye.test",
-        "first_name": "Alex",
-        "last_name": "Learner",
-        "role": "EXAMINEE",
-        "is_active": "True",
-        "created_at": NOW.isoformat(sep=" "),
-        "updated_at": NOW.isoformat(sep=" "),
-        "raw_password": "pass002",
-    },
-    {
-        "id": 4,
-        "username": "student3",
-        "email": "student3@knowingeye.test",
-        "first_name": "Jordan",
-        "last_name": "Examinee",
-        "role": "EXAMINEE",
-        "is_active": "True",
-        "created_at": NOW.isoformat(sep=" "),
-        "updated_at": NOW.isoformat(sep=" "),
-        "raw_password": "pass003",
-    },
+ADMIN_ACCOUNTS = [
+    ("admin", "admin@knowingeye.test", "Admin", "User", "adminpass"),
+    ("examiner1", "examiner1@knowingeye.test", "Elena", "Examiner", "examiner1"),
+    ("examiner2", "examiner2@knowingeye.test", "Marcus", "Proctor", "examiner2"),
+    ("examiner3", "examiner3@knowingeye.test", "Priya", "Invigilator", "examiner3"),
+    ("examiner4", "examiner4@knowingeye.test", "James", "Supervisor", "examiner4"),
+]
+
+EXAMINEE_FIRST_NAMES = [
+    "Sam", "Alex", "Jordan", "Taylor", "Casey",
+    "Riley", "Morgan", "Quinn", "Avery", "Blake",
+    "Cameron", "Dakota", "Emery", "Finley", "Harper",
+    "Jamie", "Kendall", "Logan", "Parker", "Reese",
+]
+EXAMINEE_LAST_NAMES = [
+    "Student", "Learner", "Examinee", "Candidate", "Scholar",
+    "Nguyen", "Patel", "Garcia", "Kim", "Johnson",
+    "Williams", "Brown", "Davis", "Martinez", "Anderson",
+    "Thomas", "Jackson", "White", "Harris", "Martin",
+]
+
+users = []
+user_id = 1
+for username, email, first_name, last_name, password in ADMIN_ACCOUNTS:
+    users.append(
+        {
+            "id": user_id,
+            "username": username,
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+            "role": "ADMIN",
+            "is_active": "True",
+            "created_at": NOW.isoformat(sep=" "),
+            "updated_at": NOW.isoformat(sep=" "),
+            "raw_password": password,
+        }
+    )
+    user_id += 1
+
+for idx in range(20):
+    num = idx + 1
+    users.append(
+        {
+            "id": user_id,
+            "username": f"examinee{num:02d}",
+            "email": f"examinee{num:02d}@knowingeye.test",
+            "first_name": EXAMINEE_FIRST_NAMES[idx],
+            "last_name": EXAMINEE_LAST_NAMES[idx],
+            "role": "EXAMINEE",
+            "is_active": "True",
+            "created_at": NOW.isoformat(sep=" "),
+            "updated_at": NOW.isoformat(sep=" "),
+            "raw_password": f"pass{num:03d}",
+        }
+    )
+    user_id += 1
+
+departments = [
+    {"id": 1, "name": "Institute of Information Technology", "abbreviation": "IIT", "is_active": "1", "sort_order": "1"},
+    {"id": 2, "name": "College of Engineering", "abbreviation": "COE", "is_active": "1", "sort_order": "2"},
+    {"id": 3, "name": "College of Business Administration", "abbreviation": "CBA", "is_active": "1", "sort_order": "3"},
 ]
 
 EXAM_BLUEPRINTS = [
@@ -70,6 +83,9 @@ EXAM_BLUEPRINTS = [
         "duration_minutes": 45,
         "passing_score": 60,
         "status": "active",
+        "department_id": 1,
+        "exam_code": "IIT-2026-A",
+        "monitoring_enabled": "True",
         "questions": [
             ("multiple_choice", "Which device is required for this proctored exam?", ["Webcam only", "Microphone only", "Webcam and microphone", "No devices"], "Webcam and microphone"),
             ("true_false", "You may leave the camera view briefly without triggering an alert.", ["True", "False"], "False"),
@@ -91,6 +107,9 @@ EXAM_BLUEPRINTS = [
         "duration_minutes": 30,
         "passing_score": 70,
         "status": "active",
+        "department_id": 1,
+        "exam_code": "IIT-2026-B",
+        "monitoring_enabled": "True",
         "questions": [
             ("multiple_choice", "What is the time complexity of binary search on a sorted array?", ["O(n)", "O(log n)", "O(n log n)", "O(1)"], "O(log n)"),
             ("true_false", "A stack follows FIFO ordering.", ["True", "False"], "False"),
@@ -110,6 +129,9 @@ EXAM_BLUEPRINTS = [
         "duration_minutes": 20,
         "passing_score": 80,
         "status": "active",
+        "department_id": 2,
+        "exam_code": "COE-2026-A",
+        "monitoring_enabled": "False",
         "questions": [
             ("true_false", "Sharing exam questions with classmates during an active session is allowed.", ["True", "False"], "False"),
             ("multiple_choice", "What is plagiarism?", ["Using your own notes", "Presenting others' work as your own", "Studying in a group before the exam", "Asking the instructor for clarification"], "Presenting others' work as your own"),
@@ -126,6 +148,9 @@ EXAM_BLUEPRINTS = [
         "duration_minutes": 40,
         "passing_score": 65,
         "status": "active",
+        "department_id": 2,
+        "exam_code": "COE-2026-B",
+        "monitoring_enabled": "True",
         "questions": [
             ("multiple_choice", "What is the derivative of x²?", ["x", "2x", "x²", "2"], "2x"),
             ("multiple_choice", "Solve for x: 2x + 6 = 14", ["2", "4", "6", "8"], "4"),
@@ -143,6 +168,9 @@ EXAM_BLUEPRINTS = [
         "duration_minutes": 60,
         "passing_score": 70,
         "status": "draft",
+        "department_id": 3,
+        "exam_code": "CBA-2026-A",
+        "monitoring_enabled": "True",
         "questions": [
             ("multiple_choice", "Placeholder question for draft exam.", ["A", "B", "C", "D"], "A"),
         ],
@@ -165,6 +193,9 @@ for blueprint in EXAM_BLUEPRINTS:
             "total_questions": qcount,
             "passing_score": blueprint["passing_score"],
             "status": blueprint["status"],
+            "department_id": blueprint["department_id"],
+            "exam_code": blueprint["exam_code"],
+            "monitoring_enabled": blueprint["monitoring_enabled"],
             "created_by_id": 1,
             "created_at": (NOW + timedelta(days=blueprint["id"])).isoformat(sep=" "),
             "updated_at": (NOW + timedelta(days=blueprint["id"], hours=1)).isoformat(sep=" "),
@@ -187,13 +218,14 @@ for blueprint in EXAM_BLUEPRINTS:
         )
         question_id += 1
 
-# One completed sample session for reporting demos (no in-progress rows to avoid blocking live tests).
+# One completed sample session for reporting demos (examinee03 = user id 8).
 completed_session_id = str(uuid.uuid4())
+sample_examinee_id = 8
 sessions = [
     {
         "id": completed_session_id,
         "exam_id": 3,
-        "user_id": 3,
+        "user_id": sample_examinee_id,
         "started_at": (NOW + timedelta(days=10)).isoformat(sep=" "),
         "submitted_at": (NOW + timedelta(days=10, minutes=18)).isoformat(sep=" "),
         "time_remaining": 120,
@@ -231,8 +263,17 @@ csv_definitions = [
         users,
     ),
     (
+        "departments.csv",
+        ["id", "name", "abbreviation", "is_active", "sort_order"],
+        departments,
+    ),
+    (
         "exams.csv",
-        ["id", "title", "description", "instructions", "duration_minutes", "total_questions", "passing_score", "status", "created_by_id", "created_at", "updated_at"],
+        [
+            "id", "title", "description", "instructions", "duration_minutes", "total_questions",
+            "passing_score", "status", "department_id", "exam_code", "monitoring_enabled",
+            "created_by_id", "created_at", "updated_at",
+        ],
         exams,
     ),
     (
@@ -259,5 +300,8 @@ for fname, headers, rows in csv_definitions:
         for row in rows:
             writer.writerow(row)
 
-print(f"Generated {len(users)} users, {len(exams)} exams, {len(questions)} questions in {out_dir}/")
-print("Demo login: student / pass001  |  admin / adminpass")
+print(
+    f"Generated {len(users)} users ({len(ADMIN_ACCOUNTS)} admin, 20 examinee), "
+    f"{len(departments)} departments, {len(exams)} exams, {len(questions)} questions in {out_dir}/"
+)
+print("Demo logins: admin / adminpass  |  examinee01 / pass001  |  examiner1 / examiner1")

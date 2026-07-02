@@ -4,6 +4,20 @@ All commands assume you are in the `backend/` directory with the virtualenv acti
 
 ## Setup
 
+**Windows (recommended after cloning):** from the repo root, run `start-setup.cmd`.
+It creates the venv, installs dependencies, migrates, seeds, and runs `npm install`.
+
+**Backend only:**
+
+```powershell
+.\setup-venv.cmd
+$env:DB_ENGINE = "django.db.backends.sqlite3"
+python manage.py migrate
+python manage.py seed_db --noinput   # first run only
+```
+
+**Manual pip install (all stages at once):**
+
 ```powershell
 python -m pip install -r requirements.txt
 $env:DJANGO_ENV = "development"
@@ -33,11 +47,35 @@ python manage.py reset_db_sequences   # after manual CSV imports
 
 ## Tests
 
+From repo root (recommended):
+
+```powershell
+.\test-all.cmd
+```
+
+Or manually:
+
 ```powershell
 $env:DB_ENGINE = "django.db.backends.sqlite3"
 $env:OPENBLAS_NUM_THREADS = "1"
-python manage.py test features
+.\venv\Scripts\python.exe manage.py test features core shared ai
+cd ..\frontend
+npm test
 ```
+
+Suites:
+
+* `features.authentication` — JWT, registration (avatar required), profile, password change
+* `features.exams` — CRUD, questions, import, attachments
+* `features.exams` (departments) — department CRUD, exam codes, department FK rules
+* `features.session` — start/begin/submit, setup phase, monitoring bypass
+* `features.monitoring` — REST frame, enroll, identity flow, WebSocket consumers
+* `features.behavior` — logs + alerts persistence
+* `features.reports` — summary, detail, CSV/PDF export, timeseries
+* `core` — API error envelope, cross-feature smoke journey
+* `shared` — validators + test helpers
+* `ai` — production CV pipeline unit tests
+* `frontend` (Vitest) — error boundary, API error parsing, question import template
 
 ## Optional ML stack
 

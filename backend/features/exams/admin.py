@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import reverse
 from django.utils.html import format_html
 
-from .models import Exam, Question
+from .models import Department, Exam, Question
 
 
 class QuestionInline(admin.TabularInline):
@@ -13,12 +13,20 @@ class QuestionInline(admin.TabularInline):
     ordering = ['order']
 
 
+@admin.register(Department)
+class DepartmentAdmin(admin.ModelAdmin):
+    list_display = ("name", "abbreviation", "is_active", "sort_order", "updated_at")
+    list_filter = ("is_active",)
+    search_fields = ("name", "abbreviation")
+    ordering = ("sort_order", "name")
+
+
 @admin.register(Exam)
 class ExamAdmin(admin.ModelAdmin):
     """Admin interface for Exam model."""
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'description', 'instructions')
+            'fields': ('title', 'description', 'instructions', 'department', 'exam_code')
         }),
         ('Configuration', {
             'fields': ('duration_minutes', 'passing_score', 'status')

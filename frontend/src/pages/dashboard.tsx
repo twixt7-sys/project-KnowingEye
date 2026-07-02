@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
   Activity,
@@ -14,6 +14,7 @@ import {
 import {
   apiClient,
   formatApiError,
+  type Department,
   type Exam,
 } from "../core/config/api";
 import { useDashboard } from "../features/dashboard/hooks/use-dashboard";
@@ -24,6 +25,7 @@ import { SectionPanel } from "../shared/components/layout/section-panel";
 import { StatCard } from "../shared/components/layout/stat-card";
 import { ScrollableDataTable } from "../shared/components/common/scrollable-data-table";
 import { Button } from "../shared/components/ui/button";
+import { Checkbox } from "../shared/components/ui/checkbox";
 
 interface CreateExamForm {
   title: string;
@@ -31,8 +33,9 @@ interface CreateExamForm {
   duration_minutes: number;
   passing_score: number;
   instructions?: string;
-  exam_code?: string;
+  department_id: number | "";
   max_attempts: number;
+  monitoring_enabled: boolean;
 }
 
 const EMPTY_FORM: CreateExamForm = {
@@ -41,8 +44,9 @@ const EMPTY_FORM: CreateExamForm = {
   duration_minutes: 120,
   passing_score: 50,
   instructions: "",
-  exam_code: "",
+  department_id: "",
   max_attempts: 1,
+  monitoring_enabled: true,
 };
 
 export function Dashboard() {
@@ -55,8 +59,35 @@ export function Dashboard() {
   const [form, setForm] = useState<CreateExamForm>(EMPTY_FORM);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createBusy, setCreateBusy] = useState(false);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const error = actionError ?? loadError;
+
+  useEffect(() => {
+    if (!showCreate) return;
+    let cancelled = false;
+    setDepartmentsLoading(true);
+    apiClient
+      .listDepartments({ active_only: true })
+      .then((data) => {
+        if (!cancelled) setDepartments(data);
+      })
+      .catch(() => {
+        if (!cancelled) setDepartments([]);
+      })
+      .finally(() => {
+        if (!cancelled) setDepartmentsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showCreate]);
+
+  const selectedDepartment = departments.find((d) => d.id === form.department_id);
+  const codePreview = selectedDepartment
+    ? `${selectedDepartment.abbreviation}-${new Date().getFullYear()}-A`
+    : null;
 
   const filteredExams = useMemo(
     () =>
@@ -72,6 +103,10 @@ export function Dashboard() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.department_id) {
+      setCreateError("Select a department.");
+      return;
+    }
     setCreateError(null);
     setCreateBusy(true);
     try {
@@ -79,10 +114,11 @@ export function Dashboard() {
         title: form.title,
         description: form.description,
         instructions: form.instructions,
-        exam_code: form.exam_code || undefined,
+        department_id: form.department_id,
         duration_minutes: form.duration_minutes,
         passing_score: form.passing_score,
         max_attempts: form.max_attempts,
+        monitoring_enabled: form.monitoring_enabled,
       });
       setForm(EMPTY_FORM);
       setShowCreate(false);
@@ -358,13 +394,42 @@ export function Dashboard() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm">Exam code (optional)</label>
-                <input
-                  value={form.exam_code}
-                  onChange={(e) => setForm({ ...form, exam_code: e.target.value })}
-                  placeholder="ENT-2026-A"
+                <label className="mb-1 block text-sm">Department</label>
+                <select
+                  required
+                  value={form.department_id}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      department_id: e.target.value ? Number(e.target.value) : "",
+                    })
+                  }
                   className="form-field"
-                />
+                  disabled={departmentsLoading}
+                >
+                  <option value="">
+                    {departmentsLoading ? "Loading departments…" : "Select a department"}
+                  </option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name} ({dept.abbreviation})
+                    </option>
+                  ))}
+                </select>
+                {departments.length === 0 && !departmentsLoading && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    No active departments.{" "}
+                    <Link to="/settings" className="text-primary underline">
+                      Add one in Settings
+                    </Link>
+                    .
+                  </p>
+                )}
+                {codePreview && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Exam code will be generated automatically (e.g. {codePreview}).
+                  </p>
+                )}
               </div>
 
               <div>
@@ -423,6 +488,23 @@ export function Dashboard() {
                   className="form-field"
                 />
               </div>
+
+              <label className="flex items-start gap-3 rounded-lg border border-border/70 bg-muted/20 p-4 cursor-pointer">
+                <Checkbox
+                  checked={form.monitoring_enabled}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, monitoring_enabled: checked === true })
+                  }
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="block text-sm font-medium">Camera monitoring</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Require webcam proctoring during the exam. Turn off for unmonitored practice or
+                    low-stakes assessments.
+                  </span>
+                </span>
+              </label>
 
               {createError && <p className="text-sm text-red-500">{createError}</p>}
 

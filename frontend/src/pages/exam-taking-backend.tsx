@@ -217,8 +217,10 @@ export function ExamTakingWithBackend() {
     sessionId: session?.id,
     intervalMs: 1000,
   });
+  const monitoringEnabled = session?.exam?.monitoring_enabled !== false;
   const webcamActive =
-    monitoring.status === "live" || monitoring.status === "fallback-rest";
+    monitoringEnabled &&
+    (monitoring.status === "live" || monitoring.status === "fallback-rest");
 
   // Load in-progress session (must complete setup first)
   useEffect(() => {
@@ -299,19 +301,19 @@ export function ExamTakingWithBackend() {
 
   // Start monitoring as soon as the session is ready.
   useEffect(() => {
-    if (!session?.id) return;
+    if (!session?.id || !monitoringEnabled) return;
     monitoring.start();
     return () => monitoring.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.id]);
+  }, [session?.id, monitoringEnabled]);
 
   // Surface any alerts coming from the monitoring hook to the UI banner.
   useEffect(() => {
-    if (!monitoring.alerts.length) return;
+    if (!monitoringEnabled || !monitoring.alerts.length) return;
     setBehaviorAlerts(
       monitoring.alerts.slice(0, 3).map((a) => a.message || "Compliance alert")
     );
-  }, [monitoring.alerts]);
+  }, [monitoringEnabled, monitoring.alerts]);
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -439,6 +441,7 @@ export function ExamTakingWithBackend() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
+              {monitoringEnabled && (
               <div
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
                   webcamActive
@@ -451,7 +454,8 @@ export function ExamTakingWithBackend() {
                   {webcamActive ? "Monitoring Active" : "Camera Offline"}
                 </span>
               </div>
-              {behaviorAlerts.length > 0 && (
+              )}
+              {monitoringEnabled && behaviorAlerts.length > 0 && (
                 <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400">
                   <AlertTriangle className="w-5 h-5" />
                   <span className="text-sm font-medium">
@@ -606,6 +610,7 @@ export function ExamTakingWithBackend() {
       </div>
 
       {/* Floating monitoring feed - repositionable, video + metrics side by side */}
+      {monitoringEnabled && (
       <div
         className={`fixed z-40 max-w-[calc(100vw-2rem)] ${dockLayout.className} ${
           feedOpen ? "w-[min(520px,calc(100vw-2rem))]" : "w-72"
@@ -753,6 +758,7 @@ export function ExamTakingWithBackend() {
           )}
         </div>
       </div>
+      )}
 
       {/* Submit Modal */}
       {showSubmitModal && (

@@ -59,6 +59,9 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, label="Confirm Password")
     email = serializers.EmailField()
+    first_name = serializers.CharField(required=True, allow_blank=False, trim_whitespace=True)
+    last_name = serializers.CharField(required=True, allow_blank=False, trim_whitespace=True)
+    avatar = serializers.ImageField(required=True)
 
     class Meta:
         model = User
@@ -69,7 +72,18 @@ class RegisterSerializer(serializers.ModelSerializer):
             "last_name",
             "password",
             "password2",
+            "avatar",
         ]
+
+    def validate_avatar(self, value):
+        content_type = (getattr(value, "content_type", "") or "").split(";")[0].strip().lower()
+        allowed = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+        if content_type and content_type not in allowed:
+            raise serializers.ValidationError("Upload a JPEG, PNG, GIF, or WebP image.")
+        size = getattr(value, "size", 0) or 0
+        if size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("Profile photo must be 5 MB or smaller.")
+        return value
 
     def validate(self, data):
         if data["password"] != data.pop("password2"):
@@ -87,14 +101,18 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        return User.objects.create_user(
+        avatar = validated_data.pop("avatar")
+        user = User.objects.create_user(
             username=validated_data["username"],
             email=validated_data["email"],
-            first_name=validated_data.get("first_name", ""),
-            last_name=validated_data.get("last_name", ""),
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"],
             password=validated_data["password"],
             role=User.Role.EXAMINEE,
         )
+        user.avatar = avatar
+        user.save(update_fields=["avatar"])
+        return user
 
 
 class PasswordChangeSerializer(serializers.Serializer):

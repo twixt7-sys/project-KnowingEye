@@ -38,12 +38,24 @@ export interface ProfileUser extends AuthUser {
   updated_at: string;
 }
 
+export interface Department {
+  id: number;
+  name: string;
+  abbreviation: string;
+  is_active?: boolean;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Exam {
   id: number;
   title: string;
   description: string;
   instructions?: string;
   exam_code?: string | null;
+  department?: Department | null;
+  department_id?: number;
   duration_minutes: number;
   total_questions: number;
   passing_score: number;
@@ -51,6 +63,7 @@ export interface Exam {
   available_from?: string | null;
   available_until?: string | null;
   max_attempts?: number;
+  monitoring_enabled?: boolean;
   is_open?: boolean;
   created_at: string;
   updated_at?: string;
@@ -362,13 +375,22 @@ class ApiClient {
     email: string;
     password: string;
     password2: string;
-    first_name?: string;
-    last_name?: string;
+    first_name: string;
+    last_name: string;
+    avatar: File;
     role?: Role;
   }) {
+    const form = new FormData();
+    form.append("username", userData.username);
+    form.append("email", userData.email);
+    form.append("password", userData.password);
+    form.append("password2", userData.password2);
+    form.append("first_name", userData.first_name);
+    form.append("last_name", userData.last_name);
+    form.append("avatar", userData.avatar);
     return this.request<{ message: string; user: AuthUser }>("/auth/register/", {
       method: "POST",
-      body: JSON.stringify(userData),
+      body: form,
     });
   }
 
@@ -439,6 +461,33 @@ class ApiClient {
       method: "POST",
       body: JSON.stringify({ role }),
     });
+  }
+
+  // ----- Departments -----
+  async listDepartments(params?: { active_only?: boolean }) {
+    const qs = params?.active_only ? "?active_only=1" : "";
+    const data = await this.request<{ results?: Department[]; count?: number } | Department[]>(
+      `/departments/${qs}`
+    );
+    return Array.isArray(data) ? data : data.results ?? [];
+  }
+
+  async createDepartment(payload: Pick<Department, "name" | "abbreviation"> & Partial<Department>) {
+    return this.request<Department>("/departments/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateDepartment(id: number, payload: Partial<Department>) {
+    return this.request<Department>(`/departments/${id}/`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteDepartment(id: number) {
+    return this.request<void>(`/departments/${id}/`, { method: "DELETE" });
   }
 
   // ----- Exams -----

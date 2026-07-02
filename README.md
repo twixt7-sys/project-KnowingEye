@@ -29,10 +29,23 @@ project-KnowingEye/
 ├── docs/                    Architecture, deployment, IEEE / UTAUT testing (Knowing Eye)
 ├── misc/                    Archived artifacts & dead code (see misc/README.md)
 ├── REPOSITORY_GUIDE.md      Contributor map - start here if new to the repo
+├── start-setup.cmd          One-time setup after cloning (Windows)
 └── start-dev.cmd            One-click dev bootstrap (Windows)
 ```
 
 ## Quick start (Windows)
+
+### First time (after cloning)
+
+Double-click `start-setup.cmd` at the repo root. It will:
+
+1. Create `backend/venv/` and install Python dependencies (including the CV stack)
+2. Run database migrations and seed demo data
+3. Run `npm install` in `frontend/` and create `.env.local` if missing
+
+This can take several minutes on first run while large packages (OpenCV, etc.) download.
+
+### Every day
 
 Double-click `start-dev.cmd` at the repo root. This boots:
 
@@ -47,6 +60,8 @@ Double-click `start-dev.cmd` at the repo root. This boots:
 cd backend
 .\setup-venv.cmd
 ```
+
+Or from the repo root: `.\start-setup.cmd` (also migrates, seeds, and installs the frontend).
 
 ```powershell
 # --- 1. Backend ---

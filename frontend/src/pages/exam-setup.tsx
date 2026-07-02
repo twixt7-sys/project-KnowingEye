@@ -97,16 +97,32 @@ export function ExamSetup() {
   const webcamLive =
     monitoring.status === "live" || monitoring.status === "fallback-rest";
 
+  const monitoringEnabled = exam?.monitoring_enabled !== false;
+
   useEffect(() => {
     if (!id || Number.isNaN(id)) return;
     (async () => {
       setLoading(true);
       try {
-        const [examData, sess] = await Promise.all([
-          apiClient.getExam(id),
-          apiClient.startExamSession(id),
-        ]);
+        const examData = await apiClient.getExam(id);
         setExam(examData);
+
+        if (examData.monitoring_enabled === false) {
+          const inProgress = await apiClient.listSessions({
+            exam: id,
+            status: "in_progress",
+          });
+          if (inProgress[0]) {
+            navigate(`/examinee/exam/${id}`, {
+              replace: true,
+              state: { session: inProgress[0] },
+            });
+            return;
+          }
+          return;
+        }
+
+        const sess = await apiClient.startExamSession(id);
         if (sess.status === "in_progress") {
           navigate(`/examinee/exam/${id}`, { replace: true, state: { session: sess } });
           return;
@@ -189,6 +205,20 @@ export function ExamSetup() {
   const progressValue = ((stepIndex(step) + 1) / STEPS.length) * 100;
 
   const handleBegin = async () => {
+    if (!monitoringEnabled) {
+      setBeginning(true);
+      setError(null);
+      try {
+        const updated = await apiClient.startExamSession(id);
+        navigate(`/examinee/exam/${id}`, { state: { session: updated } });
+      } catch (e) {
+        setError(formatApiError(e));
+      } finally {
+        setBeginning(false);
+      }
+      return;
+    }
+
     if (!session) return;
     setBeginning(true);
     setError(null);
@@ -221,12 +251,14 @@ export function ExamSetup() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 text-slate-200">
         <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
-        <p className="text-sm text-slate-400">Initializing proctoring environment…</p>
+        <p className="text-sm text-slate-400">
+          {monitoringEnabled ? "Initializing proctoring environment…" : "Loading exam…"}
+        </p>
       </div>
     );
   }
 
-  if (error && !session) {
+  if (error && !session && monitoringEnabled) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950">
         <Card className="max-w-md w-full border-destructive/30 bg-slate-900/80 backdrop-blur">
@@ -254,14 +286,16 @@ export function ExamSetup() {
           <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-emerald-400/80 mb-2">
-                Proctoring setup
+                {monitoringEnabled ? "Proctoring setup" : "Exam briefing"}
               </p>
               <h1 className="text-3xl font-bold tracking-tight">{exam?.title ?? "Exam setup"}</h1>
               <p className="text-slate-400 text-sm mt-1 max-w-xl">
-                Secure your session with identity verification and environment checks before the
-                timed exam begins.
+                {monitoringEnabled
+                  ? "Secure your session with identity verification and environment checks before the timed exam begins."
+                  : "Review the instructions below, then start when you are ready. This exam does not use camera monitoring."}
               </p>
             </div>
+            {monitoringEnabled && (
             <Badge variant={statusBadge.variant} className="mt-1">
               {webcamLive && (
                 <span className="relative flex h-2 w-2">
@@ -271,8 +305,11 @@ export function ExamSetup() {
               )}
               {statusBadge.label}
             </Badge>
+            )}
           </div>
 
+          {monitoringEnabled && (
+          <>
           <Progress value={progressValue} className="h-1.5 bg-slate-800" />
 
           <ol className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -305,6 +342,8 @@ export function ExamSetup() {
               );
             })}
           </ol>
+          </>
+          )}
         </header>
 
         {error && (
@@ -314,7 +353,58 @@ export function ExamSetup() {
           </div>
         )}
 
-        {step === "instructions" && (
+        {!monitoringEnabled && exam && (
+          <Card className="border-slate-700/60 bg-slate-900/70 backdrop-blur shadow-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                Before you begin
+              </CardTitle>
+              <CardDescription className="text-slate-400">
+                This is an unmonitored exam — no webcam or identity check is required.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {exam.instructions?.trim() ? (
+                <p className="text-sm text-slate-300 whitespace-pre-wrap">{exam.instructions}</p>
+              ) : (
+                <ul className="grid sm:grid-cols-2 gap-3 text-sm">
+                  {[
+                    "Read each question carefully before answering.",
+                    "Manage your time — the timer starts when you begin.",
+                    "You may flag questions to revisit before submitting.",
+                    `Duration: ${exam.duration_minutes} minutes.`,
+                  ].map((text) => (
+                    <li
+                      key={text}
+                      className="flex items-start gap-2 rounded-md border border-slate-700/50 bg-slate-800/40 px-3 py-2.5 text-slate-300"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      {text}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Button
+                size="lg"
+                className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500"
+                disabled={beginning}
+                onClick={() => void handleBegin()}
+              >
+                {beginning ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Starting exam…
+                  </>
+                ) : (
+                  "Begin exam"
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {monitoringEnabled && step === "instructions" && (
           <Card className="border-slate-700/60 bg-slate-900/70 backdrop-blur shadow-2xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -353,7 +443,7 @@ export function ExamSetup() {
           </Card>
         )}
 
-        {(step === "camera" || step === "enroll" || step === "ready") && (
+        {monitoringEnabled && (step === "camera" || step === "enroll" || step === "ready") && (
           <div className="grid gap-6 lg:grid-cols-5">
             <Card className="lg:col-span-3 border-slate-700/60 bg-slate-900/70 backdrop-blur shadow-2xl overflow-hidden">
               <CardHeader className="pb-3">

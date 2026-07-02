@@ -13,7 +13,7 @@ from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from .dto import ExamLifecycleResult
-from .models import Exam, Question
+from .models import Department, Exam, Question
 
 User = get_user_model()
 
@@ -548,6 +548,35 @@ def import_questions(
             created.append(serializer.save(exam=exam))
     exam.update_question_count()
     return created
+
+
+def _next_exam_code_suffix(current: str | None) -> str:
+    """Return the next alphabetic suffix (A, B, …, Z, AA, AB, …)."""
+    if not current:
+        return "A"
+    chars = list(current.upper())
+    index = len(chars) - 1
+    while index >= 0:
+        if chars[index] != "Z":
+            chars[index] = chr(ord(chars[index]) + 1)
+            return "".join(chars)
+        chars[index] = "A"
+        index -= 1
+    return "A" + "".join(chars)
+
+
+def generate_exam_code(department: Department, year: int | None = None) -> str:
+    """Build the next unique exam code for a department and calendar year."""
+    year = year or timezone.now().year
+    prefix = f"{department.abbreviation.upper()}-{year}-"
+    last_code = (
+        Exam.objects.filter(exam_code__startswith=prefix)
+        .order_by("-exam_code")
+        .values_list("exam_code", flat=True)
+        .first()
+    )
+    suffix = _next_exam_code_suffix(last_code[len(prefix) :] if last_code else None)
+    return f"{prefix}{suffix}"
 
 
 def attach_creator(exam: Exam, user) -> None:

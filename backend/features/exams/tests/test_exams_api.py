@@ -3,7 +3,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from features.exams.models import Exam, Question, QuestionAttachment
+from features.exams.models import Department, Exam, Question, QuestionAttachment
 
 User = get_user_model()
 
@@ -23,6 +23,10 @@ class ExamsAPITests(APITestCase):
             role=User.Role.ADMIN,
         )
         self.client.force_authenticate(user=self.admin)
+        self.department = Department.objects.create(
+            name="Institute of Information Technology",
+            abbreviation="IIT",
+        )
         self.exam = Exam.objects.create(
             title="Sample Exam",
             description="Test",
@@ -54,12 +58,14 @@ class ExamsAPITests(APITestCase):
                 "description": "Created in test",
                 "duration_minutes": 45,
                 "passing_score": 70,
+                "department_id": self.department.id,
                 "status": "draft",
             },
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["title"], "New Exam")
+        self.assertIsNotNone(response.data["exam_code"])
 
     def test_create_question_via_nested_route(self):
         response = self.client.post(

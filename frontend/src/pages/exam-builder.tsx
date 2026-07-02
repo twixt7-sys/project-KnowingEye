@@ -26,7 +26,14 @@ import {
   type Question,
   type QuestionAttachment,
 } from "../core/config/api";
+import {
+  CSV_TEMPLATE,
+  downloadImportTemplateCsv,
+  downloadImportTemplateXlsx,
+  readImportFileAsCsv,
+} from "../features/exams/lib/question-import-template";
 import { useConfirm } from "../shared/components/common/confirm-dialog";
+import { Checkbox } from "../shared/components/ui/checkbox";
 
 type Tab = "settings" | "questions" | "publish";
 
@@ -34,10 +41,10 @@ type ExamForm = {
   title: string;
   description: string;
   instructions: string;
-  exam_code: string;
   duration_minutes: number;
   passing_score: number;
   max_attempts: number;
+  monitoring_enabled: boolean;
   available_from: string;
   available_until: string;
 };
@@ -58,12 +65,6 @@ const EMPTY_QUESTION: QuestionDraft = {
   points: 1,
 };
 
-const CSV_TEMPLATE = `question_text,question_type,options,correct_answer,points
-What is 2 + 2?,multiple_choice,3|4|5,4,1
-Water boils at 100 degrees Celsius at sea level.,true_false,,true,1
-Name the largest planet in our solar system.,short_answer,,Jupiter,2
-"Explain, in your own words, how photosynthesis works.",essay,,"Mentions sunlight, water, and carbon dioxide producing glucose and oxygen",5`;
-
 function toDatetimeLocal(iso?: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -81,10 +82,10 @@ function examToForm(exam: Exam): ExamForm {
     title: exam.title,
     description: exam.description ?? "",
     instructions: exam.instructions ?? "",
-    exam_code: exam.exam_code ?? "",
     duration_minutes: exam.duration_minutes,
     passing_score: exam.passing_score,
     max_attempts: exam.max_attempts ?? 1,
+    monitoring_enabled: exam.monitoring_enabled !== false,
     available_from: toDatetimeLocal(exam.available_from),
     available_until: toDatetimeLocal(exam.available_until),
   };
@@ -156,10 +157,10 @@ export function ExamBuilder() {
         title: form.title,
         description: form.description,
         instructions: form.instructions,
-        exam_code: form.exam_code || null,
         duration_minutes: form.duration_minutes,
         passing_score: form.passing_score,
         max_attempts: form.max_attempts,
+        monitoring_enabled: form.monitoring_enabled,
         available_from: toIsoOrNull(form.available_from),
         available_until: toIsoOrNull(form.available_until),
       });
@@ -308,25 +309,19 @@ export function ExamBuilder() {
     }
   };
 
-  const downloadTemplate = () => {
-    const blob = new Blob([CSV_TEMPLATE], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "exam-questions-template.csv";
-    anchor.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleCsvFile = async (file: File) => {
+  const handleImportFile = async (file: File) => {
     setError(null);
     setImportErrors([]);
     try {
-      const text = await file.text();
+      const text = await readImportFileAsCsv(file);
       setImportCsv(text);
       setMessage(`Loaded "${file.name}". Review the rows below, then import.`);
-    } catch {
-      setError("Could not read that file. Please upload a plain .csv file.");
+    } catch (e: unknown) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Could not read that file. Upload the worksheet (.xlsx) or a .csv file."
+      );
     }
   };
 
@@ -473,14 +468,30 @@ export function ExamBuilder() {
                   disabled={!isDraft}
                 />
               </Field>
-              <Field label="Exam code (optional)">
+              <Field label="Department">
                 <input
-                  value={form.exam_code}
-                  onChange={(e) => setForm({ ...form, exam_code: e.target.value })}
-                  placeholder="ENT-2026-A"
-                  className="field-input"
-                  disabled={!isDraft}
+                  value={
+                    exam.department
+                      ? `${exam.department.name} (${exam.department.abbreviation})`
+                      : "Not assigned"
+                  }
+                  className="field-input bg-muted/40"
+                  disabled
+                  readOnly
                 />
+              </Field>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <Field label="Exam code">
+                <input
+                  value={exam.exam_code ?? "Pending assignment"}
+                  className="field-input bg-muted/40 font-mono"
+                  disabled
+                  readOnly
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Assigned automatically when the exam was created.
+                </p>
               </Field>
             </div>
             <Field label="Description">
@@ -497,11 +508,35 @@ export function ExamBuilder() {
                 rows={4}
                 value={form.instructions}
                 onChange={(e) => setForm({ ...form, instructions: e.target.value })}
-                placeholder="Bring valid ID, ensure webcam works, no phones allowed…"
+                placeholder={
+                  form.monitoring_enabled
+                    ? "Bring valid ID, ensure webcam works, no phones allowed…"
+                    : "Read each question carefully, manage your time, no external resources…"
+                }
                 className="field-input"
                 disabled={!isDraft}
               />
             </Field>
+            <div className="rounded-lg border border-border/70 bg-muted/20 p-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox
+                  checked={form.monitoring_enabled}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, monitoring_enabled: checked === true })
+                  }
+                  disabled={!isDraft}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="block text-sm font-medium">Camera monitoring</span>
+                  <span className="block text-xs text-muted-foreground mt-1">
+                    When enabled, examinees complete proctoring setup and their webcam stays active
+                    during the exam. Disable for practice quizzes or environments where monitoring is
+                    not required.
+                  </span>
+                </span>
+              </label>
+            </div>
             <div className="grid md:grid-cols-3 gap-4">
               <Field label="Duration (minutes)">
                 <input
@@ -639,8 +674,8 @@ export function ExamBuilder() {
                     <Upload className="w-4 h-4" /> Bulk import from spreadsheet
                   </h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Download the template, fill in one question per row in Excel or Google
-                    Sheets, save as CSV, then upload it (or paste the rows below).
+                    Download the worksheet template, fill in one question per row in Excel or
+                    Google Sheets, then upload the file back here (or paste CSV rows below).
                   </p>
                 </div>
 
@@ -659,7 +694,7 @@ export function ExamBuilder() {
                     <p className="font-medium text-foreground">Tips</p>
                     <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
                       <li>Leave <code>options</code> empty for non–multiple-choice questions.</li>
-                      <li>Wrap any value that contains a comma in double quotes.</li>
+                      <li>Upload the filled <code>.xlsx</code> worksheet directly — no need to export as CSV.</li>
                       <li>Questions are added after existing ones, in row order.</li>
                     </ul>
                   </div>
@@ -668,20 +703,27 @@ export function ExamBuilder() {
                 <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={downloadTemplate}
+                    onClick={downloadImportTemplateXlsx}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-accent text-sm"
                   >
-                    <Download className="w-4 h-4" /> Download template
+                    <Download className="w-4 h-4" /> Download worksheet (.xlsx)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadImportTemplateCsv}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-accent text-sm"
+                  >
+                    <Download className="w-4 h-4" /> Download CSV template
                   </button>
                   <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-accent text-sm cursor-pointer">
-                    <Upload className="w-4 h-4" /> Upload CSV file
+                    <Upload className="w-4 h-4" /> Upload worksheet or CSV
                     <input
                       type="file"
-                      accept=".csv,text/csv"
+                      accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
-                        if (file) void handleCsvFile(file);
+                        if (file) void handleImportFile(file);
                         e.target.value = "";
                       }}
                     />
@@ -690,7 +732,7 @@ export function ExamBuilder() {
 
                 <label className="block text-sm">
                   <span className="mb-1 block text-muted-foreground">
-                    CSV content (edit or paste here)
+                    Import preview (edit or paste CSV rows here)
                   </span>
                   <textarea
                     rows={7}

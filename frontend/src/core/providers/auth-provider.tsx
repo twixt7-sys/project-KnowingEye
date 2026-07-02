@@ -27,8 +27,9 @@ interface AuthContextType {
     password: string;
     password2: string;
     role: Role;
-    first_name?: string;
-    last_name?: string;
+    first_name: string;
+    last_name: string;
+    avatar: File;
   }) => Promise<User>;
   logout: () => void;
   refresh: () => Promise<void>;
@@ -91,8 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: string;
       password2: string;
       role: Role;
-      first_name?: string;
-      last_name?: string;
+      first_name: string;
+      last_name: string;
+      avatar: File;
     }) => {
       setIsLoading(true);
       try {

@@ -141,3 +141,17 @@ class SessionAPITests(APITestCase):
         session.refresh_from_db()
         self.assertEqual(session.status, ExamSession.Status.SETUP)
         self.assertGreater(session.started_at, timezone.now() - timedelta(minutes=1))
+
+    def test_start_without_monitoring_skips_setup(self):
+        self.exam.monitoring_enabled = False
+        self.exam.save(update_fields=["monitoring_enabled"])
+
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        self.assertEqual(start.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(start.data["session"]["status"], ExamSession.Status.IN_PROGRESS)
+
+        session = ExamSession.objects.get(pk=start.data["session"]["id"])
+        self.assertIsNotNone(session.exam_started_at)
+
+        begin = self.client.post(f"/api/sessions/{session.id}/begin/", format="json")
+        self.assertEqual(begin.status_code, status.HTTP_400_BAD_REQUEST)

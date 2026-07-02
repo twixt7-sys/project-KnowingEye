@@ -18,6 +18,7 @@ Webcam frames ──WebSocket──► monitoring consumer ──► same pipeli
 
 | Goal | Start here |
 |------|------------|
+| First-time setup (Windows) | Double-click `start-setup.cmd` |
 | Run locally (Windows) | Double-click `start-dev.cmd` |
 | Run locally (manual) | [README.md](README.md) → Quick start |
 | API endpoints | [README.md](README.md) → API surface |
@@ -44,6 +45,7 @@ project-KnowingEye/
 ├── frontend/             React SPA (see frontend/README.md)
 ├── docs/                 Architecture, deployment, thesis/testing (Knowing Eye)
 ├── misc/                 Archived / unrelated artifacts (safe to delete after review)
+├── start-setup.cmd       One-time setup after cloning (venv, migrate, seed, npm)
 ├── start-dev.cmd         Windows dev bootstrap
 └── test-all.cmd          Run backend feature + AI pipeline test suites
 ```
@@ -80,7 +82,7 @@ python -m pytest ai/tests/
 
 Backend: **32 tests** across auth, exams, sessions, monitoring (REST + WebSocket), behavior, reports.
 
-Frontend automated tests are not yet set up; manual smoke: login → start exam → submit → view reports.
+Frontend: Vitest unit tests via `npm test` (also included in `test-all.cmd`).
 
 ## What is in `misc/`?
 
@@ -88,9 +90,10 @@ Prior thesis artifacts, OSAS reference packs from another project, duplicate doc
 
 ## Common pitfalls
 
-1. **Stale JSON schemas** in `docs/database/` and `docs/backend/` may differ from live models - trust the code and [Implementation_Status_Summary.md](docs/general/Implementation_Status_Summary.md).
-2. **ML stack is optional** - without MediaPipe/YOLO the API uses a deterministic stub; monitoring still works end-to-end.
-3. **Registration always creates EXAMINEE** - admin users must be seeded or promoted in the database.
+1. **Fresh clone** - run `start-setup.cmd` once before `start-dev.cmd` (venv, migrate, seed, npm).
+2. **Stale JSON schemas** in `docs/database/` and `docs/backend/` may differ from live models - trust the code and [Implementation_Status_Summary.md](docs/general/Implementation_Status_Summary.md).
+3. **ML stack is optional** - without MediaPipe/YOLO the API uses a deterministic stub; monitoring still works end-to-end.
+4. **Registration always creates EXAMINEE** - admin users must be seeded or promoted in the database.
 
 ## Documentation index
 

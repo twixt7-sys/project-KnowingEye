@@ -7,21 +7,7 @@ import {
   Search,
   TrendingUp,
 } from "lucide-react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { BarChart, DonutChart, LineChart } from "@tremor/react";
 import { Link } from "react-router";
 
 import {
@@ -39,8 +25,6 @@ import { StatCard } from "../shared/components/layout/stat-card";
 import { Button } from "../shared/components/ui/button";
 import { useDebounce } from "../shared/hooks/use-debounce";
 import { usePagination } from "../shared/hooks/use-pagination";
-
-const PIE_COLORS = ["#15803d", "#0d9488", "#22c55e", "#84cc16", "#14b8a6", "#f59e0b"];
 
 export function Reports() {
   const [summary, setSummary] = useState<ReportSummary | null>(null);
@@ -221,51 +205,39 @@ export function Reports() {
           title="Activity timeline"
           description="Sessions, alerts, and behavior events over time."
         >
-          <div className="h-72 p-4 pt-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={series}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis dataKey="day" fontSize={11} />
-                <YAxis fontSize={11} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="sessions" stroke="#15803d" strokeWidth={2} />
-                <Line type="monotone" dataKey="alerts" stroke="#ef4444" strokeWidth={2} />
-                <Line type="monotone" dataKey="behaviors" stroke="#f59e0b" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <LineChart
+            className="h-72 p-4 pt-0"
+            data={series}
+            index="day"
+            categories={["sessions", "alerts", "behaviors"]}
+            colors={["emerald", "rose", "amber"]}
+            yAxisWidth={40}
+            showAnimation
+          />
         </SectionPanel>
 
         <SectionPanel title="Event distribution" description="Breakdown by event type.">
-          <div className="h-72 p-4 pt-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={eventsData} dataKey="value" nameKey="name" outerRadius={90} label>
-                  {eventsData.map((_, idx) => (
-                    <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          <DonutChart
+            className="h-72 p-4 pt-0"
+            data={eventsData}
+            index="name"
+            category="value"
+            colors={["emerald", "teal", "lime", "amber", "cyan", "orange"]}
+            showAnimation
+          />
         </SectionPanel>
       </div>
 
       <SectionPanel title="Alerts by severity" description="Unresolved alert volume by level.">
-        <div className="h-56 p-4 pt-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={summary?.alerts_by_severity ?? []}>
-              <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-              <XAxis dataKey="severity" fontSize={11} />
-              <YAxis fontSize={11} />
-              <Tooltip />
-              <Bar dataKey="count" fill="#15803d" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <BarChart
+          className="h-56 p-4 pt-0"
+          data={summary?.alerts_by_severity ?? []}
+          index="severity"
+          categories={["count"]}
+          colors={["emerald"]}
+          yAxisWidth={40}
+          showAnimation
+        />
       </SectionPanel>
 
       <SectionPanel

@@ -21,6 +21,7 @@ type DashboardExam = {
   date: string;
   duration: string;
   type: "upcoming" | "completed";
+  monitoringEnabled: boolean;
   score?: number;
 };
 
@@ -34,6 +35,7 @@ function mapExamToCard(exam: Exam, type: "upcoming" | "completed"): DashboardExa
       : new Date(exam.created_at).toLocaleDateString(),
     duration: `${exam.duration_minutes} mins`,
     type,
+    monitoringEnabled: exam.monitoring_enabled !== false,
   };
 }
 
@@ -161,17 +163,29 @@ export function StudentDashboard() {
             <h3 className="text-xl font-semibold">Before you begin</h3>
             <p className="mt-2 text-sm text-muted-foreground">{selectedExam.title}</p>
             <ul className="mt-4 list-inside list-disc space-y-2 text-sm text-muted-foreground">
-              <li>Enable your webcam and stay in frame</li>
-              <li>Do not switch tabs during the session</li>
-              <li>Behavior monitoring stays active throughout</li>
+              {selectedExam.monitoringEnabled ? (
+                <>
+                  <li>Enable your webcam and stay in frame</li>
+                  <li>Do not switch tabs during the session</li>
+                  <li>Behavior monitoring stays active throughout</li>
+                </>
+              ) : (
+                <>
+                  <li>No webcam or identity check is required</li>
+                  <li>Read each question carefully before answering</li>
+                  <li>You can flag questions to revisit before submitting</li>
+                </>
+              )}
               <li>Duration: {selectedExam.duration}</li>
             </ul>
+            {selectedExam.monitoringEnabled && (
             <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
               <p className="text-sm text-amber-700 dark:text-amber-300">
                 Suspicious activity may be flagged for examiner review.
               </p>
             </div>
+            )}
             <div className="mt-6 flex gap-3">
               <Button
                 variant="outline"

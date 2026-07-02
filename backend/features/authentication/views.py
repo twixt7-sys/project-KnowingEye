@@ -44,6 +44,7 @@ class RegisterView(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [AllowAny]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     http_method_names = ["post"]
 
     def create(self, request, *args, **kwargs):

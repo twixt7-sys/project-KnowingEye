@@ -1,2 +1,2 @@
 id,exam_id,user_id,started_at,submitted_at,time_remaining,status,ip_address,user_agent,total_score,percentage_score,passed
-f1b1dcfc-78cc-46b6-aa0f-48a70198385a,3,3,2026-06-11 09:00:00,2026-06-11 09:18:00,120,completed,127.0.0.1,Mozilla/5.0 (demo),4,80.0,True
+556ef43f-12bd-47d2-b622-63e579e0845d,3,8,2026-06-11 09:00:00,2026-06-11 09:18:00,120,completed,127.0.0.1,Mozilla/5.0 (demo),4,80.0,True

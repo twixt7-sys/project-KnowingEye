@@ -1,9 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .views import ExamViewSet, QuestionViewSet
+from .views import DepartmentViewSet, ExamViewSet, QuestionViewSet
 
 router = DefaultRouter()
+router.register(r'departments', DepartmentViewSet, basename='department')
 router.register(r'exams', ExamViewSet, basename='exam')
 
 # Nested routers for questions within exams

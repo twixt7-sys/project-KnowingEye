@@ -18,8 +18,9 @@ export interface RegisterPayload {
   password: string;
   password2: string;
   role?: Role;
-  first_name?: string;
-  last_name?: string;
+  first_name: string;
+  last_name: string;
+  avatar: File;
 }
 
 export interface ChangePasswordPayload {

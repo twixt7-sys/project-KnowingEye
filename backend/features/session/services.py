@@ -103,7 +103,7 @@ def begin_exam_session(
         raise ValidationError(
             {"status": f"Cannot begin exam with status '{session.status}'."}
         )
-    if not has_reference(session.id):
+    if session.exam.monitoring_enabled and not has_reference(session.id):
         raise ValidationError(
             {"identity": "Enroll a reference face before beginning the exam."}
         )
@@ -117,13 +117,55 @@ def begin_exam_session(
         session=session,
         event_type=SessionLog.EventType.EXAM_BEGAN,
         ip_address=ip_address,
-        details={"duration_minutes": session.exam.duration_minutes},
+        details={
+            "duration_minutes": session.exam.duration_minutes,
+            "monitoring_enabled": session.exam.monitoring_enabled,
+        },
+    )
+    return session
+
+
+def _create_in_progress_session(
+    user,
+    exam,
+    *,
+    ip_address: str | None,
+    user_agent: str,
+) -> ExamSession:
+    """Create a session that starts the exam timer immediately (no proctoring)."""
+    now = timezone.now()
+    session = ExamSession.objects.create(
+        exam=exam,
+        user=user,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        status=ExamSession.Status.IN_PROGRESS,
+        exam_started_at=now,
+        time_remaining=exam.duration_minutes * 60,
+    )
+    SessionLog.objects.create(
+        session=session,
+        event_type=SessionLog.EventType.EXAM_BEGAN,
+        ip_address=ip_address,
+        details={
+            "exam_title": exam.title,
+            "duration_minutes": exam.duration_minutes,
+            "monitoring_enabled": False,
+        },
     )
     return session
 
 
 def get_or_create_setup_session(user, exam, *, ip_address: str | None, user_agent: str) -> tuple[ExamSession, bool]:
-    """Return an existing setup session or create a new one."""
+    """Return an existing active session or create one for the examinee."""
+    if not exam.monitoring_enabled:
+        return _get_or_create_unmonitored_session(
+            user,
+            exam,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+
     existing = ExamSession.objects.filter(
         exam=exam,
         user=user,
@@ -155,5 +197,39 @@ def get_or_create_setup_session(user, exam, *, ip_address: str | None, user_agen
         event_type=SessionLog.EventType.STARTED,
         ip_address=ip_address,
         details={"exam_title": exam.title, "phase": "setup"},
+    )
+    return session, True
+
+
+def _get_or_create_unmonitored_session(
+    user,
+    exam,
+    *,
+    ip_address: str | None,
+    user_agent: str,
+) -> tuple[ExamSession, bool]:
+    """Resume or create an in-progress session when proctoring is disabled."""
+    existing = ExamSession.objects.filter(
+        exam=exam,
+        user=user,
+        status=ExamSession.Status.IN_PROGRESS,
+    ).first()
+    if existing:
+        return existing, False
+
+    stale_setup = ExamSession.objects.filter(
+        exam=exam,
+        user=user,
+        status=ExamSession.Status.SETUP,
+    ).first()
+    if stale_setup:
+        begin_exam_session(stale_setup, ip_address=ip_address)
+        return stale_setup, False
+
+    session = _create_in_progress_session(
+        user,
+        exam,
+        ip_address=ip_address,
+        user_agent=user_agent,
     )
     return session, True

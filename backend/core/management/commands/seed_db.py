@@ -10,7 +10,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from features.exams.models import Exam, Question
+from features.exams.models import Department, Exam, Question
 from features.session.models import ExamSession, Response
 
 
@@ -47,6 +47,7 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             self.load_users(data_dir)
+            self.load_departments(data_dir)
             self.load_exams(data_dir)
             self.load_questions(data_dir)
             self.load_sessions(data_dir)
@@ -103,6 +104,36 @@ class Command(BaseCommand):
                     user.save(update_fields=['password'])
                     self.stdout.write(f'Set password for user {user.username}.')
 
+    def load_departments(self, data_dir):
+        path = data_dir / 'departments.csv'
+        if not path.exists():
+            return
+        with path.open(newline='', encoding='utf-8') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                defaults = {
+                    'name': row['name'],
+                    'abbreviation': row['abbreviation'].upper(),
+                    'is_active': self.parse_bool(row['is_active']),
+                    'sort_order': self.parse_int(row['sort_order']),
+                }
+                dept, created = Department.objects.get_or_create(
+                    id=self.parse_int(row['id']),
+                    defaults=defaults,
+                )
+                if created:
+                    dept.save()
+                    self.stdout.write(f'Created department {dept.name}.')
+                else:
+                    updated = False
+                    for field, value in defaults.items():
+                        if getattr(dept, field) != value:
+                            setattr(dept, field, value)
+                            updated = True
+                    if updated:
+                        dept.save(update_fields=list(defaults.keys()))
+                        self.stdout.write(f'Updated department {dept.name}.')
+
     def load_exams(self, data_dir):
         path = data_dir / 'exams.csv'
         with path.open(newline='', encoding='utf-8') as f:
@@ -118,6 +149,12 @@ class Command(BaseCommand):
                     'status': row['status'],
                     'created_by_id': self.parse_int(row['created_by_id']),
                 }
+                if row.get('department_id'):
+                    defaults['department_id'] = self.parse_int(row['department_id'])
+                if row.get('exam_code'):
+                    defaults['exam_code'] = row['exam_code']
+                if row.get('monitoring_enabled') is not None:
+                    defaults['monitoring_enabled'] = self.parse_bool(row['monitoring_enabled'])
                 exam, created = Exam.objects.get_or_create(
                     id=self.parse_int(row['id']),
                     defaults=defaults,
@@ -245,10 +282,7 @@ class Command(BaseCommand):
                         self.stdout.write(f'Updated response {response.id}.')
 
     def flush_data(self):
-        data_dir = self.get_data_dir()
-        self.stdout.write('Removing all exam data and seeded users...')
-
-        user_ids = self.read_csv_ids(data_dir / 'users.csv', id_field='id', cls=int)
+        self.stdout.write('Removing all exam data and application users...')
 
         deleted_sessions = ExamSession.objects.count()
         ExamSession.objects.all().delete()
@@ -265,11 +299,15 @@ class Command(BaseCommand):
         if deleted_exams:
             self.stdout.write(f'Deleted {deleted_exams} exam(s).')
 
-        if user_ids:
-            removed = self.user_model.objects.filter(id__in=user_ids).count()
-            self.user_model.objects.filter(id__in=user_ids).delete()
-            if removed:
-                self.stdout.write(f'Deleted {removed} seeded user(s).')
+        deleted_departments = Department.objects.count()
+        Department.objects.all().delete()
+        if deleted_departments:
+            self.stdout.write(f'Deleted {deleted_departments} department(s).')
+
+        removed = self.user_model.objects.filter(is_superuser=False).count()
+        self.user_model.objects.filter(is_superuser=False).delete()
+        if removed:
+            self.stdout.write(f'Deleted {removed} user(s).')
 
         self.reset_sequences()
         self.stdout.write(self.style.SUCCESS('Database cleared for reseed.'))
@@ -283,6 +321,7 @@ class Command(BaseCommand):
 
         models = (
             self.user_model,
+            Department,
             Exam,
             Question,
             Response,

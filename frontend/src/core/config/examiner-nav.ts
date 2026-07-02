@@ -3,6 +3,7 @@ import {
   BarChart3,
   ClipboardList,
   LayoutDashboard,
+  Settings,
   UserCircle,
   Users,
   type LucideIcon,
@@ -39,6 +40,12 @@ export const examinerNav: WorkspaceNavItem[] = [
     path: "/users",
     icon: Users,
     description: "Accounts and roles",
+  },
+  {
+    label: "Settings",
+    path: "/settings",
+    icon: Settings,
+    description: "Departments and exam codes",
   },
   {
     label: "Profile",

@@ -3,6 +3,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from shared.tests.helpers import sample_avatar_file, validation_details
+
 User = get_user_model()
 
 
@@ -42,13 +44,15 @@ class AuthenticationAPITests(APITestCase):
                 "password2": "TestPass123!",
                 "first_name": "New",
                 "last_name": "Student",
+                "avatar": sample_avatar_file(),
             },
-            format="json",
+            format="multipart",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(username="new_student").exists())
         user = User.objects.get(username="new_student")
         self.assertEqual(user.role, User.Role.EXAMINEE)
+        self.assertTrue(user.avatar)
 
     def test_register_rejects_admin_role_escalation(self):
         response = self.client.post(
@@ -58,13 +62,33 @@ class AuthenticationAPITests(APITestCase):
                 "email": "evil@test.local",
                 "password": "TestPass123!",
                 "password2": "TestPass123!",
+                "first_name": "Evil",
+                "last_name": "Admin",
+                "avatar": sample_avatar_file(),
                 "role": User.Role.ADMIN,
             },
-            format="json",
+            format="multipart",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         user = User.objects.get(username="evil_admin")
         self.assertEqual(user.role, User.Role.EXAMINEE)
+
+    def test_register_requires_avatar(self):
+        response = self.client.post(
+            "/api/auth/register/",
+            {
+                "username": "no_photo",
+                "email": "nophoto@test.local",
+                "password": "TestPass123!",
+                "password2": "TestPass123!",
+                "first_name": "No",
+                "last_name": "Photo",
+            },
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        details = validation_details(response)
+        self.assertIn("avatar", details)
 
     def test_profile_me(self):
         self.client.force_authenticate(user=self.examinee)

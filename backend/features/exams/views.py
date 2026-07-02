@@ -12,11 +12,12 @@ from rest_framework.response import Response
 
 from . import services
 from .attachment_utils import validate_attachment_file
-from .models import Exam, Question, QuestionAttachment
+from .models import Department, Exam, Question, QuestionAttachment
 from .exam_service import ExamService
 from .permissions import IsAdminOrReadOnly, IsExamOwnerOrAdmin
 from .repositories import QuestionRepository
 from .serializers import (
+    DepartmentSerializer,
     ExamCreateUpdateSerializer,
     ExamDetailSerializer,
     ExamListSerializer,
@@ -30,6 +31,35 @@ from .serializers import (
 )
 
 User = get_user_model()
+
+
+class DepartmentViewSet(viewsets.ModelViewSet):
+    """CRUD for institutional departments (admin write, authenticated read)."""
+
+    serializer_class = DepartmentSerializer
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ["sort_order", "name", "abbreviation"]
+    ordering = ["sort_order", "name"]
+
+    def get_queryset(self):
+        qs = Department.objects.all()
+        if self.action in {"list", "retrieve"}:
+            active_only = self.request.query_params.get("active_only")
+            if active_only in {"1", "true", "True"}:
+                qs = qs.filter(is_active=True)
+        return qs
+
+    def destroy(self, request, *args, **kwargs):
+        department = self.get_object()
+        if department.exams.exists():
+            return Response(
+                {
+                    "detail": "Cannot delete a department that has exams. Deactivate it instead."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().destroy(request, *args, **kwargs)
 
 
 class ExamViewSet(viewsets.ModelViewSet):

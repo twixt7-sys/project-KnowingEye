@@ -59,6 +59,12 @@ def receive_frame(request):
     if err:
         return err
 
+    if not session.exam.monitoring_enabled:
+        return Response(
+            {"error": "Monitoring is disabled for this exam"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     from features.session.services import ensure_active_session, touch_setup_activity
 
     if session.status == ExamSession.Status.SETUP:
@@ -117,6 +123,12 @@ def enroll_reference_view(request):
     session, err = _resolve_session(request, session_id)
     if err:
         return err
+
+    if not session.exam.monitoring_enabled:
+        return Response(
+            {"error": "Monitoring is disabled for this exam"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     frame = decode_base64_image(image_data)
     if frame is None:

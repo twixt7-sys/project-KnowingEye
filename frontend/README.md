@@ -15,6 +15,8 @@ React + TypeScript SPA for the Knowing Eye examination platform. Connects to the
 
 ## Quick start
 
+**First time:** from the repo root, run `start-setup.cmd` (Windows) or follow [README.md](../README.md).
+
 From the repo root, use `start-dev.cmd` (starts API + UI), or run the frontend alone:
 
 ```powershell

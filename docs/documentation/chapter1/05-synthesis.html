@@ -17,17 +17,49 @@
     </div>
     <p class="doc-eyebrow">Chapter I</p>
     <h1>Synthesis</h1>
+    <p class="doc-lead">Aligned with Draft Outline Paper 2 — Synthesis (p. 14).</p>
 
-    <div class="note">
-      <strong>Status: incomplete (~15%).</strong> To be written after RRL sheets are populated. The synthesis should connect global proctoring research, LCC environmental scanning, and the Knowing Eye unified-platform approach.
+    <p>The reviewed literature and related studies indicate that artificial intelligence and computer vision have significantly improved the security and reliability of online examination systems. Technologies such as facial recognition, eye gaze estimation, head pose detection, posture analysis, and object detection have been shown to effectively monitor examinee behavior and support academic integrity during remote assessments. Furthermore, studies demonstrate that combining multiple behavioral indicators provides more accurate and reliable monitoring than using a single detection method.</p>
+
+    <p>Despite these advancements, existing systems often focus on selected monitoring features or require complex deployment environments. There remains a need for an accessible web-based examination platform that integrates facial and postural analysis into a unified behavior monitoring system capable of operating in real time using standard webcams.</p>
+
+    <p>At Legacy College of Compostela (LCC), environmental scanning revealed that the institution does not currently utilize a computer-based examination system with integrated face tracking and identity verification. Suspicious behavior detection still depends on CCTV monitoring or assigned proctors, which makes consistent monitoring difficult during large-scale examinations and increases proctor workload. Many available platforms emphasize exam administration—question management and automated scoring—while offering only passive monitoring features such as webcam recording or screen locking, without real-time behavioral analysis of gaze direction, posture, or facial movement.</p>
+
+    <p>This study aims to develop <strong>Knowing Eye: A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis</strong>. By integrating exam creation, administration, and automated behavioral monitoring within a single web-based platform, the system is expected to enhance examination integrity, assist instructors in monitoring examinees more effectively, and provide a practical solution for secure online assessments. The platform applies computer vision and deep learning techniques—including YOLO for detection, CNN for feature extraction, and ArcFace for facial verification—to analyze head movement, eye gaze, and posture in real time, generating behavioral reports that support administrator review rather than replacing human judgment.</p>
+
+    <h2>Research Gap and Contribution</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Gap identified in literature</th>
+            <th>Knowing Eye response</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Fragmented exam delivery and monitoring tools</td>
+            <td>Unified platform for exam management, session delivery, and real-time CV-based monitoring</td>
+          </tr>
+          <tr>
+            <td>Single-indicator monitoring with higher false alarms</td>
+            <td>Multimodal pipeline: face presence, identity, gaze, posture, and prohibited object detection</td>
+          </tr>
+          <tr>
+            <td>Passive recording without real-time analysis</td>
+            <td>WebSocket-driven near-real-time frame analysis with severity-classified alerts</td>
+          </tr>
+          <tr>
+            <td>Complex deployment unsuitable for standard institutional webcams</td>
+            <td>Web-based implementation on desktop/laptop with standard webcams at LCC</td>
+          </tr>
+          <tr>
+            <td>Ethical and privacy concerns in AI proctoring</td>
+            <td>Behavioral indicators with administrator discretion; derived metrics stored instead of raw video by default</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-
-    <h2>Working outline</h2>
-    <ol>
-      <li>Convergence of online examination platforms and AI-based proctoring research.</li>
-      <li>Gap: fragmented exam delivery vs. monitoring tools; limited real-time behavioral analysis at LCC.</li>
-      <li>Knowing Eye as an integrated response - exam management + continuous CV-based monitoring with human-in-the-loop review.</li>
-    </ol>
   </main>
 </body>
 </html>

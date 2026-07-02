@@ -1,6 +1,6 @@
-id,title,description,instructions,duration_minutes,total_questions,passing_score,status,created_by_id,created_at,updated_at
-1,Proctoring Demo Exam,"End-to-end demo for camera setup, identity enrollment, and monitored exam taking.",Complete proctoring setup before starting. Keep your face and upper body visible.,45,10,60,active,1,2026-06-02 09:00:00,2026-06-02 10:00:00
-2,Computer Science Fundamentals,"Core concepts in algorithms, data structures, and software design.",Select the best answer for each question. Short answers should be concise.,30,8,70,active,1,2026-06-03 09:00:00,2026-06-03 10:00:00
-3,Academic Integrity Quiz,Policies and best practices for honest assessment.,Answer all questions. There are no trick questions.,20,5,80,active,1,2026-06-04 09:00:00,2026-06-04 10:00:00
-4,Mathematics Placement,Algebra and basic calculus readiness check.,Show work mentally; enter final answers only for numeric items.,40,6,65,active,1,2026-06-05 09:00:00,2026-06-05 10:00:00
-5,Draft: Advanced Monitoring (not published),Work-in-progress exam for internal testing.,This exam is not available to students.,60,1,70,draft,1,2026-06-06 09:00:00,2026-06-06 10:00:00
+id,title,description,instructions,duration_minutes,total_questions,passing_score,status,department_id,exam_code,monitoring_enabled,created_by_id,created_at,updated_at
+1,Proctoring Demo Exam,"End-to-end demo for camera setup, identity enrollment, and monitored exam taking.",Complete proctoring setup before starting. Keep your face and upper body visible.,45,10,60,active,1,IIT-2026-A,True,1,2026-06-02 09:00:00,2026-06-02 10:00:00
+2,Computer Science Fundamentals,"Core concepts in algorithms, data structures, and software design.",Select the best answer for each question. Short answers should be concise.,30,8,70,active,1,IIT-2026-B,True,1,2026-06-03 09:00:00,2026-06-03 10:00:00
+3,Academic Integrity Quiz,Policies and best practices for honest assessment.,Answer all questions. There are no trick questions.,20,5,80,active,2,COE-2026-A,False,1,2026-06-04 09:00:00,2026-06-04 10:00:00
+4,Mathematics Placement,Algebra and basic calculus readiness check.,Show work mentally; enter final answers only for numeric items.,40,6,65,active,2,COE-2026-B,True,1,2026-06-05 09:00:00,2026-06-05 10:00:00
+5,Draft: Advanced Monitoring (not published),Work-in-progress exam for internal testing.,This exam is not available to students.,60,1,70,draft,3,CBA-2026-A,True,1,2026-06-06 09:00:00,2026-06-06 10:00:00

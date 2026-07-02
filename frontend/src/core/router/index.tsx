@@ -18,6 +18,7 @@ import { SessionMonitor } from "../../pages/session-monitor";
 import { Reports } from "../../pages/reports";
 import { Profile } from "../../pages/profile";
 import { UsersAdmin } from "../../pages/users";
+import { SettingsAdmin } from "../../pages/settings";
 import { ProtectedRoute } from "../../shared/components/common/protected-route";
 
 function LegacyExamineeExamRedirect({ suffix = "" }: { suffix?: string }) {
@@ -71,6 +72,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredRole="ADMIN">
             <UsersAdmin />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "settings",
+        element: (
+          <ProtectedRoute requiredRole="ADMIN">
+            <SettingsAdmin />
           </ProtectedRoute>
         ),
       },

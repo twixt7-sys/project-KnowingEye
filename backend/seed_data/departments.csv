@@ -1,0 +1,4 @@
+id,name,abbreviation,is_active,sort_order
+1,Institute of Information Technology,IIT,1,1
+2,College of Engineering,COE,1,2
+3,College of Business Administration,CBA,1,3
