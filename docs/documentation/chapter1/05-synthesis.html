@@ -27,6 +27,348 @@
 
     <p>This study aims to develop <strong>Knowing Eye: A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis</strong>. By integrating exam creation, administration, and automated behavioral monitoring within a single web-based platform, the system is expected to enhance examination integrity, assist instructors in monitoring examinees more effectively, and provide a practical solution for secure online assessments. The platform applies computer vision and deep learning techniques—including YOLO for detection, CNN for feature extraction, and ArcFace for facial verification—to analyze head movement, eye gaze, and posture in real time, generating behavioral reports that support administrator review rather than replacing human judgment.</p>
 
+    <h2>Comparison of Related Works</h2>
+    <p>The following tables synthesize representative related studies reviewed in <a href="04-rrl.html">Section 1.4</a>. Each column corresponds to a comparable system; checkmarks indicate whether a capability is present in that work. Knowing Eye is included as the proposed system. Citations follow IEEE numbering from the RRL reference list.</p>
+
+    <h3>Table 1 — System Functionalities</h3>
+    <div class="table-wrap">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>List of Functions</th>
+            <th>iExam <a href="04-rrl.html#ref-1">[1]</a></th>
+            <th>AutoOEP <a href="04-rrl.html#ref-25">[25]</a></th>
+            <th>DER et al. <a href="04-rrl.html#ref-23">[23]</a></th>
+            <th>Bhogate et al. <a href="04-rrl.html#ref-21">[21]</a></th>
+            <th>Knowing Eye</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Face detection and presence monitoring</td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+          <tr>
+            <td>Identity / face recognition verification</td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+          <tr>
+            <td>Eye gaze tracking</td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+          <tr>
+            <td>Head pose estimation</td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+          <tr>
+            <td>Postural / body posture analysis</td>
+            <td><span class="muted">—</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+          <tr>
+            <td>Prohibited object detection (e.g., mobile phone)</td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+          <tr>
+            <td>Mouth movement analysis</td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="muted">—</span></td>
+          </tr>
+          <tr>
+            <td>Integrated exam creation and administration</td>
+            <td><span class="muted">—</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+          <tr>
+            <td>Web-based online application</td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+          <tr>
+            <td>Real-time behavioral analysis</td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+          <tr>
+            <td>Cheating probability / risk scoring</td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+          <tr>
+            <td>Administrative dashboard and session reports</td>
+            <td><span class="muted">—</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+          <tr>
+            <td>Privacy-preserving monitoring (derived metrics over raw video)</td>
+            <td><span class="muted">—</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="muted">—</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+          <tr>
+            <td>Standard single-webcam deployment</td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+            <td><span class="text-ok">✓</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted" style="font-size:0.88rem;margin-top:0.5rem">✓ = capability reported or implemented in the cited work; — = not reported or outside system scope.</p>
+
+    <h3>Table 2 — Algorithms and Models</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>iExam [1]</th>
+            <th>AutoOEP [25]</th>
+            <th>DER et al. [23]</th>
+            <th>Bhogate et al. [21]</th>
+            <th>Knowing Eye</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Face detection</td>
+            <td>CNN-based detection</td>
+            <td>Not specified</td>
+            <td>Facial recognition pipeline</td>
+            <td>Face detection module</td>
+            <td>MediaPipe Face Mesh</td>
+          </tr>
+          <tr>
+            <td>Identity verification</td>
+            <td>Face recognition</td>
+            <td>ArcFace embeddings</td>
+            <td>Facial recognition</td>
+            <td>—</td>
+            <td>ArcFace (InsightFace <code>buffalo_l</code>)</td>
+          </tr>
+          <tr>
+            <td>Gaze / head orientation</td>
+            <td>—</td>
+            <td>Gaze estimation, head pose</td>
+            <td>Gaze estimation</td>
+            <td>Eye tracking, head pose</td>
+            <td>MediaPipe landmarks (yaw/pitch thresholds)</td>
+          </tr>
+          <tr>
+            <td>Posture analysis</td>
+            <td>—</td>
+            <td>—</td>
+            <td>Posture analysis</td>
+            <td>—</td>
+            <td>MediaPipe Pose (shoulder tilt, spine lean)</td>
+          </tr>
+          <tr>
+            <td>Object detection</td>
+            <td>—</td>
+            <td>YOLO</td>
+            <td>Object detection</td>
+            <td>—</td>
+            <td>YOLO (prohibited objects)</td>
+          </tr>
+          <tr>
+            <td>Behavioral scoring</td>
+            <td>Rule-based abnormal events</td>
+            <td>LSTM cheating probability</td>
+            <td>Multimodal fusion</td>
+            <td>Multi-indicator fusion</td>
+            <td>Weighted compliance metrics + temporal rules</td>
+          </tr>
+          <tr>
+            <td>Real-time transport</td>
+            <td>Not specified</td>
+            <td>Real-time inference</td>
+            <td>Real-time monitoring</td>
+            <td>Real-time processing</td>
+            <td>WebSocket frame stream (Django Channels)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 3 — Key Parameters and Configuration</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>iExam [1]</th>
+            <th>AutoOEP [25]</th>
+            <th>DER et al. [23]</th>
+            <th>Bhogate et al. [21]</th>
+            <th>Knowing Eye</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Camera requirement</td>
+            <td>Single webcam</td>
+            <td>Single webcam</td>
+            <td>Single webcam</td>
+            <td>Single webcam</td>
+            <td>Standard desktop/laptop webcam</td>
+          </tr>
+          <tr>
+            <td>Processing rate</td>
+            <td>Not reported</td>
+            <td>Real-time</td>
+            <td>Real-time</td>
+            <td>Real-time</td>
+            <td>~5 FPS target (<code>pipeline.yaml</code>)</td>
+          </tr>
+          <tr>
+            <td>Identity match threshold</td>
+            <td>Not reported</td>
+            <td>ArcFace distance (not reported)</td>
+            <td>Not reported</td>
+            <td>—</td>
+            <td>0.42 cosine distance</td>
+          </tr>
+          <tr>
+            <td>Gaze deviation thresholds</td>
+            <td>—</td>
+            <td>Not reported</td>
+            <td>Not reported</td>
+            <td>Not reported</td>
+            <td>Yaw ±40°, pitch ±35°</td>
+          </tr>
+          <tr>
+            <td>Posture limits</td>
+            <td>—</td>
+            <td>—</td>
+            <td>Not reported</td>
+            <td>—</td>
+            <td>Shoulder tilt ≤0.18; spine lean ≤0.55</td>
+          </tr>
+          <tr>
+            <td>Alert / compliance threshold</td>
+            <td>Event-based flags</td>
+            <td>LSTM probability output</td>
+            <td>Low false-positive tuning</td>
+            <td>Multi-indicator thresholds</td>
+            <td>80% overall compliance; severity-classified alerts</td>
+          </tr>
+          <tr>
+            <td>Temporal rules</td>
+            <td>Face disappearance events</td>
+            <td>Continuous frame analysis</td>
+            <td>Multimodal temporal fusion</td>
+            <td>Continuous monitoring</td>
+            <td>60 s suspicious-pattern window; grace periods for no-face / leaving seat</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Table 4 — Reported Performance Metrics</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Metric</th>
+            <th>iExam [1]</th>
+            <th>AutoOEP [25]</th>
+            <th>DER et al. [23]</th>
+            <th>Bhogate et al. [21]</th>
+            <th>Knowing Eye</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Face detection accuracy</td>
+            <td>90.4%</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td><em>Pending formal benchmark</em></td>
+          </tr>
+          <tr>
+            <td>Face / identity recognition accuracy</td>
+            <td>98.4%</td>
+            <td>—</td>
+            <td>High accuracy (value not reported)</td>
+            <td>—</td>
+            <td><em>Pending formal benchmark</em></td>
+          </tr>
+          <tr>
+            <td>Overall classification / detection accuracy</td>
+            <td>—</td>
+            <td>~90.7%</td>
+            <td>High accuracy (value not reported)</td>
+            <td>Improved over single-indicator baselines</td>
+            <td>Target ≥90% (see <a href="../chapter2/04-system-testing.html#metrics">Ch. II testing</a>)</td>
+          </tr>
+          <tr>
+            <td>False-positive rate</td>
+            <td>—</td>
+            <td>—</td>
+            <td>Low (reported)</td>
+            <td>Reduced vs. webcam-only monitoring</td>
+            <td><em>Pending formal benchmark</em></td>
+          </tr>
+          <tr>
+            <td>Precision / recall / F1-score</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+            <td>Target ≥88% each (<em>observed TBD</em>)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Across these comparisons, existing works demonstrate strong performance in isolated monitoring tasks—particularly face recognition and multimodal cheating detection—but rarely combine full examination administration with posture-aware, privacy-conscious behavioral monitoring on a single web platform. Knowing Eye addresses this gap by unifying exam delivery, real-time multimodal analysis (face, gaze, posture, objects, identity), administrator-facing reports, and configurable compliance scoring within one deployable system for Legacy College of Compostela.</p>
+
     <h2>Research Gap and Contribution</h2>
     <div class="table-wrap">
       <table>
