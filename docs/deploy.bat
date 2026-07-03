@@ -13,8 +13,8 @@ echo --------------------------------------------------
 echo.
 echo One-time GitHub Pages setup:
 echo   1. Push this repo to GitHub (branch: main).
-echo   2. Settings - Pages - Source: GitHub Actions.
-echo   3. Workflow .github/workflows/deploy.yml publishes docs/.
+echo   2. Settings - Pages - Deploy from a branch.
+echo   3. Branch main, folder /docs.
 echo.
 
 where python >nul 2>nul

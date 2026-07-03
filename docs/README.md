@@ -41,10 +41,11 @@ Then open <http://localhost:8080>.
 ## Push-to-deploy (GitHub Pages)
 
 1. Push the repository to GitHub (`main`).
-2. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-3. The workflow at `.github/workflows/deploy.yml` validates the seed JSON and publishes `docs/`.
+2. **Settings → Pages → Build and deployment → Source: Deploy from a branch**.
+3. Branch **`main`**, folder **`/docs`**.
 
-After setup: **save → git push → site updates** automatically.
+After setup: **save → git push → site updates** automatically at  
+`https://<username>.github.io/project-KnowingEye/`.
 
 ### Cloudflare Pages (alternative)
 
