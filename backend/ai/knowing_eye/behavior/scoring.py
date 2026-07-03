@@ -8,6 +8,7 @@ from ai.knowing_eye.behavior.normalize import (
     face_presence_pct,
     gaze_focus_pct,
     identity_match_pct,
+    object_compliance_pct,
     overall_compliance_pct,
     posture_compliance_pct,
 )
@@ -102,6 +103,9 @@ class BehaviorScorer:
         posture: PostureAnalysis,
         pose_detected: bool,
         identity_match: bool | None,
+        *,
+        object_detected: bool = False,
+        object_confidence: float = 0.0,
     ) -> tuple[MetricScores, list[BehaviorEvent], list[Alert]]:
         metrics = self.compute_metrics(face, posture, pose_detected, identity_match)
         events: list[BehaviorEvent] = []
@@ -174,6 +178,15 @@ class BehaviorScorer:
                 severity_override="high",
             )
 
+        object_pct = object_compliance_pct(object_detected, object_confidence)
+        if object_detected:
+            maybe_flag(
+                BehaviorEventType.OBJECT_DETECTED,
+                object_pct,
+                {"object_confidence": object_confidence},
+                severity_override="high",
+            )
+
         return metrics, events, alerts
 
 
@@ -183,6 +196,7 @@ def _alert_message(etype: BehaviorEventType, pct: float) -> str:
         BehaviorEventType.MULTIPLE_FACES: f"Multiple faces detected ({pct:.0f}% compliance)",
         BehaviorEventType.LOOKING_AWAY: f"Head/gaze angle exceeds threshold ({pct:.0f}%)",
         BehaviorEventType.BAD_POSTURE: f"Upper-body posture abnormal ({pct:.0f}%)",
+        BehaviorEventType.OBJECT_DETECTED: f"Prohibited object detected ({pct:.0f}%)",
         BehaviorEventType.LEAVING_SEAT: f"Upper body not visible ({pct:.0f}%)",
         BehaviorEventType.IDENTITY_MISMATCH: (
             f"Different person - face embedding mismatch ({pct:.0f}%)"

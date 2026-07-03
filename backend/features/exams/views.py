@@ -102,7 +102,9 @@ class ExamViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         """Update an exam after confirming the requester may modify it."""
-        services.assert_can_modify_exam(self.get_object(), self.request.user)
+        exam = self.get_object()
+        services.assert_can_modify_exam(exam, self.request.user)
+        services.assert_exam_editable(exam)
         serializer.save()
 
     def destroy(self, request, *args, **kwargs):
@@ -240,6 +242,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         """Attach an uploaded media file to a question after validation."""
         question = self.get_object()
         services.assert_can_modify_exam(question.exam, request.user)
+        services.assert_exam_editable(question.exam)
         uploaded = request.FILES.get("file")
         if not uploaded:
             return Response({"file": ["No file provided."]}, status=status.HTTP_400_BAD_REQUEST)
@@ -264,6 +267,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         """Delete a question attachment and its underlying stored file."""
         question = self.get_object()
         services.assert_can_modify_exam(question.exam, request.user)
+        services.assert_exam_editable(question.exam)
         attachment = get_object_or_404(question.attachments, pk=attachment_id)
         attachment.file.delete(save=False)
         attachment.delete()

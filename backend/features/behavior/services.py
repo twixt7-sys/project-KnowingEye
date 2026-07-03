@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
+
+from django.utils import timezone
 
 from features.behavior.models import Alert, BehaviorLog
 
@@ -12,6 +15,7 @@ EVENT_TYPE_MAP = {
     "multiple_faces": BehaviorLog.EventType.MULTIPLE_FACES,
     "looking_away": BehaviorLog.EventType.LOOKING_AWAY,
     "bad_posture": BehaviorLog.EventType.BAD_POSTURE,
+    "object_detected": BehaviorLog.EventType.OBJECT_DETECTED,
     "leaving_seat": BehaviorLog.EventType.LEAVING_SEAT,
     "identity_mismatch": BehaviorLog.EventType.IDENTITY_MISMATCH,
     "suspicious_pattern": BehaviorLog.EventType.SUSPICIOUS_PATTERN,
@@ -23,6 +27,28 @@ SEVERITY_MAP = {
     "high": Alert.Severity.HIGH,
 }
 
+# Skip duplicate logs/alerts of the same type within this window.
+_EVENT_COOLDOWN_SECONDS = 30
+
+
+def _recent_event_exists(session, event_type: str) -> bool:
+    cutoff = timezone.now() - timedelta(seconds=_EVENT_COOLDOWN_SECONDS)
+    return BehaviorLog.objects.filter(
+        session=session,
+        event_type=event_type,
+        timestamp__gte=cutoff,
+    ).exists()
+
+
+def _recent_alert_exists(session, alert_type: str) -> bool:
+    cutoff = timezone.now() - timedelta(seconds=_EVENT_COOLDOWN_SECONDS)
+    return Alert.objects.filter(
+        session=session,
+        alert_type=alert_type,
+        resolved=False,
+        created_at__gte=cutoff,
+    ).exists()
+
 
 def persist_analysis(session, analysis: dict[str, Any]) -> dict[str, int]:
     """Store events and alerts from a frame analysis payload."""
@@ -33,6 +59,8 @@ def persist_analysis(session, analysis: dict[str, Any]) -> dict[str, int]:
         raw_type = event.get("event_type", "")
         event_type = EVENT_TYPE_MAP.get(raw_type)
         if not event_type:
+            continue
+        if _recent_event_exists(session, event_type):
             continue
         score = float(event.get("score_pct", 0)) / 100.0
         confidence = float(event.get("confidence_pct", 0)) / 100.0
@@ -46,10 +74,13 @@ def persist_analysis(session, analysis: dict[str, Any]) -> dict[str, int]:
         logs_created += 1
 
     for alert in analysis.get("alerts", []):
+        alert_type = alert.get("type", "compliance")
+        if _recent_alert_exists(session, alert_type):
+            continue
         severity = SEVERITY_MAP.get(alert.get("severity", "medium"), Alert.Severity.MEDIUM)
         Alert.objects.create(
             session=session,
-            alert_type=alert.get("type", "compliance"),
+            alert_type=alert_type,
             severity=severity,
             message=alert.get("message", ""),
             metric_pct=alert.get("metric_pct"),

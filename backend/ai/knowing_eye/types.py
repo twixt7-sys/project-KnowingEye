@@ -13,6 +13,7 @@ class BehaviorEventType(str, Enum):
     MULTIPLE_FACES = "multiple_faces"
     LOOKING_AWAY = "looking_away"
     BAD_POSTURE = "bad_posture"
+    OBJECT_DETECTED = "object_detected"
     LEAVING_SEAT = "leaving_seat"
     IDENTITY_MISMATCH = "identity_mismatch"
     SUSPICIOUS_PATTERN = "suspicious_pattern"

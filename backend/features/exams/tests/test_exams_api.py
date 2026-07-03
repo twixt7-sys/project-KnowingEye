@@ -111,3 +111,43 @@ class ExamsAPITests(APITestCase):
 
         list_q = self.client.get(f"/api/exams/{self.exam.id}/questions/")
         self.assertEqual(len(list_q.data[0]["attachments"]), 1)
+
+    def test_publish_exam(self):
+        response = self.client.post(f"/api/exams/{self.exam.id}/publish/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ACTIVE)
+
+    def test_archive_exam(self):
+        self.exam.status = Exam.Status.ACTIVE
+        self.exam.save(update_fields=["status"])
+        response = self.client.post(f"/api/exams/{self.exam.id}/archive/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ARCHIVED)
+
+    def test_cannot_edit_active_exam(self):
+        self.exam.status = Exam.Status.ACTIVE
+        self.exam.save(update_fields=["status"])
+        response = self.client.patch(
+            f"/api/exams/{self.exam.id}/",
+            {"title": "Changed title"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_add_question_to_active_exam(self):
+        self.exam.status = Exam.Status.ACTIVE
+        self.exam.save(update_fields=["status"])
+        response = self.client.post(
+            f"/api/exams/{self.exam.id}/questions/",
+            {
+                "question_text": "Blocked?",
+                "question_type": "multiple_choice",
+                "options": ["A", "B"],
+                "correct_answer": "A",
+                "points": 1,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

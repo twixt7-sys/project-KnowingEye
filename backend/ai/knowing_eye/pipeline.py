@@ -13,6 +13,7 @@ from ai.knowing_eye.behavior.scoring import BehaviorScorer
 from ai.knowing_eye.behavior.temporal import BehaviorTemporalTracker
 from ai.knowing_eye.config import load_config, resolve_path
 from ai.knowing_eye.detection.face_detector import FaceDetector
+from ai.knowing_eye.detection.object_detector import ObjectDetector
 from ai.knowing_eye.detection.pose_detector import PoseDetector
 from ai.knowing_eye.preprocessing.frame import prepare_frame
 from ai.knowing_eye.recognition.identity import IdentityVerifier
@@ -42,6 +43,7 @@ class BehaviorPipeline:
         self._pose = PoseDetector(
             shoulder_tilt_max=rec.get("posture_shoulder_tilt_max", 0.12),
         )
+        self._objects = ObjectDetector()
         pipe = self.config.get("pipeline", {})
         identity_threshold = rec.get(
             "identity_match_threshold", pipe.get("identity_match_threshold")
@@ -91,6 +93,10 @@ class BehaviorPipeline:
         faces = self._face.detect(frame)
         pose = self._pose.detect(frame)
 
+        primary = faces[0] if faces else None
+        face_bbox = tuple(primary.bbox) if primary and primary.bbox else None
+        object_result = self._objects.detect(frame, face_bbox=face_bbox)
+
         identity_match: bool | None = None
         identity_distance: float | None = None
         if faces and reference_embedding is not None:
@@ -125,6 +131,8 @@ class BehaviorPipeline:
             posture_analysis,
             pose_detected=pose.detected,
             identity_match=identity_match,
+            object_detected=object_result.detected,
+            object_confidence=object_result.confidence,
         )
 
         self._frame_index += 1
@@ -161,3 +169,4 @@ class BehaviorPipeline:
     def close(self) -> None:
         self._face.close()
         self._pose.close()
+        self._objects.close()

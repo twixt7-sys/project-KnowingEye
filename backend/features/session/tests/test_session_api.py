@@ -155,3 +155,37 @@ class SessionAPITests(APITestCase):
 
         begin = self.client.post(f"/api/sessions/{session.id}/begin/", format="json")
         self.assertEqual(begin.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_max_attempts_enforced(self):
+        from ai.identity_store import store_reference
+
+        self.exam.max_attempts = 1
+        self.exam.save(update_fields=["max_attempts"])
+
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        session = ExamSession.objects.get(pk=start.data["session"]["id"])
+        store_reference(session, [0.1] * 128, "test")
+        self.client.post(f"/api/sessions/{session.id}/begin/", format="json")
+        self.client.post(
+            f"/api/sessions/{session.id}/submit/",
+            {
+                "responses": [
+                    {
+                        "question_id": self.question.id,
+                        "answer_text": "True",
+                        "time_spent": 5,
+                    }
+                ],
+                "time_remaining": 100,
+            },
+            format="json",
+        )
+
+        retry = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        self.assertEqual(retry.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_exam_not_yet_open(self):
+        self.exam.available_from = timezone.now() + timedelta(days=1)
+        self.exam.save(update_fields=["available_from"])
+        response = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

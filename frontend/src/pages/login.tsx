@@ -43,7 +43,6 @@ export function Login() {
     setIsSubmitting(true);
 
     try {
-      const role = userType === "admin" ? "ADMIN" : "EXAMINEE";
       const goHome = (signedInRole: "ADMIN" | "EXAMINEE") => {
         if (from !== "/" && from !== "/login") {
           navigate(from, { replace: true });
@@ -82,7 +81,6 @@ export function Login() {
           first_name: formData.firstName.trim(),
           last_name: formData.lastName.trim(),
           avatar: profilePhoto!,
-          role,
         });
         goHome(user.role);
       }
@@ -144,11 +142,11 @@ export function Login() {
         {/* Login/Register Form */}
         <div className="bg-card rounded-xl border border-border p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email (only for registration) */}
-            {!isLogin && (
+            {/* Login role hint (admin vs examinee portals) */}
+            {isLogin && (
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-3">
-                  Account Type
+                  Sign in as
                 </label>
                 <div className="flex gap-2 p-1 rounded-lg bg-muted">
                   <button

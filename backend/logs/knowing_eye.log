@@ -3442,3 +3442,43 @@ ValueError: invalid literal for int() with base 10: 'true'
 2026-07-02 08:12:27,700 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
 2026-07-02 08:12:27,700 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
 2026-07-02 08:12:27,703 [CRITICAL] daphne.server: Listen failure: Couldn't listen on 127.0.0.1:8000: [WinError 10048] Only one usage of each socket address (protocol/network address/port) is normally permitted.
+2026-07-02 08:20:45,230 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-07-02 08:20:45,237 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-07-02 08:20:45,238 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-07-02 08:20:45,240 [CRITICAL] daphne.server: Listen failure: Couldn't listen on 127.0.0.1:8000: [WinError 10048] Only one usage of each socket address (protocol/network address/port) is normally permitted.
+2026-07-02 08:21:23,451 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-07-02 08:21:23,452 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-07-02 08:21:23,453 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-07-02 08:21:23,454 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-07-02 08:21:59,456 [WARNING] knowing_eye.api.errors: API error [authentication_failed] CustomTokenObtainPairView.POST status=401 detail={'detail': ErrorDetail(string='No active account found with the given credentials', code='no_active_account')}
+2026-07-02 08:21:59,466 [WARNING] django.request: Unauthorized: /api/auth/token/
+2026-07-02 08:23:28,215 [INFO] knowing_eye.ai.adapter: Loaded production BehaviorPipeline from backend/ai/knowing_eye.
+2026-07-02 08:23:39,824 [INFO] knowing_eye.ai.adapter: identity enrolled session=2682b5eb-be55-474e-9701-2337c202ecd2 dims=256 backend=production
+2026-07-02 08:23:39,826 [INFO] knowing_eye.monitoring.views: enroll session=2682b5eb-be55-474e-9701-2337c202ecd2 ok=True backend=production
+2026-07-02 08:23:53,422 [WARNING] daphne.server: Application instance <Task pending name='Task-113' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 58804] path=b'/ws/monitoring/2682b5eb-be55-474e-9701-2337c202ecd2/'> took too long to shut down and was killed.
+2026-07-02 08:26:45,063 [WARNING] daphne.server: Application instance <Task pending name='Task-163' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 59468] path=b'/ws/monitoring/2682b5eb-be55-474e-9701-2337c202ecd2/'> took too long to shut down and was killed.
+2026-07-02 08:26:52,077 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': {'exam': ErrorDetail(string='Maximum attempts (1) reached for this exam.', code='invalid')}}
+2026-07-02 08:26:52,090 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-07-03 01:18:42,778 [WARNING] knowing_eye.api.errors: API error [validation_error] RegisterView.POST status=400 detail={'password': [ErrorDetail(string='This password is too common.', code='password_too_common')]}
+2026-07-03 01:18:42,815 [WARNING] django.request: Bad Request: /api/auth/register/
+2026-07-03 01:47:21,605 [WARNING] knowing_eye.api.errors: API error [authentication_failed] CustomTokenObtainPairView.POST status=401 detail={'detail': ErrorDetail(string='No active account found with the given credentials', code='no_active_account')}
+2026-07-03 01:47:21,629 [WARNING] django.request: Unauthorized: /api/auth/token/
+2026-07-03 02:26:57,063 [WARNING] django.request: Forbidden: /api/auth/users/3/activate/
+2026-07-03 02:27:23,684 [WARNING] knowing_eye.api.errors: API error [validation_error] RegisterView.POST status=400 detail={'avatar': [ErrorDetail(string='No file was submitted.', code='required')]}
+2026-07-03 02:27:23,684 [WARNING] django.request: Bad Request: /api/auth/register/
+2026-07-03 02:27:32,160 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.PATCH status=400 detail={'department_id': [ErrorDetail(string='Department cannot be changed after creation.', code='invalid')]}
+2026-07-03 02:27:32,161 [WARNING] django.request: Bad Request: /api/exams/1/
+2026-07-03 02:27:41,559 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'department_id': [ErrorDetail(string='Select a department to create an exam.', code='invalid')]}
+2026-07-03 02:27:41,560 [WARNING] django.request: Bad Request: /api/exams/
+2026-07-03 02:27:50,568 [WARNING] knowing_eye.api.errors: API error [validation_error] QuestionViewSet.POST status=400 detail={'status': ErrorDetail(string="Cannot modify exam while status is 'active'. Only draft exams can be edited.", code='invalid')}
+2026-07-03 02:27:50,586 [WARNING] django.request: Bad Request: /api/exams/1/questions/
+2026-07-03 02:27:53,648 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.PATCH status=400 detail={'status': ErrorDetail(string="Cannot modify exam while status is 'active'. Only draft exams can be edited.", code='invalid')}
+2026-07-03 02:27:53,650 [WARNING] django.request: Bad Request: /api/exams/1/
+2026-07-03 02:28:20,682 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-07-03 02:28:20,685 [WARNING] django.request: Bad Request: /api/sessions/5b4c62e6-b65b-42c0-920c-5033c9b4628b/begin/
+2026-07-03 02:28:26,628 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': {'exam': ErrorDetail(string='This exam has not opened yet. Check the scheduled start time.', code='invalid')}}
+2026-07-03 02:28:26,630 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-07-03 02:28:32,793 [WARNING] django.request: Bad Request: /api/sessions/e41ecc9a-d0b6-4e3f-b71a-8e2784bf0ae5/submit/
+2026-07-03 02:28:38,909 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': {'exam': ErrorDetail(string='Maximum attempts (1) reached for this exam.', code='invalid')}}
+2026-07-03 02:28:38,910 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-07-03 02:29:09,218 [WARNING] django.request: Bad Request: /api/sessions/d4a24a1f-f088-4224-b5bc-5bea7486c3b1/begin/

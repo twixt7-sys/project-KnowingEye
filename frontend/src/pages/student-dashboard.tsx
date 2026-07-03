@@ -8,7 +8,7 @@ import {
   Eye,
   Loader2,
 } from "lucide-react";
-import { apiClient, type Exam } from "../core/config/api";
+import { apiClient, type Exam, type SessionReportRow } from "../core/config/api";
 import { PageHeader } from "../shared/components/layout/page-header";
 import { PageShell } from "../shared/components/layout/page-shell";
 import { SectionPanel } from "../shared/components/layout/section-panel";
@@ -23,6 +23,8 @@ type DashboardExam = {
   type: "upcoming" | "completed";
   monitoringEnabled: boolean;
   score?: number;
+  passed?: boolean | null;
+  sessionId?: string;
 };
 
 function mapExamToCard(exam: Exam, type: "upcoming" | "completed"): DashboardExam {
@@ -39,6 +41,24 @@ function mapExamToCard(exam: Exam, type: "upcoming" | "completed"): DashboardExa
   };
 }
 
+function mapSessionToCard(session: SessionReportRow): DashboardExam {
+  const submitted = session.submitted_at
+    ? new Date(session.submitted_at).toLocaleDateString()
+    : new Date(session.started_at).toLocaleDateString();
+  return {
+    id: String(session.exam_id),
+    sessionId: session.id,
+    title: session.exam_title,
+    course: `Attempt · ${submitted}`,
+    date: submitted,
+    duration: "",
+    type: "completed",
+    monitoringEnabled: false,
+    score: session.percentage_score ?? undefined,
+    passed: session.passed,
+  };
+}
+
 export function StudentDashboard() {
   const [showExamInstructions, setShowExamInstructions] = useState(false);
   const [selectedExam, setSelectedExam] = useState<DashboardExam | null>(null);
@@ -51,13 +71,16 @@ export function StudentDashboard() {
     const load = async () => {
       try {
         setLoading(true);
-        const exams = await apiClient.getExams();
+        const [exams, sessions] = await Promise.all([
+          apiClient.getExams(),
+          apiClient.listSessionReports({ status: "completed" }),
+        ]);
         setUpcomingExams(
-          exams.filter((e) => e.status === "active").map((e) => mapExamToCard(e, "upcoming"))
+          exams
+            .filter((e) => e.status === "active" && e.is_open !== false)
+            .map((e) => mapExamToCard(e, "upcoming"))
         );
-        setCompletedExams(
-          exams.filter((e) => e.status === "archived").map((e) => mapExamToCard(e, "completed"))
-        );
+        setCompletedExams(sessions.results.map(mapSessionToCard));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not load exams");
       } finally {
@@ -138,12 +161,21 @@ export function StudentDashboard() {
         ) : (
           <div className="grid gap-4 p-4 pt-0 md:grid-cols-2">
             {completedExams.map((exam) => (
-              <article key={exam.id} className="surface-panel p-5">
+              <article key={exam.sessionId ?? exam.id} className="surface-panel p-5">
                 <p className="text-xs text-muted-foreground">{exam.course}</p>
                 <h3 className="mt-1 font-semibold">{exam.title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{exam.date}</p>
                 {exam.score != null && (
                   <p className="mt-3 text-2xl font-semibold text-primary">{exam.score}%</p>
+                )}
+                {exam.passed != null && (
+                  <p
+                    className={`mt-1 text-sm font-medium ${
+                      exam.passed ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                    }`}
+                  >
+                    {exam.passed ? "Passed" : "Did not pass"}
+                  </p>
                 )}
                 <Button asChild variant="outline" size="sm" className="mt-4">
                   <Link to={`/examinee/exam/${exam.id}/results`}>

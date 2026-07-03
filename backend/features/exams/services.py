@@ -51,6 +51,23 @@ def assert_can_modify_exam(exam: Exam, user) -> None:
         )
 
 
+def assert_exam_editable(exam: Exam) -> None:
+    """Ensure structural edits are only allowed on draft exams.
+
+    Raises:
+        ValidationError: If the exam is published or archived.
+    """
+    if exam.status != Exam.Status.DRAFT:
+        raise ValidationError(
+            {
+                "status": (
+                    f"Cannot modify exam while status is '{exam.status}'. "
+                    "Only draft exams can be edited."
+                )
+            }
+        )
+
+
 def assert_can_create_exam(user) -> None:
     """Ensure ``user`` has permission to create exams.
 
@@ -202,11 +219,7 @@ def publish_exam(exam: Exam, user) -> ExamLifecycleResult:
         ValidationError: If the exam is not a draft or fails readiness checks.
     """
     assert_can_modify_exam(exam, user)
-
-    if exam.status != Exam.Status.DRAFT:
-        raise ValidationError(
-            {"status": f"Cannot publish exam with status '{exam.status}'."}
-        )
+    assert_exam_editable(exam)
 
     readiness = exam_publish_readiness(exam)
     if not readiness["ready"]:
@@ -283,6 +296,7 @@ def create_question_for_exam(*, exam: Exam, user, serializer) -> Question:
         PermissionDenied: If the user cannot modify the exam.
     """
     assert_can_modify_exam(exam, user)
+    assert_exam_editable(exam)
     order = serializer.validated_data.get("order")
     if not order:
         serializer.validated_data["order"] = _next_question_order(exam)
@@ -304,6 +318,7 @@ def update_question(question: Question, user, serializer) -> Question:
         PermissionDenied: If the user cannot modify the parent exam.
     """
     assert_can_modify_exam(question.exam, user)
+    assert_exam_editable(question.exam)
     return serializer.save()
 
 
@@ -318,6 +333,7 @@ def delete_question(question: Question, user) -> None:
         PermissionDenied: If the user cannot modify the parent exam.
     """
     assert_can_modify_exam(question.exam, user)
+    assert_exam_editable(question.exam)
     exam = question.exam
     question.delete()
     exam.update_question_count()
@@ -342,6 +358,7 @@ def reorder_questions(exam: Exam, user, ordered_ids: list[int]) -> list[Question
         ValidationError: If ``ordered_ids`` does not match the exam's questions.
     """
     assert_can_modify_exam(exam, user)
+    assert_exam_editable(exam)
     questions = {q.id: q for q in exam.questions.all()}
     if set(ordered_ids) != set(questions.keys()):
         raise ValidationError({"order": "Must include every question id exactly once."})
@@ -497,6 +514,7 @@ def import_questions(
             error payload contains a ``errors`` list of row-tagged messages.
     """
     assert_can_modify_exam(exam, user)
+    assert_exam_editable(exam)
 
     errors: list[str] = []
     if csv_text:

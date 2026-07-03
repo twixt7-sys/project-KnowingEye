@@ -388,6 +388,9 @@ class ApiClient {
     form.append("first_name", userData.first_name);
     form.append("last_name", userData.last_name);
     form.append("avatar", userData.avatar);
+    if (userData.role) {
+      form.append("role", userData.role);
+    }
     return this.request<{ message: string; user: AuthUser }>("/auth/register/", {
       method: "POST",
       body: form,

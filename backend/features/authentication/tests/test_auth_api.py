@@ -54,15 +54,15 @@ class AuthenticationAPITests(APITestCase):
         self.assertEqual(user.role, User.Role.EXAMINEE)
         self.assertTrue(user.avatar)
 
-    def test_register_rejects_admin_role_escalation(self):
+    def test_register_always_creates_examinee(self):
         response = self.client.post(
             "/api/auth/register/",
             {
-                "username": "evil_admin",
-                "email": "evil@test.local",
+                "username": "new_admin",
+                "email": "admin-new@test.local",
                 "password": "TestPass123!",
                 "password2": "TestPass123!",
-                "first_name": "Evil",
+                "first_name": "New",
                 "last_name": "Admin",
                 "avatar": sample_avatar_file(),
                 "role": User.Role.ADMIN,
@@ -70,8 +70,9 @@ class AuthenticationAPITests(APITestCase):
             format="multipart",
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        user = User.objects.get(username="evil_admin")
+        user = User.objects.get(username="new_admin")
         self.assertEqual(user.role, User.Role.EXAMINEE)
+        self.assertEqual(response.data["user"]["role"], User.Role.EXAMINEE)
 
     def test_register_requires_avatar(self):
         response = self.client.post(
@@ -136,3 +137,61 @@ class AuthenticationAPITests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access", response.data)
+
+
+class AdminUserManagementTests(APITestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="admin_users",
+            email="admin_users@test.local",
+            password="TestPass123!",
+            role=User.Role.ADMIN,
+        )
+        self.examinee = User.objects.create_user(
+            username="examinee_users",
+            email="examinee_users@test.local",
+            password="TestPass123!",
+            role=User.Role.EXAMINEE,
+        )
+        self.target = User.objects.create_user(
+            username="target_user",
+            email="target@test.local",
+            password="TestPass123!",
+            role=User.Role.EXAMINEE,
+            is_active=False,
+        )
+
+    def test_activate_user_admin_only(self):
+        self.client.force_authenticate(user=self.examinee)
+        denied = self.client.post(f"/api/auth/users/{self.target.id}/activate/")
+        self.assertEqual(denied.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(f"/api/auth/users/{self.target.id}/activate/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.target.refresh_from_db()
+        self.assertTrue(self.target.is_active)
+
+    def test_deactivate_user(self):
+        self.client.force_authenticate(user=self.admin)
+        active = User.objects.create_user(
+            username="active_user",
+            email="active@test.local",
+            password="TestPass123!",
+            role=User.Role.EXAMINEE,
+        )
+        response = self.client.post(f"/api/auth/users/{active.id}/deactivate/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        active.refresh_from_db()
+        self.assertFalse(active.is_active)
+
+    def test_set_role(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(
+            f"/api/auth/users/{self.target.id}/set-role/",
+            {"role": User.Role.ADMIN},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.target.refresh_from_db()
+        self.assertEqual(self.target.role, User.Role.ADMIN)

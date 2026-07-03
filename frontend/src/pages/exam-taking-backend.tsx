@@ -208,6 +208,8 @@ export function ExamTakingWithBackend() {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [behaviorAlerts, setBehaviorAlerts] = useState<string[]>([]);
   const [feedOpen, setFeedOpen] = useState(true);
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollMessage, setEnrollMessage] = useState<string | null>(null);
   const [dockPosition, setDockPosition] = useState<MonitoringDockPosition>(() => {
     const saved = localStorage.getItem(DOCK_STORAGE_KEY);
     if (saved === "bottom-left" || saved === "top-right" || saved === "top-left") return saved;
@@ -314,6 +316,17 @@ export function ExamTakingWithBackend() {
       monitoring.alerts.slice(0, 3).map((a) => a.message || "Compliance alert")
     );
   }, [monitoringEnabled, monitoring.alerts]);
+
+  const handleReEnroll = async () => {
+    setEnrolling(true);
+    setEnrollMessage(null);
+    try {
+      const result = await monitoring.enrollReference();
+      setEnrollMessage(result.ok ? "Identity updated." : result.message ?? "Enrollment failed.");
+    } finally {
+      setEnrolling(false);
+    }
+  };
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -647,6 +660,20 @@ export function ExamTakingWithBackend() {
               </span>
             </button>
             <div className="flex items-center gap-0.5 shrink-0 border-l border-border pl-2">
+              <button
+                type="button"
+                title="Re-capture identity reference"
+                aria-label="Re-capture identity reference"
+                disabled={enrolling}
+                onClick={() => void handleReEnroll()}
+                className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                {enrolling ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <ScanFace className="w-3.5 h-3.5" />
+                )}
+              </button>
               {DOCK_POSITIONS.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
@@ -668,6 +695,9 @@ export function ExamTakingWithBackend() {
 
           {feedOpen && (
             <div className="p-3">
+              {enrollMessage && (
+                <p className="mb-2 text-xs text-muted-foreground">{enrollMessage}</p>
+              )}
               <div className="flex flex-row gap-3 items-stretch">
                 {/* Live camera */}
                 <div className="w-[44%] min-w-[140px] shrink-0">
