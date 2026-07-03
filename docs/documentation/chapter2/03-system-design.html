@@ -27,24 +27,24 @@
       <figcaption>Figure 2.5 - Entity-Relationship Diagram</figcaption>
       <pre class="mermaid">
 erDiagram
-  AUTHENTICATION_USER ||--o{ EXAMS_EXAM : creates
-  AUTHENTICATION_USER ||--o{ EXAM_SESSION : takes
-  EXAMS_EXAM ||--o{ EXAMS_QUESTION : contains
-  EXAMS_EXAM ||--o{ EXAM_SESSION : has
+  USER ||--o{ EXAM : creates
+  USER ||--o{ EXAM_SESSION : takes
+  EXAM ||--o{ QUESTION : contains
+  EXAM ||--o{ EXAM_SESSION : has
   EXAM_SESSION ||--o{ RESPONSE : has
-  EXAMS_QUESTION ||--o{ RESPONSE : answered_by
+  QUESTION ||--o{ RESPONSE : answered_by
   EXAM_SESSION ||--o{ SESSION_LOG : logs
   EXAM_SESSION ||--o{ BEHAVIOR_LOG : monitors
   EXAM_SESSION ||--o{ BEHAVIOR_ALERT : triggers
   EXAM_SESSION ||--o| IDENTITY_REFERENCE : enrolls
-  AUTHENTICATION_USER {
+  USER {
     int id PK
     string username UK
     string email UK
     string role
     string password
   }
-  EXAMS_EXAM {
+  EXAM {
     int id PK
     string title
     int duration_minutes
@@ -52,7 +52,7 @@ erDiagram
     string status
     int created_by_id FK
   }
-  EXAMS_QUESTION {
+  QUESTION {
     int id PK
     int exam_id FK
     text question_text

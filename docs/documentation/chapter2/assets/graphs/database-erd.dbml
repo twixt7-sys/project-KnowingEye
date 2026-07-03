@@ -2,19 +2,20 @@
 // Source: Django models in backend/features/
 // Render at: https://dbdiagram.io  |  Export PNG/SVG for paper figures
 // Figure ID: Fig-4.1
+// Entity names are singular; Django db_table names are noted per table.
 
 Project KnowingEye {
   database_type: 'PostgreSQL'
   Note: '''
     Production: PostgreSQL 15+
     Development: SQLite (django.db.backends.sqlite3)
-    Naming: snake_case table names via db_table Meta
+    ERD entities use singular names; Django db_table names are noted per table.
   '''
 }
 
 // ─── Authentication ───────────────────────────────────────────────────────────
 
-Table authentication_user {
+Table user {
   id integer [pk, increment, note: 'Django AutoField PK']
   username varchar(150) [unique, not null]
   email varchar(254) [unique, not null]
@@ -38,11 +39,13 @@ Table authentication_user {
   indexes {
     role
   }
+
+  Note: 'Django table: authentication_user'
 }
 
 // ─── Exams ────────────────────────────────────────────────────────────────────
 
-Table exams_exam {
+Table exam {
   id integer [pk, increment]
   title varchar(255) [not null]
   description text
@@ -55,7 +58,7 @@ Table exams_exam {
   available_until datetime [null]
   max_attempts integer [default: 1]
   status varchar(20) [default: 'draft', note: 'draft | active | archived']
-  created_by_id integer [not null, ref: > authentication_user.id]
+  created_by_id integer [not null, ref: > user.id]
   created_at datetime
   updated_at datetime
 
@@ -65,11 +68,13 @@ Table exams_exam {
     exam_code
     (available_from, available_until)
   }
+
+  Note: 'Django table: exams_exam'
 }
 
-Table exams_question {
+Table question {
   id integer [pk, increment]
-  exam_id integer [not null, ref: > exams_exam.id]
+  exam_id integer [not null, ref: > exam.id]
   question_text text [not null]
   question_type varchar(20) [default: 'multiple_choice', note: 'multiple_choice | true_false | short_answer | essay']
   options json [default: '[]', note: 'MCQ option list']
@@ -82,14 +87,16 @@ Table exams_question {
   indexes {
     (exam_id, order) [unique]
   }
+
+  Note: 'Django table: exams_question'
 }
 
 // ─── Sessions & Responses ─────────────────────────────────────────────────────
 
-Table user_sessions_exam_session {
+Table exam_session {
   id uuid [pk, note: 'UUID primary key']
-  exam_id integer [not null, ref: > exams_exam.id]
-  user_id integer [not null, ref: > authentication_user.id]
+  exam_id integer [not null, ref: > exam.id]
+  user_id integer [not null, ref: > user.id]
   started_at datetime [not null]
   submitted_at datetime [null]
   time_remaining integer [default: 0, note: 'Seconds remaining at submit']
@@ -106,13 +113,13 @@ Table user_sessions_exam_session {
     (user_id, started_at)
   }
 
-  Note: 'Unique constraint: one in_progress session per (exam, user)'
+  Note: 'Django table: user_sessions_exam_session. Unique: one in_progress session per (exam, user)'
 }
 
-Table user_sessions_response {
+Table response {
   id integer [pk, increment]
-  session_id uuid [not null, ref: > user_sessions_exam_session.id]
-  question_id integer [not null, ref: > exams_question.id]
+  session_id uuid [not null, ref: > exam_session.id]
+  question_id integer [not null, ref: > question.id]
   answer_text text [not null]
   is_correct boolean [default: false]
   time_spent integer [default: 0, note: 'Seconds on question']
@@ -124,11 +131,13 @@ Table user_sessions_response {
     is_correct
     flagged_for_review
   }
+
+  Note: 'Django table: user_sessions_response'
 }
 
-Table user_sessions_session_log {
+Table session_log {
   id integer [pk, increment]
-  session_id uuid [not null, ref: > user_sessions_exam_session.id]
+  session_id uuid [not null, ref: > exam_session.id]
   event_type varchar(20) [note: 'started | submitted | terminated | expired | resumed | paused']
   timestamp datetime
   details json [default: '{}']
@@ -138,13 +147,15 @@ Table user_sessions_session_log {
     (session_id, timestamp)
     (event_type, timestamp)
   }
+
+  Note: 'Django table: user_sessions_session_log'
 }
 
 // ─── Behavior & Monitoring ────────────────────────────────────────────────────
 
 Table behavior_log {
   id uuid [pk]
-  session_id uuid [not null, ref: > user_sessions_exam_session.id]
+  session_id uuid [not null, ref: > exam_session.id]
   event_type varchar(32) [note: 'no_face | multiple_faces | looking_away | bad_posture | leaving_seat | object_detected | identity_mismatch | suspicious_pattern']
   score float [note: 'Compliance 0.0–1.0']
   confidence float [default: 0]
@@ -159,7 +170,7 @@ Table behavior_log {
 
 Table behavior_alert {
   id uuid [pk]
-  session_id uuid [not null, ref: > user_sessions_exam_session.id]
+  session_id uuid [not null, ref: > exam_session.id]
   alert_type varchar(64)
   severity varchar(16) [default: 'medium', note: 'low | medium | high']
   message text
@@ -173,24 +184,26 @@ Table behavior_alert {
   }
 }
 
-Table monitoring_identity_reference {
+Table identity_reference {
   id uuid [pk]
-  session_id uuid [unique, not null, ref: - user_sessions_exam_session.id, note: 'OneToOne per session']
+  session_id uuid [unique, not null, ref: - exam_session.id, note: 'OneToOne per session']
   embedding json [default: '[]', note: 'Serialised face embedding vector']
   backend varchar(32) [default: 'stub', note: 'stub | playground | arcface']
   dims integer [default: 0]
   created_at datetime
   updated_at datetime
+
+  Note: 'Django table: monitoring_identity_reference'
 }
 
 // ─── Relationship summary (for paper narrative) ─────────────────────────────
-// authentication_user 1──* exams_exam (created_by)
-// exams_exam          1──* exams_question
-// exams_exam          1──* user_sessions_exam_session
-// authentication_user 1──* user_sessions_exam_session
-// user_sessions_exam_session 1──* user_sessions_response
-// exams_question      1──* user_sessions_response
-// user_sessions_exam_session 1──* user_sessions_session_log
-// user_sessions_exam_session 1──* behavior_log
-// user_sessions_exam_session 1──* behavior_alert
-// user_sessions_exam_session 1──1 monitoring_identity_reference
+// user            1──* exam
+// exam            1──* question
+// exam            1──* exam_session
+// user            1──* exam_session
+// exam_session    1──* response
+// question        1──* response
+// exam_session    1──* session_log
+// exam_session    1──* behavior_log
+// exam_session    1──* behavior_alert
+// exam_session    1──1 identity_reference
