@@ -10,7 +10,6 @@ import { ProfilePhotoInput } from "../shared/components/common/profile-photo-inp
 export function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLogin, setIsLogin] = useState(true); // Toggle between login and register
-  const [userType, setUserType] = useState<"admin" | "student">("student");
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -142,39 +141,6 @@ export function Login() {
         {/* Login/Register Form */}
         <div className="bg-card rounded-xl border border-border p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Login role hint (admin vs examinee portals) */}
-            {isLogin && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-3">
-                  Sign in as
-                </label>
-                <div className="flex gap-2 p-1 rounded-lg bg-muted">
-                  <button
-                    type="button"
-                    onClick={() => setUserType("admin")}
-                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                      userType === "admin"
-                        ? "bg-background shadow-sm text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Administrator
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setUserType("student")}
-                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                      userType === "student"
-                        ? "bg-background shadow-sm text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    Student
-                  </button>
-                </div>
-              </div>
-            )}
-
             {!isLogin && (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -224,7 +190,10 @@ export function Login() {
                 Username
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <User
+                  aria-hidden
+                  className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
+                />
                 <input
                   id="username"
                   name="username"
@@ -232,7 +201,7 @@ export function Login() {
                   value={formData.username}
                   onChange={handleInputChange}
                   placeholder="Enter your username"
-                  className="form-field w-full pl-10 pr-4 py-3"
+                  className="form-field w-full py-3 pl-11 pr-4"
                   required
                 />
               </div>
@@ -265,7 +234,10 @@ export function Login() {
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Lock
+                  aria-hidden
+                  className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
+                />
                 <input
                   id="password"
                   name="password"
@@ -273,7 +245,7 @@ export function Login() {
                   value={formData.password}
                   onChange={handleInputChange}
                   placeholder="Enter your password"
-                  className="form-field w-full pl-10 pr-12 py-3"
+                  className="form-field w-full py-3 pl-11 pr-12"
                   required
                 />
                 <button
@@ -297,7 +269,10 @@ export function Login() {
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Lock
+                    aria-hidden
+                    className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
+                  />
                   <input
                     id="confirmPassword"
                     name="confirmPassword"
@@ -305,7 +280,7 @@ export function Login() {
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     placeholder="Confirm your password"
-                    className="form-field w-full pl-10 pr-4 py-3"
+                    className="form-field w-full py-3 pl-11 pr-4"
                     required
                   />
                 </div>

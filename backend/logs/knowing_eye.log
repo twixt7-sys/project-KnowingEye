@@ -3482,3 +3482,9 @@ ValueError: invalid literal for int() with base 10: 'true'
 2026-07-03 02:28:38,909 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': {'exam': ErrorDetail(string='Maximum attempts (1) reached for this exam.', code='invalid')}}
 2026-07-03 02:28:38,910 [WARNING] django.request: Bad Request: /api/sessions/start/
 2026-07-03 02:29:09,218 [WARNING] django.request: Bad Request: /api/sessions/d4a24a1f-f088-4224-b5bc-5bea7486c3b1/begin/
+2026-07-03 12:42:08,376 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=127.0.0.1
+2026-07-03 12:42:08,378 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-07-03 12:42:08,379 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=127.0.0.1
+2026-07-03 12:42:08,381 [INFO] daphne.server: Listening on TCP address 127.0.0.1:8000
+2026-07-03 12:43:23,047 [WARNING] knowing_eye.api.errors: API error [token_not_valid] UserProfileViewSet.GET status=401 detail={'detail': ErrorDetail(string='Given token not valid for any token type', code='token_not_valid'), 'code': ErrorDetail(string='token_not_valid', code='token_not_valid'), 'messages': [{'token_class': ErrorDetail(string='AccessToken', code='token_not_valid'), 'token_type': ErrorDetail(string='access', code='token_not_valid'), 'message': ErrorDetail(string='Token is expired', code='token_not_valid')}]}
+2026-07-03 12:43:23,059 [WARNING] django.request: Unauthorized: /api/auth/profile/me/

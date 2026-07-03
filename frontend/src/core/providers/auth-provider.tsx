@@ -16,17 +16,13 @@ export interface User extends ProfileUser {
 
 interface AuthContextType {
   user: User | null;
-  login: (
-    username: string,
-    password: string,
-    accountType?: "admin" | "student"
-  ) => Promise<User>;
+  login: (username: string, password: string) => Promise<User>;
   register: (userData: {
     username: string;
     email: string;
     password: string;
     password2: string;
-    role: Role;
+    role?: Role;
     first_name: string;
     last_name: string;
     avatar: File;
@@ -91,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: string;
       password: string;
       password2: string;
-      role: Role;
+      role?: Role;
       first_name: string;
       last_name: string;
       avatar: File;

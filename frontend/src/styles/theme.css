@@ -212,41 +212,43 @@
   }
 }
 
-/* Solid semi-transparent form fields */
-.form-field,
-.field-input {
-  width: 100%;
-  padding: 0.625rem 0.875rem;
-  border-radius: var(--radius);
-  border: 1px solid var(--form-field-border);
-  background: var(--form-field-bg);
-  color: var(--foreground);
-  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-}
+/* Solid semi-transparent form fields — in @layer components so pl-/pr-/py- utilities can override padding */
+@layer components {
+  .form-field,
+  .field-input {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--form-field-border);
+    background: var(--form-field-bg);
+    color: var(--foreground);
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
 
-.form-field:hover,
-.field-input:hover {
-  background: var(--form-field-bg-hover);
-}
+  .form-field:hover,
+  .field-input:hover {
+    background: var(--form-field-bg-hover);
+  }
 
-.form-field:focus,
-.field-input:focus,
-.form-field:focus-visible,
-.field-input:focus-visible {
-  outline: none;
-  border-color: var(--ring);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 28%, transparent);
-}
+  .form-field:focus,
+  .field-input:focus,
+  .form-field:focus-visible,
+  .field-input:focus-visible {
+    outline: none;
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 28%, transparent);
+  }
 
-.form-field::placeholder,
-.field-input::placeholder {
-  color: var(--muted-foreground);
-  opacity: 0.85;
-}
+  .form-field::placeholder,
+  .field-input::placeholder {
+    color: var(--muted-foreground);
+    opacity: 0.85;
+  }
 
-select.form-field,
-select.field-input {
-  cursor: pointer;
+  select.form-field,
+  select.field-input {
+    cursor: pointer;
+  }
 }
 
 /* Workspace surfaces */
