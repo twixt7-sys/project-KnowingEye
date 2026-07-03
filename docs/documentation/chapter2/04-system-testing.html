@@ -27,7 +27,7 @@
       <thead><tr><th>Evaluation strand</th><th>Primary question</th><th>Method</th><th>Output type</th></tr></thead>
       <tbody>
         <tr><td>Functional verification</td><td>Does each module behave as specified?</td><td>Automated API tests, integration flows, IEEE UAT scenarios</td><td>Pass/fail per test case; defect log</td></tr>
-        <tr><td>AI classification performance</td><td>How accurately does the pipeline detect behavioral events?</td><td>Held-out labeled frame evaluation</td><td>Accuracy, precision, recall, F1-score</td></tr>
+        <tr><td>AI classification performance</td><td>How accurately does the pipeline classify examinee sessions as compliant or non-compliant?</td><td>Held-out labeled sessions; behavior-average thresholding</td><td>Accuracy, precision, recall, F1-score</td></tr>
         <tr><td>User acceptance</td><td>Do administrators and examinees find the system usable and acceptable?</td><td>UTAUT survey after mock-examination sessions</td><td>Construct means, intention scores</td></tr>
       </tbody>
     </table></div>
@@ -99,26 +99,64 @@ flowchart LR
     </table></div>
 
     <h2 id="ai-evaluation">AI Behavioral Classification Evaluation</h2>
-    <p>Classification performance is measured on a <strong>held-out labeled dataset</strong> of examination frames annotated for target behavioral events (e.g., face absence, identity mismatch, abnormal head pose, suspicious posture). The dataset combines controlled mock-examination recordings and curated public samples, split into training (excluded from this evaluation), validation, and test partitions.</p>
+    <p>Classification performance is measured on a <strong>held-out labeled dataset</strong> of mock-examination monitoring sessions. Each session comprises frame-level recordings annotated by expert reviewers for target behavioral events (e.g., face absence, identity mismatch, abnormal head pose, suspicious posture). Sessions are also assigned an overall ground-truth label—<em>compliant</em> (negative) or <em>non-compliant</em> (positive)—based on whether the examinee exhibited suspicious behavior during the session. The dataset combines controlled mock-examination recordings and curated public samples, split into training (excluded from this evaluation), validation, and test partitions.</p>
 
-    <h3>Operational Definitions</h3>
+    <h3>Threshold-Based Binary Classification</h3>
+    <p>Because the Knowing Eye pipeline produces continuous compliance scores rather than a single trained classifier output, binary predictions for metric computation use a <strong>behavior average</strong> compared against the pipeline's configured alert threshold. This mirrors the same threshold logic applied during live monitoring (<code>alert_threshold_pct</code> in <code>backend/ai/config/pipeline.yaml</code>).</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Term</th><th>Operational definition</th></tr></thead>
+      <tbody>
+        <tr><td>Behavior average</td><td>Arithmetic mean of <code>overall_compliance_pct</code> across all processed frames in an examinee's monitoring session. <code>overall_compliance_pct</code> is the weighted aggregate of face presence, gaze focus, posture, and identity metrics produced by <code>behavior/scoring.py</code>.</td></tr>
+        <tr><td>Classification threshold</td><td><code>alert_threshold_pct</code> from the AI pipeline configuration (default <strong>80%</strong>). The same value triggers per-metric alerts during live sessions.</td></tr>
+        <tr><td>Positive class</td><td>Non-compliant / suspicious session — behavior average <strong>below</strong> the classification threshold.</td></tr>
+        <tr><td>Negative class</td><td>Compliant session — behavior average <strong>at or above</strong> the classification threshold.</td></tr>
+        <tr><td>Ground truth</td><td>Expert-assigned session label: compliant (negative) or non-compliant (positive), derived from frame-level annotations and proctoring review.</td></tr>
+      </tbody>
+    </table></div>
+    <p>For each examinee session in the held-out test partition, the pipeline processes all labeled frames, computes the behavior average, and applies the threshold to produce a single predicted class. Predicted and ground-truth labels are then compared to populate the confusion matrix.</p>
+    <figure class="doc-fig">
+      <figcaption>Figure 2.D.2 - Threshold-Based Session Classification</figcaption>
+      <pre class="mermaid">
+flowchart TD
+  A[Examinee session frames] --> B[AI pipeline per frame]
+  B --> C["overall_compliance_pct per frame"]
+  C --> D["Behavior average = mean(overall_compliance_pct)"]
+  D --> E{avg &lt; alert_threshold_pct?}
+  E -->|Yes| F[Predicted Positive — non-compliant]
+  E -->|No| G[Predicted Negative — compliant]
+  F --> H[Compare vs expert ground-truth label]
+  G --> H
+  H --> I[Confusion matrix → Accuracy, Precision, Recall, F1]
+      </pre>
+      <p class="figure-hint">Each examinee contributes one prediction; metrics are computed at the session level, not per frame.</p>
+    </figure>
+
+    <h3>Confusion Matrix and Operational Definitions</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Outcome</th><th>Ground truth</th><th>Prediction</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>True positive (TP)</td><td>Positive (non-compliant)</td><td>Positive</td><td>Suspicious session correctly flagged</td></tr>
+        <tr><td>True negative (TN)</td><td>Negative (compliant)</td><td>Negative</td><td>Compliant session correctly cleared</td></tr>
+        <tr><td>False positive (FP)</td><td>Negative (compliant)</td><td>Positive</td><td>False alarm — compliant examinee flagged as suspicious</td></tr>
+        <tr><td>False negative (FN)</td><td>Positive (non-compliant)</td><td>Negative</td><td>Missed violation — suspicious examinee not flagged</td></tr>
+      </tbody>
+    </table></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Metric</th><th>Definition</th><th>Formula</th></tr></thead>
       <tbody>
-        <tr><td>Accuracy</td><td>Proportion of all predictions that are correct</td><td>(TP + TN) / (TP + TN + FP + FN)</td></tr>
+        <tr><td>Accuracy</td><td>Proportion of all session predictions that are correct</td><td>(TP + TN) / (TP + TN + FP + FN)</td></tr>
         <tr><td>Precision</td><td>Proportion of positive predictions that are true positives</td><td>TP / (TP + FP)</td></tr>
         <tr><td>Recall</td><td>Proportion of actual positives correctly identified (sensitivity)</td><td>TP / (TP + FN)</td></tr>
         <tr><td>F1-score</td><td>Harmonic mean of precision and recall</td><td>2 × (Precision × Recall) / (Precision + Recall)</td></tr>
       </tbody>
     </table></div>
-    <p>True positives (TP), false positives (FP), and false negatives (FN) are determined by comparing pipeline flags against expert-labeled ground truth per frame or per event window, using a fixed confidence threshold documented in the AI configuration.</p>
 
     <h3>Success Criteria</h3>
     <p>Prior to test execution, the following <strong>minimum acceptable thresholds</strong> are established based on proctoring literature and institutional reliability requirements. Meeting or exceeding these values on the held-out test set constitutes acceptable classification performance.</p>
     <div class="table-wrap"><table>
       <thead><tr><th>Metric</th><th>Minimum acceptable value</th><th>Rationale</th></tr></thead>
       <tbody>
-        <tr><td>Accuracy</td><td>≥ 90%</td><td>Overall correctness across balanced event classes</td></tr>
+        <tr><td>Accuracy</td><td>≥ 90%</td><td>Overall correctness across balanced compliant and non-compliant sessions</td></tr>
         <tr><td>Recall</td><td>≥ 88%</td><td>Sufficient sensitivity to true violations during live monitoring</td></tr>
         <tr><td>Precision</td><td>≥ 88%</td><td>Limits false alarms that burden administrators</td></tr>
         <tr><td>F1-score</td><td>≥ 88%</td><td>Balanced trade-off between precision and recall</td></tr>
@@ -143,7 +181,7 @@ flowchart LR
     <p>Data from all evaluation strands are consolidated into structured result records (<code>docs/testing/testing(IEEE)/results-data/</code> and UTAUT <code>results-data/</code>). Analysis proceeds as follows:</p>
     <ol>
       <li><strong>Functional tests</strong> — Compute pass rate per module and overall; map each result to a functional requirement ID in the traceability matrix.</li>
-      <li><strong>AI metrics</strong> — Generate confusion matrices per event class; derive accuracy, precision, recall, and F1-score on the held-out test partition; compare against success criteria.</li>
+      <li><strong>AI metrics</strong> — For each examinee session in the held-out test partition, compute the behavior average (<code>mean(overall_compliance_pct)</code>), apply the classification threshold (<code>alert_threshold_pct</code>), and compare predicted vs. expert ground-truth labels to build a session-level confusion matrix; derive accuracy, precision, recall, and F1-score; compare against success criteria.</li>
       <li><strong>UTAUT</strong> — Compute descriptive statistics (mean, standard deviation) per construct; compare administrator vs. examinee subgroups where sample size permits.</li>
       <li><strong>Triangulation</strong> — Relate functional pass/fail outcomes, classification performance, and acceptance scores to Specific Objective 7 in the Results and Discussion chapter.</li>
     </ol>

@@ -61,7 +61,7 @@ export async function mount(container, ctx) {
 
       <div class="card">
         <div class="card-title">Planned AI Evaluation (outstanding UAT)</div>
-        <p class="muted">The behavior pipeline uses rule-based threshold scoring rather than a single trained classifier. Formal classification metrics (Accuracy, Recall, Precision, F1-Score) require a labeled held-out set and are scheduled as a UAT activity together with ArcFace identity benchmarking and a UTAUT usability study.</p>
+        <p class="muted">The behavior pipeline uses rule-based threshold scoring rather than a single trained classifier. Formal classification metrics (Accuracy, Recall, Precision, F1-Score) are computed at the <strong>examinee-session</strong> level: the behavior average (<code>mean(overall_compliance_pct)</code>) is compared against <code>alert_threshold_pct</code> (default 80%) to classify each session as compliant or non-compliant, then compared to expert ground-truth labels. Evaluation on a labeled held-out set is scheduled as a UAT activity together with ArcFace identity benchmarking and a UTAUT usability study.</p>
         <div class="row" style="margin-top:0.5rem">
           <a class="btn btn-sm" href="testing/testing(IEEE)/README.md" target="_blank" rel="noopener">IEEE Test Pack ↗</a>
           <a class="btn btn-sm" href="testing/testing(UTAUT)/README.md" target="_blank" rel="noopener">UTAUT Pack ↗</a>

@@ -3634,3 +3634,20 @@ ValueError: invalid literal for int() with base 10: 'true'
 2026-07-03 16:41:25,659 [INFO] knowing_eye.monitoring.views: enroll session=b855a1f1-e3b1-412a-bb04-0b6a685d0477 ok=True backend=production
 2026-07-03 16:42:11,376 [WARNING] daphne.server: Application instance <Task pending name='Task-24375' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 62561] path=b'/ws/monitoring/b855a1f1-e3b1-412a-bb04-0b6a685d0477/'> took too long to shut down and was killed.
 2026-07-03 16:42:17,445 [WARNING] daphne.server: Application instance <Task pending name='Task-21017' coro=<ProtocolTypeRouter.__call__() running at C:\Users\Twixt\Desktop\_\Files\Side Hobbies\Root\project-KnowingEye\backend\venv\Lib\site-packages\channels\routing.py:48> wait_for=<Future pending cb=[shield.<locals>._outer_done_callback() at C:\Users\Twixt\AppData\Local\Programs\Python\Python312\Lib\asyncio\tasks.py:922, Task.task_wakeup()]>> for connection <WebSocketProtocol client=['127.0.0.1', 61422] path=b'/ws/monitoring/26ba5d18-c4b0-4b3c-86b0-5bec4fc23b88/'> took too long to shut down and was killed.
+2026-07-03 21:26:20,170 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=0.0.0.0
+2026-07-03 21:26:20,172 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-07-03 21:26:20,173 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=0.0.0.0
+2026-07-03 21:26:20,176 [INFO] daphne.server: Listening on TCP address 0.0.0.0:8000
+2026-07-03 21:29:00,806 [INFO] daphne.server: Killed 0 pending application instances
+2026-07-03 21:45:10,188 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=0.0.0.0
+2026-07-03 21:45:10,189 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-07-03 21:45:10,190 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=0.0.0.0
+2026-07-03 21:45:10,192 [INFO] daphne.server: Listening on TCP address 0.0.0.0:8000
+2026-07-03 22:26:38,790 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=0.0.0.0
+2026-07-03 22:26:38,799 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-07-03 22:26:38,806 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=0.0.0.0
+2026-07-03 22:26:38,814 [INFO] daphne.server: Listening on TCP address 0.0.0.0:8000
+2026-07-03 22:34:55,640 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=0.0.0.0
+2026-07-03 22:34:55,641 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-07-03 22:34:55,643 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=0.0.0.0
+2026-07-03 22:34:55,645 [INFO] daphne.server: Listening on TCP address 0.0.0.0:8000
