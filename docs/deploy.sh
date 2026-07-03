@@ -15,7 +15,7 @@ echo
 echo "One-time GitHub Pages setup:"
 echo "  1. Push this repo to GitHub (branch: main)."
 echo "  2. Settings → Pages → Build and deployment → Source: GitHub Actions."
-echo "  3. The workflow at .github/workflows/deploy.yml publishes docs-new/."
+echo "  3. The workflow at .github/workflows/deploy.yml publishes docs/."
 echo
 
 cd "$ROOT"

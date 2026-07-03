@@ -31,7 +31,7 @@ A single static master shell (SPA) acts as the project's operating system. Docum
 ES modules and `fetch()` require HTTP - **do not** open `index.html` from the file system.
 
 ```bash
-# from this folder (docs-new/)
+# from this folder (docs/)
 ./deploy.sh          # macOS/Linux
 deploy.bat           # Windows
 ```
@@ -42,14 +42,14 @@ Then open <http://localhost:8080>.
 
 1. Push the repository to GitHub (`main`).
 2. **Settings → Pages → Build and deployment → Source: GitHub Actions**.
-3. The workflow at `.github/workflows/deploy.yml` validates the seed JSON and publishes `docs-new/`.
+3. The workflow at `.github/workflows/deploy.yml` validates the seed JSON and publishes `docs/`.
 
 After setup: **save → git push → site updates** automatically.
 
 ### Cloudflare Pages (alternative)
 
 - Build command: *none*
-- Output directory: `docs-new`
+- Output directory: `docs`
 
 ## Data model
 
@@ -65,7 +65,7 @@ Use **Settings → Export all data** to download a JSON backup of your IndexedDB
 ## Folder structure
 
 ```
-docs-new/
+docs/
 ├── index.html              # Master shell (Project OS SPA)
 ├── os/
 │   ├── app.js              # bootstrap + plugin loader + hash router

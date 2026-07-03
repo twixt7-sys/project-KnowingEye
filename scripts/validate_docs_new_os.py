@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Validate docs-new Project OS imports, seeds, and doc paths."""
+"""Validate docs Project OS imports, seeds, and doc paths."""
 import json
 import re
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1] / "docs-new"
+ROOT = Path(__file__).resolve().parents[1] / "docs"
 IMPORT_RE = re.compile(r"import\s+(?:[^'\"]+from\s+)?['\"]([^'\"]+)['\"]")
 
 errors = []

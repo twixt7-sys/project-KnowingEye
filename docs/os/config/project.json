@@ -8,7 +8,7 @@
     "seed_version": 6
   },
   "deployment": {
-    "base_path": "",
+    "base_path": "/project-KnowingEye",
     "hosting": "github-pages",
     "default_branch": "main"
   },
