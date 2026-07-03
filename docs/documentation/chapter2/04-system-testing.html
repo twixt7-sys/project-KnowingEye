@@ -8,6 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../../os/assets/styles.css" />
   <link rel="stylesheet" href="assets/manuscript.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script defer src="assets/mermaid-init.js"></script>
 </head>
 <body>
   <main class="doc-wrap">
@@ -17,91 +19,157 @@
     </div>
     <p class="doc-eyebrow">Chapter II · <span class="part-badge">Part D</span></p>
     <h1>System Testing and Implementation</h1>
+    <p class="doc-lead">This section describes the <strong>evaluation methodology</strong> used to verify the Knowing Eye platform against its functional requirements, non-functional quality attributes, AI classification performance, and end-user acceptance. It follows the <em>Methods</em> portion of the IMRAD structure: research design, instruments, procedures, metrics, and analysis plan. Quantitative outcomes and interpretation are reserved for the Results and Discussion chapter.</p>
 
-    <div class="note">
-      <strong>Results pending.</strong> Tables and charts below follow the institutional “Tables result sa syst. test” format. Observed values are placeholders until formal UAT and AI benchmark runs are completed.
-    </div>
-
-    <h2 id="approach">Testing Approach</h2>
-    <p>Layered strategy aligned with IEEE documentation and automated Django tests (<code>test-all.cmd</code>).</p>
+    <h2 id="framework">Evaluation Framework</h2>
+    <p>System testing addresses <strong>Specific Objective 7</strong>—to evaluate functionality, usability, and effectiveness in improving examination monitoring. The evaluation adopts a <strong>mixed-methods design</strong> combining (1) layered software verification, (2) controlled AI benchmark testing, and (3) structured user-acceptance assessment.</p>
     <div class="table-wrap"><table>
-      <thead><tr><th>Level</th><th>Scope</th><th>Tools / Method</th><th>Status</th></tr></thead>
+      <thead><tr><th>Evaluation strand</th><th>Primary question</th><th>Method</th><th>Output type</th></tr></thead>
       <tbody>
-        <tr><td>Unit / API</td><td>REST endpoints, serializers, permissions</td><td>Django <code>APITestCase</code></td><td><span class="badge status-upcoming">Scheduled</span></td></tr>
-        <tr><td>Integration</td><td>Session lifecycle, monitoring → reports</td><td>API + manual UAT</td><td><span class="badge status-upcoming">Scheduled</span></td></tr>
-        <tr><td>WebSocket</td><td>Frame delivery, enroll, RBAC</td><td><code>monitoring/tests/</code></td><td><span class="badge status-upcoming">Scheduled</span></td></tr>
-        <tr><td>AI Pipeline</td><td>Schema, thresholds, preprocessing</td><td><code>backend/ai/tests/</code></td><td><span class="badge status-upcoming">Scheduled</span></td></tr>
-        <tr><td>User Acceptance</td><td>End-to-end exam + monitoring</td><td>IEEE UAT scenarios</td><td><span class="badge status-upcoming">Scheduled</span></td></tr>
-      </tbody>
-    </table></div>
-
-    <h2 id="results">Table - Results of System Testing</h2>
-    <p>A result is <strong>successful</strong> when observed behavior matches expected behavior. Populate after test execution.</p>
-    <div class="table-wrap"><table class="tables-results-syst-test">
-      <thead><tr><th>Test ID</th><th>Module / Feature</th><th>Expected Result</th><th>Observed Result</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr><td class="mono">ST-01</td><td>Authentication (login, JWT)</td><td>Valid credentials return tokens; invalid rejected</td><td><em>TBD</em></td><td><span class="badge status-upcoming">Pending</span></td></tr>
-        <tr><td class="mono">ST-02</td><td>Exam CRUD &amp; publish</td><td>Admin creates/publishes; RBAC enforced</td><td><em>TBD</em></td><td><span class="badge status-upcoming">Pending</span></td></tr>
-        <tr><td class="mono">ST-03</td><td>Exam session &amp; submit</td><td>Session starts, answers scored</td><td><em>TBD</em></td><td><span class="badge status-upcoming">Pending</span></td></tr>
-        <tr><td class="mono">ST-04</td><td>Monitoring WebSocket</td><td>Frames accepted; alerts broadcast</td><td><em>TBD</em></td><td><span class="badge status-upcoming">Pending</span></td></tr>
-        <tr><td class="mono">ST-05</td><td>Behavior logs &amp; reports</td><td>Logs queryable; CSV export works</td><td><em>TBD</em></td><td><span class="badge status-upcoming">Pending</span></td></tr>
-        <tr><td class="mono">ST-06</td><td>AI pipeline output</td><td>Valid schema; flags on blank frame</td><td><em>TBD</em></td><td><span class="badge status-upcoming">Pending</span></td></tr>
-      </tbody>
-    </table></div>
-
-    <h2 id="metrics">Table - Classification Metrics (Accuracy, Recall, Precision, F1-Score)</h2>
-    <p>Targets for held-out behavioral evaluation. <strong>Observed</strong> columns update after labeled dataset testing.</p>
-    <div class="table-wrap"><table class="tables-results-syst-test">
-      <thead><tr><th>Metric</th><th>Target</th><th>Observed</th><th>Interpretation</th><th>Status</th></tr></thead>
-      <tbody>
-        <tr><td>Accuracy</td><td>≥ 90%</td><td>-</td><td>Overall correct classifications</td><td><span class="badge status-upcoming">Pending</span></td></tr>
-        <tr><td>Recall</td><td>≥ 88%</td><td>-</td><td>Sensitivity to true violations</td><td><span class="badge status-upcoming">Pending</span></td></tr>
-        <tr><td>Precision</td><td>≥ 88%</td><td>-</td><td>Few false alarms</td><td><span class="badge status-upcoming">Pending</span></td></tr>
-        <tr><td>F1-Score</td><td>≥ 88%</td><td>-</td><td>Balance of precision and recall</td><td><span class="badge status-upcoming">Pending</span></td></tr>
+        <tr><td>Functional verification</td><td>Does each module behave as specified?</td><td>Automated API tests, integration flows, IEEE UAT scenarios</td><td>Pass/fail per test case; defect log</td></tr>
+        <tr><td>AI classification performance</td><td>How accurately does the pipeline detect behavioral events?</td><td>Held-out labeled frame evaluation</td><td>Accuracy, precision, recall, F1-score</td></tr>
+        <tr><td>User acceptance</td><td>Do administrators and examinees find the system usable and acceptable?</td><td>UTAUT survey after mock-examination sessions</td><td>Construct means, intention scores</td></tr>
       </tbody>
     </table></div>
 
     <figure class="doc-fig">
-      <figcaption>Figure 2.D.1 - Classification Metrics (target vs observed)</figcaption>
-      <svg viewBox="0 0 520 240" width="100%" role="img" aria-label="Classification metrics chart">
-        <text x="260" y="22" text-anchor="middle" fill="var(--muted)" font-size="12">Target (solid) · Observed (dashed - pending)</text>
-        <line x1="50" y1="200" x2="480" y2="200" stroke="var(--border)"/>
-        <line x1="50" y1="40" x2="50" y2="200" stroke="var(--border)"/>
-        <text x="42" y="200" text-anchor="end" font-size="9" fill="var(--muted)">0</text>
-        <text x="42" y="120" text-anchor="end" font-size="9" fill="var(--muted)">50</text>
-        <text x="42" y="48" text-anchor="end" font-size="9" fill="var(--muted)">100</text>
-        <g>
-          <rect x="80" y="56" width="70" height="144" rx="4" fill="#5b8def" opacity="0.85"><title>Accuracy target 90%</title></rect>
-          <rect x="80" y="200" width="70" height="0" rx="4" fill="none" stroke="#5b8def" stroke-width="2" stroke-dasharray="6 4"/>
-          <text x="115" y="44" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">90%</text>
-          <text x="115" y="218" text-anchor="middle" font-size="10" fill="var(--muted)">Accuracy</text>
-        </g>
-        <g>
-          <rect x="180" y="62" width="70" height="138" rx="4" fill="#7c5cff" opacity="0.85"/>
-          <text x="215" y="50" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">88%</text>
-          <text x="215" y="218" text-anchor="middle" font-size="10" fill="var(--muted)">Recall</text>
-        </g>
-        <g>
-          <rect x="280" y="62" width="70" height="138" rx="4" fill="#34d399" opacity="0.85"/>
-          <text x="315" y="50" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">88%</text>
-          <text x="315" y="218" text-anchor="middle" font-size="10" fill="var(--muted)">Precision</text>
-        </g>
-        <g>
-          <rect x="380" y="62" width="70" height="138" rx="4" fill="#fbbf24" opacity="0.85"/>
-          <text x="415" y="50" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text)">88%</text>
-          <text x="415" y="218" text-anchor="middle" font-size="10" fill="var(--muted)">F1-Score</text>
-        </g>
-      </svg>
-      <p class="figure-hint">Update bar heights when observed metrics are measured. Export chart screenshot for manuscript.</p>
+      <figcaption>Figure 2.D.1 - Evaluation Procedure Flow</figcaption>
+      <pre class="mermaid">
+flowchart LR
+  A[Developed prototype] --> B[Unit &amp; API tests]
+  B --> C[Integration &amp; WebSocket tests]
+  C --> D[System / UAT scenarios]
+  D --> E[AI benchmark on labeled data]
+  D --> F[UTAUT survey]
+  E --> G[Results chapter]
+  F --> G
+      </pre>
+      <p class="figure-hint">Verification proceeds bottom-up; acceptance and AI evaluation run after the integrated prototype is stable.</p>
     </figure>
 
-    <h2 id="findings">Summary of Findings</h2>
+    <h2 id="environment">Test Environment and Instruments</h2>
+    <p>All functional and acceptance tests are conducted against a <strong>controlled prototype deployment</strong> that mirrors the production topology described in Part C. The environment uses seeded institutional data and role-separated test accounts.</p>
     <div class="table-wrap"><table>
-      <thead><tr><th>Req ID</th><th>Requirement</th><th>Method</th><th>Result</th><th>Remarks</th></tr></thead>
+      <thead><tr><th>Component</th><th>Configuration</th><th>Role in evaluation</th></tr></thead>
       <tbody>
-        <tr><td colspan="5" class="muted" style="text-align:center">Traceability matrix - populate after UAT</td></tr>
+        <tr><td>Backend API</td><td>Django 6 + DRF on <code>localhost:8000</code>; SQLite (dev) or PostgreSQL (staging)</td><td>REST endpoints, session orchestration, RBAC</td></tr>
+        <tr><td>Real-time channel</td><td>Django Channels WebSocket consumers</td><td>Frame upload, alert broadcast, live monitoring</td></tr>
+        <tr><td>Frontend client</td><td>React 18 SPA on <code>localhost:5173</code></td><td>End-to-end UAT flows (exam, monitoring, reports)</td></tr>
+        <tr><td>AI pipeline</td><td><code>backend/ai/knowing_eye</code> (MediaPipe, YOLOv8, ArcFace)</td><td>Behavior classification under test frames</td></tr>
+        <tr><td>Hardware</td><td>Standard laptop with built-in or USB webcam</td><td>Captures examinee video during mock sessions</td></tr>
+        <tr><td>Test documentation</td><td>IEEE test pack (<code>docs/testing/testing(IEEE)/</code>)</td><td>Test plan, cases, traceability templates</td></tr>
+        <tr><td>Acceptance survey</td><td>UTAUT instrument (<code>docs/testing/testing(UTAUT)/</code>)</td><td>25-item Likert survey across five constructs</td></tr>
       </tbody>
     </table></div>
+    <p>Automated backend tests are executed via Django's test runner (<code>python manage.py test</code> / <code>test-all.cmd</code>). Test case identifiers follow the <code>KE-</code> prefix convention (e.g., <code>KE-AUTH</code>, <code>KE-EXAM</code>, <code>KE-MON</code>).</p>
+
+    <h2 id="participants">Participants</h2>
+    <p>User acceptance testing and the UTAUT survey involve representatives from <strong>Legacy College of Compostela — Institute of Information Technology</strong>:</p>
+    <ul>
+      <li><strong>Administrators / proctors</strong> — conduct mock exam setup, live monitoring, and report review.</li>
+      <li><strong>Examinees</strong> — complete a timed mock examination under webcam monitoring.</li>
+    </ul>
+    <p>Participants are briefed on the study purpose, data handling (session-scoped behavior logs, no public media exposure), and voluntary participation before UAT begins. Mock examinations simulate realistic duration, question types, and monitoring load without affecting live institutional records.</p>
+
+    <h2 id="functional">Functional Verification Procedure</h2>
+    <p>A <strong>layered verification strategy</strong> aligned with IEEE 829 test documentation is applied. Each layer increases scope from isolated units to full end-to-end workflows. A test is recorded as <em>passed</em> when observed behavior matches the documented expected result; otherwise it is logged as <em>failed</em> with steps to reproduce.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Level</th><th>Scope</th><th>Procedure</th><th>Tools</th></tr></thead>
+      <tbody>
+        <tr><td>Unit / API</td><td>REST endpoints, serializers, permission classes</td><td>Execute isolated request–response assertions per endpoint contract</td><td>Django <code>APITestCase</code></td></tr>
+        <tr><td>Integration</td><td>Session lifecycle, monitoring → behavior logs → reports</td><td>Chain API calls across modules; verify data persistence and RBAC boundaries</td><td>API tests + seeded fixtures</td></tr>
+        <tr><td>WebSocket</td><td>Frame delivery, enrollment, role-gated consumers</td><td>Connect authenticated clients; submit frames; assert broadcast and storage</td><td><code>monitoring/tests/</code></td></tr>
+        <tr><td>AI pipeline</td><td>Output schema, threshold logic, blank-frame handling</td><td>Feed controlled inputs; validate JSON schema and flag semantics</td><td><code>backend/ai/tests/</code></td></tr>
+        <tr><td>System / UAT</td><td>Full examination workflow from login through scoring and review</td><td>Execute IEEE UAT scenarios with human operators on the prototype UI</td><td>IEEE scenario scripts; screen/session recordings as evidence</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Planned System Test Scenarios</h3>
+    <p>The following scenarios define the minimum acceptance coverage for system-level verification. Each maps to one or more <code>KE-</code> test cases in the IEEE pack.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Scenario ID</th><th>Module / feature</th><th>Expected behavior (acceptance criterion)</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">ST-01</td><td>Authentication (login, JWT)</td><td>Valid credentials issue access and refresh tokens; invalid credentials are rejected with appropriate HTTP status</td></tr>
+        <tr><td class="mono">ST-02</td><td>Exam CRUD &amp; publish</td><td>Administrator creates, edits, and publishes exams; examinee cannot access unpublished content</td></tr>
+        <tr><td class="mono">ST-03</td><td>Exam session &amp; submit</td><td>Session starts with timer enforcement; answers persist; submission produces a scored result</td></tr>
+        <tr><td class="mono">ST-04</td><td>Monitoring WebSocket</td><td>Webcam frames are accepted, processed, and alerts broadcast to authorized monitors</td></tr>
+        <tr><td class="mono">ST-05</td><td>Behavior logs &amp; reports</td><td>Logs are queryable by session; CSV export and dashboard summaries reflect stored events</td></tr>
+        <tr><td class="mono">ST-06</td><td>AI pipeline output</td><td>Pipeline returns valid schema; blank or absent frames trigger defined fallback flags</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="ai-evaluation">AI Behavioral Classification Evaluation</h2>
+    <p>Classification performance is measured on a <strong>held-out labeled dataset</strong> of examination frames annotated for target behavioral events (e.g., face absence, identity mismatch, abnormal head pose, suspicious posture). The dataset combines controlled mock-examination recordings and curated public samples, split into training (excluded from this evaluation), validation, and test partitions.</p>
+
+    <h3>Operational Definitions</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Metric</th><th>Definition</th><th>Formula</th></tr></thead>
+      <tbody>
+        <tr><td>Accuracy</td><td>Proportion of all predictions that are correct</td><td>(TP + TN) / (TP + TN + FP + FN)</td></tr>
+        <tr><td>Precision</td><td>Proportion of positive predictions that are true positives</td><td>TP / (TP + FP)</td></tr>
+        <tr><td>Recall</td><td>Proportion of actual positives correctly identified (sensitivity)</td><td>TP / (TP + FN)</td></tr>
+        <tr><td>F1-score</td><td>Harmonic mean of precision and recall</td><td>2 × (Precision × Recall) / (Precision + Recall)</td></tr>
+      </tbody>
+    </table></div>
+    <p>True positives (TP), false positives (FP), and false negatives (FN) are determined by comparing pipeline flags against expert-labeled ground truth per frame or per event window, using a fixed confidence threshold documented in the AI configuration.</p>
+
+    <h3>Success Criteria</h3>
+    <p>Prior to test execution, the following <strong>minimum acceptable thresholds</strong> are established based on proctoring literature and institutional reliability requirements. Meeting or exceeding these values on the held-out test set constitutes acceptable classification performance.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Metric</th><th>Minimum acceptable value</th><th>Rationale</th></tr></thead>
+      <tbody>
+        <tr><td>Accuracy</td><td>≥ 90%</td><td>Overall correctness across balanced event classes</td></tr>
+        <tr><td>Recall</td><td>≥ 88%</td><td>Sufficient sensitivity to true violations during live monitoring</td></tr>
+        <tr><td>Precision</td><td>≥ 88%</td><td>Limits false alarms that burden administrators</td></tr>
+        <tr><td>F1-score</td><td>≥ 88%</td><td>Balanced trade-off between precision and recall</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="utaut">Usability and Acceptance Evaluation (UTAUT)</h2>
+    <p>End-user acceptance is assessed with the <strong>Unified Theory of Acceptance and Use of Technology (UTAUT)</strong> survey instrument adapted for webcam-monitored online examinations. After completing a mock examination or monitoring session, each participant responds to 25 Likert-scale items (1 = strongly disagree, 5 = strongly agree) grouped into five constructs:</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Construct</th><th>Items</th><th>What it measures</th></tr></thead>
+      <tbody>
+        <tr><td>Performance Expectancy (PE)</td><td>1–5</td><td>Perceived improvement in monitoring efficiency and exam integrity</td></tr>
+        <tr><td>Effort Expectancy (EE)</td><td>6–10</td><td>Ease of learning and operating the platform</td></tr>
+        <tr><td>Social Influence (SI)</td><td>11–15</td><td>Institutional encouragement and peer norms</td></tr>
+        <tr><td>Facilitating Conditions (FC)</td><td>16–20</td><td>Availability of resources, training, and technical support</td></tr>
+        <tr><td>Behavioral Intention (BI)</td><td>21–25</td><td>Willingness to adopt Knowing Eye in future examinations</td></tr>
+      </tbody>
+    </table></div>
+    <p>Construct scores are computed as the arithmetic mean of item responses within each construct. Higher means indicate stronger acceptance. Open-ended feedback is collected optionally to supplement quantitative scores.</p>
+
+    <h2 id="analysis">Data Collection and Analysis Plan</h2>
+    <p>Data from all evaluation strands are consolidated into structured result records (<code>docs/testing/testing(IEEE)/results-data/</code> and UTAUT <code>results-data/</code>). Analysis proceeds as follows:</p>
+    <ol>
+      <li><strong>Functional tests</strong> — Compute pass rate per module and overall; map each result to a functional requirement ID in the traceability matrix.</li>
+      <li><strong>AI metrics</strong> — Generate confusion matrices per event class; derive accuracy, precision, recall, and F1-score on the held-out test partition; compare against success criteria.</li>
+      <li><strong>UTAUT</strong> — Compute descriptive statistics (mean, standard deviation) per construct; compare administrator vs. examinee subgroups where sample size permits.</li>
+      <li><strong>Triangulation</strong> — Relate functional pass/fail outcomes, classification performance, and acceptance scores to Specific Objective 7 in the Results and Discussion chapter.</li>
+    </ol>
+
+    <h2 id="traceability">Requirements Traceability</h2>
+    <p>Every test case maintains bidirectional traceability from <strong>requirement → test → result</strong>. The IEEE test pack documents this linkage so that coverage gaps are visible before UAT sign-off.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Req ID</th><th>Requirement (summary)</th><th>Verification method</th><th>Test reference</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">FR-01</td><td>Role-based authentication (ADMIN, EXAMINEE)</td><td>API + UAT</td><td><code>KE-AUTH-*</code>, ST-01</td></tr>
+        <tr><td class="mono">FR-02</td><td>Exam and question management</td><td>API + UAT</td><td><code>KE-EXAM-*</code>, ST-02</td></tr>
+        <tr><td class="mono">FR-03</td><td>Session lifecycle and scoring</td><td>Integration + UAT</td><td><code>KE-SESS-*</code>, ST-03</td></tr>
+        <tr><td class="mono">FR-04</td><td>Real-time monitoring and frame processing</td><td>WebSocket + UAT</td><td><code>KE-MON-*</code>, ST-04</td></tr>
+        <tr><td class="mono">FR-05</td><td>Behavior logs, alerts, and reports</td><td>Integration + UAT</td><td><code>KE-BEH-*</code>, <code>KE-RPT-*</code>, ST-05</td></tr>
+        <tr><td class="mono">FR-06</td><td>AI behavioral classification</td><td>Pipeline unit tests + benchmark</td><td><code>backend/ai/tests/</code>, ST-06</td></tr>
+        <tr><td class="mono">NFR-01</td><td>RBAC enforcement on all routes</td><td>Permission assertion tests</td><td><code>KE-AUTH-*</code>, cross-module API tests</td></tr>
+        <tr><td class="mono">NFR-02</td><td>Webcam data privacy</td><td>Inspection + UAT</td><td>Session-scoped storage review</td></tr>
+      </tbody>
+    </table></div>
+    <p>Observed pass/fail outcomes and metric values derived from this methodology are reported in the <strong>Results and Discussion</strong> chapter, not in this section.</p>
+
+    <div class="cross-links">
+      <a class="btn btn-sm" href="../../testing/testing(IEEE)/README.md" target="_blank" rel="noopener">IEEE Test Pack ↗</a>
+      <a class="btn btn-sm" href="../../testing/testing(UTAUT)/README.md" target="_blank" rel="noopener">UTAUT Survey Pack ↗</a>
+      <a class="btn btn-sm" href="../../general/Study_Objectives_IPO.md" target="_blank" rel="noopener">Study Objectives (IPO) ↗</a>
+    </div>
   </main>
 </body>
 </html>
