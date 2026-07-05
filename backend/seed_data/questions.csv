@@ -6,8 +6,8 @@ id,exam_id,question_text,question_type,options,correct_answer,points,order,creat
 5,1,Identity enrollment captures a reference photo for comparison during the exam.,true_false,"['True', 'False']",True,1,5,2026-06-02 09:05:00,2026-06-02 09:06:00
 6,1,What should you do if your camera disconnects?,multiple_choice,"['Continue silently', 'Refresh the page and re-allow camera access', 'Submit immediately', 'Switch to another browser tab']",Refresh the page and re-allow camera access,1,6,2026-06-02 09:06:00,2026-06-02 09:07:00
 7,1,"Describe how you prepared your workspace for a proctored exam (lighting, background, desk).",essay,[],"Clear desk, good lighting, neutral background.",2,7,2026-06-02 09:07:00,2026-06-02 09:08:00
-8,1,Which metric tracks whether your head is facing the camera?,multiple_choice,"['Face presence', 'Identity match', 'Head facing camera', 'Object clear']",Head facing camera,1,8,2026-06-02 09:08:00,2026-06-02 09:09:00
-9,1,Prohibited objects such as phones may trigger monitoring alerts.,true_false,"['True', 'False']",True,1,9,2026-06-02 09:09:00,2026-06-02 09:10:00
+8,1,Which metric tracks whether your head is facing the camera?,multiple_choice,"['Face presence', 'Identity match', 'Head facing camera', 'Posture compliance']",Head facing camera,1,8,2026-06-02 09:08:00,2026-06-02 09:09:00
+9,1,Looking away from the camera may trigger monitoring alerts.,true_false,"['True', 'False']",True,1,9,2026-06-02 09:09:00,2026-06-02 09:10:00
 10,1,Name one behavior that could lower your posture compliance score.,short_answer,[],Slouching or leaving the upper body out of frame.,1,10,2026-06-02 09:10:00,2026-06-02 09:11:00
 11,2,What is the time complexity of binary search on a sorted array?,multiple_choice,"['O(n)', 'O(log n)', 'O(n log n)', 'O(1)']",O(log n),1,1,2026-06-03 09:01:00,2026-06-03 09:02:00
 12,2,A stack follows FIFO ordering.,true_false,"['True', 'False']",False,1,2,2026-06-03 09:02:00,2026-06-03 09:03:00

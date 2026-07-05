@@ -47,11 +47,13 @@ class ReportsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("total_sessions", response.data)
         self.assertIn("alerts_by_severity", response.data)
+        self.assertIn("by_department", response.data)
 
     def test_session_report_detail(self):
         response = self.client.get(f"/api/reports/sessions/{self.session.id}/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("session", response.data)
+        self.assertIn("department_analytics", response.data)
 
     def test_list_session_reports_filters(self):
         response = self.client.get("/api/reports/sessions/?status=in_progress")

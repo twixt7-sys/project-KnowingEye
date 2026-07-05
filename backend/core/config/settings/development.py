@@ -7,6 +7,11 @@ from .base import Csv, decouple_config, env_bool
 
 DEBUG = env_bool("DJANGO_DEBUG", default=True)
 
+# Accept any Host in development so LAN IPs work without editing .env per network.
+# Vite's proxy uses changeOrigin (Host=127.0.0.1); this covers direct backend access too.
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]  # noqa: F405
+
 CORS_ALLOW_ALL_ORIGINS = env_bool("CORS_ALLOW_ALL_ORIGINS", default=True)
 CORS_ALLOWED_ORIGINS = decouple_config(  # noqa: F405
     "CORS_ALLOWED_ORIGINS",

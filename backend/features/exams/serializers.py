@@ -216,6 +216,7 @@ class ExamListSerializer(serializers.ModelSerializer):
             "available_until",
             "max_attempts",
             "monitoring_enabled",
+            "shuffle_questions",
             "is_open",
             "created_by_name",
             "created_at",
@@ -263,6 +264,7 @@ class ExamTakeSerializer(serializers.ModelSerializer):
             "available_until",
             "max_attempts",
             "monitoring_enabled",
+            "shuffle_questions",
             "is_open",
             "questions",
         ]
@@ -300,6 +302,7 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "available_until",
             "max_attempts",
             "monitoring_enabled",
+            "shuffle_questions",
             "created_by",
             "created_by_name",
             "created_by_email",
@@ -352,6 +355,7 @@ class ExamCreateUpdateSerializer(serializers.ModelSerializer):
             "available_until",
             "max_attempts",
             "monitoring_enabled",
+            "shuffle_questions",
             "status",
         ]
         read_only_fields = ["id", "exam_code"]

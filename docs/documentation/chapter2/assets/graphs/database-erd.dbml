@@ -156,7 +156,7 @@ Table session_log {
 Table behavior_log {
   id uuid [pk]
   session_id uuid [not null, ref: > exam_session.id]
-  event_type varchar(32) [note: 'no_face | multiple_faces | looking_away | bad_posture | leaving_seat | object_detected | identity_mismatch | suspicious_pattern']
+  event_type varchar(32) [note: 'no_face | multiple_faces | looking_away | bad_posture | leaving_seat | identity_mismatch | suspicious_pattern']
   score float [note: 'Compliance 0.0–1.0']
   confidence float [default: 0]
   metadata json [default: '{}']

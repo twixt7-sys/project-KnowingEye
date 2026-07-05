@@ -35,8 +35,6 @@ export function Profile() {
         last_name: profile.last_name,
         email: profile.email,
         phone: profile.phone,
-        institution: profile.institution,
-        student_id: profile.student_id,
       });
       setSavedAt(new Date());
       await refresh();
@@ -132,8 +130,6 @@ export function Profile() {
             <Field label="Last name" value={profile.last_name} onChange={(v) => onChange("last_name", v)} />
             <Field label="Email" value={profile.email} type="email" onChange={(v) => onChange("email", v)} />
             <Field label="Phone" value={profile.phone} onChange={(v) => onChange("phone", v)} />
-            <Field label="Institution" value={profile.institution} onChange={(v) => onChange("institution", v)} />
-            <Field label="Student ID" value={profile.student_id} onChange={(v) => onChange("student_id", v)} />
 
             <div className="sm:col-span-2 flex items-center justify-between mt-1">
               {savedAt ? (

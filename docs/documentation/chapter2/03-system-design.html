@@ -93,7 +93,7 @@ erDiagram
     <p>The API response contract for frame analysis (used by the frontend and WebSocket) follows this structure:</p>
     <pre><code>{
   "metrics": { "face_presence_pct", "gaze_focus_pct", "posture_compliance_pct",
-               "identity_match_pct", "object_clear_pct", "overall_compliance_pct" },
+               "identity_match_pct", "overall_compliance_pct" },
   "events": [{ "event_type", "score_pct", "confidence_pct", "metadata" }],
   "alerts": [{ "type", "severity", "message", "metric_pct" }]
 }</code></pre>
@@ -199,10 +199,6 @@ erDiagram
         <div><h3>ArcFace / InsightFace (<code>buffalo_l</code>)</h3><p><strong>In project:</strong> <code>arcface_backend.py</code> produces 512-D embeddings; enrolled at exam start and verified each frame via cosine distance (<code>identity_match_threshold: 0.42</code> in <code>pipeline.yaml</code>).<br><strong>Accuracy:</strong> LFW 99.77%, CFP-FP 98.56%, AgeDB-30 98.18% (InsightFace model zoo).</p></div>
       </article>
       <article class="tech-card">
-        <figure class="tech-visual"><img src="assets/tech/yolo.svg" alt="YOLO logo" width="64" height="64" /></figure>
-        <div><h3>YOLOv8n (Ultralytics)</h3><p><strong>In project:</strong> Detects persons and prohibited objects (COCO class 67: cell phone) to feed <code>object_clear_pct</code> in the monitoring API schema; configured in <code>pipeline.yaml</code> and <code>assets/graphs/ai-pipeline-component.json</code>.<br><strong>Accuracy:</strong> mAP@50-95 37.3%, mAP@50 52.0% on COCO val (YOLOv8n official benchmark).</p></div>
-      </article>
-      <article class="tech-card">
         <div><h3>OpenCV + NumPy</h3><p><strong>In project:</strong> <code>preprocessing/frame.py</code> handles BGR conversion, resize (≤640 px), denoise, and YCbCr histogram equalization before inference.</p></div>
       </article>
       <article class="tech-card">
@@ -269,7 +265,7 @@ erDiagram
     <div class="two-col">
       <div class="card"><h4>1. Data Collection</h4><p class="muted" style="font-size:0.9rem">Browser <code>getUserMedia()</code> captures webcam video; canvas encodes JPEG/base64 at ~1 FPS. Transport: WebSocket <code>/ws/monitoring/{session_id}/</code> (REST <code>/api/monitoring/frame/</code> fallback).</p></div>
       <div class="card"><h4>2. Pre-processing</h4><p class="muted" style="font-size:0.9rem">Base64 → BGR; resize to ≤640px; optional denoise; YCbCr histogram equalization. Config: <code>backend/ai/config/pipeline.yaml</code>.</p></div>
-      <div class="card"><h4>3. Feature Extraction</h4><p class="muted" style="font-size:0.9rem">MediaPipe (468 face landmarks, head yaw/pitch, posture ratios), YOLOv8 object detections, ArcFace identity embedding.</p></div>
+      <div class="card"><h4>3. Feature Extraction</h4><p class="muted" style="font-size:0.9rem">MediaPipe (468 face landmarks, head yaw/pitch, posture ratios) and ArcFace identity embedding.</p></div>
       <div class="card"><h4>4. Classification &amp; Scoring</h4><p class="muted" style="font-size:0.9rem">Threshold-based 0–100% metrics, rule-based event flags, sliding-window temporal patterns, and weighted aggregation into <code>overall_compliance_pct</code>.</p></div>
     </div>
 

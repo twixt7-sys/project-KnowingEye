@@ -64,6 +64,7 @@ export interface Exam {
   available_until?: string | null;
   max_attempts?: number;
   monitoring_enabled?: boolean;
+  shuffle_questions?: boolean;
   is_open?: boolean;
   created_at: string;
   updated_at?: string;
@@ -208,6 +209,30 @@ export interface AlertRow {
   created_at: string;
 }
 
+export interface DepartmentAnalyticsRow {
+  department_id: number | null;
+  department_name: string;
+  department_abbreviation: string;
+  completed_sessions: number;
+  average_score: number | null;
+  pass_rate: number | null;
+  alert_count: number;
+}
+
+export interface SessionDepartmentAnalytics {
+  department_id: number;
+  department_name: string;
+  department_abbreviation: string;
+  exam_average_score: number | null;
+  exam_pass_rate: number | null;
+  exam_completed_sessions: number;
+  department_average_score: number | null;
+  department_pass_rate: number | null;
+  department_completed_sessions: number;
+  score_vs_department_avg: number | null;
+  percentile_in_department: number | null;
+}
+
 export interface ReportSummary {
   total_sessions: number;
   active_sessions: number;
@@ -220,6 +245,7 @@ export interface ReportSummary {
   pass_rate: number | null;
   alerts_by_severity: { severity: string; count: number }[];
   events_by_type: { event_type: string; count: number }[];
+  by_department: DepartmentAnalyticsRow[];
   generated_at: string;
 }
 
@@ -227,6 +253,9 @@ export interface SessionReportRow {
   id: string;
   exam_id: number;
   exam_title: string;
+  department_id?: number | null;
+  department_name?: string | null;
+  department_abbreviation?: string | null;
   user: string;
   user_full_name: string;
   status: string;
@@ -713,6 +742,7 @@ class ApiClient {
   async listSessionReports(params?: {
     status?: string;
     exam?: number;
+    department?: number;
     search?: string;
     page?: number;
     page_size?: number;
@@ -728,6 +758,7 @@ class ApiClient {
       behavior_summary: { event_type: string; count: number; avg_score: number }[];
       behavior_logs: BehaviorLogRow[];
       alerts: AlertRow[];
+      department_analytics: SessionDepartmentAnalytics | null;
     }>(`/reports/sessions/${sessionId}/`);
   }
 
@@ -795,6 +826,15 @@ export class ApiError extends Error {
   }
 }
 
+function statusFallback(status: number): string {
+  if (status === 401) return "Please sign in again.";
+  if (status === 403) return "You don't have permission to do that.";
+  if (status === 404) return "We couldn't find what you're looking for.";
+  if (status === 429) return "Too many requests. Please wait a moment and try again.";
+  if (status >= 500) return "Something went wrong on our end. Please try again.";
+  return "Something went wrong. Please try again.";
+}
+
 /**
  * Normalize any thrown value into a user-facing error string.
  *
@@ -805,9 +845,18 @@ export class ApiError extends Error {
  * @param fallback - Message to use when no specific message can be derived.
  * @returns A non-empty, human-readable error message.
  */
-export function formatApiError(err: unknown, fallback = "Request failed"): string {
-  if (err instanceof ApiError) return err.detail() || fallback;
-  if (err instanceof Error) return err.message || fallback;
+export function formatApiError(err: unknown, fallback = "Something went wrong. Please try again."): string {
+  if (err instanceof ApiError) {
+    const detail = err.detail();
+    // Prefer a specific payload message; use status-aware copy for the generic fallback.
+    if (detail && detail !== "Something went wrong. Please try again.") return detail;
+    return statusFallback(err.status);
+  }
+  if (err instanceof Error) {
+    // ApiError subclasses Error; bare "API 400" messages are not user-friendly.
+    if (/^API \d{3}$/.test(err.message)) return fallback;
+    return err.message || fallback;
+  }
   return fallback;
 }
 

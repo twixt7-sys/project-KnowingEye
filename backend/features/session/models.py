@@ -86,6 +86,11 @@ class ExamSession(models.Model):
         blank=True,
         help_text='Whether the examinee passed the exam'
     )
+    question_order = models.JSONField(
+        null=True,
+        blank=True,
+        help_text='Question IDs in the order presented to this examinee (set when the exam begins)',
+    )
 
     class Meta:
         db_table = 'user_sessions_exam_session'
@@ -98,11 +103,12 @@ class ExamSession(models.Model):
             models.Index(fields=['user', 'started_at']),
         ]
         constraints = [
+            # One active (setup / in-progress) session per examinee across all exams.
             models.UniqueConstraint(
-                fields=['exam', 'user'],
+                fields=['user'],
                 condition=models.Q(status__in=['in_progress', 'setup']),
-                name='unique_active_session_per_exam_user'
-            )
+                name='unique_active_session_per_user',
+            ),
         ]
 
     def __str__(self):

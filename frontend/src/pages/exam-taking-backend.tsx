@@ -23,6 +23,7 @@ import {
 import {
   examAPI,
   apiClient,
+  formatApiError,
   type ExamSession,
   type Question,
   type ResponseData,
@@ -255,7 +256,7 @@ export function ExamTakingWithBackend() {
         });
         setTimeSpent(initialTimeSpent);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load exam");
+        setError(formatApiError(err, "Failed to load exam"));
       } finally {
         setLoading(false);
       }
@@ -374,7 +375,7 @@ export function ExamTakingWithBackend() {
         state: { session: result.session, results: result.results }
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit exam');
+      setError(formatApiError(err, "Failed to submit exam"));
     } finally {
       setSubmitting(false);
       setShowSubmitModal(false);
@@ -552,18 +553,31 @@ export function ExamTakingWithBackend() {
                   <ChevronLeft className="w-5 h-5" />
                   Previous
                 </button>
-                <button
-                  onClick={() =>
-                    setCurrentQuestion(
-                      Math.min(questions.length - 1, currentQuestion + 1)
-                    )
-                  }
-                  disabled={currentQuestion === questions.length - 1}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Next
-                  <ChevronRight className="w-5 h-5" />
-                </button>
+                {currentQuestion === questions.length - 1 ? (
+                  <button
+                    onClick={() => setShowSubmitModal(true)}
+                    disabled={submitting}
+                    className="inline-flex items-center gap-2 px-6 py-2 rounded-lg bg-gradient-to-r from-primary to-secondary text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {submitting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "Submit Exam"
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() =>
+                      setCurrentQuestion(
+                        Math.min(questions.length - 1, currentQuestion + 1)
+                      )
+                    }
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-accent transition-colors"
+                  >
+                    Next
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -109,8 +109,23 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
     def get_exam(self, obj):
         request = self.context.get("request")
         if request and getattr(request.user, "is_admin", lambda: False)():
-            return ExamDetailSerializer(obj.exam, context=self.context).data
-        return ExamTakeSerializer(obj.exam, context=self.context).data
+            data = ExamDetailSerializer(obj.exam, context=self.context).data
+        else:
+            data = ExamTakeSerializer(obj.exam, context=self.context).data
+        return self._apply_question_order(data, obj.question_order)
+
+    @staticmethod
+    def _apply_question_order(exam_data, question_order):
+        """Present questions in the per-session order (shuffled or canonical)."""
+        questions = exam_data.get("questions")
+        if not questions or not question_order:
+            return exam_data
+        by_id = {q["id"]: q for q in questions}
+        ordered = [by_id[qid] for qid in question_order if qid in by_id]
+        seen = set(question_order)
+        ordered.extend(q for q in questions if q["id"] not in seen)
+        exam_data = {**exam_data, "questions": ordered}
+        return exam_data
 
     def get_time_elapsed_seconds(self, obj):
         return int(obj.time_elapsed)

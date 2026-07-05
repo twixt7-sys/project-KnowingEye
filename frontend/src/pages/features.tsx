@@ -30,11 +30,11 @@ export function Features() {
       category: "AI Monitoring",
       icon: Brain,
       items: [
-        "Real-time facial detection using YOLO",
+        "Real-time facial detection using MediaPipe",
         "Head pose estimation and tracking",
         "Eye gaze direction analysis",
         "Posture recognition and classification",
-        "Object detection (phones, notes, etc.)",
+        "Identity verification via face embeddings",
       ],
     },
     {
@@ -184,7 +184,7 @@ export function Features() {
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <div className="w-1 h-1 rounded-full bg-primary" />
-                    YOLO for object detection
+                    MediaPipe for face and pose detection
                   </li>
                   <li className="flex items-center gap-2">
                     <div className="w-1 h-1 rounded-full bg-primary" />

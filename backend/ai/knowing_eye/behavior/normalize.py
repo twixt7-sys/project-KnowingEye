@@ -51,12 +51,6 @@ def identity_match_pct(
     return 100.0 if match else 0.0
 
 
-def object_compliance_pct(detected: bool, confidence: float = 0.0) -> float:
-    if not detected:
-        return 100.0
-    return clamp_pct(100.0 * (1.0 - min(1.0, max(0.0, confidence))))
-
-
 def overall_compliance_pct(
     face_pct: float,
     gaze_pct: float,

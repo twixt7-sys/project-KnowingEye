@@ -8,7 +8,7 @@ import {
   Eye,
   Loader2,
 } from "lucide-react";
-import { apiClient, type Exam, type SessionReportRow } from "../core/config/api";
+import { apiClient, formatApiError, type Exam, type SessionReportRow } from "../core/config/api";
 import { PageHeader } from "../shared/components/layout/page-header";
 import { PageShell } from "../shared/components/layout/page-shell";
 import { SectionPanel } from "../shared/components/layout/section-panel";
@@ -82,7 +82,7 @@ export function StudentDashboard() {
         );
         setCompletedExams(sessions.results.map(mapSessionToCard));
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not load exams");
+        setError(formatApiError(err, "Could not load exams"));
       } finally {
         setLoading(false);
       }

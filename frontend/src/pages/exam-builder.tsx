@@ -45,6 +45,7 @@ type ExamForm = {
   passing_score: number;
   max_attempts: number;
   monitoring_enabled: boolean;
+  shuffle_questions: boolean;
   available_from: string;
   available_until: string;
 };
@@ -86,6 +87,7 @@ function examToForm(exam: Exam): ExamForm {
     passing_score: exam.passing_score,
     max_attempts: exam.max_attempts ?? 1,
     monitoring_enabled: exam.monitoring_enabled !== false,
+    shuffle_questions: exam.shuffle_questions === true,
     available_from: toDatetimeLocal(exam.available_from),
     available_until: toDatetimeLocal(exam.available_until),
   };
@@ -161,6 +163,7 @@ export function ExamBuilder() {
         passing_score: form.passing_score,
         max_attempts: form.max_attempts,
         monitoring_enabled: form.monitoring_enabled,
+        shuffle_questions: form.shuffle_questions,
         available_from: toIsoOrNull(form.available_from),
         available_until: toIsoOrNull(form.available_until),
       });
@@ -517,25 +520,46 @@ export function ExamBuilder() {
                 disabled={!isDraft}
               />
             </Field>
-            <div className="rounded-lg border border-border/70 bg-muted/20 p-4">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <Checkbox
-                  checked={form.monitoring_enabled}
-                  onCheckedChange={(checked) =>
-                    setForm({ ...form, monitoring_enabled: checked === true })
-                  }
-                  disabled={!isDraft}
-                  className="mt-0.5"
-                />
-                <span>
-                  <span className="block text-sm font-medium">Camera monitoring</span>
-                  <span className="block text-xs text-muted-foreground mt-1">
-                    When enabled, examinees complete proctoring setup and their webcam stays active
-                    during the exam. Disable for practice quizzes or environments where monitoring is
-                    not required.
+            <div className="space-y-3">
+              <div className="rounded-lg border border-border/70 bg-muted/20 p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <Checkbox
+                    checked={form.monitoring_enabled}
+                    onCheckedChange={(checked) =>
+                      setForm({ ...form, monitoring_enabled: checked === true })
+                    }
+                    disabled={!isDraft}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium">Camera monitoring</span>
+                    <span className="block text-xs text-muted-foreground mt-1">
+                      When enabled, examinees complete proctoring setup and their webcam stays active
+                      during the exam. Disable for practice quizzes or environments where monitoring is
+                      not required.
+                    </span>
                   </span>
-                </span>
-              </label>
+                </label>
+              </div>
+              <div className="rounded-lg border border-border/70 bg-muted/20 p-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <Checkbox
+                    checked={form.shuffle_questions}
+                    onCheckedChange={(checked) =>
+                      setForm({ ...form, shuffle_questions: checked === true })
+                    }
+                    disabled={!isDraft}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium">Shuffle questions</span>
+                    <span className="block text-xs text-muted-foreground mt-1">
+                      Present questions in a random order for each examinee. The order stays fixed for
+                      the duration of their attempt.
+                    </span>
+                  </span>
+                </label>
+              </div>
             </div>
             <div className="grid md:grid-cols-3 gap-4">
               <Field label="Duration (minutes)">

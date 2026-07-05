@@ -189,3 +189,87 @@ class SessionAPITests(APITestCase):
         self.exam.save(update_fields=["available_from"])
         response = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_start_second_exam_while_first_is_active(self):
+        other_exam = Exam.objects.create(
+            title="Other Exam",
+            description="",
+            duration_minutes=10,
+            passing_score=50,
+            status=Exam.Status.ACTIVE,
+            created_by=self.admin,
+        )
+
+        first = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+
+        second = self.client.post("/api/sessions/start/", {"exam": other_exam.id}, format="json")
+        self.assertEqual(second.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already have an exam", str(second.data).lower())
+
+        # Same exam can still be resumed.
+        resume = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        self.assertEqual(resume.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resume.data["session"]["id"], first.data["session"]["id"])
+
+    def test_can_start_another_exam_after_submit(self):
+        from ai.identity_store import store_reference
+
+        other_exam = Exam.objects.create(
+            title="Next Exam",
+            description="",
+            duration_minutes=10,
+            passing_score=50,
+            status=Exam.Status.ACTIVE,
+            created_by=self.admin,
+            monitoring_enabled=False,
+        )
+
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        session_id = start.data["session"]["id"]
+        session = ExamSession.objects.get(pk=session_id)
+        store_reference(session, [0.1] * 128, "test")
+        self.client.post(f"/api/sessions/{session_id}/begin/", format="json")
+        self.client.post(
+            f"/api/sessions/{session_id}/submit/",
+            {
+                "responses": [
+                    {
+                        "question_id": self.question.id,
+                        "answer_text": "True",
+                        "time_spent": 5,
+                    }
+                ],
+                "time_remaining": 100,
+            },
+            format="json",
+        )
+
+        next_start = self.client.post(
+            "/api/sessions/start/", {"exam": other_exam.id}, format="json"
+        )
+        self.assertEqual(next_start.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(next_start.data["session"]["status"], ExamSession.Status.IN_PROGRESS)
+
+    def test_stale_setup_on_other_exam_does_not_block(self):
+        other_exam = Exam.objects.create(
+            title="Stale Setup Exam",
+            description="",
+            duration_minutes=10,
+            passing_score=50,
+            status=Exam.Status.ACTIVE,
+            created_by=self.admin,
+        )
+        stale = ExamSession.objects.create(
+            exam=other_exam,
+            user=self.examinee,
+            status=ExamSession.Status.SETUP,
+        )
+        ExamSession.objects.filter(pk=stale.pk).update(
+            started_at=timezone.now() - timedelta(minutes=35)
+        )
+
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        self.assertEqual(start.status_code, status.HTTP_201_CREATED)
+        stale.refresh_from_db()
+        self.assertEqual(stale.status, ExamSession.Status.EXPIRED)

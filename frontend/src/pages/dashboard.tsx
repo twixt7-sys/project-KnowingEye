@@ -36,6 +36,7 @@ interface CreateExamForm {
   department_id: number | "";
   max_attempts: number;
   monitoring_enabled: boolean;
+  shuffle_questions: boolean;
 }
 
 const EMPTY_FORM: CreateExamForm = {
@@ -47,6 +48,7 @@ const EMPTY_FORM: CreateExamForm = {
   department_id: "",
   max_attempts: 1,
   monitoring_enabled: true,
+  shuffle_questions: false,
 };
 
 export function Dashboard() {
@@ -119,6 +121,7 @@ export function Dashboard() {
         passing_score: form.passing_score,
         max_attempts: form.max_attempts,
         monitoring_enabled: form.monitoring_enabled,
+        shuffle_questions: form.shuffle_questions,
       });
       setForm(EMPTY_FORM);
       setShowCreate(false);
@@ -502,6 +505,22 @@ export function Dashboard() {
                   <span className="mt-1 block text-xs text-muted-foreground">
                     Require webcam proctoring during the exam. Turn off for unmonitored practice or
                     low-stakes assessments.
+                  </span>
+                </span>
+              </label>
+
+              <label className="flex items-start gap-3 rounded-lg border border-border/70 bg-muted/20 p-4 cursor-pointer">
+                <Checkbox
+                  checked={form.shuffle_questions}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, shuffle_questions: checked === true })
+                  }
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="block text-sm font-medium">Shuffle questions</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    Randomize question order for each examinee to reduce answer sharing.
                   </span>
                 </span>
               </label>

@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router";
 import { Logo } from "./logo";
 import { ThemeToggle } from "../common/theme-toggle";
+import { useConfirm } from "../common/confirm-dialog";
 import { Menu, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../../../core/providers/auth-provider";
@@ -12,6 +13,7 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, isAuthenticated } = useAuth();
+  const confirm = useConfirm();
 
   const navItems = [
     { name: "Home", path: "/" },
@@ -26,7 +28,14 @@ export function Header() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const confirmed = await confirm({
+      title: "Sign out?",
+      description: "You will need to sign in again to access your account.",
+      confirmLabel: "Sign out",
+      destructive: true,
+    });
+    if (!confirmed) return;
     logout();
     navigate("/");
     setMobileMenuOpen(false);

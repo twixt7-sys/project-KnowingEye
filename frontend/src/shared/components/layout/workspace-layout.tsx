@@ -16,6 +16,7 @@ import { Logo } from "./logo";
 import { SchoolBackground } from "./school-background";
 import { ThemeToggle } from "../common/theme-toggle";
 import { WorkspaceAlertsBell } from "../common/workspace-alerts-bell";
+import { useConfirm } from "../common/confirm-dialog";
 import { cn } from "../ui/utils";
 
 type WorkspaceRole = "examiner" | "examinee";
@@ -62,12 +63,33 @@ export function WorkspaceLayout({
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const confirm = useConfirm();
   const meta = roleMeta[role];
   const isFocus = variant === "focus";
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const confirmed = await confirm({
+      title: "Sign out?",
+      description: "You will need to sign in again to access your account.",
+      confirmLabel: "Sign out",
+      destructive: true,
+    });
+    if (!confirmed) return;
     logout();
     navigate("/");
+  };
+
+  const handleExitQuiz = async () => {
+    const confirmed = await confirm({
+      title: "Leave exam?",
+      description:
+        "Your answers are only saved when you submit. Leaving now will discard your progress.",
+      confirmLabel: "Leave exam",
+      cancelLabel: "Stay",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    navigate("/examinee");
   };
 
   const sidebar = (
@@ -148,13 +170,14 @@ export function WorkspaceLayout({
       <div className="min-h-screen bg-background">
         <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
           <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
-            <Link
-              to="/examinee"
+            <button
+              type="button"
+              onClick={handleExitQuiz}
               className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <ChevronLeft className="h-4 w-4" />
               Back to exams
-            </Link>
+            </button>
             <div className="flex items-center gap-2">
               <Logo className="h-6 w-6 text-primary" />
               <span className="hidden text-sm font-medium sm:inline">{meta.title} session</span>

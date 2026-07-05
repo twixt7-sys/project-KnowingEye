@@ -25,7 +25,7 @@
 
     <p>At Legacy College of Compostela (LCC), environmental scanning revealed that the institution does not currently utilize a computer-based examination system with integrated face tracking and identity verification. Suspicious behavior detection still depends on CCTV monitoring or assigned proctors, which makes consistent monitoring difficult during large-scale examinations and increases proctor workload. Many available platforms emphasize exam administration—question management and automated scoring—while offering only passive monitoring features such as webcam recording or screen locking, without real-time behavioral analysis of gaze direction, posture, or facial movement.</p>
 
-    <p>This study aims to develop <strong>Knowing Eye: A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis</strong>. By integrating exam creation, administration, and automated behavioral monitoring within a single web-based platform, the system is expected to enhance examination integrity, assist instructors in monitoring examinees more effectively, and provide a practical solution for secure online assessments. The platform applies computer vision and deep learning techniques—including YOLO for detection, CNN for feature extraction, and ArcFace for facial verification—to analyze head movement, eye gaze, and posture in real time, generating behavioral reports that support administrator review rather than replacing human judgment.</p>
+    <p>This study aims to develop <strong>Knowing Eye: A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis</strong>. By integrating exam creation, administration, and automated behavioral monitoring within a single web-based platform, the system is expected to enhance examination integrity, assist instructors in monitoring examinees more effectively, and provide a practical solution for secure online assessments. The platform applies computer vision and deep learning techniques—including MediaPipe for face and posture analysis, and ArcFace for facial verification—to analyze head movement, eye gaze, and posture in real time, generating behavioral reports that support administrator review rather than replacing human judgment.</p>
 
     <h2>Comparison of Related Works</h2>
     <p>The following tables synthesize representative related studies reviewed in <a href="04-rrl.html">Section 1.4</a>. Each column corresponds to a comparable system; checkmarks indicate whether a capability is present in that work. Knowing Eye is included as the proposed system. Citations follow IEEE numbering from the RRL reference list.</p>
@@ -90,7 +90,7 @@
             <td><span class="text-ok">✓</span></td>
             <td><span class="text-ok">✓</span></td>
             <td><span class="muted">—</span></td>
-            <td><span class="text-ok">✓</span></td>
+            <td><span class="muted">—</span></td>
           </tr>
           <tr>
             <td>Mouth movement analysis</td>
@@ -213,7 +213,7 @@
             <td>YOLO</td>
             <td>Object detection</td>
             <td>—</td>
-            <td>YOLO (prohibited objects)</td>
+            <td>—</td>
           </tr>
           <tr>
             <td>Behavioral scoring</td>
@@ -367,7 +367,7 @@
       </table>
     </div>
 
-    <p>Across these comparisons, existing works demonstrate strong performance in isolated monitoring tasks—particularly face recognition and multimodal cheating detection—but rarely combine full examination administration with posture-aware, privacy-conscious behavioral monitoring on a single web platform. Knowing Eye addresses this gap by unifying exam delivery, real-time multimodal analysis (face, gaze, posture, objects, identity), administrator-facing reports, and configurable compliance scoring within one deployable system for Legacy College of Compostela.</p>
+    <p>Across these comparisons, existing works demonstrate strong performance in isolated monitoring tasks—particularly face recognition and multimodal cheating detection—but rarely combine full examination administration with posture-aware, privacy-conscious behavioral monitoring on a single web platform. Knowing Eye addresses this gap by unifying exam delivery, real-time multimodal analysis (face, gaze, posture, identity), administrator-facing reports, and configurable compliance scoring within one deployable system for Legacy College of Compostela.</p>
 
     <h2>Research Gap and Contribution</h2>
     <div class="table-wrap">
@@ -385,7 +385,7 @@
           </tr>
           <tr>
             <td>Single-indicator monitoring with higher false alarms</td>
-            <td>Multimodal pipeline: face presence, identity, gaze, posture, and prohibited object detection</td>
+            <td>Multimodal pipeline: face presence, identity, gaze, and posture analysis</td>
           </tr>
           <tr>
             <td>Passive recording without real-time analysis</td>

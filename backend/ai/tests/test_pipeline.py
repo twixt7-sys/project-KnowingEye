@@ -30,7 +30,7 @@ def test_result_schema(pipeline: BehaviorPipeline):
     frame = np.zeros((240, 320, 3), dtype=np.uint8)
     result = pipeline.analyze_frame(frame)
     data = result.to_dict()
-    for key in ("timestamp", "face", "posture", "objects", "metrics", "events", "alerts"):
+    for key in ("timestamp", "face", "posture", "metrics", "events", "alerts"):
         assert key in data
     assert data["metrics"]["alert_threshold_pct"] == 80.0
 

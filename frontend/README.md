@@ -75,7 +75,7 @@ WebSocket monitoring URLs are built with `buildMonitoringWsUrl(sessionId)`.
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `VITE_API_BASE_URL` | `http://127.0.0.1:8000/api` | REST base URL |
+| `VITE_API_BASE_URL` | `/api` | REST base URL. Use `/api` (same-origin; Vite proxies to Django) so LAN devices work on any network. Use an absolute URL only when the API is on another host. |
 | `VITE_APP_NAME` | `Knowing Eye` | Display name |
 
 ## Further reading

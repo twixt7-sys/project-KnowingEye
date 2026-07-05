@@ -27,12 +27,12 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     https,
-    proxy: https
-      ? {
-          '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
-          '/ws': { target: 'ws://127.0.0.1:8000', ws: true },
-        }
-      : undefined,
+    // Always proxy API/WS so clients can use same-origin URLs on any LAN IP.
+    // changeOrigin keeps Django Host as 127.0.0.1 (no per-network ALLOWED_HOSTS).
+    proxy: {
+      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/ws': { target: 'ws://127.0.0.1:8000', ws: true, changeOrigin: true },
+    },
   },
   // Reduce dev-server memory on constrained machines
   optimizeDeps: {

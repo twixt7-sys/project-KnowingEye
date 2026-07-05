@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { ArrowLeft, Loader2, Users } from "lucide-react";
 
-import { apiClient, type SessionReportRow } from "../core/config/api";
+import { apiClient, formatApiError, type SessionReportRow } from "../core/config/api";
 import { useAuth } from "../core/providers/auth-provider";
 import { DataTablePagination } from "../shared/components/common/data-table-pagination";
 import { ScrollableDataTable } from "../shared/components/common/scrollable-data-table";
@@ -32,7 +32,7 @@ export function ExamSummary() {
         setSessions(res.results);
         setTotalCount(res.count);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load exam summary.");
+        setError(formatApiError(err, "Failed to load exam summary."));
       } finally {
         setLoading(false);
       }

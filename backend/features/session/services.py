@@ -2,15 +2,29 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+import random
 
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from ai.identity_store import has_reference
 from features.session.models import ExamSession, SessionLog
 
+
+def build_question_order(exam) -> list[int]:
+    """Return question IDs in presentation order for a new attempt."""
+    question_ids = list(exam.questions.order_by("order").values_list("id", flat=True))
+    if exam.shuffle_questions:
+        random.shuffle(question_ids)
+    return question_ids
+
 SETUP_MAX_MINUTES = 30
+
+ACTIVE_STATUSES = (
+    ExamSession.Status.SETUP,
+    ExamSession.Status.IN_PROGRESS,
+)
 
 
 def touch_setup_activity(session: ExamSession) -> None:
@@ -93,6 +107,49 @@ def ensure_active_session(session: ExamSession, *, ip_address: str | None = None
     )
 
 
+def assert_no_other_active_exam(user, exam, *, ip_address: str | None = None) -> None:
+    """Block starting a different exam while another session is still active."""
+    others = (
+        ExamSession.objects.filter(user=user, status__in=ACTIVE_STATUSES)
+        .exclude(exam_id=exam.pk)
+        .select_related("exam")
+        .order_by("-started_at")
+    )
+    for other in others:
+        if not ensure_active_session(other, ip_address=ip_address):
+            continue
+        phase = (
+            "being set up"
+            if other.status == ExamSession.Status.SETUP
+            else "in progress"
+        )
+        raise ValidationError(
+            {
+                "exam": (
+                    f'You already have an exam {phase}: "{other.exam.title}". '
+                    "Finish or wait for that session to end before starting another exam."
+                )
+            }
+        )
+
+
+def _raise_if_integrity_blocks_create(user, exam, *, ip_address: str | None = None) -> None:
+    """Turn a unique-active-session IntegrityError into a clear validation error."""
+    assert_no_other_active_exam(user, exam, ip_address=ip_address)
+    active = ExamSession.objects.filter(
+        user=user,
+        exam=exam,
+        status__in=ACTIVE_STATUSES,
+    ).first()
+    if active:
+        raise ValidationError(
+            {"exam": f"You already have an active session for this exam (ID: {active.id})."}
+        )
+    raise ValidationError(
+        {"exam": "Could not start exam session because another active session exists."}
+    )
+
+
 def begin_exam_session(
     session: ExamSession,
     *,
@@ -111,7 +168,15 @@ def begin_exam_session(
     session.status = ExamSession.Status.IN_PROGRESS
     session.exam_started_at = timezone.now()
     session.time_remaining = session.duration_seconds
-    session.save(update_fields=["status", "exam_started_at", "time_remaining"])
+    session.question_order = build_question_order(session.exam)
+    session.save(
+        update_fields=[
+            "status",
+            "exam_started_at",
+            "time_remaining",
+            "question_order",
+        ]
+    )
 
     SessionLog.objects.create(
         session=session,
@@ -120,6 +185,7 @@ def begin_exam_session(
         details={
             "duration_minutes": session.exam.duration_minutes,
             "monitoring_enabled": session.exam.monitoring_enabled,
+            "shuffle_questions": session.exam.shuffle_questions,
         },
     )
     return session
@@ -133,16 +199,24 @@ def _create_in_progress_session(
     user_agent: str,
 ) -> ExamSession:
     """Create a session that starts the exam timer immediately (no proctoring)."""
+    assert_no_other_active_exam(user, exam, ip_address=ip_address)
     now = timezone.now()
-    session = ExamSession.objects.create(
-        exam=exam,
-        user=user,
-        ip_address=ip_address,
-        user_agent=user_agent,
-        status=ExamSession.Status.IN_PROGRESS,
-        exam_started_at=now,
-        time_remaining=exam.duration_minutes * 60,
-    )
+    try:
+        with transaction.atomic():
+            session = ExamSession.objects.create(
+                exam=exam,
+                user=user,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                status=ExamSession.Status.IN_PROGRESS,
+                exam_started_at=now,
+                time_remaining=exam.duration_minutes * 60,
+                question_order=build_question_order(exam),
+            )
+    except IntegrityError:
+        _raise_if_integrity_blocks_create(user, exam, ip_address=ip_address)
+        raise  # pragma: no cover
+
     SessionLog.objects.create(
         session=session,
         event_type=SessionLog.EventType.EXAM_BEGAN,
@@ -185,13 +259,21 @@ def get_or_create_setup_session(user, exam, *, ip_address: str | None, user_agen
             {"exam": f"You already have an active session for this exam (ID: {active.id})."}
         )
 
-    session = ExamSession.objects.create(
-        exam=exam,
-        user=user,
-        ip_address=ip_address,
-        user_agent=user_agent,
-        status=ExamSession.Status.SETUP,
-    )
+    assert_no_other_active_exam(user, exam, ip_address=ip_address)
+
+    try:
+        with transaction.atomic():
+            session = ExamSession.objects.create(
+                exam=exam,
+                user=user,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                status=ExamSession.Status.SETUP,
+            )
+    except IntegrityError:
+        _raise_if_integrity_blocks_create(user, exam, ip_address=ip_address)
+        raise  # pragma: no cover
+
     SessionLog.objects.create(
         session=session,
         event_type=SessionLog.EventType.STARTED,

@@ -103,6 +103,10 @@ class Exam(models.Model):
         default=True,
         help_text='When enabled, examinees complete proctoring setup and webcam monitoring during the exam',
     )
+    shuffle_questions = models.BooleanField(
+        default=False,
+        help_text='When enabled, each examinee receives questions in a randomized order',
+    )
     status = models.CharField(
         max_length=20,
         choices=Status.choices,

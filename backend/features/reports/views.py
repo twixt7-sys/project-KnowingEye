@@ -21,7 +21,7 @@ from features.session.serializers import ExamSessionDetailSerializer
 
 
 def _session_queryset(user):
-    qs = ExamSession.objects.select_related("exam", "user")
+    qs = ExamSession.objects.select_related("exam", "exam__department", "user")
     if user.is_admin():
         return qs
     return qs.filter(user=user)
@@ -35,12 +35,59 @@ def _annotate_sessions(qs):
     )
 
 
+def _department_analytics(sessions):
+    """Aggregate completed-session KPIs grouped by exam department."""
+    completed = sessions.filter(status=ExamSession.Status.COMPLETED)
+    rows = (
+        completed.values(
+            "exam__department_id",
+            "exam__department__name",
+            "exam__department__abbreviation",
+        )
+        .annotate(
+            completed_sessions=Count("id"),
+            average_score=Avg("percentage_score"),
+            passed_count=Count("id", filter=Q(passed=True)),
+            alert_count=Count("alerts", distinct=True),
+        )
+        .order_by("exam__department__name")
+    )
+
+    result = []
+    for row in rows:
+        completed_count = row["completed_sessions"] or 0
+        dept_id = row["exam__department_id"]
+        result.append(
+            {
+                "department_id": dept_id,
+                "department_name": row["exam__department__name"] or "Unassigned",
+                "department_abbreviation": row["exam__department__abbreviation"] or "—",
+                "completed_sessions": completed_count,
+                "average_score": (
+                    float(row["average_score"]) if row["average_score"] is not None else None
+                ),
+                "pass_rate": (
+                    row["passed_count"] / completed_count * 100.0 if completed_count else None
+                ),
+                "alert_count": row["alert_count"] or 0,
+            }
+        )
+    return result
+
+
 def _serialize_session_rows(sessions):
     return [
         {
             "id": str(s.id),
             "exam_id": s.exam_id,
             "exam_title": s.exam.title,
+            "department_id": s.exam.department_id,
+            "department_name": (
+                s.exam.department.name if s.exam.department_id else None
+            ),
+            "department_abbreviation": (
+                s.exam.department.abbreviation if s.exam.department_id else None
+            ),
             "user": s.user.username,
             "user_full_name": f"{s.user.first_name} {s.user.last_name}".strip(),
             "status": s.status,
@@ -93,6 +140,7 @@ def report_summary(request):
             else None,
             "alerts_by_severity": by_severity,
             "events_by_type": by_event,
+            "by_department": _department_analytics(sessions),
             "generated_at": timezone.now().isoformat(),
         }
     )
@@ -114,9 +162,84 @@ def session_report(request, session_id):
         .order_by("-count")
     )
 
+    exam = session.exam
+    department = exam.department
+    exam_completed = ExamSession.objects.filter(
+        exam=exam,
+        status=ExamSession.Status.COMPLETED,
+        percentage_score__isnull=False,
+    )
+    exam_stats = exam_completed.aggregate(
+        average_score=Avg("percentage_score"),
+        completed_sessions=Count("id"),
+        passed_count=Count("id", filter=Q(passed=True)),
+    )
+    exam_completed_count = exam_stats["completed_sessions"] or 0
+
+    department_analytics = None
+    if department is not None:
+        dept_completed = ExamSession.objects.filter(
+            exam__department=department,
+            status=ExamSession.Status.COMPLETED,
+            percentage_score__isnull=False,
+        )
+        dept_stats = dept_completed.aggregate(
+            average_score=Avg("percentage_score"),
+            completed_sessions=Count("id"),
+            passed_count=Count("id", filter=Q(passed=True)),
+        )
+        dept_completed_count = dept_stats["completed_sessions"] or 0
+        your_score = (
+            float(session.percentage_score) if session.percentage_score is not None else None
+        )
+        below_you = (
+            dept_completed.filter(percentage_score__lt=your_score).count()
+            if your_score is not None
+            else 0
+        )
+        department_analytics = {
+            "department_id": department.id,
+            "department_name": department.name,
+            "department_abbreviation": department.abbreviation,
+            "exam_average_score": (
+                float(exam_stats["average_score"])
+                if exam_stats["average_score"] is not None
+                else None
+            ),
+            "exam_pass_rate": (
+                exam_stats["passed_count"] / exam_completed_count * 100.0
+                if exam_completed_count
+                else None
+            ),
+            "exam_completed_sessions": exam_completed_count,
+            "department_average_score": (
+                float(dept_stats["average_score"])
+                if dept_stats["average_score"] is not None
+                else None
+            ),
+            "department_pass_rate": (
+                dept_stats["passed_count"] / dept_completed_count * 100.0
+                if dept_completed_count
+                else None
+            ),
+            "department_completed_sessions": dept_completed_count,
+            "score_vs_department_avg": (
+                your_score - float(dept_stats["average_score"])
+                if your_score is not None and dept_stats["average_score"] is not None
+                else None
+            ),
+            "percentile_in_department": (
+                round(below_you / dept_completed_count * 100.0, 1)
+                if your_score is not None and dept_completed_count
+                else None
+            ),
+        }
+
     return Response(
         {
-            "session": ExamSessionDetailSerializer(session).data,
+            "session": ExamSessionDetailSerializer(
+                session, context={"request": request}
+            ).data,
             "behavior_summary": list(behavior_summary),
             "behavior_logs": list(
                 BehaviorLog.objects.filter(session=session)
@@ -136,6 +259,7 @@ def session_report(request, session_id):
                     "created_at",
                 )
             ),
+            "department_analytics": department_analytics,
         }
     )
 
@@ -153,6 +277,10 @@ def list_session_reports(request):
     exam_id = request.query_params.get("exam")
     if exam_id:
         qs = qs.filter(exam_id=exam_id)
+
+    department_id = request.query_params.get("department")
+    if department_id:
+        qs = qs.filter(exam__department_id=department_id)
 
     search = (request.query_params.get("search") or "").strip()
     if search:

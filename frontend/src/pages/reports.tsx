@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   Activity,
   BarChart3,
+  Building2,
   CheckCircle,
   Download,
   Search,
@@ -13,6 +14,7 @@ import { Link } from "react-router";
 import {
   apiClient,
   formatApiError,
+  type Department,
   type ReportSummary,
   type SessionReportRow,
 } from "../core/config/api";
@@ -34,6 +36,8 @@ export function Reports() {
     { day: string; sessions: number; alerts: number; behaviors: number }[]
   >([]);
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("");
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<"csv" | "pdf" | null>(null);
@@ -99,6 +103,7 @@ export function Reports() {
     try {
       const list = await apiClient.listSessionReports({
         ...(statusFilter ? { status: statusFilter } : {}),
+        ...(departmentFilter ? { department: Number(departmentFilter) } : {}),
         ...(debouncedQuery ? { search: debouncedQuery } : {}),
         page,
         page_size: pageSize,
@@ -114,17 +119,35 @@ export function Reports() {
 
   useEffect(() => {
     loadCharts();
+    apiClient
+      .listDepartments({ active_only: true })
+      .then(setDepartments)
+      .catch(() => setDepartments([]));
   }, []);
 
   useEffect(() => {
     loadSessions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, debouncedQuery, page, pageSize]);
+  }, [statusFilter, departmentFilter, debouncedQuery, page, pageSize]);
 
   const eventsData = summary?.events_by_type.map((e) => ({
     name: e.event_type.replace("_", " "),
     value: e.count,
   })) ?? [];
+
+  const departmentScoreData =
+    summary?.by_department.map((d) => ({
+      department: d.department_abbreviation || d.department_name,
+      "Avg score": d.average_score ?? 0,
+      "Pass rate": d.pass_rate ?? 0,
+    })) ?? [];
+
+  const departmentSessionsData =
+    summary?.by_department.map((d) => ({
+      department: d.department_abbreviation || d.department_name,
+      Sessions: d.completed_sessions,
+      Alerts: d.alert_count,
+    })) ?? [];
 
   return (
     <PageShell>
@@ -240,6 +263,86 @@ export function Reports() {
         />
       </SectionPanel>
 
+      {departmentScoreData.length > 0 && (
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <SectionPanel
+            title="Performance by department"
+            description="Average score and pass rate across completed sessions."
+          >
+            <BarChart
+              className="h-72 p-4 pt-0"
+              data={departmentScoreData}
+              index="department"
+              categories={["Avg score", "Pass rate"]}
+              colors={["emerald", "teal"]}
+              yAxisWidth={40}
+              showAnimation
+              valueFormatter={(v) => `${v.toFixed(0)}%`}
+            />
+          </SectionPanel>
+          <SectionPanel
+            title="Volume by department"
+            description="Completed attempts and alert volume per department."
+          >
+            <BarChart
+              className="h-72 p-4 pt-0"
+              data={departmentSessionsData}
+              index="department"
+              categories={["Sessions", "Alerts"]}
+              colors={["cyan", "rose"]}
+              yAxisWidth={40}
+              showAnimation
+            />
+          </SectionPanel>
+        </div>
+      )}
+
+      {summary?.by_department && summary.by_department.length > 0 && (
+        <SectionPanel
+          title="Department summary"
+          description="Completed-session KPIs grouped by exam department."
+        >
+          <ScrollableDataTable>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Department</th>
+                  <th className="text-right">Completed</th>
+                  <th className="text-right">Avg score</th>
+                  <th className="text-right">Pass rate</th>
+                  <th className="text-right">Alerts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.by_department.map((d) => (
+                  <tr key={d.department_id ?? d.department_name}>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">{d.department_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {d.department_abbreviation}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="text-right">{d.completed_sessions}</td>
+                    <td className="text-right font-medium">
+                      {d.average_score != null ? `${d.average_score.toFixed(1)}%` : "—"}
+                    </td>
+                    <td className="text-right">
+                      {d.pass_rate != null ? `${d.pass_rate.toFixed(1)}%` : "—"}
+                    </td>
+                    <td className="text-right">{d.alert_count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollableDataTable>
+        </SectionPanel>
+      )}
+
       <SectionPanel
         title="Session log"
         description="Search and filter completed or in-progress sessions."
@@ -257,6 +360,21 @@ export function Reports() {
                 className="form-field w-full py-2 pl-9 pr-3 text-sm"
               />
             </div>
+            <select
+              value={departmentFilter}
+              onChange={(e) => {
+                setDepartmentFilter(e.target.value);
+                setPage(1);
+              }}
+              className="form-field text-sm"
+            >
+              <option value="">All departments</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.abbreviation} — {d.name}
+                </option>
+              ))}
+            </select>
             <select
               value={statusFilter}
               onChange={(e) => {
@@ -279,6 +397,7 @@ export function Reports() {
               <tr>
                 <th>User</th>
                 <th className="hidden sm:table-cell">Exam</th>
+                <th className="hidden md:table-cell">Dept</th>
                 <th>Status</th>
                 <th className="text-right">Score</th>
                 <th className="hidden md:table-cell text-right">Alerts</th>
@@ -296,6 +415,9 @@ export function Reports() {
                   </td>
                   <td className="hidden max-w-[12rem] text-sm text-muted-foreground sm:table-cell">
                     <span className="line-clamp-2">{s.exam_title}</span>
+                  </td>
+                  <td className="hidden text-sm text-muted-foreground md:table-cell">
+                    {s.department_abbreviation ?? "—"}
                   </td>
                   <td>
                     <span className="status-pill bg-muted text-muted-foreground">{s.status}</span>
@@ -324,7 +446,7 @@ export function Reports() {
               ))}
               {sessions.length === 0 && !tableLoading && (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-sm text-muted-foreground">
+                  <td colSpan={9} className="py-12 text-center text-sm text-muted-foreground">
                     No sessions match the current filters.
                   </td>
                 </tr>

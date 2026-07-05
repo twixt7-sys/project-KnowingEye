@@ -105,7 +105,7 @@
     "ai_module": {
       "status": "Planned",
       "description": "AI engine for behavioral analysis and anomaly detection",
-      "models": ["YOLO", "CNN", "FaceNet", "ArcFace"],
+      "models": ["MediaPipe", "FaceNet", "ArcFace"],
       "capabilities": [
         "Face detection",
         "Posture estimation",

@@ -15,7 +15,6 @@ EVENT_TYPE_MAP = {
     "multiple_faces": BehaviorLog.EventType.MULTIPLE_FACES,
     "looking_away": BehaviorLog.EventType.LOOKING_AWAY,
     "bad_posture": BehaviorLog.EventType.BAD_POSTURE,
-    "object_detected": BehaviorLog.EventType.OBJECT_DETECTED,
     "leaving_seat": BehaviorLog.EventType.LEAVING_SEAT,
     "identity_mismatch": BehaviorLog.EventType.IDENTITY_MISMATCH,
     "suspicious_pattern": BehaviorLog.EventType.SUSPICIOUS_PATTERN,

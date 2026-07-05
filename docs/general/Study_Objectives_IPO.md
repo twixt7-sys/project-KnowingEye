@@ -10,7 +10,7 @@
 
 | | |
 |---|---|
-| **Input** | Examination requirements from Legacy College of Compostela; web development technologies; computer vision and deep learning tools (YOLO, CNN, FaceNet or ArcFace); webcam video streams from examinees; publicly available datasets and controlled mock-examination recordings; Agile software development methodology |
+| **Input** | Examination requirements from Legacy College of Compostela; web development technologies; computer vision and deep learning tools (MediaPipe, FaceNet or ArcFace); webcam video streams from examinees; publicly available datasets and controlled mock-examination recordings; Agile software development methodology |
 | **Process** | Plan, design, develop, integrate, test, and deploy a unified web-based examination platform that performs real-time facial and postural behavior monitoring during exam sessions |
 | **Output** | A fully developed Knowing Eye platform that supports centralized exam management and automated behavior monitoring, resulting in improved examination integrity, monitoring efficiency, and assessment reliability |
 
@@ -84,24 +84,24 @@
 
 | | |
 |---|---|
-| **Input** | Training datasets (publicly available and controlled mock-examination recordings); YOLO, CNN, and FaceNet or ArcFace model architectures |
+| **Input** | Training datasets (publicly available and controlled mock-examination recordings); MediaPipe and FaceNet or ArcFace model architectures |
 | **Process** | Integrate and configure deep learning models for detection, feature extraction, and facial verification within the monitoring pipeline |
 | **Output** | An AI-powered behavioral analysis pipeline capable of automated face detection, feature extraction, and identity verification |
 
-**4.1 Utilize YOLO for face and posture detection**
+**4.1 Utilize MediaPipe for face and posture detection**
 
 | | |
 |---|---|
-| **Input** | Video frames; pre-trained or fine-tuned YOLO model weights |
-| **Process** | Apply YOLO-based object detection to identify faces and body postures in each video frame |
-| **Output** | Detected face and posture locations with corresponding bounding box coordinates |
+| **Input** | Video frames; MediaPipe face and pose models |
+| **Process** | Apply MediaPipe landmark detection to identify faces, head pose, and body posture in each video frame |
+| **Output** | Detected face and posture landmarks with corresponding metrics |
 
-**4.2 Apply convolutional neural networks (CNN) for feature extraction**
+**4.2 Apply deep embeddings for feature extraction**
 
 | | |
 |---|---|
-| **Input** | Detected facial and postural regions from video frames; CNN architecture |
-| **Process** | Extract meaningful visual features from detected regions using convolutional neural networks |
+| **Input** | Detected facial regions from video frames; embedding model architecture |
+| **Process** | Extract meaningful visual features from detected regions using deep face-embedding networks |
 | **Output** | Feature vectors ready for behavioral classification and identity verification |
 
 **4.3 Implement FaceNet or ArcFace for facial feature consistency verification**
@@ -208,7 +208,7 @@ GENERAL OBJECTIVE
 
 Objective: To develop Knowing Eye: A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis to enhance examination integrity, monitoring efficiency, and assessment reliability.
 
-Input: Examination requirements from Legacy College of Compostela; web development technologies; computer vision and deep learning tools (YOLO, CNN, FaceNet or ArcFace); webcam video streams from examinees; publicly available datasets and controlled mock-examination recordings; Agile software development methodology.
+Input: Examination requirements from Legacy College of Compostela; web development technologies; computer vision and deep learning tools (MediaPipe, FaceNet or ArcFace); webcam video streams from examinees; publicly available datasets and controlled mock-examination recordings; Agile software development methodology.
 
 Process: Plan, design, develop, integrate, test, and deploy a unified web-based examination platform that performs real-time facial and postural behavior monitoring during exam sessions.
 
@@ -267,20 +267,20 @@ SPECIFIC OBJECTIVE 4
 
 Objective: Integrate deep learning algorithms for behavioral analysis.
 
-Input: Training datasets (publicly available and controlled mock-examination recordings); YOLO, CNN, and FaceNet or ArcFace model architectures.
+Input: Training datasets (publicly available and controlled mock-examination recordings); MediaPipe and FaceNet or ArcFace model architectures.
 
 Process: Integrate and configure deep learning models for detection, feature extraction, and facial verification within the monitoring pipeline.
 
 Output: An AI-powered behavioral analysis pipeline capable of automated face detection, feature extraction, and identity verification.
 
-4.1 Utilize YOLO for face and posture detection
-Input: Video frames; pre-trained or fine-tuned YOLO model weights.
-Process: Apply YOLO-based object detection to identify faces and body postures in each video frame.
-Output: Detected face and posture locations with corresponding bounding box coordinates.
+4.1 Utilize MediaPipe for face and posture detection
+Input: Video frames; MediaPipe face and pose models.
+Process: Apply MediaPipe landmark detection to identify faces, head pose, and body posture in each video frame.
+Output: Detected face and posture landmarks with corresponding metrics.
 
-4.2 Apply convolutional neural networks (CNN) for feature extraction
-Input: Detected facial and postural regions from video frames; CNN architecture.
-Process: Extract meaningful visual features from detected regions using convolutional neural networks.
+4.2 Apply deep embeddings for feature extraction
+Input: Detected facial regions from video frames; embedding model architecture.
+Process: Extract meaningful visual features from detected regions using deep face-embedding networks.
 Output: Feature vectors ready for behavioral classification and identity verification.
 
 4.3 Implement FaceNet or ArcFace for facial feature consistency verification
