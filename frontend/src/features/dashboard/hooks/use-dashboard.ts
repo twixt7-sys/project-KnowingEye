@@ -1,22 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { queryKeys } from "../../../core/config/query-keys";
-import {
-  ApiError,
-  apiClient,
-  formatApiError,
-  type AlertRow,
-  type Exam,
-  type ReportSummary,
-  type SessionReportRow,
-} from "../../../core/config/api";
-
-interface DashboardData {
-  summary: ReportSummary;
-  exams: Exam[];
-  recentAlerts: AlertRow[];
-  activeSessions: SessionReportRow[];
-}
+import { ApiError, formatApiError } from "@/core/config/api";
+import { dashboardQueries } from "@/features/dashboard/queries/queries";
 
 /**
  * Admin dashboard feature hook: aggregates KPIs, exams, unresolved alerts and
@@ -24,21 +9,7 @@ interface DashboardData {
  */
 export function useDashboard(pollMs = 30_000) {
   const query = useQuery({
-    queryKey: queryKeys.dashboard,
-    queryFn: async (): Promise<DashboardData> => {
-      const [summary, exams, alerts, sessions] = await Promise.all([
-        apiClient.getReportSummary(),
-        apiClient.getExams(),
-        apiClient.listAlerts({ resolved: false }),
-        apiClient.listSessionReports({ status: "in_progress", page_size: 50 }),
-      ]);
-      return {
-        summary,
-        exams,
-        recentAlerts: alerts.slice(0, 8),
-        activeSessions: sessions.results,
-      };
-    },
+    ...dashboardQueries.examiner(),
     refetchInterval: pollMs > 0 ? pollMs : false,
   });
 

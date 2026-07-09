@@ -2,6 +2,7 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from datetime import timedelta
 import uuid
 
 from features.exams.models import Exam
@@ -18,6 +19,7 @@ class ExamSession(models.Model):
     class Status(models.TextChoices):
         SETUP = 'setup', 'Setup'
         IN_PROGRESS = 'in_progress', 'In Progress'
+        PENDING_REVIEW = 'pending_review', 'Pending Review'
         COMPLETED = 'completed', 'Completed'
         TERMINATED = 'terminated', 'Terminated'
         EXPIRED = 'expired', 'Expired'
@@ -91,6 +93,20 @@ class ExamSession(models.Model):
         blank=True,
         help_text='Question IDs in the order presented to this examinee (set when the exam begins)',
     )
+    option_order = models.JSONField(
+        null=True,
+        blank=True,
+        help_text='Per-question shuffled option order: {question_id: [option, ...]}',
+    )
+    deadline_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Server-computed deadline when the timed exam ends',
+    )
+    accommodation_extra_minutes = models.PositiveIntegerField(
+        default=0,
+        help_text='Extra time granted for this attempt (minutes)',
+    )
 
     class Meta:
         db_table = 'user_sessions_exam_session'
@@ -115,9 +131,17 @@ class ExamSession(models.Model):
         return f"{self.user.username} - {self.exam.title} ({self.get_status_display()})"
 
     @property
+    def timed_end_at(self):
+        """Authoritative end time for the timed exam portion."""
+        if self.exam_started_at:
+            return self.exam_started_at + timedelta(seconds=self.duration_seconds)
+        return self.deadline_at
+
+    @property
     def duration_seconds(self):
-        """Total duration of the exam in seconds."""
-        return self.exam.duration_minutes * 60
+        """Total duration of the exam in seconds (includes accommodations)."""
+        base = self.exam.duration_minutes * 60
+        return base + (self.accommodation_extra_minutes * 60)
 
     @property
     def time_elapsed(self):
@@ -132,10 +156,14 @@ class ExamSession(models.Model):
     @property
     def time_remaining_seconds(self):
         """Calculate remaining time in seconds."""
-        if self.status == self.Status.COMPLETED:
+        if self.status in (self.Status.COMPLETED, self.Status.PENDING_REVIEW):
             return self.time_remaining
         if self.status == self.Status.SETUP:
             return self.duration_seconds
+        end_at = self.timed_end_at
+        if end_at:
+            remaining = (end_at - timezone.now()).total_seconds()
+            return max(0, int(remaining))
         elapsed = self.time_elapsed
         total = self.duration_seconds
         return max(0, int(total - elapsed))
@@ -154,30 +182,61 @@ class ExamSession(models.Model):
         return self.status == self.Status.SETUP
 
     def submit_session(self, time_remaining=None):
-        """Mark session as completed and calculate final score."""
+        """Mark session as completed (or pending review) and calculate final score."""
         if not self.can_submit():
             return False
 
         self.submitted_at = timezone.now()
-        self.status = self.Status.COMPLETED
         if time_remaining is not None:
             self.time_remaining = time_remaining
 
-        # Calculate final score
         self.calculate_score()
+
+        if self.responses.filter(flagged_for_review=True, points_awarded__isnull=True).exists():
+            self.status = self.Status.PENDING_REVIEW
+        else:
+            self.status = self.Status.COMPLETED
+
         self.save()
         return True
 
+    def presented_question_ids(self) -> list[int]:
+        """Question IDs included in this attempt (pools + shuffle applied)."""
+        if self.question_order:
+            return list(self.question_order)
+        return list(
+            self.exam.questions.order_by('order').values_list('id', flat=True)
+        )
+
     def calculate_score(self):
-        """Calculate total score and percentage from responses."""
-        responses = self.responses.all()
+        """Calculate total score and percentage from all presented questions."""
+        presented_ids = self.presented_question_ids()
+        if not presented_ids:
+            self.total_score = 0
+            self.percentage_score = 0
+            self.passed = False
+            return
+
+        questions_by_id = {
+            q.id: q
+            for q in self.exam.questions.filter(id__in=presented_ids)
+        }
+        responses_by_q = {r.question_id: r for r in self.responses.all()}
+
         total_points = 0
         earned_points = 0
 
-        for response in responses:
-            total_points += response.question.points
-            if response.is_correct:
-                earned_points += response.question.points
+        for qid in presented_ids:
+            question = questions_by_id.get(qid)
+            if not question:
+                continue
+            total_points += question.points
+            response = responses_by_q.get(qid)
+            if response:
+                if response.points_awarded is not None:
+                    earned_points += response.points_awarded
+                elif response.is_correct:
+                    earned_points += question.points
 
         self.total_score = earned_points
         if total_points > 0:
@@ -224,7 +283,26 @@ class Response(models.Model):
     )
     flagged_for_review = models.BooleanField(
         default=False,
-        help_text='Whether this response was flagged for manual review'
+        help_text='Whether this response was flagged for manual review',
+    )
+    points_awarded = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text='Manual override points (null = use auto-grade)',
+    )
+    grader_comment = models.TextField(blank=True, default='')
+    graded_at = models.DateTimeField(null=True, blank=True)
+    graded_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='graded_responses',
+    )
+    autosaved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Last autosave timestamp during in-progress attempt',
     )
 
     class Meta:
@@ -243,32 +321,66 @@ class Response(models.Model):
         return f"{self.session.user.username} - Q{self.question.order}: {self.is_correct}"
 
     def save(self, *args, **kwargs):
-        """Auto-check correctness on save."""
-        if not self.pk:  # Only on creation
+        """Auto-check correctness on save when not manually graded."""
+        if not self.pk:
+            self.check_correctness()
+        elif self.points_awarded is None and not self.flagged_for_review:
             self.check_correctness()
         super().save(*args, **kwargs)
 
     def check_correctness(self):
         """Check if the answer is correct based on question type."""
         question = self.question
+        answer = self.answer_text or ''
+
+        if not answer.strip():
+            self.is_correct = False
+            if question.question_type in ('short_answer', 'essay'):
+                self.flagged_for_review = False
+            return
 
         if question.question_type == 'multiple_choice':
-            # For multiple choice, check if answer matches correct_answer
-            self.is_correct = self.answer_text.strip().lower() == question.correct_answer.strip().lower()
+            self.is_correct = self._normalize(answer) == self._normalize(question.correct_answer)
 
         elif question.question_type == 'true_false':
-            # For true/false, direct comparison
-            self.is_correct = self.answer_text.strip().lower() == question.correct_answer.strip().lower()
+            self.is_correct = self._normalize(answer) == self._normalize(question.correct_answer)
 
-        elif question.question_type in ['short_answer', 'essay']:
-            # For short answer and essay, flag for manual review
-            self.is_correct = False  # Default to false, requires manual grading
+        elif question.question_type == 'short_answer':
+            if self._matches_short_answer(question, answer):
+                self.is_correct = True
+                self.flagged_for_review = False
+            else:
+                self.is_correct = False
+                self.flagged_for_review = True
+
+        elif question.question_type == 'essay':
+            self.is_correct = False
             self.flagged_for_review = True
 
         else:
-            # Unknown question type
             self.is_correct = False
             self.flagged_for_review = True
+
+    def _normalize(self, text: str) -> str:
+        value = text or ''
+        if getattr(self.question, 'trim_whitespace', True):
+            value = value.strip()
+        if not getattr(self.question, 'case_sensitive', False):
+            value = value.lower()
+        return value
+
+    def _matches_short_answer(self, question, answer: str) -> bool:
+        candidates = [question.correct_answer] + list(question.acceptable_answers or [])
+        normalized_answer = self._normalize(answer)
+        for candidate in candidates:
+            if not candidate:
+                continue
+            norm = candidate.strip()
+            if not question.case_sensitive:
+                norm = norm.lower()
+            if normalized_answer == norm:
+                return True
+        return False
 
 
 class SessionLog(models.Model):
@@ -284,6 +396,9 @@ class SessionLog(models.Model):
         RESUMED = 'resumed', 'Session Resumed'
         PAUSED = 'paused', 'Session Paused'
         EXAM_BEGAN = 'exam_began', 'Exam Began'
+        TAB_HIDDEN = 'tab_hidden', 'Tab Hidden'
+        TAB_VISIBLE = 'tab_visible', 'Tab Visible'
+        FULLSCREEN_EXIT = 'fullscreen_exit', 'Fullscreen Exit'
 
     session = models.ForeignKey(
         ExamSession,

@@ -1,7 +1,7 @@
 /**
  * Profile feature API - typed wrappers over the shared API client.
  */
-import { apiClient, type ProfileUser } from "../../../core/config/api";
+import { apiClient, type ProfileUser } from "@/core/config/api";
 
 export function fetchUserProfile() {
   return apiClient.getProfile();

@@ -67,3 +67,17 @@ export function InstitutionLogo({ className = "w-10 h-10" }: { className?: strin
     />
   );
 }
+
+/**
+ * Department logo — Wellness and Care Center placeholder seal.
+ * Swap `public/branding/department-logo.svg` for the official mark.
+ */
+export function DepartmentLogo({ className = "w-10 h-10" }: { className?: string }) {
+  return (
+    <img
+      src={brand.departmentLogo}
+      alt={`${brand.departmentName} logo`}
+      className={`object-contain ${className}`}
+    />
+  );
+}

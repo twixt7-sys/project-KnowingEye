@@ -1,34 +1,33 @@
+import { ArrowLeft, Home } from "lucide-react";
 import { Link } from "react-router";
-import { Home, ArrowLeft } from "lucide-react";
+
+import { Button } from "@/shared/components/ui/button";
 
 export function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="text-center">
-        <div className="mb-8">
-          <h1 className="text-9xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            404
-          </h1>
-        </div>
-        <h2 className="text-3xl font-bold mb-4">Page Not Found</h2>
-        <p className="text-lg text-muted-foreground mb-8 max-w-md">
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-md text-center">
+        <p className="kicker justify-center">Page not found</p>
+        <h1 className="mt-4 font-serif text-8xl font-semibold tracking-tight text-primary sm:text-9xl">
+          404
+        </h1>
+        <p className="mx-auto mt-2 font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground">
+          — this record does not exist —
+        </p>
+        <p className="mx-auto mt-6 max-w-sm text-muted-foreground">
           The page you're looking for doesn't exist or has been moved.
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            <Home className="w-5 h-5" />
-            Go Home
-          </Link>
-          <button
-            onClick={() => window.history.back()}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg border border-border hover:bg-accent transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Go Back
-          </button>
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <Button asChild size="lg">
+            <Link to="/">
+              <Home className="h-4 w-4" />
+              Go home
+            </Link>
+          </Button>
+          <Button variant="outline" size="lg" onClick={() => window.history.back()}>
+            <ArrowLeft className="h-4 w-4" />
+            Go back
+          </Button>
         </div>
       </div>
     </div>

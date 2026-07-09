@@ -14,14 +14,82 @@ class ResponseSerializer(serializers.ModelSerializer):
     question_text = serializers.CharField(source='question.question_text', read_only=True)
     question_type = serializers.CharField(source='question.question_type', read_only=True)
     points = serializers.IntegerField(source='question.points', read_only=True)
+    correct_answer = serializers.SerializerMethodField()
 
     class Meta:
         model = Response
         fields = [
             'id', 'question', 'question_text', 'question_type', 'answer_text',
-            'is_correct', 'time_spent', 'points', 'answered_at', 'flagged_for_review'
+            'is_correct', 'time_spent', 'points', 'points_awarded', 'grader_comment',
+            'answered_at', 'autosaved_at', 'flagged_for_review', 'correct_answer',
         ]
-        read_only_fields = ['id', 'is_correct', 'answered_at']
+        read_only_fields = ['id', 'is_correct', 'answered_at', 'correct_answer']
+
+    def get_correct_answer(self, obj):
+        request = self.context.get('request')
+        exam = obj.session.exam
+        user = getattr(request, 'user', None) if request else None
+        if not user or not getattr(user, 'is_admin', lambda: False)():
+            from features.exams import services
+            if not user or not services.results_visible_to_user(exam, user):
+                return None
+        return obj.question.correct_answer
+
+
+class ResponseUpsertSerializer(serializers.Serializer):
+    """Autosave a single or batch of responses during an attempt."""
+
+    responses = serializers.ListField(
+        child=serializers.DictField(),
+        allow_empty=False,
+    )
+
+    def validate_responses(self, value):
+        session = self.context.get('session')
+        if not session:
+            raise serializers.ValidationError('Session context is required.')
+
+        validated = []
+        for i, item in enumerate(value):
+            question_id = item.get('question_id')
+            if question_id is None:
+                raise serializers.ValidationError(f'Response {i + 1}: question_id is required.')
+            try:
+                question = session.exam.questions.get(id=question_id)
+            except session.exam.questions.model.DoesNotExist:
+                raise serializers.ValidationError(
+                    f'Question {question_id} does not exist in this exam.'
+                )
+            if session.question_order and question_id not in session.question_order:
+                raise serializers.ValidationError(
+                    f'Question {question_id} is not part of this attempt.'
+                )
+            validated.append({
+                'question': question,
+                'answer_text': item.get('answer_text', ''),
+                'time_spent': int(item.get('time_spent', 0)),
+                'flagged_for_review': bool(item.get('flagged_for_review', False)),
+            })
+        return validated
+
+
+class ResponseGradeSerializer(serializers.ModelSerializer):
+    """Manual grading for open-ended responses."""
+
+    class Meta:
+        model = Response
+        fields = ['is_correct', 'points_awarded', 'grader_comment', 'flagged_for_review']
+
+    def validate(self, attrs):
+        response = self.instance
+        points = attrs.get('points_awarded')
+        if points is not None and points < 0:
+            raise serializers.ValidationError({'points_awarded': 'Cannot be negative.'})
+        if points is not None and response and points > response.question.points:
+            raise serializers.ValidationError(
+                {'points_awarded': f'Cannot exceed {response.question.points} points.'}
+            )
+        return attrs
 
 
 class ResponseCreateSerializer(serializers.ModelSerializer):
@@ -95,6 +163,9 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
             "responses",
             "time_elapsed_seconds",
             "time_remaining_seconds",
+            "deadline_at",
+            "option_order",
+            "accommodation_extra_minutes",
         ]
         read_only_fields = [
             "id",
@@ -112,7 +183,20 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
             data = ExamDetailSerializer(obj.exam, context=self.context).data
         else:
             data = ExamTakeSerializer(obj.exam, context=self.context).data
-        return self._apply_question_order(data, obj.question_order)
+        data = self._apply_question_order(data, obj.question_order)
+        return self._apply_option_order(data, obj.option_order)
+
+    @staticmethod
+    def _apply_option_order(exam_data, option_order):
+        if not option_order or not exam_data.get('questions'):
+            return exam_data
+        questions = []
+        for q in exam_data['questions']:
+            qid = str(q['id'])
+            if qid in option_order:
+                q = {**q, 'options': option_order[qid]}
+            questions.append(q)
+        return {**exam_data, 'questions': questions}
 
     @staticmethod
     def _apply_question_order(exam_data, question_order):
@@ -174,7 +258,7 @@ class ExamSessionSubmitSerializer(serializers.Serializer):
 
     responses = serializers.ListField(
         child=serializers.DictField(),
-        allow_empty=False,
+        allow_empty=True,
         help_text='List of responses with question_id, answer_text, and time_spent'
     )
     time_remaining = serializers.IntegerField(
@@ -188,7 +272,7 @@ class ExamSessionSubmitSerializer(serializers.Serializer):
         if not session:
             raise serializers.ValidationError("Session context is required.")
 
-        required_fields = ['question_id', 'answer_text', 'time_spent']
+        required_fields = ['question_id']
         validated_responses = []
 
         for i, response_data in enumerate(value):
@@ -209,8 +293,9 @@ class ExamSessionSubmitSerializer(serializers.Serializer):
 
             validated_responses.append({
                 'question': question,
-                'answer_text': response_data['answer_text'],
-                'time_spent': response_data['time_spent']
+                'answer_text': response_data.get('answer_text', ''),
+                'time_spent': response_data.get('time_spent', 0),
+                'flagged_for_review': bool(response_data.get('flagged_for_review', False)),
             })
 
         return validated_responses

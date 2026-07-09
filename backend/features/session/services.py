@@ -3,21 +3,80 @@
 from __future__ import annotations
 
 import random
+from datetime import timedelta
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from ai.identity_store import has_reference
+from features.exams.models import ExamAssignment
 from features.session.models import ExamSession, SessionLog
+from features.session.submission import auto_submit_expired_session
 
 
 def build_question_order(exam) -> list[int]:
-    """Return question IDs in presentation order for a new attempt."""
-    question_ids = list(exam.questions.order_by("order").values_list("id", flat=True))
+    """Return question IDs in presentation order for a new attempt (pools + shuffle)."""
+    pools = list(exam.question_pools.prefetch_related('questions').order_by('order'))
+    pooled_ids: set[int] = set()
+    ordered: list[int] = []
+
+    for pool in pools:
+        pool_qids = list(pool.questions.order_by('order').values_list('id', flat=True))
+        pooled_ids.update(pool_qids)
+        draw = min(pool.draw_count, len(pool_qids))
+        if draw > 0:
+            ordered.extend(random.sample(pool_qids, draw))
+
+    non_pooled = list(
+        exam.questions.exclude(id__in=pooled_ids).order_by('order').values_list('id', flat=True)
+    )
+    ordered.extend(non_pooled)
+
     if exam.shuffle_questions:
-        random.shuffle(question_ids)
-    return question_ids
+        random.shuffle(ordered)
+    return ordered
+
+
+def build_option_order(exam, question_ids: list[int]) -> dict[str, list[str]]:
+    """Build per-question shuffled option lists for an attempt."""
+    result: dict[str, list[str]] = {}
+    questions = exam.questions.filter(id__in=question_ids).only(
+        'id', 'options', 'question_type', 'shuffle_options_override'
+    )
+    for question in questions:
+        if question.question_type not in ('multiple_choice', 'true_false'):
+            continue
+        shuffle = exam.shuffle_options
+        if question.shuffle_options_override is not None:
+            shuffle = question.shuffle_options_override
+        options = list(question.options or [])
+        if question.question_type == 'true_false' and not options:
+            options = ['True', 'False']
+        if shuffle and len(options) > 1:
+            options = options.copy()
+            random.shuffle(options)
+        result[str(question.id)] = options
+    return result
+
+
+def get_assignment_accommodation(exam, user) -> tuple[int, int]:
+    """Return (extra_time_minutes, attempts_override or 0)."""
+    if not exam.requires_assignment:
+        return 0, 0
+    assignment = ExamAssignment.objects.filter(
+        exam=exam,
+        user=user,
+        status=ExamAssignment.Status.ELIGIBLE,
+    ).first()
+    if not assignment:
+        return 0, 0
+    return assignment.extra_time_minutes, assignment.attempts_override or 0
+
+
+def compute_deadline(session: ExamSession) -> timezone.datetime:
+    anchor = session.exam_started_at or timezone.now()
+    return anchor + timedelta(seconds=session.duration_seconds)
 
 SETUP_MAX_MINUTES = 30
 
@@ -71,27 +130,30 @@ def expire_session_if_timed_out(
     ip_address: str | None = None,
 ) -> bool:
     """
-    Mark an in-progress session as expired when exam duration is exceeded.
+    Auto-submit or expire when exam duration is exceeded.
 
-    Returns True when the session was transitioned to ``expired``.
+    Returns True when the session was transitioned out of in_progress.
     """
     if session.status != ExamSession.Status.IN_PROGRESS:
         return False
     if not session.is_expired():
         return False
 
+    if auto_submit_expired_session(session, ip_address=ip_address):
+        return True
+
     session.status = ExamSession.Status.EXPIRED
     session.submitted_at = timezone.now()
-    session.save(update_fields=["status", "submitted_at"])
+    session.save(update_fields=['status', 'submitted_at'])
 
     SessionLog.objects.create(
         session=session,
         event_type=SessionLog.EventType.EXPIRED,
         ip_address=ip_address,
         details={
-            "reason": "server_timeout",
-            "duration_seconds": session.duration_seconds,
-            "time_elapsed": session.time_elapsed,
+            'reason': 'server_timeout',
+            'duration_seconds': session.duration_seconds,
+            'time_elapsed': session.time_elapsed,
         },
     )
     return True
@@ -165,16 +227,24 @@ def begin_exam_session(
             {"identity": "Enroll a reference face before beginning the exam."}
         )
 
+    extra_time, _ = get_assignment_accommodation(session.exam, session.user)
+    session.accommodation_extra_minutes = extra_time
     session.status = ExamSession.Status.IN_PROGRESS
     session.exam_started_at = timezone.now()
     session.time_remaining = session.duration_seconds
-    session.question_order = build_question_order(session.exam)
+    question_order = build_question_order(session.exam)
+    session.question_order = question_order
+    session.option_order = build_option_order(session.exam, question_order)
+    session.deadline_at = compute_deadline(session)
     session.save(
         update_fields=[
             "status",
             "exam_started_at",
             "time_remaining",
             "question_order",
+            "option_order",
+            "deadline_at",
+            "accommodation_extra_minutes",
         ]
     )
 
@@ -200,7 +270,9 @@ def _create_in_progress_session(
 ) -> ExamSession:
     """Create a session that starts the exam timer immediately (no proctoring)."""
     assert_no_other_active_exam(user, exam, ip_address=ip_address)
+    extra_time, _ = get_assignment_accommodation(exam, user)
     now = timezone.now()
+    question_order = build_question_order(exam)
     try:
         with transaction.atomic():
             session = ExamSession.objects.create(
@@ -210,9 +282,13 @@ def _create_in_progress_session(
                 user_agent=user_agent,
                 status=ExamSession.Status.IN_PROGRESS,
                 exam_started_at=now,
-                time_remaining=exam.duration_minutes * 60,
-                question_order=build_question_order(exam),
+                time_remaining=exam.duration_minutes * 60 + extra_time * 60,
+                accommodation_extra_minutes=extra_time,
+                question_order=question_order,
+                option_order=build_option_order(exam, question_order),
             )
+            session.deadline_at = compute_deadline(session)
+            session.save(update_fields=['deadline_at'])
     except IntegrityError:
         _raise_if_integrity_blocks_create(user, exam, ip_address=ip_address)
         raise  # pragma: no cover

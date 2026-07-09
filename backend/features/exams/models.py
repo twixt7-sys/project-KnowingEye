@@ -107,6 +107,53 @@ class Exam(models.Model):
         default=False,
         help_text='When enabled, each examinee receives questions in a randomized order',
     )
+    shuffle_options = models.BooleanField(
+        default=False,
+        help_text='When enabled, multiple-choice options are shuffled per attempt',
+    )
+    unanswered_counts_as_wrong = models.BooleanField(
+        default=True,
+        help_text='When true, unanswered questions score zero toward the total',
+    )
+    requires_assignment = models.BooleanField(
+        default=False,
+        help_text='When true, only assigned candidates may start this exam',
+    )
+    results_release_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When examinees may view results (null = immediate on submit)',
+    )
+    class ShowCorrectAnswers(models.TextChoices):
+        NEVER = 'never', 'Never'
+        AFTER_RELEASE = 'after_release', 'After results release'
+        IMMEDIATELY = 'immediately', 'Immediately after submit'
+
+    show_correct_answers = models.CharField(
+        max_length=20,
+        choices=ShowCorrectAnswers.choices,
+        default=ShowCorrectAnswers.NEVER,
+        help_text='When examinees may see correct answers',
+    )
+    is_practice = models.BooleanField(
+        default=False,
+        help_text='Practice exams allow unlimited attempts and optional answer reveal',
+    )
+    class PresentationMode(models.TextChoices):
+        ONE_PER_PAGE = 'one_per_page', 'One question per page'
+        SECTION_PER_PAGE = 'section_per_page', 'One section per page'
+        SCROLL_ALL = 'scroll_all', 'All questions on one page'
+
+    presentation_mode = models.CharField(
+        max_length=20,
+        choices=PresentationMode.choices,
+        default=PresentationMode.ONE_PER_PAGE,
+    )
+    max_tab_switches = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text='Optional limit on tab switches before flagging (null = no limit)',
+    )
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -143,6 +190,95 @@ class Exam(models.Model):
         self.save(update_fields=['total_questions'])
 
 
+class ExamSection(models.Model):
+    """Logical section within an exam (title, instructions, paging)."""
+
+    exam = models.ForeignKey(
+        Exam,
+        on_delete=models.CASCADE,
+        related_name='sections',
+    )
+    title = models.CharField(max_length=255)
+    instructions = models.TextField(blank=True, default='')
+    order = models.PositiveIntegerField(default=0)
+    questions_per_page = models.PositiveIntegerField(
+        default=1,
+        help_text='1 = one question per page; 0 = show all questions in section',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'exams_section'
+        ordering = ['exam', 'order']
+        unique_together = [['exam', 'order']]
+
+    def __str__(self):
+        return f"{self.exam.title} — {self.title}"
+
+
+class QuestionPool(models.Model):
+    """Random draw pool: N questions selected from linked questions per attempt."""
+
+    exam = models.ForeignKey(
+        Exam,
+        on_delete=models.CASCADE,
+        related_name='question_pools',
+    )
+    name = models.CharField(max_length=255)
+    draw_count = models.PositiveIntegerField(
+        default=1,
+        help_text='Number of questions drawn from this pool per attempt',
+    )
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        db_table = 'exams_question_pool'
+        ordering = ['exam', 'order']
+
+    def __str__(self):
+        return f"{self.exam.title} — pool {self.name}"
+
+
+class ExamAssignment(models.Model):
+    """Roster entry: which examinee may take an exam."""
+
+    class Status(models.TextChoices):
+        INVITED = 'invited', 'Invited'
+        ELIGIBLE = 'eligible', 'Eligible'
+        BLOCKED = 'blocked', 'Blocked'
+
+    exam = models.ForeignKey(
+        Exam,
+        on_delete=models.CASCADE,
+        related_name='assignments',
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='exam_assignments',
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.ELIGIBLE,
+    )
+    access_code = models.CharField(max_length=64, blank=True, default='')
+    attempts_override = models.PositiveIntegerField(null=True, blank=True)
+    extra_time_minutes = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'exams_assignment'
+        unique_together = [['exam', 'user']]
+        indexes = [
+            models.Index(fields=['exam', 'status']),
+            models.Index(fields=['user']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} → {self.exam.title}"
+
+
 class Question(models.Model):
     """
     Question model representing a single question in an exam.
@@ -160,6 +296,20 @@ class Question(models.Model):
         on_delete=models.CASCADE,
         related_name='questions',
         help_text='Exam this question belongs to'
+    )
+    section = models.ForeignKey(
+        ExamSection,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='questions',
+    )
+    pool = models.ForeignKey(
+        QuestionPool,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='questions',
     )
     question_text = models.TextField(
         help_text='The question content'
@@ -187,6 +337,18 @@ class Question(models.Model):
         default=0,
         help_text='Display order within exam'
     )
+    shuffle_options_override = models.BooleanField(
+        null=True,
+        blank=True,
+        help_text='Override exam-level option shuffle (null = inherit)',
+    )
+    acceptable_answers = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Additional acceptable answers for short-answer auto-grade',
+    )
+    case_sensitive = models.BooleanField(default=False)
+    trim_whitespace = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -10,8 +10,9 @@ type SchoolBackgroundProps = {
 };
 
 /**
- * Full-bleed campus photo with animated ambient layers and readability overlay.
- * Replace the image at `brand.schoolCampusImage` (see core/config/brand.ts).
+ * Campus backdrop rendered as an "etched plate": the photo is desaturated,
+ * blended into the paper background, and finished with the ruled dot grid
+ * and grain. Replace the image at `brand.schoolCampusImage`.
  */
 export function SchoolBackground({
   variant = "public",
@@ -20,40 +21,30 @@ export function SchoolBackground({
 }: SchoolBackgroundProps) {
   const overlay =
     variant === "workspace"
-      ? "bg-background/88 dark:bg-background/90"
-      : "bg-background/72 dark:bg-background/82";
+      ? "bg-background/92 dark:bg-background/93"
+      : "bg-background/80 dark:bg-background/86";
 
   return (
     <div
       className={cn(
         "pointer-events-none inset-0 z-0 overflow-hidden",
         fixed ? "fixed" : "absolute",
-        className
+        className,
       )}
       aria-hidden
     >
       <div
-        className="absolute inset-0 scale-105 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-70 mix-blend-luminosity grayscale"
         style={{ backgroundImage: `url(${brand.schoolCampusImage})` }}
       />
 
-      <div
-        className={cn(
-          "ambient-bg",
-          variant === "workspace" && "ambient-bg--workspace"
-        )}
-      >
-        <div className="ambient-bg__orb ambient-bg__orb--1" />
-        <div className="ambient-bg__orb ambient-bg__orb--2" />
-        <div className="ambient-bg__orb ambient-bg__orb--3" />
-        <div className="ambient-bg__mesh" />
-        <div className="ambient-bg__grid" />
-        <div className="ambient-bg__shimmer" />
-      </div>
-
       <div className={cn("absolute inset-0", overlay)} />
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/14 via-transparent to-background/95" />
-      <div className="absolute inset-0 bg-gradient-to-r from-background/40 via-transparent to-background/30" />
+
+      <div className={cn("ambient-bg", variant === "workspace" && "ambient-bg--workspace")} />
+
+      <div className="grid-background !absolute" />
+
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/70" />
     </div>
   );
 }

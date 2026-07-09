@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from .models import Department, Exam, Question, QuestionAttachment
+from .models import Department, Exam, ExamAssignment, ExamSection, Question, QuestionAttachment, QuestionPool
 
 User = get_user_model()
 
@@ -97,6 +97,12 @@ class QuestionSerializer(serializers.ModelSerializer):
             "points",
             "order",
             "attachments",
+            "section",
+            "pool",
+            "acceptable_answers",
+            "case_sensitive",
+            "trim_whitespace",
+            "shuffle_options_override",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
@@ -121,6 +127,12 @@ class QuestionDetailSerializer(serializers.ModelSerializer):
             "points",
             "order",
             "attachments",
+            "section",
+            "pool",
+            "acceptable_answers",
+            "case_sensitive",
+            "trim_whitespace",
+            "shuffle_options_override",
             "created_at",
             "updated_at",
         ]
@@ -139,6 +151,12 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
             "correct_answer",
             "points",
             "order",
+            "section",
+            "pool",
+            "acceptable_answers",
+            "case_sensitive",
+            "trim_whitespace",
+            "shuffle_options_override",
         ]
 
     def validate_options(self, value):
@@ -217,6 +235,14 @@ class ExamListSerializer(serializers.ModelSerializer):
             "max_attempts",
             "monitoring_enabled",
             "shuffle_questions",
+            "shuffle_options",
+            "unanswered_counts_as_wrong",
+            "requires_assignment",
+            "results_release_at",
+            "show_correct_answers",
+            "is_practice",
+            "presentation_mode",
+            "max_tab_switches",
             "is_open",
             "created_by_name",
             "created_at",
@@ -265,6 +291,14 @@ class ExamTakeSerializer(serializers.ModelSerializer):
             "max_attempts",
             "monitoring_enabled",
             "shuffle_questions",
+            "shuffle_options",
+            "unanswered_counts_as_wrong",
+            "requires_assignment",
+            "results_release_at",
+            "show_correct_answers",
+            "is_practice",
+            "presentation_mode",
+            "max_tab_switches",
             "is_open",
             "questions",
         ]
@@ -303,6 +337,14 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "max_attempts",
             "monitoring_enabled",
             "shuffle_questions",
+            "shuffle_options",
+            "unanswered_counts_as_wrong",
+            "requires_assignment",
+            "results_release_at",
+            "show_correct_answers",
+            "is_practice",
+            "presentation_mode",
+            "max_tab_switches",
             "created_by",
             "created_by_name",
             "created_by_email",
@@ -356,6 +398,14 @@ class ExamCreateUpdateSerializer(serializers.ModelSerializer):
             "max_attempts",
             "monitoring_enabled",
             "shuffle_questions",
+            "shuffle_options",
+            "unanswered_counts_as_wrong",
+            "requires_assignment",
+            "results_release_at",
+            "show_correct_answers",
+            "is_practice",
+            "presentation_mode",
+            "max_tab_switches",
             "status",
         ]
         read_only_fields = ["id", "exam_code"]
@@ -428,3 +478,86 @@ class QuestionReorderSerializer(serializers.Serializer):
         child=serializers.IntegerField(min_value=1),
         allow_empty=False,
     )
+
+
+class ExamSectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExamSection
+        fields = [
+            "id", "exam", "title", "instructions", "order", "questions_per_page", "created_at",
+        ]
+        read_only_fields = ["id", "exam", "created_at"]
+
+
+class QuestionPoolSerializer(serializers.ModelSerializer):
+    question_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = QuestionPool
+        fields = ["id", "exam", "name", "draw_count", "order", "question_count"]
+        read_only_fields = ["id", "exam"]
+
+    def get_question_count(self, obj):
+        return obj.questions.count()
+
+
+class ExamAssignmentSerializer(serializers.ModelSerializer):
+    user_email = serializers.EmailField(source="user.email", read_only=True)
+    user_name = serializers.CharField(source="user.get_full_name", read_only=True)
+    user_id = serializers.IntegerField(write_only=True, required=False)
+    email = serializers.EmailField(write_only=True, required=False)
+
+    class Meta:
+        model = ExamAssignment
+        fields = [
+            "id", "exam", "user", "user_id", "email", "user_email", "user_name",
+            "status", "access_code", "attempts_override", "extra_time_minutes", "created_at",
+        ]
+        read_only_fields = ["id", "exam", "user", "created_at"]
+
+    def validate(self, attrs):
+        user_id = attrs.pop("user_id", None)
+        email = attrs.pop("email", None)
+        if self.instance:
+            return attrs
+        user = None
+        if user_id:
+            user = User.objects.filter(pk=user_id).first()
+        elif email:
+            user = User.objects.filter(email__iexact=email.strip()).first()
+        if not user:
+            raise serializers.ValidationError("Provide a valid user_id or email.")
+        attrs["user"] = user
+        return attrs
+
+
+class ExamMineSerializer(ExamListSerializer):
+    attempts_remaining = serializers.SerializerMethodField()
+    extra_time_minutes = serializers.SerializerMethodField()
+
+    class Meta(ExamListSerializer.Meta):
+        fields = ExamListSerializer.Meta.fields + [
+            "attempts_remaining",
+            "extra_time_minutes",
+            "requires_assignment",
+            "is_practice",
+        ]
+
+    def get_attempts_remaining(self, obj):
+        from . import services
+
+        user = self.context.get("user")
+        if not user:
+            return None
+        return services.attempts_remaining_for_user(obj, user)
+
+    def get_extra_time_minutes(self, obj):
+        if not obj.requires_assignment:
+            return 0
+        user = self.context.get("user")
+        if not user:
+            return 0
+        assignment = ExamAssignment.objects.filter(
+            exam=obj, user=user, status=ExamAssignment.Status.ELIGIBLE,
+        ).first()
+        return assignment.extra_time_minutes if assignment else 0

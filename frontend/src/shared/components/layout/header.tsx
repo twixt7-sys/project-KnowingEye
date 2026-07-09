@@ -1,12 +1,12 @@
-import { Link, useLocation, useNavigate } from "react-router";
-import { Logo } from "./logo";
-import { ThemeToggle } from "../common/theme-toggle";
-import { useConfirm } from "../common/confirm-dialog";
-import { Menu, X, LogOut } from "lucide-react";
+import { LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { useAuth } from "../../../core/providers/auth-provider";
+import { Link, useLocation, useNavigate } from "react-router";
 import { brand } from "../../../core/config/brand";
+import { useAuth } from "../../../core/providers/auth-provider";
+import { useConfirm } from "../common/confirm-dialog";
+import { ThemeToggle } from "../common/theme-toggle";
 import { Button } from "../ui/button";
+import { Logo } from "./logo";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -47,7 +47,7 @@ export function Header() {
         <div className="flex h-16 items-center justify-between gap-4">
           <Link to="/" className="public-header-brand flex items-center gap-2.5">
             <Logo className="h-7 w-7" />
-            <span className="text-lg font-semibold tracking-tight">{brand.appName}</span>
+            <span className="font-serif text-lg font-semibold tracking-tight">{brand.appName}</span>
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">

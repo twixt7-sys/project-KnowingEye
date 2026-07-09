@@ -13,6 +13,7 @@ import { ExamSubmitted } from "../../pages/exam-submitted";
 import { ExamResults } from "../../pages/exam-results";
 import { ExamSummary } from "../../pages/exam-summary";
 import { ExamBuilder } from "../../pages/exam-builder";
+import { ExamGrader } from "../../pages/exam-grader";
 import { Monitoring } from "../../pages/monitoring";
 import { SessionMonitor } from "../../pages/session-monitor";
 import { Reports } from "../../pages/reports";
@@ -147,6 +148,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredRole="ADMIN">
             <ExamBuilder />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "examiner/exams/:examId/grading",
+        element: (
+          <ProtectedRoute requiredRole="ADMIN">
+            <ExamGrader />
           </ProtectedRoute>
         ),
       },

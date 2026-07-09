@@ -13,7 +13,7 @@ from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from .dto import ExamLifecycleResult
-from .models import Department, Exam, Question
+from .models import Department, Exam, ExamAssignment, Question
 
 User = get_user_model()
 
@@ -103,17 +103,48 @@ def exam_is_open_for_taking(exam: Exam) -> bool:
     return True
 
 
+def user_is_assigned_to_exam(exam: Exam, user) -> bool:
+    """Return whether the user may access a roster-restricted exam."""
+    if not exam.requires_assignment:
+        return True
+    return ExamAssignment.objects.filter(
+        exam=exam,
+        user=user,
+        status=ExamAssignment.Status.ELIGIBLE,
+    ).exists()
+
+
+def attempts_remaining_for_user(exam: Exam, user) -> int | None:
+    """Return remaining attempts (None = unlimited for practice exams)."""
+    if exam.is_practice:
+        return None
+
+    from features.session.models import ExamSession
+
+    completed = ExamSession.objects.filter(
+        exam=exam,
+        user=user,
+        status__in=(
+            ExamSession.Status.COMPLETED,
+            ExamSession.Status.PENDING_REVIEW,
+        ),
+    ).count()
+
+    max_attempts = exam.max_attempts
+    if exam.requires_assignment:
+        assignment = ExamAssignment.objects.filter(
+            exam=exam,
+            user=user,
+            status=ExamAssignment.Status.ELIGIBLE,
+        ).first()
+        if assignment and assignment.attempts_override:
+            max_attempts = assignment.attempts_override
+
+    return max(0, max_attempts - completed)
+
+
 def assert_exam_available_for_user(exam: Exam, user) -> None:
-    """Validate that ``user`` may start an attempt on ``exam``.
-
-    Args:
-        exam: The exam the user wants to take.
-        user: The requesting user.
-
-    Raises:
-        ValidationError: If the exam is outside its scheduling window or the
-            user has already used all of their allowed attempts.
-    """
+    """Validate that ``user`` may start an attempt on ``exam``."""
     if not exam_is_open_for_taking(exam):
         now = timezone.now()
         if exam.available_from and now < exam.available_from:
@@ -124,18 +155,13 @@ def assert_exam_available_for_user(exam: Exam, user) -> None:
             raise ValidationError({"exam": "The registration window for this exam has closed."})
         raise ValidationError({"exam": "Exam is not available for taking."})
 
-    from features.session.models import ExamSession
+    if exam.requires_assignment and not user_is_assigned_to_exam(exam, user):
+        raise ValidationError({"exam": "You are not assigned to this exam."})
 
-    completed = ExamSession.objects.filter(
-        exam=exam,
-        user=user,
-        status=ExamSession.Status.COMPLETED,
-    ).count()
-    if completed >= exam.max_attempts:
+    remaining = attempts_remaining_for_user(exam, user)
+    if remaining is not None and remaining <= 0:
         raise ValidationError(
-            {
-                "exam": f"Maximum attempts ({exam.max_attempts}) reached for this exam."
-            }
+            {"exam": f"Maximum attempts ({exam.max_attempts}) reached for this exam."}
         )
 
 
@@ -597,6 +623,84 @@ def generate_exam_code(department: Department, year: int | None = None) -> str:
     return f"{prefix}{suffix}"
 
 
+def duplicate_exam(exam: Exam, user) -> Exam:
+    """Clone an exam with questions, sections, and pools (draft status)."""
+    assert_can_modify_exam(exam, user)
+
+    with transaction.atomic():
+        new_exam = Exam.objects.create(
+            title=f"{exam.title} (Copy)",
+            description=exam.description,
+            instructions=exam.instructions,
+            duration_minutes=exam.duration_minutes,
+            passing_score=exam.passing_score,
+            department=exam.department,
+            available_from=exam.available_from,
+            available_until=exam.available_until,
+            max_attempts=exam.max_attempts,
+            monitoring_enabled=exam.monitoring_enabled,
+            shuffle_questions=exam.shuffle_questions,
+            shuffle_options=exam.shuffle_options,
+            unanswered_counts_as_wrong=exam.unanswered_counts_as_wrong,
+            requires_assignment=exam.requires_assignment,
+            results_release_at=exam.results_release_at,
+            show_correct_answers=exam.show_correct_answers,
+            is_practice=exam.is_practice,
+            presentation_mode=exam.presentation_mode,
+            max_tab_switches=exam.max_tab_switches,
+            status=Exam.Status.DRAFT,
+            created_by=user,
+        )
+        if exam.department:
+            new_exam.exam_code = generate_exam_code(exam.department)
+            new_exam.save(update_fields=['exam_code'])
+
+        section_map: dict[int, Any] = {}
+        for section in exam.sections.order_by('order'):
+            new_section = section.__class__.objects.create(
+                exam=new_exam,
+                title=section.title,
+                instructions=section.instructions,
+                order=section.order,
+                questions_per_page=section.questions_per_page,
+            )
+            section_map[section.id] = new_section
+
+        pool_map: dict[int, Any] = {}
+        for pool in exam.question_pools.order_by('order'):
+            new_pool = pool.__class__.objects.create(
+                exam=new_exam,
+                name=pool.name,
+                draw_count=pool.draw_count,
+                order=pool.order,
+            )
+            pool_map[pool.id] = new_pool
+
+        for question in exam.questions.order_by('order'):
+            new_q = Question.objects.create(
+                exam=new_exam,
+                section=section_map.get(question.section_id) if question.section_id else None,
+                pool=pool_map.get(question.pool_id) if question.pool_id else None,
+                question_text=question.question_text,
+                question_type=question.question_type,
+                options=question.options,
+                correct_answer=question.correct_answer,
+                points=question.points,
+                order=question.order,
+                shuffle_options_override=question.shuffle_options_override,
+                acceptable_answers=question.acceptable_answers,
+                case_sensitive=question.case_sensitive,
+                trim_whitespace=question.trim_whitespace,
+            )
+            for att in question.attachments.all():
+                att.pk = None
+                att.question = new_q
+                att.save()
+
+        new_exam.update_question_count()
+    return new_exam
+
+
 def attach_creator(exam: Exam, user) -> None:
     """Set the creator of an exam in-place (without saving).
 
@@ -605,3 +709,102 @@ def attach_creator(exam: Exam, user) -> None:
         user: The user to record as the creator.
     """
     exam.created_by = user
+
+
+def import_assignments(exam: Exam, user, *, csv_text: str) -> dict[str, Any]:
+    """Import candidate roster from CSV (email, extra_time_minutes)."""
+    assert_can_modify_exam(exam, user)
+
+    text = (csv_text or "").lstrip("\ufeff").strip()
+    if not text:
+        raise ValidationError({"csv": "CSV content is required."})
+
+    reader = csv.DictReader(io.StringIO(text))
+    created = 0
+    updated = 0
+    errors: list[str] = []
+
+    for line_no, row in enumerate(reader, start=2):
+        email = (row.get("email") or "").strip()
+        if not email:
+            errors.append(f"Row {line_no}: email is required.")
+            continue
+        candidate = User.objects.filter(email__iexact=email).first()
+        if not candidate:
+            errors.append(f"Row {line_no}: no user with email {email}.")
+            continue
+        extra_raw = (row.get("extra_time_minutes") or "0").strip()
+        try:
+            extra_time = int(extra_raw)
+        except ValueError:
+            errors.append(f"Row {line_no}: invalid extra_time_minutes.")
+            continue
+
+        _, was_created = ExamAssignment.objects.update_or_create(
+            exam=exam,
+            user=candidate,
+            defaults={
+                "status": ExamAssignment.Status.ELIGIBLE,
+                "extra_time_minutes": extra_time,
+            },
+        )
+        if was_created:
+            created += 1
+        else:
+            updated += 1
+
+    if errors:
+        raise ValidationError({"errors": errors})
+
+    return {"created": created, "updated": updated}
+
+
+def exam_item_analytics(exam: Exam) -> dict[str, Any]:
+    """Per-question statistics from completed sessions."""
+    from features.session.models import ExamSession, Response
+
+    sessions = ExamSession.objects.filter(
+        exam=exam,
+        status__in=(
+            ExamSession.Status.COMPLETED,
+            ExamSession.Status.PENDING_REVIEW,
+        ),
+    )
+    session_count = sessions.count()
+    items = []
+
+    for question in exam.questions.order_by("order"):
+        responses = Response.objects.filter(
+            session__in=sessions,
+            question=question,
+        )
+        total = responses.count()
+        correct = responses.filter(is_correct=True).count()
+        avg_time = 0
+        if total:
+            avg_time = sum(r.time_spent for r in responses) / total
+        items.append({
+            "question_id": question.id,
+            "order": question.order,
+            "question_type": question.question_type,
+            "points": question.points,
+            "response_count": total,
+            "correct_count": correct,
+            "correct_pct": round((correct / total) * 100, 1) if total else 0,
+            "avg_time_spent": round(avg_time, 1),
+        })
+
+    return {
+        "exam_id": exam.id,
+        "session_count": session_count,
+        "questions": items,
+    }
+
+
+def results_visible_to_user(exam: Exam, user) -> bool:
+    """Whether an examinee may view results for this exam."""
+    if exam.show_correct_answers == Exam.ShowCorrectAnswers.IMMEDIATELY:
+        return True
+    if exam.results_release_at and timezone.now() >= exam.results_release_at:
+        return True
+    return False

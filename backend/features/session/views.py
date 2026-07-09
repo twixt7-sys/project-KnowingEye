@@ -16,8 +16,11 @@ from .serializers import (
     ExamSessionStartSerializer,
     ExamSessionSubmitSerializer,
     ResponseSerializer,
+    ResponseUpsertSerializer,
+    ResponseGradeSerializer,
     SessionLogSerializer,
 )
+from .submission import submit_session_with_responses, upsert_response
 from .services import begin_exam_session, ensure_active_session, get_or_create_setup_session
 
 
@@ -141,7 +144,11 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
         # Check if session can be submitted
         if not session.can_submit():
-            if session.status == ExamSession.Status.EXPIRED:
+            if session.status in (
+                ExamSession.Status.EXPIRED,
+                ExamSession.Status.COMPLETED,
+                ExamSession.Status.PENDING_REVIEW,
+            ):
                 return APIResponse(
                     {'error': 'Session has expired due to time limit'},
                     status=status.HTTP_400_BAD_REQUEST
@@ -155,35 +162,17 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         serializer.context['session'] = session
         serializer.is_valid(raise_exception=True)
 
-        # Submit session with responses
         with transaction.atomic():
-            # Create responses
             responses_data = serializer.validated_data['responses']
             time_remaining = serializer.validated_data['time_remaining']
-
-            for response_data in responses_data:
-                AnswerResponse.objects.create(
-                    session=session,
-                    **response_data
-                )
-
-            # Submit the session
-            session.submit_session(time_remaining)
-
-            # Log submission
-            SessionLog.objects.create(
-                session=session,
-                event_type=SessionLog.EventType.SUBMITTED,
+            submit_session_with_responses(
+                session,
+                responses_data=responses_data,
+                time_remaining=time_remaining,
                 ip_address=self._get_client_ip(request),
-                details={
-                    'responses_count': len(responses_data),
-                    'time_remaining': time_remaining,
-                    'total_score': session.total_score,
-                    'percentage_score': float(session.percentage_score) if session.percentage_score else 0
-                }
+                source='manual',
             )
 
-        # Return final results
         detail_serializer = ExamSessionDetailSerializer(session)
         return APIResponse(
             {
@@ -193,10 +182,125 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
                     'total_score': session.total_score,
                     'percentage_score': float(session.percentage_score) if session.percentage_score else 0,
                     'passed': session.passed,
-                    'responses_count': len(responses_data)
+                    'responses_count': session.responses.count(),
+                    'status': session.status,
                 }
             },
             status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=['patch'], url_path='responses')
+    def save_responses(self, request, pk=None):
+        """Autosave responses during an in-progress attempt."""
+        session = self.get_object()
+        if session.user != request.user and not request.user.is_admin():
+            return APIResponse({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        ensure_active_session(session, ip_address=self._get_client_ip(request))
+        session.refresh_from_db()
+        if session.status != ExamSession.Status.IN_PROGRESS:
+            return APIResponse(
+                {'error': 'Session is not in progress.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = ResponseUpsertSerializer(
+            data=request.data,
+            context={'session': session},
+        )
+        serializer.is_valid(raise_exception=True)
+
+        saved = []
+        with transaction.atomic():
+            for item in serializer.validated_data['responses']:
+                response = upsert_response(
+                    session,
+                    question=item['question'],
+                    answer_text=item['answer_text'],
+                    time_spent=item['time_spent'],
+                    flagged_for_review=item['flagged_for_review'],
+                    autosave=True,
+                )
+                saved.append(response)
+
+        return APIResponse(
+            {
+                'saved': len(saved),
+                'responses': ResponseSerializer(saved, many=True).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=['post'])
+    def heartbeat(self, request, pk=None):
+        """Return authoritative timer state for client sync."""
+        session = self.get_object()
+        if session.user != request.user and not request.user.is_admin():
+            return APIResponse({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        ensure_active_session(session, ip_address=self._get_client_ip(request))
+        session.refresh_from_db()
+
+        return APIResponse(
+            {
+                'server_now': timezone.now().isoformat(),
+                'deadline_at': (
+                    session.timed_end_at.isoformat() if session.timed_end_at else None
+                ),
+                'time_remaining_seconds': session.time_remaining_seconds,
+                'status': session.status,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=['post'], url_path='log-event')
+    def log_event(self, request, pk=None):
+        """Record browser integrity events (tab switch, fullscreen)."""
+        session = self.get_object()
+        if session.user != request.user:
+            return APIResponse({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        event_type = request.data.get('event_type')
+        allowed = {
+            'tab_hidden': SessionLog.EventType.TAB_HIDDEN,
+            'tab_visible': SessionLog.EventType.TAB_VISIBLE,
+            'fullscreen_exit': SessionLog.EventType.FULLSCREEN_EXIT,
+        }
+        if event_type not in allowed:
+            return APIResponse(
+                {'error': f'Invalid event_type. Use one of: {list(allowed.keys())}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        SessionLog.objects.create(
+            session=session,
+            event_type=allowed[event_type],
+            ip_address=self._get_client_ip(request),
+            details=request.data.get('details') or {},
+        )
+        return APIResponse({'logged': True}, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def recalculate(self, request, pk=None):
+        """Recalculate session score after manual grading (admin)."""
+        if not request.user.is_admin():
+            return APIResponse({'error': 'Admin only'}, status=status.HTTP_403_FORBIDDEN)
+
+        session = self.get_object()
+        session.calculate_score()
+        pending = session.responses.filter(
+            flagged_for_review=True,
+            points_awarded__isnull=True,
+        ).exists()
+        if pending:
+            session.status = ExamSession.Status.PENDING_REVIEW
+        else:
+            session.status = ExamSession.Status.COMPLETED
+        session.save()
+
+        return APIResponse(
+            ExamSessionDetailSerializer(session, context={'request': request}).data,
+            status=status.HTTP_200_OK,
         )
 
     def retrieve(self, request, *args, **kwargs):
@@ -277,7 +381,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
 class ResponseViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Read-only ViewSet for responses.
+    Read-only ViewSet for responses with admin grading.
     """
     permission_classes = [IsAuthenticated]
     serializer_class = ResponseSerializer
@@ -285,6 +389,32 @@ class ResponseViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         """Filter responses based on user role."""
         if self.request.user.is_admin():
-            return AnswerResponse.objects.all()
-        return AnswerResponse.objects.filter(session__user=self.request.user)
+            return AnswerResponse.objects.select_related('question', 'session')
+        return AnswerResponse.objects.filter(session__user=self.request.user).select_related(
+            'question', 'session'
+        )
+
+    @action(detail=True, methods=['patch'], url_path='grade')
+    def grade(self, request, pk=None):
+        """Manually grade a response (admin)."""
+        if not request.user.is_admin():
+            return APIResponse({'error': 'Admin only'}, status=status.HTTP_403_FORBIDDEN)
+
+        response = self.get_object()
+        serializer = ResponseGradeSerializer(
+            response,
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save(
+            graded_at=timezone.now(),
+            graded_by=request.user,
+        )
+        if instance.points_awarded is not None:
+            instance.is_correct = instance.points_awarded >= instance.question.points
+            instance.flagged_for_review = False
+            instance.save(update_fields=['is_correct', 'flagged_for_review'])
+
+        return APIResponse(ResponseSerializer(instance).data, status=status.HTTP_200_OK)
 

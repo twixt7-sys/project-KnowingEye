@@ -201,6 +201,8 @@ class IdentityFlowTests(APITestCase):
 
     def test_reference_is_per_session(self):
         """A reference enrolled for one session must not leak into another."""
+        from django.utils import timezone
+
         other_exam = Exam.objects.create(
             title="Identity Exam 2",
             description="",
@@ -209,8 +211,10 @@ class IdentityFlowTests(APITestCase):
             status=Exam.Status.ACTIVE,
             created_by=self.admin,
         )
-        other_session = ExamSession.objects.create(exam=other_exam, user=self.examinee)
         self.assertTrue(self._enroll(self.session).data["ok"])
-        # Second session was never enrolled → identity stays unknown.
+        self.session.status = ExamSession.Status.COMPLETED
+        self.session.submitted_at = timezone.now()
+        self.session.save(update_fields=["status", "submitted_at"])
+        other_session = ExamSession.objects.create(exam=other_exam, user=self.examinee)
         metrics = self._frame(other_session).data["analysis"]["metrics"]
         self.assertIsNone(metrics["identity_match_pct"])

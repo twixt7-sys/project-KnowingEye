@@ -6,7 +6,8 @@ from rest_framework.test import APITestCase
 
 from features.exams.models import Exam, Question
 from features.session.models import ExamSession
-from features.session.services import touch_setup_activity
+from features.session.services import expire_session_if_timed_out, touch_setup_activity
+from features.session.submission import upsert_response
 
 User = get_user_model()
 
@@ -114,7 +115,73 @@ class SessionAPITests(APITestCase):
         )
         self.assertEqual(submit.status_code, status.HTTP_400_BAD_REQUEST)
         session.refresh_from_db()
-        self.assertEqual(session.status, ExamSession.Status.EXPIRED)
+        self.assertIn(session.status, (ExamSession.Status.EXPIRED, ExamSession.Status.COMPLETED))
+
+    def test_partial_submit_scores_against_all_questions(self):
+        from ai.identity_store import store_reference
+
+        q2 = Question.objects.create(
+            exam=self.exam,
+            question_text="Second?",
+            question_type=Question.QuestionType.TRUE_FALSE,
+            options=["True", "False"],
+            correct_answer="False",
+            points=1,
+            order=2,
+        )
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        session_id = start.data["session"]["id"]
+        store_reference(ExamSession.objects.get(pk=session_id), [0.1] * 128, "test")
+        self.client.post(f"/api/sessions/{session_id}/begin/", format="json")
+
+        submit = self.client.post(
+            f"/api/sessions/{session_id}/submit/",
+            {
+                "responses": [
+                    {
+                        "question_id": self.question.id,
+                        "answer_text": "True",
+                        "time_spent": 5,
+                    }
+                ],
+                "time_remaining": 100,
+            },
+            format="json",
+        )
+        self.assertEqual(submit.status_code, status.HTTP_200_OK)
+        session = ExamSession.objects.get(pk=session_id)
+        self.assertEqual(session.responses.count(), 2)
+        self.assertEqual(float(session.percentage_score), 50.0)
+
+    def test_autosave_and_resume(self):
+        from ai.identity_store import store_reference
+
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        session_id = start.data["session"]["id"]
+        store_reference(ExamSession.objects.get(pk=session_id), [0.1] * 128, "test")
+        self.client.post(f"/api/sessions/{session_id}/begin/", format="json")
+
+        save = self.client.patch(
+            f"/api/sessions/{session_id}/responses/",
+            {
+                "responses": [
+                    {
+                        "question_id": self.question.id,
+                        "answer_text": "True",
+                        "time_spent": 3,
+                        "flagged_for_review": True,
+                    }
+                ]
+            },
+            format="json",
+        )
+        self.assertEqual(save.status_code, status.HTTP_200_OK)
+
+        detail = self.client.get(f"/api/sessions/{session_id}/")
+        self.assertEqual(detail.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(detail.data["responses"]), 1)
+        self.assertEqual(detail.data["responses"][0]["answer_text"], "True")
+        self.assertTrue(detail.data["responses"][0]["flagged_for_review"])
 
     def test_setup_activity_prevents_idle_expiry(self):
         start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
@@ -250,6 +317,32 @@ class SessionAPITests(APITestCase):
         )
         self.assertEqual(next_start.status_code, status.HTTP_201_CREATED)
         self.assertEqual(next_start.data["session"]["status"], ExamSession.Status.IN_PROGRESS)
+
+    def test_auto_submit_on_server_timeout(self):
+        from ai.identity_store import store_reference
+
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        session = ExamSession.objects.get(pk=start.data["session"]["id"])
+        store_reference(session, [0.1] * 128, "test")
+        self.client.post(f"/api/sessions/{session.id}/begin/", format="json")
+        session.refresh_from_db()
+
+        upsert_response(
+            session,
+            question=self.question,
+            answer_text="True",
+            time_spent=5,
+            autosave=True,
+        )
+        session.refresh_from_db()
+        session.exam_started_at = timezone.now() - timedelta(minutes=self.exam.duration_minutes + 5)
+        session.deadline_at = timezone.now() - timedelta(minutes=1)
+        session.save(update_fields=["exam_started_at", "deadline_at"])
+
+        self.assertTrue(expire_session_if_timed_out(session))
+        session.refresh_from_db()
+        self.assertEqual(session.status, ExamSession.Status.COMPLETED)
+        self.assertTrue(session.passed)
 
     def test_stale_setup_on_other_exam_does_not_block(self):
         other_exam = Exam.objects.create(

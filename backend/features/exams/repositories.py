@@ -14,7 +14,7 @@ from django.utils import timezone
 
 from shared.repositories.base_repository import BaseRepository
 
-from .models import Exam, Question
+from .models import Exam, ExamAssignment, Question
 
 
 class ExamRepository(BaseRepository[Exam]):
@@ -31,10 +31,17 @@ class ExamRepository(BaseRepository[Exam]):
         if getattr(user, "is_admin", lambda: False)():
             return self.all()
         now = timezone.now()
-        return (
+        qs = (
             self.active()
             .filter(Q(available_from__isnull=True) | Q(available_from__lte=now))
             .filter(Q(available_until__isnull=True) | Q(available_until__gte=now))
+        )
+        assigned_ids = ExamAssignment.objects.filter(
+            user=user,
+            status=ExamAssignment.Status.ELIGIBLE,
+        ).values_list('exam_id', flat=True)
+        return qs.filter(
+            Q(requires_assignment=False) | Q(id__in=assigned_ids)
         )
 
     def by_id(self, exam_id: int) -> Optional[Exam]:

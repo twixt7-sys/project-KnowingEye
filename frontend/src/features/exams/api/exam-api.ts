@@ -1,7 +1,23 @@
 /**
  * Exam feature API - typed wrappers over the shared API client.
  */
-import { apiClient, type Exam, type PublishReadiness, type Question } from "../../../core/config/api";
+import {
+  apiClient,
+  type Exam,
+  type PublishReadiness,
+  type Question,
+  type QuestionAttachment,
+} from "@/core/config/api";
+
+export interface ExamAssignment {
+  id: number;
+  user: number;
+  user_email: string;
+  user_name: string;
+  status: string;
+  extra_time_minutes: number;
+  attempts_override: number | null;
+}
 
 export function fetchExams(params?: { status?: string; search?: string }) {
   return apiClient.getExams(params);
@@ -59,4 +75,43 @@ export function reorderQuestions(examId: number, questionIds: number[]) {
   return apiClient.reorderQuestions(examId, questionIds);
 }
 
-export type { Exam, Question, PublishReadiness };
+export function createExamSection(
+  examId: number,
+  payload: { title: string; instructions?: string; order?: number; questions_per_page?: number }
+) {
+  return apiClient.createExamSection(examId, payload);
+}
+
+export function uploadQuestionAttachment(
+  examId: number,
+  questionId: number,
+  file: File,
+  caption?: string
+) {
+  return apiClient.uploadQuestionAttachment(examId, questionId, file, caption);
+}
+
+export function deleteQuestionAttachment(
+  examId: number,
+  questionId: number,
+  attachmentId: number
+) {
+  return apiClient.deleteQuestionAttachment(examId, questionId, attachmentId);
+}
+
+export function fetchExamAssignments(examId: number) {
+  return apiClient.listExamAssignments(examId);
+}
+
+export function createExamAssignment(
+  examId: number,
+  payload: { user_id?: number; email?: string; extra_time_minutes?: number }
+) {
+  return apiClient.createExamAssignment(examId, payload);
+}
+
+export function importExamAssignments(examId: number, csv: string) {
+  return apiClient.importExamAssignments(examId, csv);
+}
+
+export type { Exam, Question, PublishReadiness, QuestionAttachment };

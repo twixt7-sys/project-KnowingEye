@@ -1,10 +1,11 @@
+import { Eye, Loader2, Power } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Eye, Loader2, Power } from "lucide-react";
 import { toast } from "sonner";
 
-import { apiClient, formatApiError, type SessionReportRow } from "../../../core/config/api";
+import { type SessionReportRow, apiClient, formatApiError } from "../../../core/config/api";
 import { useConfirm } from "../../../shared/components/common/confirm-dialog";
+import { IconAction } from "../../../shared/components/common/icon-action";
 import { Button } from "../../../shared/components/ui/button";
 import { useSessionObserver } from "../hooks/use-session-observer";
 
@@ -50,68 +51,101 @@ export function LiveSessionCard({
     }
   };
 
+  const name = session.user_full_name || session.user;
+  const isLive = observer.status === "live";
+  const hasAlerts = session.unresolved_alert_count > 0;
+
   return (
-    <div className="rounded-xl border bg-card overflow-hidden">
-      <div className="aspect-video bg-black relative">
+    <div className={`surface-panel overflow-hidden ${hasAlerts ? "border-status-alert/40" : ""}`}>
+      <div className="relative aspect-video bg-black">
         {observer.snapshot ? (
           <img
             src={observer.snapshot}
-            alt={`${session.user_full_name || session.user} live`}
+            alt={`${name} live`}
             className="h-full w-full object-contain"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-            {observer.status === "live" ? "Waiting for frames…" : "Connecting…"}
+          <div className="flex h-full items-center justify-center font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground">
+            {isLive ? "Waiting for frames…" : "Connecting…"}
           </div>
         )}
-        <span
-          className={`absolute top-2 right-2 text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border ${
-            observer.status === "live"
-              ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
-              : "border-border bg-black/50 text-muted-foreground"
-          }`}
-        >
-          {observer.status}
-        </span>
+
+        {/* Monitor chrome: name plate + status */}
+        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/75 to-transparent px-3 pb-2 pt-6">
+          <p className="truncate font-mono text-[0.6875rem] tracking-[0.06em] text-white/90">
+            {name}
+          </p>
+          <span
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-[0.3125rem] px-1.5 py-0.5 font-mono text-[0.625rem] uppercase tracking-[0.1em] ${
+              isLive ? "bg-status-safe/25 text-emerald-100" : "bg-white/10 text-white/60"
+            }`}
+          >
+            {isLive && <span className="live-dot !h-1.5 !w-1.5" aria-hidden />}
+            {observer.status}
+          </span>
+        </div>
       </div>
-      <div className="p-4 space-y-3">
-        <div>
-          <p className="font-semibold truncate">{session.user_full_name || session.user}</p>
-          <p className="text-xs text-muted-foreground truncate">{session.exam_title}</p>
+
+      <div className="space-y-3 p-4">
+        <div className="flex items-start justify-between gap-2">
+          <p className="min-w-0 truncate text-xs text-muted-foreground">{session.exam_title}</p>
+          {hasAlerts && (
+            <span className="status-pill shrink-0 bg-status-alert/12 text-status-alert">
+              {session.unresolved_alert_count} alert
+              {session.unresolved_alert_count === 1 ? "" : "s"}
+            </span>
+          )}
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <div className="rounded border p-2">
-            <p className="text-muted-foreground">Compliance</p>
-            <p className="font-semibold tabular-nums">
-              {compliance == null ? "-" : `${compliance.toFixed(0)}%`}
-            </p>
+
+        <dl className="grid grid-cols-3 divide-x divide-border/60 rounded-lg border border-border/70 bg-muted/25">
+          <div className="px-3 py-2">
+            <dt className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-muted-foreground">
+              Compliance
+            </dt>
+            <dd className="mt-0.5 font-mono text-sm font-medium tabular-nums">
+              {compliance == null ? "—" : `${compliance.toFixed(0)}%`}
+            </dd>
           </div>
-          <div className="rounded border p-2">
-            <p className="text-muted-foreground">Face</p>
-            <p className="font-semibold tabular-nums">
-              {metrics?.face_presence_pct == null ? "-" : `${metrics.face_presence_pct.toFixed(0)}%`}
-            </p>
+          <div className="px-3 py-2">
+            <dt className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-muted-foreground">
+              Face
+            </dt>
+            <dd className="mt-0.5 font-mono text-sm font-medium tabular-nums">
+              {metrics?.face_presence_pct == null
+                ? "—"
+                : `${metrics.face_presence_pct.toFixed(0)}%`}
+            </dd>
           </div>
-          <div className="rounded border p-2">
-            <p className="text-muted-foreground">Alerts</p>
-            <p className="font-semibold tabular-nums">{session.unresolved_alert_count}</p>
+          <div className="px-3 py-2">
+            <dt className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-muted-foreground">
+              Alerts
+            </dt>
+            <dd
+              className={`mt-0.5 font-mono text-sm font-medium tabular-nums ${
+                hasAlerts ? "text-status-alert" : ""
+              }`}
+            >
+              {session.unresolved_alert_count}
+            </dd>
           </div>
-        </div>
-        <div className="flex gap-2">
+        </dl>
+
+        <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="flex-1" asChild>
             <Link to={`/monitoring/${session.id}`}>
-              <Eye className="w-4 h-4" />
+              <Eye className="h-4 w-4" />
               Inspect
             </Link>
           </Button>
-          <Button
-            variant="destructive"
-            size="sm"
+          <IconAction
+            label="Terminate session"
+            icon={Power}
+            tone="danger"
             disabled={terminating}
             onClick={handleTerminate}
           >
-            {terminating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Power className="w-4 h-4" />}
-          </Button>
+            {terminating ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+          </IconAction>
         </div>
       </div>
     </div>

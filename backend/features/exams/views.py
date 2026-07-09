@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from django.contrib.auth import get_user_model
+from django.db.models import Max
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -12,7 +13,7 @@ from rest_framework.response import Response
 
 from . import services
 from .attachment_utils import validate_attachment_file
-from .models import Department, Exam, Question, QuestionAttachment
+from .models import Department, Exam, ExamAssignment, ExamSection, Question, QuestionAttachment, QuestionPool
 from .exam_service import ExamService
 from .permissions import IsAdminOrReadOnly, IsExamOwnerOrAdmin
 from .repositories import QuestionRepository
@@ -141,6 +142,120 @@ class ExamViewSet(viewsets.ModelViewSet):
                 "exam": ExamDetailSerializer(result.exam).data,
             },
             status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["post"])
+    def duplicate(self, request, pk=None):
+        """Clone exam as a new draft."""
+        exam = self.get_object()
+        new_exam = services.duplicate_exam(exam, request.user)
+        return Response(
+            {
+                "message": "Exam duplicated successfully.",
+                "exam": ExamDetailSerializer(new_exam, context={"request": request}).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=False, methods=["get"], url_path="mine")
+    def mine(self, request):
+        """Exams available to the current examinee with attempt metadata."""
+        from .serializers import ExamMineSerializer
+
+        qs = self.exam_service.visible_to(request.user)
+        serializer = ExamMineSerializer(
+            qs,
+            many=True,
+            context={"request": request, "user": request.user},
+        )
+        return Response(serializer.data)
+
+    @action(detail=True, methods=["get"])
+    def analytics(self, request, pk=None):
+        """Per-question item analysis for an exam."""
+        exam = self.get_object()
+        services.assert_can_modify_exam(exam, request.user)
+        return Response(services.exam_item_analytics(exam))
+
+    @action(detail=True, methods=["post"], url_path="assignments/import")
+    def import_assignments(self, request, pk=None):
+        """Bulk import candidate roster from CSV."""
+        exam = self.get_object()
+        csv_text = request.data.get("csv", "")
+        result = services.import_assignments(exam, request.user, csv_text=csv_text)
+        return Response(result, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["get", "post"], url_path="assignments")
+    def assignments(self, request, pk=None):
+        """List or create exam assignments."""
+        from .serializers import ExamAssignmentSerializer
+
+        exam = self.get_object()
+        services.assert_can_modify_exam(exam, request.user)
+
+        if request.method == "GET":
+            qs = exam.assignments.select_related("user").order_by("-created_at")
+            return Response(ExamAssignmentSerializer(qs, many=True).data)
+
+        serializer = ExamAssignmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data.pop("user")
+        assignment, created = ExamAssignment.objects.update_or_create(
+            exam=exam,
+            user=user,
+            defaults=serializer.validated_data,
+        )
+        return Response(
+            ExamAssignmentSerializer(assignment).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["get", "post"], url_path="sections")
+    def sections(self, request, pk=None):
+        """List or create exam sections."""
+        from .serializers import ExamSectionSerializer
+
+        exam = self.get_object()
+        if request.method == "GET":
+            qs = exam.sections.order_by("order")
+            return Response(ExamSectionSerializer(qs, many=True).data)
+
+        services.assert_can_modify_exam(exam, request.user)
+        services.assert_exam_editable(exam)
+        serializer = ExamSectionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        order = serializer.validated_data.get("order")
+        if not order:
+            max_order = exam.sections.aggregate(max_o=Max("order"))["max_o"] or 0
+            serializer.validated_data["order"] = max_order + 1
+        section = serializer.save(exam=exam)
+        return Response(
+            ExamSectionSerializer(section).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["get", "post"], url_path="pools")
+    def pools(self, request, pk=None):
+        """List or create question pools."""
+        from .serializers import QuestionPoolSerializer
+
+        exam = self.get_object()
+        if request.method == "GET":
+            qs = exam.question_pools.order_by("order")
+            return Response(QuestionPoolSerializer(qs, many=True).data)
+
+        services.assert_can_modify_exam(exam, request.user)
+        services.assert_exam_editable(exam)
+        serializer = QuestionPoolSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        order = serializer.validated_data.get("order")
+        if not order:
+            max_order = exam.question_pools.aggregate(max_o=Max("order"))["max_o"] or 0
+            serializer.validated_data["order"] = max_order + 1
+        pool = serializer.save(exam=exam)
+        return Response(
+            QuestionPoolSerializer(pool).data,
+            status=status.HTTP_201_CREATED,
         )
 
     @action(detail=True, methods=["post"], url_path="questions/import")

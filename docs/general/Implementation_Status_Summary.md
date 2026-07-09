@@ -1,13 +1,30 @@
 # Knowing Eye - Implementation Status Summary
 
-*Last updated: 2026-05-25. This is the canonical status doc - prefer it over the
+*Last updated: 2026-07-05. This is the canonical status doc - prefer it over the
 root README when in conflict.*
+
+## Exam system refactor (2026-07)
+
+* **Reliable delivery:** Autosave (`PATCH /sessions/{id}/responses/`), server heartbeat timer, auto-submit on timeout, full-exam scoring denominator.
+* **Admission roster:** `ExamAssignment` model, `GET /exams/mine/`, Candidates tab in exam builder.
+* **Content structure:** `ExamSection`, `QuestionPool`, shuffle options, short-answer auto-grade fields.
+* **Grading workflow:** `PATCH /responses/{id}/grade/`, Speed Grader UI, `pending_review` session status, item analysis on exam summary.
+* **Integrity UX:** Tab/focus session logs, system check in exam setup.
+* **Polish:** Practice exam mode, duplicate exam, extended exam settings in builder.
+
+## Frontend refactor (2026-07)
+
+* **Architecture:** Feature-first modules under `frontend/src/features/` with query key factories, thin `pages/` shells, `@/` path alias.
+* **Design system v2:** Source Serif/Sans typography, institutional tokens, status colors, simplified campus background, `PublicLayout` / `FocusShell` / mobile drawer sidebar.
+* **Patterns:** `DataTable`, `StepFlow`, `StatGrid`, `EmptyState`, `PageHeaderV2`, Motion helpers (`FadeIn`, `SlideStep`).
+* **Extracted flows:** Exam builder (dnd-kit), exam taking/setup, monitoring, dashboards, reports, auth/login (RHF+Zod), admin users/settings.
+* **Polish:** Ctrl+K command palette (examiner), error boundaries, confetti on submit, Biome lint scripts.
 
 ## Stack
 
 | Layer    | Technology                                            | Status                                                                                    |
 |----------|-------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| Frontend | React 18, Vite, TypeScript, Tailwind, shadcn, Recharts | `npm run dev` → `http://127.0.0.1:5173`                                                   |
+| Frontend | React 18, Vite 6, TypeScript, Tailwind v4, shadcn/Radix, TanStack Query/Table/Virtual, Motion, Zod, Biome | Feature-first; thin page shells; `npm run dev` → `http://127.0.0.1:5173`                                                   |
 | Backend  | Django 6, DRF, SimpleJWT, **Channels (ASGI)**, Daphne  | `start-dev.cmd` or `backend/run-api.cmd` → `http://127.0.0.1:8000` (HTTP + WebSocket)     |
 | Database | SQLite (dev), PostgreSQL (prod)                        | Set `DB_ENGINE` env var                                                                   |
 | AI / CV  | `backend/ai/knowing_eye` (MediaPipe + ArcFace)   | Integrated via `backend/ai/adapter.py` - auto-fallback to a stub when ML deps are absent |

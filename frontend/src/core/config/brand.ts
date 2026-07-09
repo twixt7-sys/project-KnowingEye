@@ -36,7 +36,9 @@ export const brand = {
   tagline: "Web-Based Examination Platform",
   /** Institution that owns the deployment. */
   institutionName: "Legacy College of Compostela",
-  institutionUnit: "Institute of Information Technology",
+  /** Department operating the platform (a unit under the institution). */
+  institutionUnit: "Wellness and Care Center",
+  departmentName: "Wellness and Care Center",
 
   /** App / product mark. */
   appLogo: "/branding/app-logo.svg",
@@ -45,6 +47,9 @@ export const brand = {
 
   /** Institution / school logo placeholder. */
   institutionLogo: "/branding/institution-logo.svg",
+
+  /** Department (Wellness and Care Center) logo placeholder. */
+  departmentLogo: "/branding/department-logo.svg",
 
   /**
    * Full-page campus background (home + workspace).

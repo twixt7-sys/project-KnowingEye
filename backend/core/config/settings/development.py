@@ -26,3 +26,9 @@ import sys  # noqa: E402
 
 if "test" in sys.argv:
     KNOWING_EYE["ENABLE_PIPELINE"] = False  # noqa: F405
+    DATABASES = {  # noqa: F405
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:",
+        }
+    }
