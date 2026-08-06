@@ -29,7 +29,7 @@ class SystemSmokeTests(APITestCase):
             username="smoke_student",
             email="smoke_student@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
         self.department = Department.objects.create(
             name="Smoke Test Department",

@@ -27,9 +27,23 @@ class ExamRepository(BaseRepository[Exam]):
         return Exam.objects.filter(status=Exam.Status.ACTIVE)
 
     def visible_to(self, user) -> QuerySet[Exam]:
-        """Return the exams a particular user is allowed to see."""
+        """Return the exams a particular user is allowed to see.
+
+        Admins and anyone with the ``exams`` module (currently: faculty) get
+        the full management view - every exam regardless of status, since
+        they need to see their own drafts to edit them. Mutating a specific
+        exam is still gated separately by ``services.assert_can_modify_exam``
+        / ``assert_can_delete_exam`` (ownership required unless granted).
+        Everyone else (students) gets the narrower "can I take this" view.
+        """
         if getattr(user, "is_admin", lambda: False)():
             return self.all()
+
+        from core.security import service as security
+
+        if security.has_module(user, "exams"):
+            return self.all()
+
         now = timezone.now()
         qs = (
             self.active()

@@ -15,14 +15,16 @@ class User(AbstractUser):
 
     class Role(models.TextChoices):
         ADMIN = "ADMIN", "Administrator"
-        EXAMINEE = "EXAMINEE", "Examinee"
+        FACULTY = "FACULTY", "Faculty"
+        STUDENT_ASSISTANT = "STUDENT_ASSISTANT", "Student Assistant"
+        STUDENT = "STUDENT", "Student"
 
     email = models.EmailField(unique=True)
     role = models.CharField(
         max_length=20,
         choices=Role.choices,
-        default=Role.EXAMINEE,
-        help_text="User role: ADMIN or EXAMINEE",
+        default=Role.STUDENT,
+        help_text="User role: ADMIN, FACULTY, STUDENT_ASSISTANT, or STUDENT",
     )
 
     avatar = models.ImageField(
@@ -55,5 +57,45 @@ class User(AbstractUser):
     def is_admin(self):
         return self.role == self.Role.ADMIN
 
+    def is_faculty(self):
+        return self.role == self.Role.FACULTY
+
+    def is_student_assistant(self):
+        return self.role == self.Role.STUDENT_ASSISTANT
+
+    def is_student(self):
+        return self.role == self.Role.STUDENT
+
+    def is_staff_role(self):
+        """True for any role that isn't a plain student (admin/faculty/SA)."""
+        return self.role != self.Role.STUDENT
+
+    # Back-compat alias for the old binary role model.
     def is_examinee(self):
-        return self.role == self.Role.EXAMINEE
+        return self.role == self.Role.STUDENT
+
+
+class PermissionChange(models.Model):
+    """Audit trail for delegated RBAC/PBAC grant, deny, and revoke actions."""
+
+    class Action(models.TextChoices):
+        GRANT = "grant", "Grant"
+        DENY = "deny", "Deny"
+        REVOKE = "revoke", "Revoke"
+
+    target = models.ForeignKey(
+        "authentication.User", on_delete=models.CASCADE, related_name="permission_changes"
+    )
+    actor = models.ForeignKey(
+        "authentication.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="permission_changes_made",
+    )
+    permission = models.CharField(max_length=100, help_text="e.g. 'module.exams' or 'action.exams.create'")
+    action = models.CharField(max_length=10, choices=Action.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "authentication_permission_change"
+        ordering = ["-created_at"]

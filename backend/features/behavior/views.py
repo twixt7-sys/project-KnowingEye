@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from core.security import service as security
 from features.behavior.models import Alert, BehaviorLog
 from features.behavior.serializers import AlertSerializer, BehaviorLogSerializer
 
@@ -18,13 +19,13 @@ class BehaviorLogViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = BehaviorLog.objects.select_related("session", "session__user", "session__exam")
-        if self.request.user.is_admin():
+        if security.has_module(self.request.user, "behavior"):
             return qs
         return qs.filter(session__user=self.request.user)
 
 
 class AlertViewSet(viewsets.ModelViewSet):
-    """Admins can list/resolve all alerts; examinees see their own."""
+    """Staff with the ``behavior`` module can list/resolve all alerts; everyone else sees their own."""
 
     serializer_class = AlertSerializer
     permission_classes = [IsAuthenticated]
@@ -34,15 +35,15 @@ class AlertViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = Alert.objects.select_related("session", "session__user", "session__exam")
-        if self.request.user.is_admin():
+        if security.has_module(self.request.user, "behavior"):
             return qs
         return qs.filter(session__user=self.request.user)
 
     @action(detail=True, methods=["post"])
     def resolve(self, request, pk=None):
-        if not request.user.is_admin():
+        if not security.can(request.user, "behavior.resolve"):
             return Response(
-                {"error": "Only admins can resolve alerts."},
+                {"error": "You do not have permission to resolve alerts."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         alert = self.get_object()
@@ -52,9 +53,9 @@ class AlertViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"])
     def resolve_all(self, request):
-        if not request.user.is_admin():
+        if not security.can(request.user, "behavior.resolve"):
             return Response(
-                {"error": "Only admins can resolve alerts."},
+                {"error": "You do not have permission to resolve alerts."},
                 status=status.HTTP_403_FORBIDDEN,
             )
         session = request.data.get("session")

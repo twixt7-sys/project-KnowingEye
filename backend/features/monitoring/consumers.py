@@ -53,7 +53,7 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         if session.status == ExamSession.Status.SETUP:
             await database_sync_to_async(touch_setup_activity)(session)
 
-        if not self._user_can_access(user, session):
+        if not await database_sync_to_async(self._user_can_access)(user, session):
             await self.close(code=4403)
             return
 
@@ -219,20 +219,34 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
 
     @staticmethod
     def _user_can_access(user, session) -> bool:
-        if getattr(user, "is_admin", lambda: False)():
+        from core.security import service as security
+
+        if security.has_module(user, "monitoring"):
             return True
         return session.user_id == user.id
 
 
+@database_sync_to_async
+def _has_monitoring_module(user) -> bool:
+    from core.security import service as security
+
+    return security.has_module(user, "monitoring")
+
+
 class SessionObserverConsumer(AsyncJsonWebsocketConsumer):
-    """Read-only admin feed for a single session (analysis + snapshots)."""
+    """Read-only feed for a single session (analysis + snapshots).
+
+    Open to any role with the ``monitoring`` module (admin, faculty,
+    student_assistant) - matches the "student_assistant can live-monitor"
+    capability, not admin-only.
+    """
 
     async def connect(self) -> None:
         user = self.scope.get("user")
         if user is None or not getattr(user, "is_authenticated", False):
             await self.close(code=4401)
             return
-        if not getattr(user, "is_admin", lambda: False)():
+        if not await _has_monitoring_module(user):
             await self.close(code=4403)
             return
 
@@ -302,7 +316,7 @@ class AdminAlertsConsumer(AsyncJsonWebsocketConsumer):
         if user is None or not getattr(user, "is_authenticated", False):
             await self.close(code=4401)
             return
-        if not getattr(user, "is_admin", lambda: False)():
+        if not await _has_monitoring_module(user):
             await self.close(code=4403)
             return
 

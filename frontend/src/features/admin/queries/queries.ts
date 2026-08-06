@@ -1,7 +1,8 @@
 import {
   fetchDepartments,
-  fetchUsers,
+  fetchUserPermissions,
   fetchUserStats,
+  fetchUsers,
 } from "@/features/admin/api/admin-api";
 import { adminKeys } from "@/features/admin/queries/keys";
 
@@ -12,11 +13,14 @@ export const adminQueries = {
   }),
   users: (filters: Record<string, unknown>) => ({
     queryKey: adminKeys.users(filters),
-    queryFn: () =>
-      fetchUsers(filters as Parameters<typeof fetchUsers>[0]),
+    queryFn: () => fetchUsers(filters as Parameters<typeof fetchUsers>[0]),
   }),
   userStats: () => ({
     queryKey: adminKeys.userStats(),
     queryFn: fetchUserStats,
+  }),
+  userPermissions: (id: number) => ({
+    queryKey: adminKeys.userPermissions(id),
+    queryFn: () => fetchUserPermissions(id),
   }),
 };

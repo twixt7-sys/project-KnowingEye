@@ -43,7 +43,7 @@ class MonitoringWebsocketTests(TransactionTestCase):
             username="ws_examinee",
             email="ws_examinee@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
         self.admin = User.objects.create_user(
             username="ws_admin",
@@ -126,7 +126,7 @@ class SessionObserverWebsocketTests(TransactionTestCase):
             username="ws_observe_examinee",
             email="ws_observe_examinee@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
         self.admin = User.objects.create_user(
             username="ws_observe_admin",
@@ -196,7 +196,7 @@ class AdminAlertsWebsocketTests(TransactionTestCase):
             username="ws_examinee2",
             email="ws_examinee2@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
         self.admin_token = _issue_token(self.admin)
         self.examinee_token = _issue_token(self.examinee)

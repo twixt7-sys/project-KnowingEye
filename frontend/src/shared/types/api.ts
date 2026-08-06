@@ -1,4 +1,4 @@
-export type Role = "ADMIN" | "EXAMINEE";
+export type Role = "ADMIN" | "FACULTY" | "STUDENT_ASSISTANT" | "STUDENT";
 
 export interface AuthUser {
   id: number;
@@ -7,6 +7,20 @@ export interface AuthUser {
   first_name: string;
   last_name: string;
   role: Role;
+}
+
+/** GET /auth/access-map/ - this user's role, visible modules, and granted actions. */
+export interface AccessMap {
+  role: Role | null;
+  modules: string[];
+  permissions: string[];
+}
+
+/** GET/PUT /auth/users/{id}/permissions/ - per-user module + action overrides. */
+export interface UserPermissions {
+  role: Role;
+  modules: Record<string, "grant" | "deny">;
+  actions: Record<string, boolean>;
 }
 
 export interface ProfileUser extends AuthUser {
@@ -296,6 +310,8 @@ export interface PaginatedResponse<T> {
 export interface UserStats {
   total: number;
   admins: number;
-  examinees: number;
+  faculty: number;
+  student_assistants: number;
+  students: number;
   inactive: number;
 }

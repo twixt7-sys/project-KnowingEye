@@ -18,37 +18,48 @@ from .models import Department, Exam, ExamAssignment, Question
 User = get_user_model()
 
 
-def _is_owner_or_superuser(exam: Exam, user) -> bool:
-    """Return whether ``user`` owns ``exam`` or has elevated privileges.
-
-    Args:
-        exam: The exam being checked.
-        user: The requesting user.
-
-    Returns:
-        ``True`` if the user is an admin, the exam's creator, or a superuser.
-    """
-    if getattr(user, "is_admin", lambda: False)():
-        return True
-    return exam.created_by_id == getattr(user, "id", None) or getattr(
-        user, "is_superuser", False
-    )
-
-
 def assert_can_modify_exam(exam: Exam, user) -> None:
     """Ensure ``user`` is allowed to modify ``exam``.
+
+    Admins (and superusers) may modify any exam. Everyone else needs both
+    the ``exams.update`` action permission (a role-default grant for
+    faculty, revocable per-user) AND ownership - holding the permission is a
+    prerequisite, not a bypass, so it never widens editing to exams a user
+    didn't create.
 
     Args:
         exam: The exam to be modified.
         user: The requesting user.
 
     Raises:
-        PermissionDenied: If the user neither owns the exam nor is a superuser.
+        PermissionDenied: If the user can't modify this exam.
     """
-    if not _is_owner_or_superuser(exam, user):
-        raise PermissionDenied(
-            "You can only modify exams you created (or as superuser)."
-        )
+    from core.security import service as security
+
+    if user.is_admin() or getattr(user, "is_superuser", False):
+        return
+    if security.can(user, "exams.update") and exam.created_by_id == getattr(user, "id", None):
+        return
+    raise PermissionDenied("You can only modify exams you created (or as admin).")
+
+
+def assert_can_delete_exam(exam: Exam, user) -> None:
+    """Ensure ``user`` is allowed to delete ``exam``.
+
+    Same as :func:`assert_can_modify_exam`, plus an explicit ``exams.delete``
+    grant (not a faculty role default - destructive, admin-delegated only)
+    as an additional path, mirroring OSAS's convention of reserving deletion
+    for a narrower audience than routine edits.
+    """
+    from core.security import service as security
+
+    if user.is_admin() or getattr(user, "is_superuser", False):
+        return
+    if security.can(user, "exams.delete"):
+        return
+    if security.can(user, "exams.update") and exam.created_by_id == getattr(user, "id", None):
+        return
+    raise PermissionDenied("You do not have permission to delete this exam.")
 
 
 def assert_exam_editable(exam: Exam) -> None:
@@ -75,10 +86,13 @@ def assert_can_create_exam(user) -> None:
         user: The requesting user.
 
     Raises:
-        PermissionDenied: If the user is not an admin.
+        PermissionDenied: If the user lacks the ``exams.create`` permission
+            (granted to admins always, and to faculty by role default).
     """
-    if not getattr(user, "is_admin", lambda: False)():
-        raise PermissionDenied("Only admins can create exams.")
+    from core.security import service as security
+
+    if not security.can(user, "exams.create"):
+        raise PermissionDenied("You do not have permission to create exams.")
 
 
 def exam_is_open_for_taking(exam: Exam) -> bool:
@@ -288,9 +302,9 @@ def delete_exam(exam: Exam, user) -> None:
         user: The requesting user (must be able to modify the exam).
 
     Raises:
-        PermissionDenied: If the user cannot modify the exam.
+        PermissionDenied: If the user cannot delete the exam.
     """
-    assert_can_modify_exam(exam, user)
+    assert_can_delete_exam(exam, user)
     exam.delete()
 
 

@@ -7,6 +7,7 @@ from .views import (
     RegisterView,
     UserListViewSet,
     UserProfileViewSet,
+    access_map,
 )
 
 
@@ -20,6 +21,7 @@ urlpatterns = [
     path("token/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("token/verify/", TokenVerifyView.as_view(), name="token_verify"),
+    path("access-map/", access_map, name="access_map"),
 
     path("", include(router.urls)),
 ]

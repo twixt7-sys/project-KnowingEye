@@ -1,25 +1,24 @@
-import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
+  KeyRound,
   RefreshCw,
   Search,
   ShieldCheck,
   ShieldOff,
-  UserCog,
   Users as UsersIcon,
 } from "lucide-react";
+import { useState } from "react";
 
-import { formatApiError, type Role } from "@/core/config/api";
-import {
-  activateUser,
-  deactivateUser,
-  setUserRole,
-} from "@/features/admin/api/admin-api";
-import { adminQueries } from "@/features/admin/queries/queries";
+import { type ProfileUser, type Role, formatApiError } from "@/core/config/api";
+import { useAuth } from "@/core/providers/auth-provider";
+import { activateUser, deactivateUser, setUserRole } from "@/features/admin/api/admin-api";
+import { ManageAccessDialog } from "@/features/admin/components/manage-access-dialog";
 import { adminKeys } from "@/features/admin/queries/keys";
+import { adminQueries } from "@/features/admin/queries/queries";
 import { useConfirm } from "@/shared/components/common/confirm-dialog";
 import { DataTablePagination } from "@/shared/components/common/data-table-pagination";
+import { IconAction } from "@/shared/components/common/icon-action";
 import { ScrollableDataTable } from "@/shared/components/common/scrollable-data-table";
 import { PageShell } from "@/shared/components/layout/page-shell";
 import { SectionPanel } from "@/shared/components/layout/section-panel";
@@ -31,19 +30,31 @@ import { Input } from "@/shared/components/ui/input";
 import { useDebounce } from "@/shared/hooks/use-debounce";
 import { usePagination } from "@/shared/hooks/use-pagination";
 
+const ROLES: Role[] = ["ADMIN", "FACULTY", "STUDENT_ASSISTANT", "STUDENT"];
+
+const ROLE_LABEL: Record<Role, string> = {
+  ADMIN: "Admin",
+  FACULTY: "Faculty",
+  STUDENT_ASSISTANT: "Student Assistant",
+  STUDENT: "Student",
+};
+
 const ROLE_BADGE: Record<Role, string> = {
-  ADMIN:
-    "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
-  EXAMINEE: "bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20",
+  ADMIN: "bg-primary/10 text-primary border-primary/25",
+  FACULTY: "bg-secondary/10 text-secondary border-secondary/25",
+  STUDENT_ASSISTANT: "bg-accent/10 text-accent-foreground border-accent/25",
+  STUDENT: "bg-muted text-muted-foreground border-border",
 };
 
 export function UsersPage() {
   const confirm = useConfirm();
   const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"" | Role>("");
   const [acting, setActing] = useState<number | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [manageAccessUser, setManageAccessUser] = useState<ProfileUser | null>(null);
   const debouncedSearch = useDebounce(search, 300);
   const { page, pageSize, setPage, setPageSize } = usePagination(10);
 
@@ -59,7 +70,14 @@ export function UsersPage() {
 
   const users = usersQuery.data?.results ?? [];
   const totalCount = usersQuery.data?.count ?? 0;
-  const stats = statsQuery.data ?? { total: 0, admins: 0, examinees: 0, inactive: 0 };
+  const stats = statsQuery.data ?? {
+    total: 0,
+    admins: 0,
+    faculty: 0,
+    student_assistants: 0,
+    students: 0,
+    inactive: 0,
+  };
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: adminKeys.users(filters) });
@@ -88,7 +106,7 @@ export function UsersPage() {
       <PageHeaderV2
         eyebrow="Examiner"
         title="Users"
-        description="Manage examinee and administrator accounts."
+        description="Manage accounts, roles, and delegated access."
         actions={
           <Button variant="outline" onClick={refresh} disabled={usersQuery.isFetching}>
             <RefreshCw className={`h-4 w-4 ${usersQuery.isFetching ? "animate-spin" : ""}`} />
@@ -105,7 +123,13 @@ export function UsersPage() {
                 icon: ShieldCheck,
                 tone: "success",
               },
-              { label: "Examinees", value: String(stats.examinees), icon: UserCog },
+              { label: "Faculty", value: String(stats.faculty), icon: UsersIcon },
+              {
+                label: "Student assistants",
+                value: String(stats.student_assistants),
+                icon: UsersIcon,
+              },
+              { label: "Students", value: String(stats.students), icon: UsersIcon },
               {
                 label: "Inactive",
                 value: String(stats.inactive),
@@ -150,8 +174,11 @@ export function UsersPage() {
               className="form-field text-sm"
             >
               <option value="">All roles</option>
-              <option value="ADMIN">Admins</option>
-              <option value="EXAMINEE">Examinees</option>
+              {ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {ROLE_LABEL[role]}
+                </option>
+              ))}
             </select>
           </div>
         }
@@ -183,69 +210,79 @@ export function UsersPage() {
                 <tr key={u.id}>
                   <td>
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-primary text-xs font-semibold text-white">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-primary/10 font-serif text-sm font-semibold text-primary ring-1 ring-border">
                         {u.avatar_url ? (
                           <img src={u.avatar_url} alt="" className="h-full w-full object-cover" />
                         ) : (
                           (u.first_name?.[0] ?? u.username[0] ?? "?").toUpperCase()
                         )}
                       </div>
-                      <div>
-                        <p className="font-medium leading-tight">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium leading-tight">
                           {u.first_name || u.username}{" "}
                           {u.last_name && (
                             <span className="text-muted-foreground">{u.last_name}</span>
                           )}
                         </p>
-                        <p className="text-xs text-muted-foreground">{u.email}</p>
+                        <p className="truncate text-xs text-muted-foreground">{u.email}</p>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <span className={`status-pill border ${ROLE_BADGE[u.role]}`}>{u.role}</span>
+                    <select
+                      value={u.role}
+                      disabled={acting === u.id}
+                      onChange={async (e) => {
+                        const nextRole = e.target.value as Role;
+                        if (nextRole === u.role) return;
+                        const confirmed = await confirm({
+                          title: "Change user role?",
+                          description: `${u.username} will become ${ROLE_LABEL[nextRole]}.`,
+                          confirmLabel: "Change role",
+                        });
+                        if (!confirmed) return;
+                        handleAction(u.id, () => setUserRole(u.id, nextRole));
+                      }}
+                      className={`status-pill border ${ROLE_BADGE[u.role]} cursor-pointer bg-transparent`}
+                    >
+                      {ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {ROLE_LABEL[role]}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                   <td>
                     {u.is_active ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                      <span className="inline-flex items-center gap-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-status-safe">
                         <ShieldCheck className="h-3.5 w-3.5" /> active
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-xs text-rose-600 dark:text-rose-400">
+                      <span className="inline-flex items-center gap-1.5 font-mono text-[0.6875rem] uppercase tracking-[0.08em] text-status-alert">
                         <ShieldOff className="h-3.5 w-3.5" /> inactive
                       </span>
                     )}
                   </td>
-                  <td className="hidden text-sm text-muted-foreground md:table-cell">
+                  <td className="hidden font-mono text-xs tabular-nums text-muted-foreground md:table-cell">
                     {u.last_seen_at ? new Date(u.last_seen_at).toLocaleString() : "never"}
                   </td>
                   <td>
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={acting === u.id}
-                        onClick={async () => {
-                          const nextRole = u.role === "ADMIN" ? "EXAMINEE" : "ADMIN";
-                          const confirmed = await confirm({
-                            title: "Change user role?",
-                            description: `${u.username} will become ${
-                              nextRole === "ADMIN" ? "an admin" : "an examinee"
-                            }.`,
-                            confirmLabel: "Change role",
-                          });
-                          if (!confirmed) return;
-                          handleAction(u.id, () => setUserRole(u.id, nextRole));
-                        }}
-                      >
-                        <UserCog className="h-3.5 w-3.5" />
-                        {u.role === "ADMIN" ? "Make examinee" : "Make admin"}
-                      </Button>
-                      {u.is_active ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                    <div className="flex items-center justify-end gap-0.5">
+                      {isAdmin && u.role !== "ADMIN" && (
+                        <IconAction
+                          label="Manage access"
+                          icon={KeyRound}
+                          tone="primary"
                           disabled={acting === u.id}
-                          className="text-rose-700 hover:bg-rose-500/10 dark:text-rose-300"
+                          onClick={() => setManageAccessUser(u)}
+                        />
+                      )}
+                      {u.is_active ? (
+                        <IconAction
+                          label="Deactivate user"
+                          icon={ShieldOff}
+                          tone="danger"
+                          disabled={acting === u.id}
                           onClick={async () => {
                             const confirmed = await confirm({
                               title: "Deactivate user?",
@@ -256,19 +293,15 @@ export function UsersPage() {
                             if (!confirmed) return;
                             handleAction(u.id, () => deactivateUser(u.id));
                           }}
-                        >
-                          Deactivate
-                        </Button>
+                        />
                       ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
+                        <IconAction
+                          label="Activate user"
+                          icon={ShieldCheck}
+                          tone="primary"
                           disabled={acting === u.id}
-                          className="text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
                           onClick={() => handleAction(u.id, () => activateUser(u.id))}
-                        >
-                          Activate
-                        </Button>
+                        />
                       )}
                     </div>
                   </td>
@@ -287,6 +320,8 @@ export function UsersPage() {
           loading={usersQuery.isLoading}
         />
       </SectionPanel>
+
+      <ManageAccessDialog user={manageAccessUser} onClose={() => setManageAccessUser(null)} />
     </PageShell>
   );
 }

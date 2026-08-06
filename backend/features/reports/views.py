@@ -21,8 +21,10 @@ from features.session.serializers import ExamSessionDetailSerializer
 
 
 def _session_queryset(user):
+    from core.security import service as security
+
     qs = ExamSession.objects.select_related("exam", "exam__department", "user")
-    if user.is_admin():
+    if security.has_module(user, "reports"):
         return qs
     return qs.filter(user=user)
 

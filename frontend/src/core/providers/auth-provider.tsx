@@ -1,18 +1,20 @@
 import {
+  type ReactNode,
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from "react";
-import { apiClient, tokenStore, type ProfileUser, type Role } from "../config/api";
+import { type AccessMap, type ProfileUser, type Role, apiClient, tokenStore } from "../config/api";
 
 export interface User extends ProfileUser {
   is_admin: boolean;
-  is_examinee: boolean;
+  is_student: boolean;
 }
+
+const EMPTY_ACCESS: AccessMap = { role: null, modules: [], permissions: [] };
 
 interface AuthContextType {
   user: User | null;
@@ -33,7 +35,17 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  isExaminee: boolean;
+  isFaculty: boolean;
+  isStudentAssistant: boolean;
+  isStudent: boolean;
+  /** Any non-student role (admin/faculty/student_assistant) - the "staff workspace" audience. */
+  isStaff: boolean;
+  /** Feature areas this user can see, e.g. "exams", "monitoring", "user-mgmt". */
+  modules: Set<string>;
+  /** Mutating actions this user is granted, e.g. "exams.update", "behavior.resolve". */
+  permissions: Set<string>;
+  hasModule: (module: string) => boolean;
+  can: (action: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,25 +54,37 @@ function decorate(profile: ProfileUser): User {
   return {
     ...profile,
     is_admin: profile.role === "ADMIN",
-    is_examinee: profile.role === "EXAMINEE",
+    is_student: profile.role === "STUDENT",
   };
+}
+
+async function fetchAccess(): Promise<AccessMap> {
+  try {
+    return await apiClient.getAccessMap();
+  } catch {
+    return EMPTY_ACCESS;
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<User | null>(null);
+  const [access, setAccess] = useState<AccessMap>(EMPTY_ACCESS);
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     if (!tokenStore.access) {
       setUserState(null);
+      setAccess(EMPTY_ACCESS);
       return;
     }
     try {
-      const profile = await apiClient.getProfile();
+      const [profile, accessMap] = await Promise.all([apiClient.getProfile(), fetchAccess()]);
       setUserState(decorate(profile));
+      setAccess(accessMap);
     } catch {
       tokenStore.clear();
       setUserState(null);
+      setAccess(EMPTY_ACCESS);
     }
   }, []);
 
@@ -72,9 +96,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       await apiClient.login({ username, password });
-      const profile = await apiClient.getProfile();
+      const [profile, accessMap] = await Promise.all([apiClient.getProfile(), fetchAccess()]);
       const decorated = decorate(profile);
       setUserState(decorated);
+      setAccess(accessMap);
       return decorated;
     } finally {
       setIsLoading(false);
@@ -100,15 +125,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       }
     },
-    [login]
+    [login],
   );
 
   const logout = useCallback(() => {
     tokenStore.clear();
     setUserState(null);
+    setAccess(EMPTY_ACCESS);
   }, []);
 
   const setUser = useCallback((u: User | null) => setUserState(u), []);
+
+  const modules = useMemo(() => new Set(access.modules), [access]);
+  const permissions = useMemo(() => new Set(access.permissions), [access]);
+  const isAdmin = user?.role === "ADMIN";
+  const hasModule = useCallback(
+    (module: string) => isAdmin || modules.has(module),
+    [isAdmin, modules],
+  );
+  const can = useCallback(
+    (action: string) => isAdmin || permissions.has(action),
+    [isAdmin, permissions],
+  );
 
   const value = useMemo<AuthContextType>(
     () => ({
@@ -120,10 +158,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser,
       isLoading,
       isAuthenticated: !!user,
-      isAdmin: user?.role === "ADMIN",
-      isExaminee: user?.role === "EXAMINEE",
+      isAdmin,
+      isFaculty: user?.role === "FACULTY",
+      isStudentAssistant: user?.role === "STUDENT_ASSISTANT",
+      isStudent: user?.role === "STUDENT",
+      isStaff: !!user && user.role !== "STUDENT",
+      modules,
+      permissions,
+      hasModule,
+      can,
     }),
-    [user, login, register, logout, refresh, setUser, isLoading]
+    [
+      user,
+      login,
+      register,
+      logout,
+      refresh,
+      setUser,
+      isLoading,
+      isAdmin,
+      modules,
+      permissions,
+      hasModule,
+      can,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

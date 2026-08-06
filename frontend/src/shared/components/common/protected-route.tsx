@@ -1,19 +1,15 @@
-import { type ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router';
-import { useAuth } from '../../../core/providers/auth-provider';
-
-interface ProtectedRouteProps {
-  children: ReactNode;
-  requiredRole?: 'ADMIN' | 'EXAMINEE';
-  requireAuth?: boolean;
-}
+import { Navigate, useLocation } from "react-router";
+import { useAuth } from "../../../core/providers/auth-provider";
+import type { ProtectedRouteProps } from "../../../core/router/route-types";
 
 export function ProtectedRoute({
   children,
   requiredRole,
-  requireAuth = true
+  requiredModule,
+  requiredPermission,
+  requireAuth = true,
 }: ProtectedRouteProps) {
-  const { isAuthenticated, isAdmin, isExaminee, isLoading } = useAuth();
+  const { isAuthenticated, user, isStudent, hasModule, can, isLoading } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while checking authentication
@@ -30,13 +26,20 @@ export function ProtectedRoute({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If user is authenticated but trying to access wrong role route
-  if (isAuthenticated && requiredRole) {
-    if (requiredRole === 'ADMIN' && !isAdmin) {
-      return <Navigate to="/examinee" replace />;
+  // Gate by role, module access, and/or action permission - all three are ANDed
+  // when present. The redirect target is a sane home for whichever side of the
+  // workspace the user actually belongs to.
+  if (isAuthenticated) {
+    const fallback = isStudent ? "/examinee" : "/examiner";
+
+    if (requiredRole && user?.role !== requiredRole) {
+      return <Navigate to={fallback} replace />;
     }
-    if (requiredRole === 'EXAMINEE' && !isExaminee) {
-      return <Navigate to="/examiner" replace />;
+    if (requiredModule && !hasModule(requiredModule)) {
+      return <Navigate to={fallback} replace />;
+    }
+    if (requiredPermission && !can(requiredPermission)) {
+      return <Navigate to={fallback} replace />;
     }
   }
 

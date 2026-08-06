@@ -3,6 +3,7 @@ import { ApiError } from "@/shared/lib/api-error";
 import { toQuery } from "@/shared/lib/query-params";
 import { tokenStore } from "@/shared/lib/token-store";
 import type {
+  AccessMap,
   AlertRow,
   AuthUser,
   BehaviorLogRow,
@@ -20,6 +21,7 @@ import type {
   SessionDepartmentAnalytics,
   SessionReportRow,
   SubmitSessionData,
+  UserPermissions,
   UserStats,
 } from "@/shared/types/api";
 import type { PaginatedResponse } from "@/shared/types/api";
@@ -130,11 +132,16 @@ class ApiClient {
     return this.request<ProfileUser>("/auth/profile/me/");
   }
 
+  /** This user's role, visible modules, and granted actions - the single source of truth for nav/route gating. */
+  async getAccessMap() {
+    return this.request<AccessMap>("/auth/access-map/");
+  }
+
   async updateProfile(patch: Partial<ProfileUser>) {
-    return this.request<{ message: string; user: ProfileUser }>(
-      "/auth/profile/update_profile/",
-      { method: "PATCH", body: JSON.stringify(patch) },
-    );
+    return this.request<{ message: string; user: ProfileUser }>("/auth/profile/update_profile/", {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
   }
 
   async changePassword(body: {
@@ -185,6 +192,25 @@ class ApiClient {
     });
   }
 
+  /** Manage Access: current module/action overrides for a user (admin only). */
+  async getUserPermissions(id: number) {
+    return this.request<UserPermissions>(`/auth/users/${id}/permissions/`);
+  }
+
+  /** Manage Access: set module/action overrides for a user (admin only). */
+  async setUserPermissions(
+    id: number,
+    body: {
+      modules?: Record<string, "grant" | "deny" | null>;
+      actions?: Record<string, boolean>;
+    },
+  ) {
+    return this.request<AccessMap>(`/auth/users/${id}/permissions/`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+  }
+
   async listDepartments(params?: { active_only?: boolean }) {
     const qs = params?.active_only ? "?active_only=1" : "";
     const data = await this.request<{ results?: Department[]; count?: number } | Department[]>(
@@ -212,9 +238,7 @@ class ApiClient {
   }
 
   async getExams(params?: { status?: string; search?: string }) {
-    const qs = params
-      ? `?${new URLSearchParams(params as Record<string, string>).toString()}`
-      : "";
+    const qs = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : "";
     const data = await this.request<{ results?: Exam[]; count?: number } | Exam[]>(`/exams/${qs}`);
     return Array.isArray(data) ? data : (data.results ?? []);
   }
@@ -471,9 +495,7 @@ class ApiClient {
   }
 
   async listSessions(params?: { status?: string; exam?: number; user?: number }) {
-    const qs = params
-      ? `?${new URLSearchParams(params as Record<string, string>).toString()}`
-      : "";
+    const qs = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : "";
     const data = await this.request<{ results?: ExamSession[] } | ExamSession[]>(`/sessions/${qs}`);
     return Array.isArray(data) ? data : (data.results ?? []);
   }
@@ -514,9 +536,7 @@ class ApiClient {
   }
 
   async listBehaviorLogs(params?: { session?: string; event_type?: string }) {
-    const qs = params
-      ? `?${new URLSearchParams(params as Record<string, string>).toString()}`
-      : "";
+    const qs = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : "";
     const data = await this.request<{ results?: BehaviorLogRow[] } | BehaviorLogRow[]>(
       `/behavior/logs/${qs}`,
     );
@@ -524,10 +544,10 @@ class ApiClient {
   }
 
   async listAlerts(params?: { session?: string; resolved?: boolean; severity?: string }) {
-    const qs = params
-      ? `?${new URLSearchParams(params as Record<string, string>).toString()}`
-      : "";
-    const data = await this.request<{ results?: AlertRow[] } | AlertRow[]>(`/behavior/alerts/${qs}`);
+    const qs = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : "";
+    const data = await this.request<{ results?: AlertRow[] } | AlertRow[]>(
+      `/behavior/alerts/${qs}`,
+    );
     return Array.isArray(data) ? data : (data.results ?? []);
   }
 

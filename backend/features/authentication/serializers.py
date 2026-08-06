@@ -108,10 +108,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             first_name=validated_data["first_name"],
             last_name=validated_data["last_name"],
             password=validated_data["password"],
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
         user.avatar = avatar
         user.save(update_fields=["avatar"])
+
+        from core.security.service import apply_role_defaults
+
+        apply_role_defaults(user)
         return user
 
 

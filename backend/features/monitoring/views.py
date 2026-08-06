@@ -26,12 +26,14 @@ logger = logging.getLogger("knowing_eye.monitoring.views")
 
 
 def _resolve_session(request, session_id):
+    from core.security import service as security
+
     try:
         session = ExamSession.objects.select_related("exam", "user").get(pk=session_id)
     except ExamSession.DoesNotExist:
         return None, Response({"error": "Session not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    if not request.user.is_admin() and session.user_id != request.user.id:
+    if not security.has_module(request.user, "monitoring") and session.user_id != request.user.id:
         return None, Response(
             {"error": "Not allowed for this session"}, status=status.HTTP_403_FORBIDDEN
         )

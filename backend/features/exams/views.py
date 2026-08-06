@@ -11,11 +11,12 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from core.security.drf import IsAdminOrReadOnly
+
 from . import services
 from .attachment_utils import validate_attachment_file
 from .models import Department, Exam, ExamAssignment, ExamSection, Question, QuestionAttachment, QuestionPool
 from .exam_service import ExamService
-from .permissions import IsAdminOrReadOnly, IsExamOwnerOrAdmin
 from .repositories import QuestionRepository
 from .serializers import (
     DepartmentSerializer,
@@ -68,10 +69,13 @@ class ExamViewSet(viewsets.ModelViewSet):
 
     Exposes the standard model actions plus custom actions for publish
     readiness, publishing, archiving, and bulk question import/reorder.
-    Business rules are delegated to :mod:`features.exams.services`.
+    Business rules - who can create/update/delete which exam - are fully
+    delegated to :mod:`features.exams.services` (permission + ownership),
+    not a DRF permission class, since faculty may create and edit their own
+    exams while students may only read.
     """
 
-    permission_classes = [IsAuthenticated, IsAdminOrReadOnly, IsExamOwnerOrAdmin]
+    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["status", "created_by"]
     search_fields = ["title", "description", "exam_code"]
@@ -89,7 +93,8 @@ class ExamViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         """Pick the serializer appropriate to the action and the user's role."""
         if self.action == "retrieve":
-            if getattr(self.request.user, "is_admin", lambda: False)():
+            user = self.request.user
+            if user.is_admin() or user.is_faculty():
                 return ExamDetailSerializer
             return ExamTakeSerializer
         if self.action in {"create", "update", "partial_update"}:
@@ -294,11 +299,13 @@ class QuestionViewSet(viewsets.ModelViewSet):
     """CRUD endpoints for the questions belonging to a single exam.
 
     Questions are always scoped to their parent exam via the ``exam_id`` URL
-    kwarg. Admins receive full question detail (including answer keys) while
-    examinees receive a redacted "take" representation.
+    kwarg. Admins and faculty receive full question detail (including answer
+    keys) while everyone else receives a redacted "take" representation.
+    Mutation permission (create/update/delete) is delegated to
+    :mod:`features.exams.services`, same as :class:`ExamViewSet`.
     """
 
-    permission_classes = [IsAuthenticated, IsAdminOrReadOnly, IsExamOwnerOrAdmin]
+    permission_classes = [IsAuthenticated]
     http_method_names = ["get", "post", "put", "patch", "delete", "head", "options"]
 
     question_repo = QuestionRepository()
@@ -327,9 +334,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def list(self, request, *args, **kwargs):
-        """List questions, redacting answer keys for non-admin users."""
+        """List questions, redacting answer keys for non-admin/faculty users."""
         qs = self.filter_queryset(self.get_queryset())
-        if getattr(request.user, "is_admin", lambda: False)():
+        if request.user.is_admin() or request.user.is_faculty():
             serializer = QuestionDetailSerializer(qs, many=True)
         else:
             from .serializers import QuestionTakeSerializer

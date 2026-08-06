@@ -1,36 +1,17 @@
-"""Reusable DRF permission classes for the exams module."""
+"""Back-compat re-exports.
+
+The bespoke permission classes that used to live here moved to
+:mod:`core.security.drf` so every feature shares the same RBAC/PBAC
+building blocks. Ownership + action-permission logic for exams now lives in
+``features.exams.services`` (``assert_can_modify_exam`` /
+``assert_can_delete_exam``), which the viewset calls from ``perform_create``/
+``perform_update``/``destroy`` rather than an object-level permission class.
+"""
 
 from __future__ import annotations
 
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+from core.security.drf import IsAdminOrReadOnly, IsOwnerOrHasPermission
 
+IsExamOwnerOrAdmin = IsOwnerOrHasPermission("exams.update")
 
-class IsAdminOrReadOnly(BasePermission):
-    """Read for any authenticated user, write only for admins.
-
-    Used at the viewset level to gate creation/mutation routes while still
-    letting examinees list active exams.
-    """
-
-    def has_permission(self, request, view):
-        if not (request.user and request.user.is_authenticated):
-            return False
-        if request.method in SAFE_METHODS:
-            return True
-        return getattr(request.user, "is_admin", lambda: False)()
-
-
-class IsExamOwnerOrAdmin(BasePermission):
-    """Object-level: only the creator (or a superuser) may mutate."""
-
-    def has_object_permission(self, request, view, obj):
-        if request.method in SAFE_METHODS:
-            return True
-        if getattr(request.user, "is_admin", lambda: False)():
-            return True
-        owner_id = getattr(obj, "created_by_id", None) or getattr(
-            getattr(obj, "exam", None), "created_by_id", None
-        )
-        return (
-            owner_id == request.user.id or getattr(request.user, "is_superuser", False)
-        )
+__all__ = ["IsAdminOrReadOnly", "IsExamOwnerOrAdmin"]

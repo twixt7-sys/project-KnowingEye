@@ -41,7 +41,7 @@ class MonitoringAPITests(APITestCase):
             username="student_mon",
             email="student_mon@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
         exam = Exam.objects.create(
             title="Monitor Exam",
@@ -75,7 +75,7 @@ class MonitoringAPITests(APITestCase):
             username="other_student",
             email="other@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
         self.client.force_authenticate(user=other)
         response = self.client.post(
@@ -125,7 +125,7 @@ class IdentityFlowTests(APITestCase):
             username="id_student",
             email="id_student@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
         self.exam = Exam.objects.create(
             title="Identity Exam",

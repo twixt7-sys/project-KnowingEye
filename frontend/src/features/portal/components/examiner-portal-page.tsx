@@ -107,7 +107,7 @@ function ExaminerLanding() {
 }
 
 export function ExaminerPortalPage() {
-  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+  const { isAuthenticated, isStaff, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -117,11 +117,11 @@ export function ExaminerPortalPage() {
     );
   }
 
-  if (isAuthenticated && isAdmin) {
+  if (isAuthenticated && isStaff) {
     return <ExaminerDashboardPage />;
   }
 
-  if (isAuthenticated && !isAdmin) {
+  if (isAuthenticated && !isStaff) {
     return <Navigate to="/examinee" replace />;
   }
 

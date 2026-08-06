@@ -1,26 +1,26 @@
-import { createBrowserRouter, Navigate, useParams } from "react-router";
-import { Root } from "./root";
-import { Home } from "../../pages/home";
-import { Examiner } from "../../pages/examiner";
-import { Examinee } from "../../pages/examinee";
-import { Features } from "../../pages/features";
+import { Navigate, createBrowserRouter, useParams } from "react-router";
 import { About } from "../../pages/about";
-import { Login } from "../../pages/login";
-import { NotFound } from "../../pages/not-found";
-import { ExamTakingWithBackend } from "../../pages/exam-taking-backend";
-import { ExamSetup } from "../../pages/exam-setup";
-import { ExamSubmitted } from "../../pages/exam-submitted";
-import { ExamResults } from "../../pages/exam-results";
-import { ExamSummary } from "../../pages/exam-summary";
 import { ExamBuilder } from "../../pages/exam-builder";
 import { ExamGrader } from "../../pages/exam-grader";
+import { ExamResults } from "../../pages/exam-results";
+import { ExamSetup } from "../../pages/exam-setup";
+import { ExamSubmitted } from "../../pages/exam-submitted";
+import { ExamSummary } from "../../pages/exam-summary";
+import { ExamTakingWithBackend } from "../../pages/exam-taking-backend";
+import { Examinee } from "../../pages/examinee";
+import { Examiner } from "../../pages/examiner";
+import { Features } from "../../pages/features";
+import { Home } from "../../pages/home";
+import { Login } from "../../pages/login";
 import { Monitoring } from "../../pages/monitoring";
-import { SessionMonitor } from "../../pages/session-monitor";
-import { Reports } from "../../pages/reports";
+import { NotFound } from "../../pages/not-found";
 import { Profile } from "../../pages/profile";
-import { UsersAdmin } from "../../pages/users";
+import { Reports } from "../../pages/reports";
+import { SessionMonitor } from "../../pages/session-monitor";
 import { SettingsAdmin } from "../../pages/settings";
+import { UsersAdmin } from "../../pages/users";
 import { ProtectedRoute } from "../../shared/components/common/protected-route";
+import { Root } from "./root";
 
 function LegacyExamineeExamRedirect({ suffix = "" }: { suffix?: string }) {
   const { examId } = useParams();
@@ -43,11 +43,12 @@ export const router = createBrowserRouter([
       { path: "dashboard", element: <Navigate to="/examiner" replace /> },
       { path: "student/dashboard", element: <Navigate to="/examinee" replace /> },
 
-      // Admin-only routes
+      // Staff routes - module-gated so faculty/student_assistant see what
+      // their role grants by default, not just admin.
       {
         path: "monitoring",
         element: (
-          <ProtectedRoute requiredRole="ADMIN">
+          <ProtectedRoute requiredModule="monitoring">
             <Monitoring />
           </ProtectedRoute>
         ),
@@ -55,7 +56,7 @@ export const router = createBrowserRouter([
       {
         path: "monitoring/:sessionId",
         element: (
-          <ProtectedRoute requiredRole="ADMIN">
+          <ProtectedRoute requiredModule="monitoring">
             <SessionMonitor />
           </ProtectedRoute>
         ),
@@ -63,7 +64,7 @@ export const router = createBrowserRouter([
       {
         path: "reports",
         element: (
-          <ProtectedRoute requiredRole="ADMIN">
+          <ProtectedRoute requiredModule="reports">
             <Reports />
           </ProtectedRoute>
         ),
@@ -71,7 +72,7 @@ export const router = createBrowserRouter([
       {
         path: "users",
         element: (
-          <ProtectedRoute requiredRole="ADMIN">
+          <ProtectedRoute requiredModule="user-mgmt">
             <UsersAdmin />
           </ProtectedRoute>
         ),
@@ -79,7 +80,7 @@ export const router = createBrowserRouter([
       {
         path: "settings",
         element: (
-          <ProtectedRoute requiredRole="ADMIN">
+          <ProtectedRoute requiredModule="settings">
             <SettingsAdmin />
           </ProtectedRoute>
         ),
@@ -99,7 +100,7 @@ export const router = createBrowserRouter([
       {
         path: "examinee/exam/:examId/setup",
         element: (
-          <ProtectedRoute requiredRole="EXAMINEE">
+          <ProtectedRoute requiredRole="STUDENT">
             <ExamSetup />
           </ProtectedRoute>
         ),
@@ -107,7 +108,7 @@ export const router = createBrowserRouter([
       {
         path: "examinee/exam/:examId",
         element: (
-          <ProtectedRoute requiredRole="EXAMINEE">
+          <ProtectedRoute requiredRole="STUDENT">
             <ExamTakingWithBackend />
           </ProtectedRoute>
         ),
@@ -115,7 +116,7 @@ export const router = createBrowserRouter([
       {
         path: "examinee/exam/:examId/submitted",
         element: (
-          <ProtectedRoute requiredRole="EXAMINEE">
+          <ProtectedRoute requiredRole="STUDENT">
             <ExamSubmitted />
           </ProtectedRoute>
         ),
@@ -123,7 +124,7 @@ export const router = createBrowserRouter([
       {
         path: "examinee/exam/:examId/results",
         element: (
-          <ProtectedRoute requiredRole="EXAMINEE">
+          <ProtectedRoute requiredRole="STUDENT">
             <ExamResults />
           </ProtectedRoute>
         ),
@@ -146,7 +147,7 @@ export const router = createBrowserRouter([
       {
         path: "examiner/exams/:examId/edit",
         element: (
-          <ProtectedRoute requiredRole="ADMIN">
+          <ProtectedRoute requiredModule="exams">
             <ExamBuilder />
           </ProtectedRoute>
         ),
@@ -154,7 +155,7 @@ export const router = createBrowserRouter([
       {
         path: "examiner/exams/:examId/grading",
         element: (
-          <ProtectedRoute requiredRole="ADMIN">
+          <ProtectedRoute requiredModule="exams">
             <ExamGrader />
           </ProtectedRoute>
         ),

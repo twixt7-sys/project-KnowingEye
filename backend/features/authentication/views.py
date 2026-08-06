@@ -5,11 +5,16 @@ from __future__ import annotations
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+from core.security import service as security
+from core.security.drf import HasRole
+from core.security.modules import MODULES
+from core.security.permissions_registry import PERMISSIONS
 
 from .serializers import (
     AvatarUploadSerializer,
@@ -22,6 +27,17 @@ from .serializers import (
 
 
 User = get_user_model()
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def access_map(request):
+    """GET /api/auth/access-map/ - this user's role, modules, and permissions.
+
+    The single source of truth the frontend uses to build nav and gate
+    routes/controls, so it can never drift from what the backend enforces.
+    """
+    return Response(security.list_user_access(request.user))
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -114,10 +130,12 @@ class UserProfileViewSet(viewsets.ViewSet):
 
 
 class UserListViewSet(viewsets.ReadOnlyModelViewSet):
-    """Admin-scoped user listing + lightweight admin actions.
+    """User listing + lightweight management actions, PBAC-gated.
 
-    Non-admins only ever see their own record. Admins can additionally
-    toggle activation and change roles via dedicated POST actions.
+    Users without ``users.view`` only ever see their own record. Mutating
+    actions (activate/deactivate/set-role/etc.) each require their own
+    fine-grained permission, so an admin can delegate a subset of user
+    management to another role without handing over full admin rights.
     """
 
     queryset = User.objects.all().order_by("-date_joined")
@@ -125,7 +143,7 @@ class UserListViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        if not self.request.user.is_admin():
+        if not security.can(self.request.user, "users.view"):
             return User.objects.filter(id=self.request.user.id)
         qs = User.objects.all().order_by("-date_joined")
         role = self.request.query_params.get("role")
@@ -143,16 +161,17 @@ class UserListViewSet(viewsets.ReadOnlyModelViewSet):
         ctx["request"] = self.request
         return ctx
 
-    def _require_admin(self):
-        if not self.request.user.is_admin():
+    def _require(self, action_name: str):
+        if not security.can(self.request.user, action_name):
             return Response(
-                {"detail": "Admin only."}, status=status.HTTP_403_FORBIDDEN
+                {"detail": "You do not have permission to perform this action."},
+                status=status.HTTP_403_FORBIDDEN,
             )
         return None
 
     @action(detail=True, methods=["post"])
     def activate(self, request, pk=None):
-        denied = self._require_admin()
+        denied = self._require("users.toggle-status")
         if denied:
             return denied
         user = self.get_object()
@@ -162,7 +181,7 @@ class UserListViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"])
     def deactivate(self, request, pk=None):
-        denied = self._require_admin()
+        denied = self._require("users.toggle-status")
         if denied:
             return denied
         user = self.get_object()
@@ -177,7 +196,7 @@ class UserListViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="set-role")
     def set_role(self, request, pk=None):
-        denied = self._require_admin()
+        denied = self._require("users.update")
         if denied:
             return denied
         new_role = (request.data or {}).get("role")
@@ -190,12 +209,15 @@ class UserListViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.get_object()
         user.role = new_role
         user.save(update_fields=["role"])
+        # Additive: seeds the new role's starter grants without touching any
+        # customisations already made from Manage Access.
+        security.apply_role_defaults(user)
         return Response(UserSerializer(user, context={"request": request}).data)
 
     @action(detail=False, methods=["get"])
     def stats(self, request):
         """Aggregate user counts for admin dashboards (not affected by search)."""
-        denied = self._require_admin()
+        denied = self._require("users.view")
         if denied:
             return denied
         qs = User.objects.all()
@@ -203,7 +225,62 @@ class UserListViewSet(viewsets.ReadOnlyModelViewSet):
             {
                 "total": qs.count(),
                 "admins": qs.filter(role=User.Role.ADMIN).count(),
-                "examinees": qs.filter(role=User.Role.EXAMINEE).count(),
+                "faculty": qs.filter(role=User.Role.FACULTY).count(),
+                "student_assistants": qs.filter(role=User.Role.STUDENT_ASSISTANT).count(),
+                "students": qs.filter(role=User.Role.STUDENT).count(),
                 "inactive": qs.filter(is_active=False).count(),
             }
         )
+
+    @action(
+        detail=True,
+        methods=["get", "put"],
+        url_path="permissions",
+        permission_classes=[IsAuthenticated, HasRole("admin")],
+    )
+    def permissions(self, request, pk=None):
+        """Manage Access: view/set per-user module + action overrides.
+
+        Admin only - delegation itself is never delegable, mirroring OSAS's
+        ``role:super_admin``-gated ``UserPermissionController``.
+
+        PUT body: {"modules": {"<module>": "grant"|"deny"|null}, "actions":
+        {"<action>": true|false}}. ``null``/omitted clears an override,
+        falling back to the role default.
+        """
+        user = self.get_object()
+
+        if request.method == "GET":
+            return Response(
+                {
+                    "role": user.role,
+                    "modules": {
+                        m: ("grant" if security.has_module(user, m) else "deny")
+                        for m in MODULES
+                    },
+                    "actions": {p: security.can(user, p) for p in PERMISSIONS},
+                }
+            )
+
+        modules = (request.data or {}).get("modules") or {}
+        actions = (request.data or {}).get("actions") or {}
+
+        for module, state in modules.items():
+            if module not in MODULES:
+                continue
+            if state == "grant":
+                security.grant_module_access(user, module, actor=request.user)
+            elif state == "deny":
+                security.deny_module_access(user, module, actor=request.user)
+            else:
+                security.revoke_module_override(user, module, actor=request.user)
+
+        for action_name, enabled in actions.items():
+            if action_name not in PERMISSIONS:
+                continue
+            if enabled:
+                security.grant_action(user, action_name, actor=request.user)
+            else:
+                security.revoke_action(user, action_name, actor=request.user)
+
+        return Response(security.list_user_access(user))

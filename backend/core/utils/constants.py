@@ -8,7 +8,11 @@ MAX_REPORT_EXPORT_ROWS = 1000
 
 class UserRole:
     ADMIN = "ADMIN"
-    EXAMINEE = "EXAMINEE"
+    FACULTY = "FACULTY"
+    STUDENT_ASSISTANT = "STUDENT_ASSISTANT"
+    STUDENT = "STUDENT"
+    # Back-compat alias for the old binary role model.
+    EXAMINEE = "STUDENT"
 
 
 class ExamStatus:

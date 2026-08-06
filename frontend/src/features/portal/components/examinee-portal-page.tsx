@@ -107,7 +107,7 @@ function ExamineeLanding() {
 }
 
 export function ExamineePortalPage() {
-  const { isAuthenticated, isExaminee, isLoading } = useAuth();
+  const { isAuthenticated, isStudent, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -117,11 +117,11 @@ export function ExamineePortalPage() {
     );
   }
 
-  if (isAuthenticated && isExaminee) {
+  if (isAuthenticated && isStudent) {
     return <StudentDashboardPage />;
   }
 
-  if (isAuthenticated && !isExaminee) {
+  if (isAuthenticated && !isStudent) {
     return <Navigate to="/examiner" replace />;
   }
 

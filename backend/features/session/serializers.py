@@ -29,7 +29,8 @@ class ResponseSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         exam = obj.session.exam
         user = getattr(request, 'user', None) if request else None
-        if not user or not getattr(user, 'is_admin', lambda: False)():
+        is_grader = user and (getattr(user, 'is_admin', lambda: False)() or getattr(user, 'is_faculty', lambda: False)())
+        if not is_grader:
             from features.exams import services
             if not user or not services.results_visible_to_user(exam, user):
                 return None
@@ -179,7 +180,9 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
 
     def get_exam(self, obj):
         request = self.context.get("request")
-        if request and getattr(request.user, "is_admin", lambda: False)():
+        user = getattr(request, "user", None) if request else None
+        is_grader = user and (getattr(user, "is_admin", lambda: False)() or getattr(user, "is_faculty", lambda: False)())
+        if is_grader:
             data = ExamDetailSerializer(obj.exam, context=self.context).data
         else:
             data = ExamTakeSerializer(obj.exam, context=self.context).data

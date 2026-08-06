@@ -58,13 +58,13 @@ export function LoginPage() {
     ? loginForm.formState.isSubmitting
     : registerForm.formState.isSubmitting;
 
-  const goHome = (signedInRole: "ADMIN" | "EXAMINEE") => {
+  const goHome = (signedInRole: "ADMIN" | "FACULTY" | "STUDENT_ASSISTANT" | "STUDENT") => {
     if (from !== "/" && from !== "/login") {
       navigate(from, { replace: true });
-    } else if (signedInRole === "ADMIN") {
-      navigate("/examiner", { replace: true });
-    } else {
+    } else if (signedInRole === "STUDENT") {
       navigate("/examinee", { replace: true });
+    } else {
+      navigate("/examiner", { replace: true });
     }
   };
 

@@ -24,7 +24,7 @@ class SessionAPITests(APITestCase):
             username="student_sess",
             email="student_sess@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
         self.exam = Exam.objects.create(
             title="Session Exam",

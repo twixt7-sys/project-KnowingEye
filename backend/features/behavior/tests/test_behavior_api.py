@@ -22,7 +22,7 @@ class BehaviorAPITests(APITestCase):
             username="student_beh",
             email="student_beh@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
         exam = Exam.objects.create(
             title="Behavior Exam",

@@ -20,7 +20,7 @@ class AuthenticationAPITests(APITestCase):
             username="examinee_test",
             email="student@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
 
     def test_login_returns_jwt(self):
@@ -51,7 +51,7 @@ class AuthenticationAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(username="new_student").exists())
         user = User.objects.get(username="new_student")
-        self.assertEqual(user.role, User.Role.EXAMINEE)
+        self.assertEqual(user.role, User.Role.STUDENT)
         self.assertTrue(user.avatar)
 
     def test_register_always_creates_examinee(self):
@@ -71,8 +71,8 @@ class AuthenticationAPITests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         user = User.objects.get(username="new_admin")
-        self.assertEqual(user.role, User.Role.EXAMINEE)
-        self.assertEqual(response.data["user"]["role"], User.Role.EXAMINEE)
+        self.assertEqual(user.role, User.Role.STUDENT)
+        self.assertEqual(response.data["user"]["role"], User.Role.STUDENT)
 
     def test_register_requires_avatar(self):
         response = self.client.post(
@@ -151,13 +151,13 @@ class AdminUserManagementTests(APITestCase):
             username="examinee_users",
             email="examinee_users@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
         self.target = User.objects.create_user(
             username="target_user",
             email="target@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
             is_active=False,
         )
 
@@ -178,7 +178,7 @@ class AdminUserManagementTests(APITestCase):
             username="active_user",
             email="active@test.local",
             password="TestPass123!",
-            role=User.Role.EXAMINEE,
+            role=User.Role.STUDENT,
         )
         response = self.client.post(f"/api/auth/users/{active.id}/deactivate/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)

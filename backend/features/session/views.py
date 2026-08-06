@@ -9,6 +9,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from django.db import transaction
 
+from core.security import service as security
+
 from .models import ExamSession, Response as AnswerResponse, SessionLog
 from .serializers import (
     ExamSessionListSerializer,
@@ -39,7 +41,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Filter sessions based on user role."""
-        if self.request.user.is_admin():
+        if security.has_module(self.request.user, "sessions"):
             return ExamSession.objects.all()
         return ExamSession.objects.filter(user=self.request.user)
 
@@ -81,7 +83,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
     def begin(self, request, pk=None):
         """Begin the timed exam after proctoring setup is complete."""
         session = self.get_object()
-        if session.user != request.user and not request.user.is_admin():
+        if session.user != request.user and not security.has_module(request.user, "sessions"):
             return APIResponse(
                 {'error': 'You can only begin your own exam sessions'},
                 status=status.HTTP_403_FORBIDDEN,
@@ -133,7 +135,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         session = self.get_object()
 
         # Check permissions
-        if session.user != request.user and not request.user.is_admin():
+        if session.user != request.user and not security.has_module(request.user, "sessions"):
             return APIResponse(
                 {'error': 'You can only submit your own exam sessions'},
                 status=status.HTTP_403_FORBIDDEN
@@ -193,7 +195,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
     def save_responses(self, request, pk=None):
         """Autosave responses during an in-progress attempt."""
         session = self.get_object()
-        if session.user != request.user and not request.user.is_admin():
+        if session.user != request.user and not security.has_module(request.user, "sessions"):
             return APIResponse({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
         ensure_active_session(session, ip_address=self._get_client_ip(request))
@@ -235,7 +237,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
     def heartbeat(self, request, pk=None):
         """Return authoritative timer state for client sync."""
         session = self.get_object()
-        if session.user != request.user and not request.user.is_admin():
+        if session.user != request.user and not security.has_module(request.user, "sessions"):
             return APIResponse({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
 
         ensure_active_session(session, ip_address=self._get_client_ip(request))
@@ -282,9 +284,9 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def recalculate(self, request, pk=None):
-        """Recalculate session score after manual grading (admin)."""
-        if not request.user.is_admin():
-            return APIResponse({'error': 'Admin only'}, status=status.HTTP_403_FORBIDDEN)
+        """Recalculate session score after manual grading."""
+        if not security.can(request.user, "sessions.grade"):
+            return APIResponse({'error': 'You do not have permission to grade sessions.'}, status=status.HTTP_403_FORBIDDEN)
 
         session = self.get_object()
         session.calculate_score()
@@ -319,7 +321,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         session = self.get_object()
 
         # Check permissions
-        if session.user != request.user and not request.user.is_admin():
+        if session.user != request.user and not security.has_module(request.user, "sessions"):
             return APIResponse(
                 {'error': 'You can only view logs for your own sessions'},
                 status=status.HTTP_403_FORBIDDEN
@@ -332,12 +334,12 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def terminate(self, request, pk=None):
         """
-        Terminate an active session (admin only).
+        Terminate an active session.
         POST /api/sessions/{id}/terminate/
         """
-        if not request.user.is_admin():
+        if not security.can(request.user, "sessions.terminate"):
             return APIResponse(
-                {'error': 'Only administrators can terminate sessions'},
+                {'error': 'You do not have permission to terminate sessions.'},
                 status=status.HTTP_403_FORBIDDEN
             )
 
@@ -388,7 +390,7 @@ class ResponseViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         """Filter responses based on user role."""
-        if self.request.user.is_admin():
+        if security.has_module(self.request.user, "sessions"):
             return AnswerResponse.objects.select_related('question', 'session')
         return AnswerResponse.objects.filter(session__user=self.request.user).select_related(
             'question', 'session'
@@ -396,9 +398,9 @@ class ResponseViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=['patch'], url_path='grade')
     def grade(self, request, pk=None):
-        """Manually grade a response (admin)."""
-        if not request.user.is_admin():
-            return APIResponse({'error': 'Admin only'}, status=status.HTTP_403_FORBIDDEN)
+        """Manually grade a response."""
+        if not security.can(request.user, "sessions.grade"):
+            return APIResponse({'error': 'You do not have permission to grade responses.'}, status=status.HTTP_403_FORBIDDEN)
 
         response = self.get_object()
         serializer = ResponseGradeSerializer(

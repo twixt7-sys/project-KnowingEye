@@ -51,10 +51,11 @@ export function WorkspaceLayout({ role, variant = "default", children }: Workspa
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, hasModule } = useAuth();
   const confirm = useConfirm();
   const meta = roleMeta[role];
   const isFocus = variant === "focus";
+  const navItems = meta.nav.filter((item) => !item.module || hasModule(item.module));
 
   const handleLogout = async () => {
     const confirmed = await confirm({
@@ -108,7 +109,7 @@ export function WorkspaceLayout({ role, variant = "default", children }: Workspa
             {meta.title}
           </p>
         )}
-        {meta.nav.map((item) => {
+        {navItems.map((item) => {
           const active = isNavActive(location.pathname, item.path);
           return (
             <Link

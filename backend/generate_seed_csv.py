@@ -59,7 +59,7 @@ for idx in range(20):
             "email": f"examinee{num:02d}@knowingeye.test",
             "first_name": EXAMINEE_FIRST_NAMES[idx],
             "last_name": EXAMINEE_LAST_NAMES[idx],
-            "role": "EXAMINEE",
+            "role": "STUDENT",
             "is_active": "True",
             "created_at": NOW.isoformat(sep=" "),
             "updated_at": NOW.isoformat(sep=" "),

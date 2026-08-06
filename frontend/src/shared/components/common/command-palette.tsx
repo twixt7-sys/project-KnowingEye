@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import {
-  examinerNav,
-  examinerQuickActions,
-} from "../../../core/config/examiner-nav";
+import { examinerNav, examinerQuickActions } from "../../../core/config/examiner-nav";
+import { useAuth } from "../../../core/providers/auth-provider";
 import {
   CommandDialog,
   CommandEmpty,
@@ -18,6 +16,8 @@ import {
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const { hasModule } = useAuth();
+  const navItems = examinerNav.filter((item) => !item.module || hasModule(item.module));
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -42,7 +42,7 @@ export function CommandPalette() {
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Navigation">
-          {examinerNav.map((item) => (
+          {navItems.map((item) => (
             <CommandItem
               key={item.path}
               value={`${item.label} ${item.description ?? ""}`}
@@ -63,11 +63,7 @@ export function CommandPalette() {
             <CommandSeparator />
             <CommandGroup heading="Quick actions">
               {examinerQuickActions.map((item) => (
-                <CommandItem
-                  key={item.path}
-                  value={item.label}
-                  onSelect={() => go(item.path)}
-                >
+                <CommandItem key={item.path} value={item.label} onSelect={() => go(item.path)}>
                   <item.icon />
                   <span>{item.label}</span>
                 </CommandItem>

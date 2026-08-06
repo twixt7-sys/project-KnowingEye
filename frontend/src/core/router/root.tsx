@@ -8,11 +8,11 @@ import { useAuth } from "../providers/auth-provider";
 
 export function Root() {
   const location = useLocation();
-  const { isAuthenticated, isAdmin, isExaminee } = useAuth();
+  const { isAuthenticated, isStaff, isStudent } = useAuth();
   const mode = getLayoutMode(location.pathname, {
     isAuthenticated,
-    isAdmin,
-    isExaminee,
+    isStaff,
+    isStudent,
   });
 
   const content = <Outlet />;
