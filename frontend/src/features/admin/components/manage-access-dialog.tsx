@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/shared/icons";
 import { useEffect, useState } from "react";
 
 import { type ProfileUser, formatApiError } from "@/core/config/api";

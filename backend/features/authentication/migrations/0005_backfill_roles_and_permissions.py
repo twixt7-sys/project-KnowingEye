@@ -25,8 +25,13 @@ def backfill_role_default_permissions(apps, schema_editor):
 
     ensure_registry_permissions()
 
+    # .only() restricts the SELECT to columns that exist as of *this*
+    # migration - querying the real (non-historical) model with a bare
+    # .exclude()/full fetch would pull in every field the *current* code
+    # defines, including ones added by migrations that haven't run yet when
+    # this migration is replayed forward on a fresh database.
     User = get_user_model()
-    for user in User.objects.exclude(role='ADMIN'):
+    for user in User.objects.only('pk', 'role').exclude(role='ADMIN'):
         apply_role_defaults(user)
 
 

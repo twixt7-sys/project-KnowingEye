@@ -1,4 +1,4 @@
-import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Loader2, ShieldCheck } from "@/shared/icons";
 
 import type { Exam } from "@/core/config/api";
 import { Button } from "@/shared/components/ui/button";

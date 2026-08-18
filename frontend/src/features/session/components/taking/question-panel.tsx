@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Flag, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flag, Loader2 } from "@/shared/icons";
 
 import type { Question, QuestionAttachment } from "@/core/config/api";
 import type { SavedAnswer } from "@/features/session/hooks/use-exam-attempt";

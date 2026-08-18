@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, ImagePlus, X } from "lucide-react";
+import { Camera, ImagePlus, X } from "@/shared/icons";
 
 interface ProfilePhotoInputProps {
   value: File | null;
@@ -102,7 +102,7 @@ export function ProfilePhotoInput({
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium">
-        Profile photo <span className="text-red-500">*</span>
+        Profile photo <span className="font-normal text-muted-foreground">(optional)</span>
       </label>
 
       <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -159,11 +159,12 @@ export function ProfilePhotoInput({
       />
 
       <p className="text-xs text-muted-foreground">
-        A clear photo of your face is required for identity verification during exams.
+        You can add a clear photo of your face now, or later from your profile — it's used for
+        identity verification during exams.
       </p>
 
       {cameraError && (
-        <p className="text-xs text-red-600 dark:text-red-400">{cameraError}</p>
+        <p className="text-xs text-destructive">{cameraError}</p>
       )}
 
       {cameraOpen && (

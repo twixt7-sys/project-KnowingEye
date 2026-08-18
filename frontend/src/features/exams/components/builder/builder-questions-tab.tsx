@@ -1,4 +1,4 @@
-import { AlertTriangle, Download, Plus, Upload } from "lucide-react";
+import { AlertTriangle, Download, Plus, Upload } from "@/shared/icons";
 
 import type { Question, QuestionAttachment } from "@/core/config/api";
 import { QuestionFormDialog } from "@/features/exams/components/builder/question-form-dialog";
@@ -205,13 +205,13 @@ export function BuilderQuestionsTab({
           </ResizablePanelGroup>
 
           {importErrors.length > 0 && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4">
-              <p className="font-medium text-red-600 mb-2 flex items-center gap-2">
+            <div className="rounded-lg border border-status-alert/30 bg-status-alert/5 p-4">
+              <p className="font-medium text-status-alert mb-2 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4" />
                 Fix {importErrors.length} issue{importErrors.length === 1 ? "" : "s"} and import
                 again
               </p>
-              <ul className="list-disc pl-5 text-sm space-y-1 text-red-600 max-h-48 overflow-y-auto">
+              <ul className="list-disc pl-5 text-sm space-y-1 text-status-alert max-h-48 overflow-y-auto">
                 {importErrors.map((err, i) => (
                   <li key={i}>{err}</li>
                 ))}

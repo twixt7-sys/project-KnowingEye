@@ -1,15 +1,33 @@
 import { Link, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Loader2, Users } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, Users } from "@/shared/icons";
 
 import { formatApiError } from "@/core/config/api";
 import { useAuth } from "@/core/providers/auth-provider";
 import { reportsQueries } from "@/features/reports/queries/queries";
 import { DataTablePagination } from "@/shared/components/common/data-table-pagination";
+import { IconAction } from "@/shared/components/common/icon-action";
 import { ScrollableDataTable } from "@/shared/components/common/scrollable-data-table";
+import { SectionPanel } from "@/shared/components/layout/section-panel";
 import { EmptyState } from "@/shared/components/patterns/empty-state";
 import { PageHeaderV2 } from "@/shared/components/patterns/page-header-v2";
 import { usePagination } from "@/shared/hooks/use-pagination";
+
+function CorrectnessBar({ pct }: { pct: number }) {
+  const tone =
+    pct >= 70 ? "bg-status-safe" : pct >= 40 ? "bg-status-watch" : "bg-status-alert";
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="h-1.5 w-20 overflow-hidden rounded-full bg-muted" aria-hidden>
+        <span
+          className={`block h-full rounded-full ${tone}`}
+          style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
+        />
+      </span>
+      <span className="font-mono text-xs tabular-nums">{pct}%</span>
+    </div>
+  );
+}
 
 export function ExamSummaryPage() {
   const { examId } = useParams();
@@ -43,66 +61,79 @@ export function ExamSummaryPage() {
   }
 
   return (
-    <>
+    <div className="page-flow">
       <Link
         to={backHref}
-        className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        className="inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" /> Back
+        <ArrowLeft className="h-3.5 w-3.5" /> Back
       </Link>
 
       {displayError && (
-        <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-600">
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {displayError}
         </div>
       )}
 
-      <PageHeaderV2 title={title} />
-      <p className="mb-8 text-sm text-muted-foreground">
-        <span className="inline-flex items-center gap-2">
-          <Users className="h-4 w-4" /> {totalCount} session{totalCount === 1 ? "" : "s"}
-        </span>
-      </p>
+      <PageHeaderV2
+        eyebrow="Exam summary"
+        title={title}
+        actions={
+          <span className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 font-mono text-xs tabular-nums text-muted-foreground">
+            <Users className="h-3.5 w-3.5" />
+            {totalCount} session{totalCount === 1 ? "" : "s"}
+          </span>
+        }
+      />
 
       {analytics && analytics.questions.length > 0 && (
-        <div className="mb-8 rounded-xl border bg-card p-4">
-          <h2 className="mb-3 text-lg font-semibold">Item analysis</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+        <SectionPanel
+          title="Item analysis"
+          description="Per-question difficulty at a glance — correctness and average time spent."
+        >
+          <ScrollableDataTable>
+            <table className="data-table">
               <thead>
-                <tr className="text-left text-muted-foreground">
-                  <th className="py-2 pr-4">Q#</th>
-                  <th className="py-2 pr-4">Type</th>
-                  <th className="py-2 pr-4">% correct</th>
-                  <th className="py-2">Avg time (s)</th>
+                <tr>
+                  <th>Q#</th>
+                  <th>Type</th>
+                  <th>Correct</th>
+                  <th>Avg time (s)</th>
                 </tr>
               </thead>
               <tbody>
                 {analytics.questions.map((q) => (
-                  <tr key={q.question_id} className="border-t">
-                    <td className="py-2 pr-4">{q.order}</td>
-                    <td className="py-2 pr-4">{q.question_type.replace("_", " ")}</td>
-                    <td className="py-2 pr-4">{q.correct_pct}%</td>
-                    <td className="py-2">{q.avg_time_spent}</td>
+                  <tr key={q.question_id}>
+                    <td className="font-mono text-sm tabular-nums">{q.order}</td>
+                    <td className="capitalize text-muted-foreground">
+                      {q.question_type.replace("_", " ")}
+                    </td>
+                    <td>
+                      <CorrectnessBar pct={q.correct_pct} />
+                    </td>
+                    <td className="font-mono text-sm tabular-nums">{q.avg_time_spent}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
+          </ScrollableDataTable>
+        </SectionPanel>
       )}
 
-      <div className="surface-panel overflow-hidden">
+      <SectionPanel
+        title="Sessions"
+        description="Every attempt recorded for this examination."
+      >
         <ScrollableDataTable>
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 z-10 bg-muted/95 text-left backdrop-blur-sm">
+          <table className="data-table">
+            <thead>
               <tr>
-                <th className="px-4 py-3 font-medium">Student</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Score</th>
-                <th className="px-4 py-3 font-medium">Alerts</th>
-                <th className="px-4 py-3 font-medium">Submitted</th>
-                <th className="px-4 py-3 font-medium" />
+                <th>Examinee</th>
+                <th>Status</th>
+                <th>Score</th>
+                <th className="hidden sm:table-cell">Alerts</th>
+                <th className="hidden md:table-cell">Submitted</th>
+                <th className="text-right"> </th>
               </tr>
             </thead>
             <tbody>
@@ -118,24 +149,37 @@ export function ExamSummaryPage() {
                 </tr>
               ) : (
                 sessions.map((row) => (
-                  <tr key={row.id} className="border-t border-border">
-                    <td className="px-4 py-3">{row.user_full_name || row.user}</td>
-                    <td className="px-4 py-3 capitalize">{row.status.replace("_", " ")}</td>
-                    <td className="px-4 py-3">
+                  <tr key={row.id}>
+                    <td className="font-medium">{row.user_full_name || row.user}</td>
+                    <td>
+                      <span className="status-pill bg-muted text-muted-foreground">
+                        {row.status.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td className="font-mono text-sm tabular-nums">
                       {row.percentage_score != null
                         ? `${row.percentage_score.toFixed(1)}%`
-                        : "-"}
+                        : "—"}
                     </td>
-                    <td className="px-4 py-3">{row.unresolved_alert_count}</td>
-                    <td className="px-4 py-3">
-                      {row.submitted_at
-                        ? new Date(row.submitted_at).toLocaleString()
-                        : "-"}
+                    <td
+                      className={`hidden font-mono text-sm tabular-nums sm:table-cell ${
+                        row.unresolved_alert_count > 0 ? "text-status-alert" : ""
+                      }`}
+                    >
+                      {row.unresolved_alert_count}
                     </td>
-                    <td className="px-4 py-3">
-                      <Link to={`/monitoring/${row.id}`} className="text-primary hover:underline">
-                        Inspect
-                      </Link>
+                    <td className="hidden font-mono text-xs tabular-nums text-muted-foreground md:table-cell">
+                      {row.submitted_at ? new Date(row.submitted_at).toLocaleString() : "—"}
+                    </td>
+                    <td>
+                      <div className="flex justify-end">
+                        <IconAction
+                          label="Inspect session"
+                          icon={Eye}
+                          tone="primary"
+                          to={`/monitoring/${row.id}`}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -152,7 +196,7 @@ export function ExamSummaryPage() {
           onPageSizeChange={setPageSize}
           loading={sessionsQuery.isLoading}
         />
-      </div>
-    </>
+      </SectionPanel>
+    </div>
   );
 }

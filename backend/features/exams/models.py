@@ -42,6 +42,20 @@ class Exam(models.Model):
         ACTIVE = 'active', 'Active'
         ARCHIVED = 'archived', 'Archived'
 
+    class ApprovalStatus(models.TextChoices):
+        """Level 0/1 approval chain (Directive A1 - "Administrator responsibilities").
+
+        Creators (faculty/guidance_staff/program_head) submit a draft for
+        review; a program head or admin approves or rejects it. Only an
+        APPROVED exam may be published (see services.publish_exam), so the
+        administrator is no longer the sole path from draft to live.
+        """
+
+        NOT_SUBMITTED = 'not_submitted', 'Not submitted'
+        PENDING = 'pending', 'Pending review'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+
     title = models.CharField(
         max_length=255,
         help_text='Exam title'
@@ -160,11 +174,40 @@ class Exam(models.Model):
         default=Status.DRAFT,
         help_text='Exam status'
     )
+    approval_status = models.CharField(
+        max_length=20,
+        choices=ApprovalStatus.choices,
+        default=ApprovalStatus.NOT_SUBMITTED,
+        help_text='Level 0/1 approval chain state - must be APPROVED before publish',
+    )
+    submitted_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='submitted_exams',
+        help_text='User who last submitted this exam for approval',
+    )
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_exams',
+        help_text='Program head / admin who last approved or rejected this exam',
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    rejection_note = models.TextField(
+        blank=True,
+        default='',
+        help_text='Reviewer feedback when approval_status is REJECTED',
+    )
     created_by = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
         related_name='created_exams',
-        help_text='Admin who created this exam'
+        help_text='User who created this exam'
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -179,6 +222,7 @@ class Exam(models.Model):
             models.Index(fields=['created_by']),
             models.Index(fields=['exam_code']),
             models.Index(fields=['available_from', 'available_until']),
+            models.Index(fields=['approval_status']),
         ]
 
     def __str__(self):
@@ -396,4 +440,42 @@ class QuestionAttachment(models.Model):
 
     def __str__(self):
         return f"Attachment {self.kind} for Q{self.question.order}"
+
+
+class ExamApprovalEvent(models.Model):
+    """Audit trail for the exam submit -> review -> approve/reject chain.
+
+    Mirrors the shape of ``authentication.PermissionChange`` - one immutable
+    row per transition, so the approval history for an exam (and the "who
+    approved this and when" answer the panel asked for) is always
+    reconstructable, per the Directive's Area 01 "Administrator
+    responsibilities" hierarchy requirement.
+    """
+
+    class Action(models.TextChoices):
+        SUBMIT = "submit", "Submitted for review"
+        APPROVE = "approve", "Approved"
+        REJECT = "reject", "Rejected"
+
+    exam = models.ForeignKey(
+        Exam,
+        on_delete=models.CASCADE,
+        related_name="approval_events",
+    )
+    actor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="exam_approval_events",
+    )
+    action = models.CharField(max_length=10, choices=Action.choices)
+    note = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "exams_approval_event"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.exam_id} - {self.action} by {self.actor_id}"
 

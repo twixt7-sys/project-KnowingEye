@@ -1,6 +1,6 @@
 type LayoutAuth = {
   isAuthenticated: boolean;
-  /** Any non-student role (admin/faculty/student_assistant). */
+  /** Any non-student role (admin/guidance_staff/program_head/faculty/proctor). */
   isStaff: boolean;
   isStudent: boolean;
 };

@@ -8,10 +8,13 @@ MAX_REPORT_EXPORT_ROWS = 1000
 
 class UserRole:
     ADMIN = "ADMIN"
+    GUIDANCE_STAFF = "GUIDANCE_STAFF"
+    PROGRAM_HEAD = "PROGRAM_HEAD"
     FACULTY = "FACULTY"
-    STUDENT_ASSISTANT = "STUDENT_ASSISTANT"
+    PROCTOR = "PROCTOR"
     STUDENT = "STUDENT"
-    # Back-compat alias for the old binary role model.
+    # Back-compat aliases for retired role names.
+    STUDENT_ASSISTANT = "PROCTOR"
     EXAMINEE = "STUDENT"
 
 

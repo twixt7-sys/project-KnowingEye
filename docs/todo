@@ -1,15 +1,323 @@
-Frontend
+================================================================================
+ KNOWING EYE -- GUIDANCE EXAMINATION & AI PROCTORING SYSTEM
+ CAPSTONE DEFENSE REVISION CHECKLIST
+ Compiled from panel defense feedback | For team use going into Capstone 2
+================================================================================
 
-Backend
+HOW TO USE THIS FILE
+--------------------------------------------------------------------------------
+- Organized into 5 working areas, matching the 5 major themes from the defense.
+- Each item is tagged [P0] / [P1] / [P2]:
+    [P0] = must fix before Capstone 2 -- these came up as direct challenges
+    [P1] = important -- plan into a sprint, don't skip
+    [P2] = refinement / polish -- do once P0/P1 are stable
+- Check items off as [x] while you work through them.
+- Section 6 has the same items flattened into one priority-ordered backlog.
+- Section 7 lists what the panel already liked -- don't rebuild these.
 
-pipeline
+================================================================================
+ 1. AUTHENTICATION, ROLES & ACCESS CONTROL
+================================================================================
+Panel concern: one administrator account is a bottleneck and a single point of
+failure. They explicitly raised staff logins and delegated operational access.
 
-| Behavior                   | MVP Detection                       |
-| -------------------------- | ----------------------------------- |
-| No face                    | face missing for X seconds          |
-| Different person           | face embedding mismatch             |
-| Looking away               | head/gaze angle exceeds threshold   |
-| Bad posture / leaving seat | upper body/keypoints abnormal       |
-| Multiple faces             | more than one face detected         |
-| Suspicious pattern         | repeated flags within a time window |
+1.1 Role-based access control [P0]
+    [ ] Replace the single-administrator model with real RBAC
+    [ ] Do not allow admin privileges to be casually shared/delegated
+    [ ] Define roles: Administrator, Guidance Staff, Program Head,
+        Teacher/Exam Creator, Proctor, Examinee
+    [ ] Define permissions per role: create, read, update, delete, approve,
+        monitor, manage users, manage exams, view reports
+    [ ] Consider permission-based access if RBAC alone isn't dynamic enough
+    [ ] Model access around the actual Guidance Office workflow
 
+1.2 Administrator responsibilities [P0]
+    [ ] Separate administrative oversight from operational tasks
+    [ ] Stop making the administrator create every exam personally
+    [ ] Let teachers / program heads create or submit exams
+    [ ] Let program heads review / revise / approve submitted exams
+    [ ] Define a hierarchy, e.g.:
+          Level 0: Administrator
+          Level 1: Program Head / authorized staff
+          Other: operational roles
+
+1.3 Registration & verification [P0]
+    [ ] Simplify registration to essential fields only
+    [ ] Remove required profile photo at signup -- make it optional,
+        add/change after registration
+    [ ] Implement OTP verification
+    [ ] Add email verification
+    [ ] Add password confirmation
+    [ ] Make the registration flow visually clear about where OTP happens
+
+================================================================================
+ 2. UI / UX REDESIGN
+================================================================================
+Largest volume of feedback. Panel could not read the UI comfortably and did
+not feel "Legacy College" in the design.
+
+2.1 Readability & contrast [P0]
+    [ ] Increase text/background contrast app-wide
+    [ ] Review button, disabled-state, and input-field contrast
+    [ ] Eliminate gray-on-gray combinations
+    [ ] Make status states visually distinguishable at a glance
+
+2.2 Tone & theme [P1]
+    [ ] Pull back from the current dark "night theme" look
+    [ ] Rebuild visual hierarchy so it reads well under real classroom light
+
+2.3 Institutional identity [P0]
+    [ ] Add Legacy College branding: colors, marks, recognizable elements
+    [ ] Make it feel like a school system, not a generic SaaS dashboard
+    [ ] Redesign obviously templated / AI-generated-looking components
+    [ ] Make every layout decision intentional and defensible
+
+2.4 Dashboard organization [P2]
+    [ ] Review placement/hierarchy of every major component
+    [ ] Improve sort / search / filter interfaces
+    [ ] Decongest cramped views
+    [ ] Make status colors meaningful and consistent
+
+================================================================================
+ 3. EXAM MANAGEMENT & LMS BEHAVIOR
+================================================================================
+Instruction from panel: "Don't reinvent the LMS examination workflow --
+benchmark it."
+
+3.1 Exam discovery [P0]
+    [ ] Add exam categories for filtering
+    [ ] Add search, filter, sort -- don't rely on cards alone at scale
+
+3.2 Scheduling & exam codes [P0]
+    [ ] Add opening + closing date/time (a real examination window)
+    [ ] Block access after deadline
+    [ ] Show clear states: Upcoming / Active / Closed / Expired
+    [ ] Keep automatic exam-code generation (dept abbreviation + year),
+        lock it from accidental edits
+    [ ] Keep exam title editable separately from the generated code
+
+3.3 Department & section assignment [P1]
+    [ ] Allow one exam to be assigned to multiple departments (multi-select)
+        for shared/general-ed exams
+    [ ] Support section-level assignment and per-group schedules
+    [ ] Add exam cloning/duplication instead of full re-creation per group
+
+3.4 Question management [P1]
+    [ ] Support reordering (drag-and-drop), editing, deleting
+    [ ] Lock question editing once an exam is in progress
+        (students may already be answering)
+    [ ] Support images in questions AND in answer choices
+        (abstract/psychological items need image-based options)
+
+3.5 Bulk import [P1]
+    [ ] Support XLSX/CSV import with a downloadable template
+    [ ] Validate: question type, choices, correct answer, ordering,
+        media references
+    [ ] Document template columns + example row + accepted question types
+
+3.6 LMS benchmarking [P0]
+    [ ] Study Google Forms, Jotform, and comparable LMS platforms
+    [ ] Compare: question creation flow, drag-and-drop reordering,
+        question types, randomization/shuffling, search/filtering,
+        scheduling/publishing, question bank behavior, results workflow
+    [ ] Turn this into an actual comparison table in the documentation
+
+3.7 Guidance-specific scope [P1]
+    [ ] Design for psychological / mental / abstract / behavioral content,
+        not a generic academic quiz
+    [ ] Restrict question access -- confidential content stays in
+        Guidance Office
+    [ ] Reconsider whether "department" should be a primary exam attribute
+        at all, since Guidance's process is broader than one department
+
+3.8 Results [P1]
+    [ ] Hold essay results for manual grading (can't auto-release)
+    [ ] Add email notification on result release
+    [ ] Give admins/proctors per-exam results, warnings, terminations,
+        exportable reports
+
+================================================================================
+ 4. COMPUTER VISION & MONITORING
+================================================================================
+Most technical line of questioning. CV concept + identity matching landed
+well -- but thresholds, dataset methodology, and algorithm choice need real
+justification, not developer judgment calls.
+
+  DIRECT PANEL CHALLENGE: "Are your threshold values based on research,
+  or did the team just decide them?"
+
+4.1 Define every CV parameter [P0]
+    For EACH of: face presence, identity match, head-facing camera,
+    upper-body visibility, head movement, eye gaze, posture -- document:
+    [ ] What it measures
+    [ ] Why it matters
+    [ ] What is normal vs. suspicious
+    [ ] What algorithm detects it
+    [ ] What threshold triggers a flag
+    [ ] What action happens when the threshold is exceeded
+
+4.2 Threshold justification [P0]
+    [ ] Define "anomaly" precisely per parameter
+    [ ] Base thresholds on cited research, not internal judgment
+    [ ] Use explicit tiers: Normal -> Suspicious -> Anomalous
+    [ ] Factor in duration and frequency, not single-frame events
+        (reduces false positives)
+
+4.3 Anomaly accumulation model [P0]
+    Replace "one head turn = anomaly" with accumulation over time/signals.
+    Escalation path:  Normal -> Warning -> Suspicious -> Critical -> Action
+    [ ] Count repeated occurrences of the same signal
+        (e.g. face missing x1, x2, x3...)
+    [ ] Weight combined signals higher than one isolated signal
+    [ ] Define what happens at each tier: notify, warn, pause,
+        proctor intervention, terminate
+
+4.4 Dataset methodology [P0]
+    [ ] Document data source, collection method, sample size
+    [ ] Document cleaning, annotation, labeling process
+    [ ] State and justify train/test split
+        (panel asked directly: 70/30? 80/20?)
+
+4.5 Algorithm comparison [P0]
+    [ ] Benchmark current stack (YOLOv8, MediaPipe) against alternatives
+    [ ] Compare accuracy, speed, resource cost
+    [ ] State why the selected algorithm best fits the requirements
+
+4.6 Camera & hardware requirements [P0]
+    Camera:
+      [ ] Position, angle, distance, field of view
+      [ ] Minimum / recommended resolution, lighting conditions
+    Client device:
+      [ ] RAM, processor, OS, browser, camera, internet requirement
+    Server:
+      [ ] CPU, RAM, storage, network, hosting environment,
+          concurrent-user target
+    NOTE: "It's web-based" is not a technical requirements section --
+    camera processing still has real hardware demands.
+
+4.7 Capacity & performance [P0]
+    [ ] Establish max simultaneous examinees per room and per server
+    [ ] Load-test at increasing concurrency: 5 -> 10 -> 20 -> 30 -> 50 -> 100
+    [ ] Measure response time, CPU, RAM, network, error rate at each step
+    [ ] Answer directly: can it handle ~30/room and ~100 total?
+
+4.8 Snapshot monitoring & proctor dashboard [P1]
+    [ ] Document: monitoring uses periodic snapshots over WebSockets,
+        NOT continuous video -- explain why (bandwidth/processing cost)
+    [ ] State snapshot frequency, trigger, retention policy
+    [ ] Give proctor a locator to find a flagged student physically
+    [ ] Fix the camera-preview widget in one screen position (no scroll drift)
+
+4.9 Browser-side deterrents [P2]
+    [ ] Disable right-click, text selection, copy where appropriate
+    [ ] Detect tab-switching; consider fullscreen mode
+    [ ] Document these as deterrents, NOT absolute security --
+        don't overclaim in the paper
+
+================================================================================
+ 5. DOCUMENTATION & RESEARCH
+================================================================================
+Chapters 1-2 need to stand on their own before Capstone 2 begins.
+
+5.1 Related literature [P0]
+    [ ] Add literature on facial detection/recognition, head pose,
+        eye gaze, posture, behavioral anomaly detection in exam monitoring
+    [ ] Cite the source for every technical claim in the paper
+        (panel asked directly where claims came from)
+    [ ] Chain: literature -> factor -> parameter -> algorithm ->
+        measurement -> threshold, explicitly, in the writeup
+
+5.2 Testing methodology -- MAJOR CORRECTION [P0]
+    Team was treating testing as post-deployment only. Panel corrected this:
+    testing runs continuously, before, during, and after deployment.
+
+      During development:  unit, integration, functional, CV, UI,
+                            performance, access/security testing
+      Before deployment:   pre-deployment validation, readiness check,
+                            fix critical issues
+      During deployment:   gather real-world results, measure performance,
+                            collect user feedback, fix live issues
+      After deployment:    analyze results, document findings,
+                            final revisions
+
+5.3 Work breakdown & system design [P1]
+    [ ] Rebuild WBS around Agile sprints (design -> develop -> test ->
+        sprint -> repeat), not sequential phases
+    [ ] Add a physical/floor-plan diagram: examinee seating, camera
+        placement, proctor position, network layout
+    [ ] Update use-case diagrams to reflect new RBAC roles/permissions
+
+5.4 Deployment plan (Capstone 2) [P1]
+    [ ] Complete pre-deployment validation before going live with
+        the Guidance Office
+    [ ] Run an actual deployment window of roughly six weeks
+    [ ] Collect deployment results, log issues, fix them, document
+        outcomes for the final paper
+
+================================================================================
+ 6. FLAT PRIORITY BACKLOG
+================================================================================
+
+--- P0 : MUST FIX BEFORE THE NEXT DEFENSE (19) ---
+  [ ] RBAC & permission system
+  [ ] Administrator scope split (oversight vs. operational)
+  [ ] Registration simplification
+  [ ] OTP / account verification
+  [ ] Contrast & readability fixes
+  [ ] Legacy College visual identity
+  [ ] De-genericize / de-AI-template the UI
+  [ ] Exam search / filter / sort
+  [ ] Exam scheduling window (open/close, deadline states)
+  [ ] LMS benchmarking (Google Forms, Jotform, etc.)
+  [ ] CV parameter definitions (measure/threshold/action per factor)
+  [ ] Threshold justification (research-backed, not arbitrary)
+  [ ] Anomaly accumulation model (duration + frequency + combined signals)
+  [ ] Dataset methodology (source, size, split, justification)
+  [ ] Algorithm comparison (current vs. alternatives, with rationale)
+  [ ] Camera / hardware requirements spec
+  [ ] System capacity & load testing
+  [ ] Continuous testing model (dev -> pre-deploy -> deploy -> post-deploy)
+  [ ] RRL strengthening + citations for all technical claims
+
+--- P1 : PLAN IT INTO THE SPRINT (13) ---
+  [ ] Multi-department exam assignment
+  [ ] Exam cloning / duplication
+  [ ] Question reordering + locking during active exams
+  [ ] Image-based questions and answer choices
+  [ ] Bulk import templates (XLSX/CSV) with documentation
+  [ ] Guidance-specific scope realignment
+  [ ] Results workflow (essay grading, notifications)
+  [ ] Snapshot monitoring documentation
+  [ ] Proctor locator for flagged students
+  [ ] Fixed camera preview widget
+  [ ] Agile-based WBS
+  [ ] Floor plan / physical setup diagram
+  [ ] Six-week deployment plan
+
+--- P2 : REFINEMENT / POLISH (8) ---
+  [ ] Dashboard information hierarchy
+  [ ] Status indicator / color-coding design
+  [ ] Browser-side exam deterrents (right-click, copy, tab detection)
+  [ ] Report filtering & export
+  [ ] Result email notifications
+  [ ] Use-case diagram refresh
+  [ ] General interaction polish
+  [ ] Additional CV optimization
+
+================================================================================
+ 7. WHAT THE PANEL ALREADY LIKED -- DO NOT REBUILD THESE
+================================================================================
+  - The core computer vision concept genuinely interested the panel
+  - Identity detection/matching was called out as a strong feature
+  - Snapshot-based monitoring (vs. continuous video) was accepted as a
+    reasonable, well-justified tradeoff
+  - The exam system itself was NOT seen as the biggest problem
+
+  Their real concerns are concentrated in: UI polish, benchmarking rigor,
+  threshold justification, technical requirements, and CV validation.
+  Spend Capstone 2 effort there, not re-litigating things that already
+  landed well.
+
+================================================================================
+ END OF CHECKLIST
+================================================================================

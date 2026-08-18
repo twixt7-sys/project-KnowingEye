@@ -47,6 +47,22 @@ export function archiveExam(id: number) {
   return apiClient.archiveExam(id);
 }
 
+export function submitExamForReview(id: number) {
+  return apiClient.submitExamForReview(id);
+}
+
+export function approveExam(id: number) {
+  return apiClient.approveExam(id);
+}
+
+export function rejectExam(id: number, note: string) {
+  return apiClient.rejectExam(id, note);
+}
+
+export function fetchPendingReviewExams() {
+  return apiClient.getPendingReviewExams();
+}
+
 export function fetchQuestions(examId: number) {
   return apiClient.listQuestions(examId);
 }

@@ -1,7 +1,16 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from .models import Department, Exam, ExamAssignment, ExamSection, Question, QuestionAttachment, QuestionPool
+from .models import (
+    Department,
+    Exam,
+    ExamApprovalEvent,
+    ExamAssignment,
+    ExamSection,
+    Question,
+    QuestionAttachment,
+    QuestionPool,
+)
 
 User = get_user_model()
 
@@ -244,6 +253,10 @@ class ExamListSerializer(serializers.ModelSerializer):
             "presentation_mode",
             "max_tab_switches",
             "is_open",
+            "approval_status",
+            "submitted_at",
+            "reviewed_at",
+            "rejection_note",
             "created_by_name",
             "created_at",
             "question_count",
@@ -255,6 +268,10 @@ class ExamListSerializer(serializers.ModelSerializer):
             "created_by_name",
             "question_count",
             "is_open",
+            "approval_status",
+            "submitted_at",
+            "reviewed_at",
+            "rejection_note",
         ]
 
     def get_question_count(self, obj):
@@ -310,14 +327,28 @@ class ExamTakeSerializer(serializers.ModelSerializer):
         return services.exam_is_open_for_taking(obj)
 
 
+class ExamApprovalEventSerializer(serializers.ModelSerializer):
+    """One row of an exam's submit/approve/reject audit trail."""
+
+    actor_name = serializers.CharField(source="actor.get_full_name", read_only=True)
+
+    class Meta:
+        model = ExamApprovalEvent
+        fields = ["id", "action", "note", "actor", "actor_name", "created_at"]
+        read_only_fields = fields
+
+
 class ExamDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for exam with questions (admin)."""
 
     questions = QuestionSerializer(many=True, read_only=True)
     created_by_name = serializers.CharField(source="created_by.get_full_name", read_only=True)
     created_by_email = serializers.CharField(source="created_by.email", read_only=True)
+    submitted_by_name = serializers.CharField(source="submitted_by.get_full_name", read_only=True)
+    reviewed_by_name = serializers.CharField(source="reviewed_by.get_full_name", read_only=True)
     publish_readiness = serializers.SerializerMethodField()
     department = DepartmentSummarySerializer(read_only=True)
+    approval_events = ExamApprovalEventSerializer(many=True, read_only=True)
 
     class Meta:
         model = Exam
@@ -348,6 +379,15 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "created_by",
             "created_by_name",
             "created_by_email",
+            "approval_status",
+            "submitted_by",
+            "submitted_by_name",
+            "submitted_at",
+            "reviewed_by",
+            "reviewed_by_name",
+            "reviewed_at",
+            "rejection_note",
+            "approval_events",
             "questions",
             "publish_readiness",
             "created_at",
@@ -361,6 +401,15 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "created_by_name",
             "created_by_email",
             "publish_readiness",
+            "approval_status",
+            "submitted_by",
+            "submitted_by_name",
+            "submitted_at",
+            "reviewed_by",
+            "reviewed_by_name",
+            "reviewed_at",
+            "rejection_note",
+            "approval_events",
         ]
 
     def get_publish_readiness(self, obj):

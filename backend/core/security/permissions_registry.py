@@ -18,6 +18,9 @@ PERMISSIONS: set[str] = {
     "exams.create",
     "exams.update",
     "exams.delete",
+    # exams.approve - Level 1 approval authority (Program Head / Admin) over
+    # the submit -> review -> approve chain, see features.exams.services.
+    "exams.approve",
     # monitoring / behavior
     "monitoring.intervene",
     "behavior.resolve",
@@ -43,7 +46,28 @@ PERMISSIONS: set[str] = {
 # created or its role changes. Stored as direct grants so an admin can
 # revoke any one of them individually from the Manage Access screen without
 # touching the role itself.
+#
+# Mapping rationale (Directive Area 01 - "Administrator responsibilities"):
+# Guidance Staff and Faculty are the operational exam-creation roles; Program
+# Head sits one level above them with approval authority; Proctor is
+# monitoring/read-focused and gets no mutating defaults, matching the old
+# student_assistant baseline it replaces.
 ROLE_DEFAULT_ACTIONS: dict[str, list[str]] = {
+    "guidance_staff": [
+        "exams.create",
+        "exams.update",
+        "behavior.resolve",
+        "reports.export",
+        "sessions.grade",
+    ],
+    "program_head": [
+        "exams.create",
+        "exams.update",
+        "exams.approve",
+        "behavior.resolve",
+        "reports.export",
+        "sessions.grade",
+    ],
     "faculty": [
         "exams.create",
         "exams.update",
@@ -51,6 +75,6 @@ ROLE_DEFAULT_ACTIONS: dict[str, list[str]] = {
         "reports.export",
         "sessions.grade",
     ],
-    "student_assistant": [],
+    "proctor": [],
     "student": [],
 }

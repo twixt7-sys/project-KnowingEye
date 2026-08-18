@@ -247,6 +247,12 @@ def exam_publish_readiness(exam: Exam) -> dict[str, Any]:
 def publish_exam(exam: Exam, user) -> ExamLifecycleResult:
     """Transition a draft exam to the active state.
 
+    Per the Directive's Area 01 "Administrator responsibilities" hierarchy,
+    a non-admin creator's exam must carry an APPROVED approval_status before
+    it can go live - the administrator no longer has to touch every exam,
+    but a Level 1 (program head) sign-off still gates publish. Admins retain
+    the bypass they hold everywhere else in this module.
+
     Args:
         exam: The exam to publish.
         user: The requesting user (must be able to modify the exam).
@@ -256,10 +262,22 @@ def publish_exam(exam: Exam, user) -> ExamLifecycleResult:
 
     Raises:
         PermissionDenied: If the user cannot modify the exam.
-        ValidationError: If the exam is not a draft or fails readiness checks.
+        ValidationError: If the exam is not a draft, isn't approved yet, or
+            fails readiness checks.
     """
     assert_can_modify_exam(exam, user)
     assert_exam_editable(exam)
+
+    if not (user.is_admin() or getattr(user, "is_superuser", False)):
+        if exam.approval_status != Exam.ApprovalStatus.APPROVED:
+            raise ValidationError(
+                {
+                    "approval_status": (
+                        "This exam must be submitted for review and approved by a "
+                        "program head before it can be published."
+                    )
+                }
+            )
 
     readiness = exam_publish_readiness(exam)
     if not readiness["ready"]:
@@ -268,6 +286,110 @@ def publish_exam(exam: Exam, user) -> ExamLifecycleResult:
     exam.status = Exam.Status.ACTIVE
     exam.save(update_fields=["status", "updated_at"])
     return ExamLifecycleResult(exam=exam, message="Exam published successfully.")
+
+
+def _record_approval_event(exam: Exam, actor, action: str, note: str = "") -> None:
+    from .models import ExamApprovalEvent
+
+    ExamApprovalEvent.objects.create(exam=exam, actor=actor, action=action, note=note)
+
+
+def submit_exam_for_approval(exam: Exam, user) -> ExamLifecycleResult:
+    """Submit a draft exam for program-head review.
+
+    Any user who can modify the exam (creator, or admin) may submit it.
+    Resets a prior rejection back into the review queue, clearing the old
+    rejection note.
+
+    Raises:
+        PermissionDenied: If the user cannot modify the exam.
+        ValidationError: If the exam is not a draft, or is already pending.
+    """
+    assert_can_modify_exam(exam, user)
+    assert_exam_editable(exam)
+
+    if exam.approval_status == Exam.ApprovalStatus.PENDING:
+        raise ValidationError({"approval_status": "This exam is already pending review."})
+
+    readiness = exam_publish_readiness(exam)
+    if not readiness["ready"]:
+        raise ValidationError({"submit": readiness["issues"]})
+
+    exam.approval_status = Exam.ApprovalStatus.PENDING
+    exam.submitted_by = user
+    exam.submitted_at = timezone.now()
+    exam.rejection_note = ""
+    exam.save(
+        update_fields=[
+            "approval_status",
+            "submitted_by",
+            "submitted_at",
+            "rejection_note",
+            "updated_at",
+        ]
+    )
+    _record_approval_event(exam, user, "submit")
+    return ExamLifecycleResult(exam=exam, message="Exam submitted for review.")
+
+
+def assert_can_review_exam(user) -> None:
+    """Ensure ``user`` holds Level 1 approval authority (program head/admin)."""
+    from core.security import service as security
+
+    if user.is_admin() or getattr(user, "is_superuser", False):
+        return
+    if security.can(user, "exams.approve"):
+        return
+    raise PermissionDenied("You do not have permission to review exam submissions.")
+
+
+def approve_exam(exam: Exam, user) -> ExamLifecycleResult:
+    """Approve a pending exam submission.
+
+    Raises:
+        PermissionDenied: If the user lacks the ``exams.approve`` permission.
+        ValidationError: If the exam is not currently pending review.
+    """
+    assert_can_review_exam(user)
+
+    if exam.approval_status != Exam.ApprovalStatus.PENDING:
+        raise ValidationError({"approval_status": "Only a pending exam can be approved."})
+
+    exam.approval_status = Exam.ApprovalStatus.APPROVED
+    exam.reviewed_by = user
+    exam.reviewed_at = timezone.now()
+    exam.save(update_fields=["approval_status", "reviewed_by", "reviewed_at", "updated_at"])
+    _record_approval_event(exam, user, "approve")
+    return ExamLifecycleResult(exam=exam, message="Exam approved.")
+
+
+def reject_exam(exam: Exam, user, note: str = "") -> ExamLifecycleResult:
+    """Reject a pending exam submission, returning it to the creator for revision.
+
+    Raises:
+        PermissionDenied: If the user lacks the ``exams.approve`` permission.
+        ValidationError: If the exam is not currently pending review.
+    """
+    assert_can_review_exam(user)
+
+    if exam.approval_status != Exam.ApprovalStatus.PENDING:
+        raise ValidationError({"approval_status": "Only a pending exam can be rejected."})
+
+    exam.approval_status = Exam.ApprovalStatus.REJECTED
+    exam.reviewed_by = user
+    exam.reviewed_at = timezone.now()
+    exam.rejection_note = note
+    exam.save(
+        update_fields=[
+            "approval_status",
+            "reviewed_by",
+            "reviewed_at",
+            "rejection_note",
+            "updated_at",
+        ]
+    )
+    _record_approval_event(exam, user, "reject", note=note)
+    return ExamLifecycleResult(exam=exam, message="Exam rejected.")
 
 
 def archive_exam(exam: Exam, user) -> ExamLifecycleResult:

@@ -114,6 +114,32 @@ class UserProfileViewSet(viewsets.ViewSet):
         request.user.save()
         return Response({"message": "Password changed successfully"})
 
+    @action(detail=False, methods=["post"], url_path="verify-email/request")
+    def request_email_verification(self, request):
+        """Send (or resend) the OTP code for the current user's email."""
+        from .otp_service import issue_otp
+
+        if request.user.email_verified:
+            return Response({"message": "Email is already verified."})
+        issue_otp(request.user)
+        return Response({"message": f"A verification code was sent to {request.user.email}."})
+
+    @action(detail=False, methods=["post"], url_path="verify-email/confirm")
+    def confirm_email_verification(self, request):
+        """Confirm the OTP code and mark the current user's email verified."""
+        from .otp_service import verify_otp
+
+        code = (request.data.get("code") or "").strip()
+        if not code:
+            return Response({"code": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+        verify_otp(request.user, code)
+        return Response(
+            {
+                "message": "Email verified.",
+                "user": UserDetailSerializer(request.user, context={"request": request}).data,
+            }
+        )
+
     @action(detail=False, methods=["post"], url_path="avatar")
     def upload_avatar(self, request):
         serializer = AvatarUploadSerializer(
@@ -225,8 +251,10 @@ class UserListViewSet(viewsets.ReadOnlyModelViewSet):
             {
                 "total": qs.count(),
                 "admins": qs.filter(role=User.Role.ADMIN).count(),
+                "guidance_staff": qs.filter(role=User.Role.GUIDANCE_STAFF).count(),
+                "program_heads": qs.filter(role=User.Role.PROGRAM_HEAD).count(),
                 "faculty": qs.filter(role=User.Role.FACULTY).count(),
-                "student_assistants": qs.filter(role=User.Role.STUDENT_ASSISTANT).count(),
+                "proctors": qs.filter(role=User.Role.PROCTOR).count(),
                 "students": qs.filter(role=User.Role.STUDENT).count(),
                 "inactive": qs.filter(is_active=False).count(),
             }

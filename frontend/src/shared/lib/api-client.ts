@@ -108,7 +108,7 @@ class ApiClient {
     password2: string;
     first_name: string;
     last_name: string;
-    avatar: File;
+    avatar?: File | null;
     role?: Role;
   }) {
     const form = new FormData();
@@ -118,7 +118,9 @@ class ApiClient {
     form.append("password2", userData.password2);
     form.append("first_name", userData.first_name);
     form.append("last_name", userData.last_name);
-    form.append("avatar", userData.avatar);
+    if (userData.avatar) {
+      form.append("avatar", userData.avatar);
+    }
     if (userData.role) {
       form.append("role", userData.role);
     }
@@ -162,6 +164,19 @@ class ApiClient {
       method: "POST",
       body: form,
     });
+  }
+
+  async requestEmailVerification() {
+    return this.request<{ message: string }>("/auth/profile/verify-email/request/", {
+      method: "POST",
+    });
+  }
+
+  async confirmEmailVerification(code: string) {
+    return this.request<{ message: string; user: ProfileUser }>(
+      "/auth/profile/verify-email/confirm/",
+      { method: "POST", body: JSON.stringify({ code }) },
+    );
   }
 
   async listUsers(params?: {
@@ -363,6 +378,32 @@ class ApiClient {
 
   async archiveExam(id: number) {
     return this.request<{ message: string }>(`/exams/${id}/archive/`, { method: "POST" });
+  }
+
+  async submitExamForReview(id: number) {
+    return this.request<{ message: string; exam: Exam }>(`/exams/${id}/submit/`, {
+      method: "POST",
+    });
+  }
+
+  async approveExam(id: number) {
+    return this.request<{ message: string; exam: Exam }>(`/exams/${id}/approve/`, {
+      method: "POST",
+    });
+  }
+
+  async rejectExam(id: number, note: string) {
+    return this.request<{ message: string; exam: Exam }>(`/exams/${id}/reject/`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    });
+  }
+
+  async getPendingReviewExams() {
+    const data = await this.request<{ results?: Exam[]; count?: number } | Exam[]>(
+      "/exams/pending-review/",
+    );
+    return Array.isArray(data) ? data : (data.results ?? []);
   }
 
   async listQuestions(examId: number) {

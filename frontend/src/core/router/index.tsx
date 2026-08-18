@@ -43,8 +43,8 @@ export const router = createBrowserRouter([
       { path: "dashboard", element: <Navigate to="/examiner" replace /> },
       { path: "student/dashboard", element: <Navigate to="/examinee" replace /> },
 
-      // Staff routes - module-gated so faculty/student_assistant see what
-      // their role grants by default, not just admin.
+      // Staff routes - module-gated so guidance_staff/program_head/faculty/
+      // proctor see what their role grants by default, not just admin.
       {
         path: "monitoring",
         element: (

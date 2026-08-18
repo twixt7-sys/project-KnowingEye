@@ -1,4 +1,4 @@
-import { Eye, Loader2, Power } from "lucide-react";
+import { Eye, Loader2, Power } from "@/shared/icons";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";

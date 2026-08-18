@@ -1,4 +1,4 @@
-import { Save } from "lucide-react";
+import { Save } from "@/shared/icons";
 
 import type { Exam } from "@/core/config/api";
 import { BuilderField } from "@/features/exams/components/builder/builder-primitives";

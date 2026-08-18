@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { FileAudio, FileImage, FileText } from "lucide-react";
+import { FileAudio, FileImage, FileText } from "@/shared/icons";
 
 import type { QuestionAttachment } from "@/core/config/api";
 

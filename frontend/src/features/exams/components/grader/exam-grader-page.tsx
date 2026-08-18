@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
-import { ArrowLeft, ClipboardList, Loader2, Save } from "lucide-react";
+import { ArrowLeft, ClipboardList, Loader2, Save } from "@/shared/icons";
 
 import { formatApiError } from "@/core/config/api";
 import {

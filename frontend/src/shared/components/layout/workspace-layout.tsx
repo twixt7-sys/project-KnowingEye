@@ -1,4 +1,4 @@
-import { ChevronLeft, LogOut, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronLeft, LogOut, Menu, PanelLeftClose, PanelLeftOpen } from "@/shared/icons";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { brand } from "../../../core/config/brand";
@@ -8,6 +8,7 @@ import { useAuth } from "../../../core/providers/auth-provider";
 import { CommandPalette } from "../common/command-palette";
 import { useConfirm } from "../common/confirm-dialog";
 import { ThemeToggle } from "../common/theme-toggle";
+import { VerifyEmailBanner } from "../common/verify-email-banner";
 import { WorkspaceAlertsBell } from "../common/workspace-alerts-bell";
 import { Drawer, DrawerContent, DrawerTitle } from "../ui/drawer";
 import { cn } from "../ui/utils";
@@ -133,7 +134,7 @@ export function WorkspaceLayout({ role, variant = "default", children }: Workspa
                 aria-hidden
               />
               <item.icon
-                strokeWidth={active ? 2 : 1.75}
+                weight={active ? "bold" : "regular"}
                 className={cn(
                   "h-4 w-4 shrink-0",
                   active
@@ -280,6 +281,7 @@ export function WorkspaceLayout({ role, variant = "default", children }: Workspa
 
         <main className="relative z-10 flex min-h-0 flex-1 flex-col">
           <div className="mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col px-4 py-4 sm:px-6 sm:py-5">
+            <VerifyEmailBanner />
             {children}
           </div>
         </main>

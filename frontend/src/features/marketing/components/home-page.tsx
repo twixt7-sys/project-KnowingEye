@@ -1,4 +1,4 @@
-import { ArrowRight, GraduationCap, UserCog } from "lucide-react";
+import { ArrowRight, GraduationCap, UserCog } from "@/shared/icons";
 import { Link } from "react-router";
 
 import { brand } from "@/core/config/brand";
@@ -68,7 +68,7 @@ export function HomePage() {
             </span>
             <portal.icon
               className="mb-4 h-6 w-6 text-primary transition-transform duration-200 group-hover:-translate-y-0.5"
-              strokeWidth={1.75}
+              weight="regular"
             />
             <h2 className="font-serif text-xl font-semibold tracking-tight">{portal.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

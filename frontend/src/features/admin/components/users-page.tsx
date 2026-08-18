@@ -7,7 +7,7 @@ import {
   ShieldCheck,
   ShieldOff,
   Users as UsersIcon,
-} from "lucide-react";
+} from "@/shared/icons";
 import { useState } from "react";
 
 import { type ProfileUser, type Role, formatApiError } from "@/core/config/api";
@@ -30,19 +30,30 @@ import { Input } from "@/shared/components/ui/input";
 import { useDebounce } from "@/shared/hooks/use-debounce";
 import { usePagination } from "@/shared/hooks/use-pagination";
 
-const ROLES: Role[] = ["ADMIN", "FACULTY", "STUDENT_ASSISTANT", "STUDENT"];
+const ROLES: Role[] = [
+  "ADMIN",
+  "GUIDANCE_STAFF",
+  "PROGRAM_HEAD",
+  "FACULTY",
+  "PROCTOR",
+  "STUDENT",
+];
 
 const ROLE_LABEL: Record<Role, string> = {
   ADMIN: "Admin",
-  FACULTY: "Faculty",
-  STUDENT_ASSISTANT: "Student Assistant",
-  STUDENT: "Student",
+  GUIDANCE_STAFF: "Guidance Staff",
+  PROGRAM_HEAD: "Program Head",
+  FACULTY: "Teacher / Exam Creator",
+  PROCTOR: "Proctor",
+  STUDENT: "Examinee",
 };
 
 const ROLE_BADGE: Record<Role, string> = {
   ADMIN: "bg-primary/10 text-primary border-primary/25",
+  GUIDANCE_STAFF: "bg-care/10 text-care border-care/25",
+  PROGRAM_HEAD: "bg-secondary/10 text-secondary border-secondary/25",
   FACULTY: "bg-secondary/10 text-secondary border-secondary/25",
-  STUDENT_ASSISTANT: "bg-accent/10 text-accent-foreground border-accent/25",
+  PROCTOR: "bg-accent/10 text-accent-foreground border-accent/25",
   STUDENT: "bg-muted text-muted-foreground border-border",
 };
 
@@ -73,8 +84,10 @@ export function UsersPage() {
   const stats = statsQuery.data ?? {
     total: 0,
     admins: 0,
+    guidance_staff: 0,
+    program_heads: 0,
     faculty: 0,
-    student_assistants: 0,
+    proctors: 0,
     students: 0,
     inactive: 0,
   };
@@ -123,12 +136,18 @@ export function UsersPage() {
                 icon: ShieldCheck,
                 tone: "success",
               },
-              { label: "Faculty", value: String(stats.faculty), icon: UsersIcon },
               {
-                label: "Student assistants",
-                value: String(stats.student_assistants),
+                label: "Guidance staff",
+                value: String(stats.guidance_staff),
                 icon: UsersIcon,
               },
+              {
+                label: "Program heads",
+                value: String(stats.program_heads),
+                icon: UsersIcon,
+              },
+              { label: "Faculty", value: String(stats.faculty), icon: UsersIcon },
+              { label: "Proctors", value: String(stats.proctors), icon: UsersIcon },
               { label: "Students", value: String(stats.students), icon: UsersIcon },
               {
                 label: "Inactive",

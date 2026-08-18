@@ -1,4 +1,4 @@
-import { LogOut, Menu, X } from "lucide-react";
+import { LogOut, Menu, X } from "@/shared/icons";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { brand } from "../../../core/config/brand";

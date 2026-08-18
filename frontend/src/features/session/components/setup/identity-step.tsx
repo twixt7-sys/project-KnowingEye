@@ -1,4 +1,4 @@
-import { Loader2, UserCheck } from "lucide-react";
+import { Loader2, UserCheck } from "@/shared/icons";
 
 import { Button } from "@/shared/components/ui/button";
 

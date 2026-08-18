@@ -6,7 +6,7 @@ import {
   Circle,
   Loader2,
   ScanFace,
-} from "lucide-react";
+} from "@/shared/icons";
 
 import {
   apiClient,

@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   AlertTriangle,
@@ -15,7 +14,8 @@ import {
   TrendingUp,
   Users,
   X,
-} from "lucide-react";
+} from "@/shared/icons";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
@@ -30,6 +30,7 @@ import { PageShell } from "@/shared/components/layout/page-shell";
 import { SectionPanel } from "@/shared/components/layout/section-panel";
 import { StatCard } from "@/shared/components/layout/stat-card";
 import { EmptyState } from "@/shared/components/patterns/empty-state";
+import { IrisGauge } from "@/shared/components/patterns/iris-gauge";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 
@@ -320,7 +321,10 @@ export function ExaminerDashboardPage() {
                       <p className="truncate font-mono text-[0.6875rem] tracking-[0.06em] text-primary">
                         {exam.exam_code ?? "UNCODED"}
                       </p>
-                      <StatusPill status={exam.status} />
+                      <div className="flex items-center gap-1.5">
+                        {exam.status === "draft" && <ApprovalPill status={exam.approval_status} />}
+                        <StatusPill status={exam.status} />
+                      </div>
                     </div>
 
                     <h3 className="mt-2 line-clamp-2 font-serif text-[1.0625rem] font-semibold leading-snug tracking-tight">
@@ -371,51 +375,64 @@ export function ExaminerDashboardPage() {
           )}
         </SectionPanel>
 
-        <SectionPanel
-          fill
-          title="Live sessions"
-          description="Examinees currently in progress."
-          actionHref="/monitoring"
-          actionLabel="Open monitoring"
-        >
-          {activeSessions.length === 0 ? (
-            <EmptyState
-              icon={Activity}
-              title="No live sessions"
-              description="When an examinee starts a monitored exam, their session appears here."
-            />
-          ) : (
-            <div className="min-h-0 flex-1 divide-y divide-border/60 overflow-y-auto">
-              {activeSessions.map((s) => {
-                const name = s.user_full_name || s.user;
-                return (
-                  <div key={s.id} className="flex items-center gap-3 px-4 py-3">
-                    <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary/15 font-serif text-sm font-semibold text-secondary">
-                      {(name?.[0] ?? "?").toUpperCase()}
-                      <span className="live-dot absolute -right-1 -top-1 !h-2 !w-2" aria-hidden />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{s.exam_title}</p>
-                    </div>
-                    <span
-                      className="shrink-0 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[0.65rem] tabular-nums text-muted-foreground"
-                      title="Behavior events"
-                    >
-                      {s.behavior_event_count} ev
-                    </span>
-                    <IconAction
-                      label="Inspect session"
-                      icon={Eye}
-                      tone="primary"
-                      to={`/monitoring/${s.id}`}
-                    />
-                  </div>
-                );
-              })}
+        <div className="flex min-h-0 flex-1 flex-col gap-4">
+          <SectionPanel title="Performance" description="Across all completed sessions.">
+            <div className="flex items-center justify-center gap-6 px-4 py-5">
+              <IrisGauge value={summary?.average_score ?? 0} label="Avg. score" tone="default" />
+              <IrisGauge
+                value={summary?.pass_rate ?? 0}
+                label="Pass rate"
+                tone={summary?.pass_rate != null && summary.pass_rate >= 60 ? "success" : "warning"}
+              />
             </div>
-          )}
-        </SectionPanel>
+          </SectionPanel>
+
+          <SectionPanel
+            fill
+            title="Live sessions"
+            description="Examinees currently in progress."
+            actionHref="/monitoring"
+            actionLabel="Open monitoring"
+          >
+            {activeSessions.length === 0 ? (
+              <EmptyState
+                icon={Activity}
+                title="No live sessions"
+                description="When an examinee starts a monitored exam, their session appears here."
+              />
+            ) : (
+              <div className="min-h-0 flex-1 divide-y divide-border/60 overflow-y-auto">
+                {activeSessions.map((s) => {
+                  const name = s.user_full_name || s.user;
+                  return (
+                    <div key={s.id} className="flex items-center gap-3 px-4 py-3">
+                      <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-secondary/15 font-serif text-sm font-semibold text-secondary">
+                        {(name?.[0] ?? "?").toUpperCase()}
+                        <span className="live-dot absolute -right-1 -top-1 !h-2 !w-2" aria-hidden />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{name}</p>
+                        <p className="truncate text-xs text-muted-foreground">{s.exam_title}</p>
+                      </div>
+                      <span
+                        className="shrink-0 rounded-md border border-border bg-muted/50 px-1.5 py-0.5 font-mono text-[0.65rem] tabular-nums text-muted-foreground"
+                        title="Behavior events"
+                      >
+                        {s.behavior_event_count} ev
+                      </span>
+                      <IconAction
+                        label="Inspect session"
+                        icon={Eye}
+                        tone="primary"
+                        to={`/monitoring/${s.id}`}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </SectionPanel>
+        </div>
       </div>
 
       {showCreate && (
@@ -608,4 +625,20 @@ function StatusPill({ status }: { status: string }) {
     archived: "bg-muted text-muted-foreground",
   };
   return <span className={`status-pill ${styles[status] ?? styles.archived}`}>{status}</span>;
+}
+
+/** Surfaces where a draft sits in the submit -> review -> approve chain (Directive A1). */
+function ApprovalPill({ status }: { status?: Exam["approval_status"] }) {
+  if (!status || status === "not_submitted") return null;
+  const styles: Record<string, string> = {
+    pending: "bg-status-watch/12 text-status-watch",
+    approved: "bg-status-safe/12 text-status-safe",
+    rejected: "bg-status-alert/12 text-status-alert",
+  };
+  const labels: Record<string, string> = {
+    pending: "pending review",
+    approved: "approved",
+    rejected: "rejected",
+  };
+  return <span className={`status-pill ${styles[status] ?? ""}`}>{labels[status] ?? status}</span>;
 }

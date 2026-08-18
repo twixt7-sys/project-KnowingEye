@@ -1,4 +1,4 @@
-import { Clock } from "lucide-react";
+import { Clock } from "@/shared/icons";
 
 function formatTime(seconds: number) {
   const hours = Math.floor(seconds / 3600);

@@ -3,11 +3,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   Building2,
+  Pencil,
   Plus,
+  Power,
+  PowerOff,
   RefreshCw,
   Trash2,
   X,
-} from "lucide-react";
+} from "@/shared/icons";
 
 import { formatApiError, type Department } from "@/core/config/api";
 import {
@@ -18,6 +21,7 @@ import {
 import { adminQueries } from "@/features/admin/queries/queries";
 import { adminKeys } from "@/features/admin/queries/keys";
 import { useConfirm } from "@/shared/components/common/confirm-dialog";
+import { IconAction } from "@/shared/components/common/icon-action";
 import { ScrollableDataTable } from "@/shared/components/common/scrollable-data-table";
 import { PageShell } from "@/shared/components/layout/page-shell";
 import { SectionPanel } from "@/shared/components/layout/section-panel";
@@ -151,7 +155,7 @@ export function SettingsPage() {
 
       <SectionPanel
         title="Departments"
-        description="Each department's abbreviation is used in auto-generated exam codes (e.g. IIT-2026-A)."
+        description="Each department's abbreviation is used in auto-generated exam codes (e.g. WCC-2026-A)."
       >
         <ScrollableDataTable>
           <table className="data-table">
@@ -185,7 +189,7 @@ export function SettingsPage() {
                   </td>
                   <td>
                     {dept.is_active !== false ? (
-                      <span className="status-pill bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                      <span className="status-pill bg-status-safe/12 text-status-safe">
                         active
                       </span>
                     ) : (
@@ -193,25 +197,24 @@ export function SettingsPage() {
                     )}
                   </td>
                   <td>
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openEdit(dept)}>
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                    <div className="flex items-center justify-end gap-0.5">
+                      <IconAction
+                        label="Edit department"
+                        icon={Pencil}
+                        tone="primary"
+                        onClick={() => openEdit(dept)}
+                      />
+                      <IconAction
+                        label={dept.is_active !== false ? "Deactivate" : "Activate"}
+                        icon={dept.is_active !== false ? PowerOff : Power}
                         onClick={() => toggleMutation.mutate(dept)}
-                      >
-                        {dept.is_active !== false ? "Deactivate" : "Activate"}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-rose-700 hover:bg-rose-500/10 dark:text-rose-300"
+                      />
+                      <IconAction
+                        label="Delete department"
+                        icon={Trash2}
+                        tone="danger"
                         onClick={() => remove(dept)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                     </div>
                   </td>
                 </tr>
@@ -227,17 +230,14 @@ export function SettingsPage() {
           onClick={() => setShowForm(false)}
         >
           <div className="surface-panel w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-xl font-semibold">
-                {editing ? "Edit department" : "Add department"}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="rounded-lg p-2 hover:bg-accent"
-              >
-                <X className="h-5 w-5" />
-              </button>
+            <div className="mb-6 flex items-start justify-between">
+              <div>
+                <p className="kicker">Departments</p>
+                <h3 className="mt-1.5 font-serif text-xl font-semibold tracking-tight">
+                  {editing ? "Edit department" : "Add department"}
+                </h3>
+              </div>
+              <IconAction label="Close" icon={X} onClick={() => setShowForm(false)} />
             </div>
 
             <form
@@ -264,7 +264,7 @@ export function SettingsPage() {
                   onChange={(e) =>
                     setForm({ ...form, abbreviation: e.target.value.toUpperCase() })
                   }
-                  placeholder="IIT"
+                  placeholder="WCC"
                   maxLength={16}
                   className="font-mono uppercase"
                 />

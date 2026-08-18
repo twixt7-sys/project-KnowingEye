@@ -1,4 +1,4 @@
-import { Activity, ArrowRight, Camera, CheckCircle, FileText } from "lucide-react";
+import { Activity, ArrowRight, Camera, CheckCircle, FileText } from "@/shared/icons";
 import { Link, Navigate } from "react-router";
 
 import { brand } from "@/core/config/brand";
@@ -88,7 +88,7 @@ function ExamineeLanding() {
                   style={{ marginLeft: `${i * 1.25}rem` }}
                 >
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary/12 text-secondary">
-                    <item.icon className="h-5 w-5" strokeWidth={1.75} />
+                    <item.icon className="h-5 w-5" weight="regular" />
                   </span>
                   <span>
                     <span className="block font-medium leading-tight">{item.title}</span>

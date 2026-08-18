@@ -1,16 +1,21 @@
 import {
-  Camera,
-  Brain,
-  Eye,
-  ShieldCheck,
-  LineChart,
-  FileCheck,
   Activity,
-  Video,
+  Brain,
+  Camera,
   Database,
-} from "lucide-react";
+  Eye,
+  FileCheck,
+  LineChart,
+  ShieldCheck,
+  Video,
+} from "@/shared/icons";
 
-import { PageHeaderV2 } from "@/shared/components/patterns/page-header-v2";
+import {
+  IndexCard,
+  SectionHeading,
+  StampChip,
+  TickList,
+} from "./marketing-primitives";
 
 const coreFeatures = [
   {
@@ -104,6 +109,20 @@ const techStack = [
   },
 ];
 
+const detectionModels = [
+  "MediaPipe for face and pose detection",
+  "CNN for feature extraction",
+  "FaceNet for face recognition",
+  "ArcFace for identity verification",
+];
+
+const analysisFeatures = [
+  "Face detection & tracking",
+  "Head pose estimation",
+  "Eye gaze tracking",
+  "Posture recognition",
+];
+
 const workflowSteps = [
   "User logs in and starts exam session",
   "System verifies identity via face recognition",
@@ -115,122 +134,148 @@ const workflowSteps = [
   "Reports are generated after exam completion",
 ];
 
+const metrics = [
+  { value: "95%+", label: "Detection accuracy" },
+  { value: "<100ms", label: "Response latency" },
+  { value: "100%", label: "Automated monitoring" },
+];
+
 export function FeaturesPage() {
   return (
-    <div className="w-full max-w-6xl py-4">
-      <PageHeaderV2
-        title="Platform Features"
-        description="A comprehensive examination platform powered by advanced AI and computer vision technology to ensure academic integrity."
-        className="text-center [&_.page-description]:mx-auto [&_.page-description]:max-w-3xl"
-      />
+    <div className="mx-auto w-full max-w-6xl py-4">
+      {/* Hero */}
+      <header className="mx-auto mb-16 max-w-3xl text-center">
+        <StampChip>Platform capabilities</StampChip>
+        <h1 className="mt-5 font-serif text-4xl font-semibold tracking-tight sm:text-5xl">
+          Platform Features
+        </h1>
+        <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
+          A comprehensive examination platform powered by advanced AI and computer vision
+          technology to ensure academic integrity.
+        </p>
+      </header>
 
-      <section className="mb-20">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {coreFeatures.map((feature) => (
-            <div
+      {/* Capability index — numbered custom cards */}
+      <section className="mb-24">
+        <SectionHeading
+          kicker="Capability index"
+          title="Six systems, one platform"
+          description="Every capability is catalogued below — from authoring an exam to the report that lands on the examiner's desk."
+        />
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {coreFeatures.map((feature, i) => (
+            <IndexCard
               key={feature.category}
-              className="rounded-xl border border-border bg-card p-6 transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
+              index={String(i + 1).padStart(2, "0")}
+              icon={feature.icon}
+              title={feature.category}
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-                <feature.icon className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="mb-4 text-xl font-semibold">{feature.category}</h3>
-              <ul className="space-y-2">
-                {feature.items.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm">
-                    <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                    <span className="text-muted-foreground">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              <TickList items={feature.items} />
+            </IndexCard>
           ))}
         </div>
       </section>
 
-      <section className="mb-20 rounded-2xl bg-gradient-to-b from-accent/20 to-transparent py-16">
-        <PageHeaderV2
+      {/* Instrument rack — one panel, divided cells */}
+      <section className="mb-24">
+        <SectionHeading
+          kicker="Under the hood"
           title="AI Technology Stack"
-          description="Powered by state-of-the-art deep learning and computer vision models"
-          className="text-center [&_.page-description]:mx-auto [&_.page-description]:max-w-2xl"
+          description="Powered by state-of-the-art deep learning and computer vision models."
         />
-
-        <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {techStack.map((tech) => (
-            <div
-              key={tech.name}
-              className="rounded-xl border border-border bg-card p-6 text-center transition-colors hover:border-primary/50"
-            >
-              <tech.icon className="mx-auto mb-4 h-10 w-10 text-primary" />
-              <h3 className="mb-2 font-semibold">{tech.name}</h3>
-              <p className="text-sm text-muted-foreground">{tech.description}</p>
+        <div className="surface-panel grid grid-cols-1 divide-y divide-border/70 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
+          {techStack.map((tech, i) => (
+            <div key={tech.name} className="relative p-6 sm:p-7">
+              <span className="portal-index absolute right-5 top-5" aria-hidden>
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <tech.icon className="h-7 w-7 text-primary" weight="light" />
+              <h3 className="mt-4 font-serif text-lg font-semibold tracking-tight">
+                {tech.name}
+              </h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                {tech.description}
+              </p>
             </div>
           ))}
         </div>
 
-        <div className="mx-auto max-w-4xl rounded-xl border border-border bg-card p-8">
-          <h3 className="mb-6 text-2xl font-semibold">AI Capabilities</h3>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {/* Spec sheet */}
+        <div className="tick-frame surface-panel mx-auto mt-10 max-w-4xl p-7 sm:p-9">
+          <span className="tick-frame-corners" aria-hidden />
+          <h3 className="text-center font-serif text-2xl font-semibold tracking-tight">
+            AI Capabilities
+          </h3>
+          <div className="mt-7 grid gap-x-12 gap-y-8 md:grid-cols-2">
             <div>
-              <h4 className="mb-3 font-semibold text-primary">Detection Models</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>MediaPipe for face and pose detection</li>
-                <li>CNN for feature extraction</li>
-                <li>FaceNet for face recognition</li>
-                <li>ArcFace for identity verification</li>
-              </ul>
+              <p className="kicker mb-4">Detection models</p>
+              <ol className="space-y-2.5">
+                {detectionModels.map((item, i) => (
+                  <li key={item} className="flex items-baseline gap-3 text-sm">
+                    <span className="font-mono text-[0.6875rem] text-gold">
+                      D{i + 1}
+                    </span>
+                    <span className="flex-1 border-b border-dotted border-border/80 pb-1 text-muted-foreground">
+                      {item}
+                    </span>
+                  </li>
+                ))}
+              </ol>
             </div>
             <div>
-              <h4 className="mb-3 font-semibold text-secondary">Analysis Features</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>Face detection & tracking</li>
-                <li>Head pose estimation</li>
-                <li>Eye gaze tracking</li>
-                <li>Posture recognition</li>
-              </ul>
+              <p className="kicker mb-4">Analysis features</p>
+              <ol className="space-y-2.5">
+                {analysisFeatures.map((item, i) => (
+                  <li key={item} className="flex items-baseline gap-3 text-sm">
+                    <span className="font-mono text-[0.6875rem] text-gold">
+                      A{i + 1}
+                    </span>
+                    <span className="flex-1 border-b border-dotted border-border/80 pb-1 text-muted-foreground">
+                      {item}
+                    </span>
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mb-20">
-        <PageHeaderV2
+      {/* Workflow — timeline spine */}
+      <section className="mb-24">
+        <SectionHeading
+          kicker="How it runs"
           title="Complete Workflow"
-          description="End-to-end process from exam creation to behavioral reporting"
-          className="text-center [&_.page-description]:mx-auto [&_.page-description]:max-w-2xl"
+          description="End-to-end process from exam creation to behavioral reporting."
         />
-
-        <div className="mx-auto max-w-3xl space-y-4">
+        <ol className="relative mx-auto max-w-2xl space-y-0 border-l border-border pl-0">
           {workflowSteps.map((step, index) => (
-            <div
-              key={step}
-              className="flex items-center gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/50"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary font-semibold text-white">
-                {index + 1}
-              </div>
-              <p>{step}</p>
-            </div>
+            <li key={step} className="relative flex items-start gap-5 pb-7 pl-8 last:pb-0">
+              <span
+                className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rotate-45 border border-gold/70 bg-background"
+                aria-hidden
+              />
+              <span className="w-8 shrink-0 pt-0.5 font-mono text-xs font-medium tabular-nums text-primary">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <p className="text-[0.9375rem] leading-relaxed text-foreground/85">{step}</p>
+            </li>
           ))}
-        </div>
+        </ol>
       </section>
 
-      <section className="rounded-2xl bg-gradient-to-b from-transparent via-accent/20 to-transparent py-16">
-        <PageHeaderV2 title="Performance Metrics" className="text-center" />
-        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-3">
-          {[
-            { value: "95%+", label: "Detection Accuracy" },
-            { value: "<100ms", label: "Response Latency" },
-            { value: "100%", label: "Automated Monitoring" },
-          ].map((metric) => (
-            <div
-              key={metric.label}
-              className="rounded-xl border border-border bg-card p-8 text-center"
-            >
-              <div className="mb-2 font-serif text-4xl font-semibold text-primary">
+      {/* Metrics band */}
+      <section className="mb-8">
+        <SectionHeading kicker="Measured" title="Performance Metrics" />
+        <div className="surface-panel mx-auto grid max-w-4xl grid-cols-1 divide-y divide-border/70 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          {metrics.map((metric) => (
+            <div key={metric.label} className="p-8 text-center">
+              <p className="font-mono text-4xl font-medium tabular-nums tracking-tight text-primary">
                 {metric.value}
-              </div>
-              <p className="text-muted-foreground">{metric.label}</p>
+              </p>
+              <p className="mt-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground">
+                {metric.label}
+              </p>
             </div>
           ))}
         </div>

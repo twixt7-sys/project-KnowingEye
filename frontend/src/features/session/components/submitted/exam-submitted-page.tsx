@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
-import { CheckCircle, FileText, Home, Loader2 } from "lucide-react";
+import { CheckCircle, FileText, Home, Loader2 } from "@/shared/icons";
 
 import { StepFlow } from "@/shared/components/patterns/step-flow";
 import { Button } from "@/shared/components/ui/button";

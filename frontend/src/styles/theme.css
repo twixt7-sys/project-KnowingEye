@@ -1,146 +1,155 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Knowing Eye — "Registrar" design language.
+ * Knowing Eye — "Observation Deck" design language.
  *
- * Warm paper surfaces, deep pine ink, and a single brass accent; numerals and
- * micro-labels set in the data mono. Light mode reads like an institutional
- * ledger, dark mode like an after-hours invigilation room. All colors are
- * consumed through @theme inline -> Tailwind utilities (bg-primary,
- * text-secondary, ...), so adjusting a value here restyles the whole app.
+ * A navy command-center: deep navy chrome, cool paper-white panels on a
+ * faint slate-blue canvas, azure as the working accent, and a strict
+ * safe/watch/alert signal ramp that also drives the data-viz. LCC green is
+ * recast as the "safe/pass/present" signal rather than the primary hue.
+ * Numerals and micro-labels set in the data mono. All colors are consumed
+ * through @theme inline -> Tailwind utilities (bg-primary, text-secondary,
+ * ...), so adjusting a value here restyles the whole app.
  */
 :root {
   --font-size: 16px;
   --motion-fast: 150ms;
   --motion-normal: 250ms;
 
-  --status-safe: #1e6a44;
-  --status-watch: #8f6a10;
-  --status-alert: #a83a2e;
+  --status-safe: #1e8658;
+  --status-watch: #a16b16;
+  --status-alert: #c23b32;
 
-  --background: #efede2;
-  --grid-bg: #ebe8d9;
-  --foreground: #1b2019;
-  --card: #faf9f2;
-  --card-foreground: #1b2019;
-  --popover: #fffdf6;
-  --popover-foreground: #1b2019;
-  --primary: #205e42;
-  --primary-foreground: #f5f3e7;
-  --secondary: #2c6e5e;
-  --secondary-foreground: #eef7f3;
-  --muted: #e3dfcd;
-  --muted-foreground: #60685a;
-  --accent: #dde4d0;
-  --accent-foreground: #234531;
-  --destructive: #a83a2e;
+  --background: #e9eef6;
+  --grid-bg: #e4eaf4;
+  --foreground: #132743;
+  --card: #ffffff;
+  --card-foreground: #132743;
+  --popover: #ffffff;
+  --popover-foreground: #132743;
+  --primary: #2456a6;
+  --primary-foreground: #f4f8ff;
+  --secondary: #1c7b92;
+  --secondary-foreground: #effafc;
+  --muted: #dfe6f1;
+  --muted-foreground: #566481;
+  --accent: #dbe6f6;
+  --accent-foreground: #1b3a68;
+  --destructive: #c23b32;
   --destructive-foreground: #ffffff;
-  --border: #d3ceb9;
-  --input: #c6c0a8;
-  --input-background: rgba(27, 32, 25, 0.05);
-  --form-field-bg: rgba(27, 32, 25, 0.055);
-  --form-field-bg-hover: rgba(27, 32, 25, 0.085);
-  --form-field-border: rgba(27, 32, 25, 0.16);
-  --switch-background: #b7b19a;
+  --border: #d2dcea;
+  --input: #7b95bf;
+  --input-background: rgba(19, 39, 67, 0.05);
+  --form-field-bg: rgba(19, 39, 67, 0.05);
+  --form-field-bg-hover: rgba(19, 39, 67, 0.08);
+  --form-field-border: rgba(19, 39, 67, 0.5);
+  --switch-background: #aebccf;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #205e42;
+  --ring: #2456a6;
 
-  /* Brass — the single warm accent, used sparingly for rules and marks. */
-  --gold: #8f6f1d;
+  /* Brass — the single warm rule accent, used sparingly for marks and rules. */
+  --gold: #a67c2e;
 
   /* Care — warm clay accent for the Wellness and Care Center voice. */
-  --care: #b95f4a;
-  --care-soft: rgba(185, 95, 74, 0.14);
+  --care: #c8503a;
+  --care-soft: rgba(207, 101, 82, 0.14);
 
-  --chart-1: #205e42;
-  --chart-2: #2c6e5e;
-  --chart-3: #7d9a55;
-  --chart-4: #b08a28;
-  --chart-5: #4f6d8f;
+  /* Subtle tinted surfaces — not every panel is flat --card. */
+  --surface-tint: #f3f7fc;
+  --surface-tint-strong: #eaf1fb;
+
+  --chart-1: #2456a6;
+  --chart-2: #1f8aa3;
+  --chart-3: #1f8a5b;
+  --chart-4: #c98a1e;
+  --chart-5: #5b57c9;
 
   --radius: 0.5rem;
 
-  --sidebar: #e8e5d5;
-  --sidebar-foreground: #1b2019;
-  --sidebar-primary: #205e42;
-  --sidebar-primary-foreground: #f5f3e7;
-  --sidebar-accent: #dde4d0;
-  --sidebar-accent-foreground: #234531;
-  --sidebar-border: #d3ceb9;
-  --sidebar-ring: #205e42;
+  --sidebar: #10203a;
+  --sidebar-foreground: #cdd9ec;
+  --sidebar-primary: #6ea8ef;
+  --sidebar-primary-foreground: #0a1526;
+  --sidebar-accent: rgba(64, 120, 205, 0.18);
+  --sidebar-accent-foreground: #eaf1fb;
+  --sidebar-border: #1c3253;
+  --sidebar-ring: #6ea8ef;
 
-  --grid-line-color: rgba(32, 94, 66, 0.08);
+  --grid-line-color: rgba(36, 86, 166, 0.08);
   --grid-radial-gradient: radial-gradient(
     circle at 85% 8%,
-    rgba(32, 94, 66, 0.07) 0%,
+    rgba(36, 86, 166, 0.07) 0%,
     transparent 55%
   );
 
-  /* Institutional brand anchors (LCC). */
+  /* Institutional brand anchors (LCC) — fixed across themes. */
   --lcc-green: #1b4d36;
-  --lcc-green-vibrant: #205e42;
+  --lcc-green-vibrant: #1f8a5b;
   --lcc-green-light: #3f8763;
   --lcc-white: #f7f5ea;
-  --lcc-blue: #35597e;
-  --lcc-yellow: #b08a28;
+  --lcc-blue: #10203a;
+  --lcc-yellow: #a67c2e;
 }
 
 .dark {
-  --status-safe: #85c79c;
-  --status-watch: #d9ae45;
+  --status-safe: #57c493;
+  --status-watch: #e0b247;
   --status-alert: #e07a6b;
 
-  --background: #12160f;
-  --grid-bg: #10140d;
-  --foreground: #eceadb;
-  --card: #191e15;
-  --card-foreground: #eceadb;
-  --popover: #1e2419;
-  --popover-foreground: #eceadb;
-  --primary: #85c79c;
-  --primary-foreground: #0f2718;
-  --secondary: #79bfae;
-  --secondary-foreground: #0c211c;
-  --muted: #242a1f;
-  --muted-foreground: #a2aa93;
-  --accent: #283021;
-  --accent-foreground: #cadfb2;
+  --background: #0a1322;
+  --grid-bg: #081020;
+  --foreground: #d7e2f2;
+  --card: #0f1b30;
+  --card-foreground: #d7e2f2;
+  --popover: #12213a;
+  --popover-foreground: #d7e2f2;
+  --primary: #5b9af0;
+  --primary-foreground: #07182e;
+  --secondary: #3fb0c9;
+  --secondary-foreground: #06232a;
+  --muted: #182740;
+  --muted-foreground: #8fa2c0;
+  --accent: #1a2c48;
+  --accent-foreground: #cfe0f7;
   --destructive: #e07a6b;
-  --destructive-foreground: #ffffff;
-  --border: #333a2c;
-  --input: #414a38;
+  --destructive-foreground: #1a0805;
+  --border: #22344f;
+  --input: #476799;
   --input-background: rgba(0, 0, 0, 0.42);
-  --form-field-bg: rgba(0, 0, 0, 0.48);
-  --form-field-bg-hover: rgba(0, 0, 0, 0.6);
-  --form-field-border: rgba(255, 255, 255, 0.13);
-  --switch-background: #39412f;
-  --ring: #85c79c;
+  --form-field-bg: rgba(0, 0, 0, 0.42);
+  --form-field-bg-hover: rgba(0, 0, 0, 0.58);
+  --form-field-border: rgba(255, 255, 255, 0.35);
+  --switch-background: #2f4160;
+  --ring: #5b9af0;
 
   --gold: #d4aa3d;
 
-  --care: #e29a86;
-  --care-soft: rgba(226, 154, 134, 0.14);
+  --care: #e2917d;
+  --care-soft: rgba(226, 145, 125, 0.14);
 
-  --chart-1: #85c79c;
-  --chart-2: #79bfae;
-  --chart-3: #b3cc8a;
-  --chart-4: #d9ae45;
-  --chart-5: #8aa8c9;
+  --surface-tint: #12213a;
+  --surface-tint-strong: #16273f;
 
-  --sidebar: #161b12;
-  --sidebar-foreground: #eceadb;
-  --sidebar-primary: #85c79c;
-  --sidebar-primary-foreground: #0f2718;
-  --sidebar-accent: #283021;
-  --sidebar-accent-foreground: #cadfb2;
-  --sidebar-border: #2d3427;
-  --sidebar-ring: #85c79c;
+  --chart-1: #5b9af0;
+  --chart-2: #3fb0c9;
+  --chart-3: #57c493;
+  --chart-4: #e0b247;
+  --chart-5: #8f8ae6;
 
-  --grid-line-color: rgba(133, 199, 156, 0.07);
+  --sidebar: #081020;
+  --sidebar-foreground: #c3d2e8;
+  --sidebar-primary: #6ea8ef;
+  --sidebar-primary-foreground: #071120;
+  --sidebar-accent: rgba(64, 120, 205, 0.16);
+  --sidebar-accent-foreground: #eaf1fb;
+  --sidebar-border: #16273f;
+  --sidebar-ring: #6ea8ef;
+
+  --grid-line-color: rgba(91, 154, 240, 0.08);
   --grid-radial-gradient: radial-gradient(
     circle at 85% 8%,
-    rgba(133, 199, 156, 0.06) 0%,
+    rgba(91, 154, 240, 0.07) 0%,
     transparent 55%
   );
 }
@@ -171,6 +180,8 @@
   --color-ring: var(--ring);
   --color-gold: var(--gold);
   --color-care: var(--care);
+  --color-surface-tint: var(--surface-tint);
+  --color-surface-tint-strong: var(--surface-tint-strong);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -213,7 +224,6 @@
   h2,
   h3 {
     font-family: var(--font-serif);
-    font-variation-settings: "opsz" 40;
     letter-spacing: -0.015em;
   }
 
@@ -421,13 +431,24 @@
   }
 }
 
+/* Iris gauge — the arc sweeps in from zero on mount. */
+.iris-gauge__arc {
+  transition: stroke-dashoffset 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iris-gauge__arc {
+    transition: none;
+  }
+}
+
 /* ---- Surfaces --------------------------------------------------------- */
 
 .surface-panel {
   border-radius: calc(var(--radius) + 2px);
   border: 1px solid var(--border);
   background: var(--card);
-  box-shadow: 0 1px 2px rgba(27, 32, 25, 0.04), 0 2px 8px rgba(27, 32, 25, 0.04);
+  box-shadow: 0 1px 2px rgba(19, 39, 67, 0.04), 0 2px 8px rgba(19, 39, 67, 0.04);
 }
 
 .dark .surface-panel {
@@ -445,16 +466,57 @@
 .surface-panel-interactive:hover {
   border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
   transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(27, 32, 25, 0.05), 0 14px 32px rgba(27, 32, 25, 0.09);
+  box-shadow: 0 2px 4px rgba(19, 39, 67, 0.05), 0 14px 32px rgba(19, 39, 67, 0.09);
 }
 
 .dark .surface-panel-interactive:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.45);
 }
 
+/* A quietly tinted panel — for surfaces that should read as "in the same
+   room" as the primary accent without competing with it. */
+.surface-panel--tint {
+  background: var(--surface-tint);
+}
+
+.surface-panel--tint-strong {
+  background: var(--surface-tint-strong);
+}
+
+/* Corner "lens" motif — a soft azure glow in one corner, echoing the app's
+   watching-eye signature. Opt-in on hero/feature panels. */
+.lens-corner {
+  position: relative;
+  overflow: hidden;
+}
+
+.lens-corner::after {
+  content: "";
+  position: absolute;
+  top: -35%;
+  right: -20%;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary) 16%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.dark .lens-corner::after {
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary) 22%, transparent) 0%,
+    transparent 70%
+  );
+}
+
 /*
- * Greeting band — the warm welcome strip on workspace dashboards.
- * Pine wash from the left, a clay (care) glow in the corner, dot grid on top.
+ * Greeting band — the welcome strip on workspace dashboards.
+ * Azure wash from the left, a clay (care) glow in the corner, dot grid on top.
  */
 .greeting-band {
   position: relative;
@@ -467,8 +529,8 @@
       color-mix(in srgb, var(--gold) 9%, transparent),
       transparent 40%
     ),
-    linear-gradient(112deg, color-mix(in srgb, var(--primary) 13%, var(--card)) 0%, var(--card) 55%);
-  box-shadow: 0 1px 2px rgba(27, 32, 25, 0.04), 0 2px 8px rgba(27, 32, 25, 0.04);
+    linear-gradient(112deg, color-mix(in srgb, var(--primary) 16%, var(--card)) 0%, var(--card) 55%);
+  box-shadow: 0 1px 2px rgba(19, 39, 67, 0.04), 0 2px 8px rgba(19, 39, 67, 0.04);
 }
 
 .greeting-band--examinee {
@@ -480,7 +542,7 @@
     ),
     linear-gradient(
       112deg,
-      color-mix(in srgb, var(--secondary) 14%, var(--card)) 0%,
+      color-mix(in srgb, var(--secondary) 17%, var(--card)) 0%,
       var(--card) 55%
     );
 }
@@ -715,7 +777,7 @@
   background: var(--card);
   padding: 0.625rem;
   box-shadow: 0 0 0 6px var(--background), 0 0 0 7px
-    color-mix(in srgb, var(--border) 80%, transparent), 0 12px 32px rgba(27, 32, 25, 0.14);
+    color-mix(in srgb, var(--border) 80%, transparent), 0 12px 32px rgba(19, 39, 67, 0.14);
 }
 
 @media (min-width: 640px) {
@@ -814,7 +876,6 @@
 
 .hero-title {
   font-family: var(--font-serif);
-  font-variation-settings: "opsz" 144;
   font-size: 3rem;
   font-weight: 560;
   line-height: 1.02;
@@ -939,7 +1000,6 @@
 
 .page-title {
   font-family: var(--font-serif);
-  font-variation-settings: "opsz" 60;
   font-size: 1.625rem;
   font-weight: 560;
   line-height: 1.15;
@@ -986,12 +1046,28 @@
 }
 
 .section-panel .section-header {
+  position: relative;
   border-bottom: 1px solid var(--border);
-  padding: 1rem 1.25rem;
+  padding: 1rem 1.25rem 1rem 1.5rem;
   background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--muted) 26%, transparent),
+    color-mix(in srgb, var(--accent) 55%, transparent),
     transparent
+  );
+}
+
+.section-panel .section-header::before {
+  content: "";
+  position: absolute;
+  top: 0.625rem;
+  bottom: 0.625rem;
+  left: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: linear-gradient(
+    to bottom,
+    var(--primary),
+    color-mix(in srgb, var(--secondary) 70%, var(--primary))
   );
 }
 

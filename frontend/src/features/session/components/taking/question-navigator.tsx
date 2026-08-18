@@ -1,4 +1,4 @@
-import { Flag } from "lucide-react";
+import { Flag } from "@/shared/icons";
 
 import type { Question } from "@/core/config/api";
 import type { SavedAnswer } from "@/features/session/hooks/use-exam-attempt";

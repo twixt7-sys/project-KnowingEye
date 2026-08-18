@@ -51,8 +51,8 @@ class ExamCreatePermissionMatrixTests(APITestCase):
         faculty = make_user(User.Role.FACULTY, "rbac_faculty")
         self.assertEqual(self._post(faculty).status_code, status.HTTP_201_CREATED)
 
-    def test_student_assistant_cannot_create(self):
-        sa = make_user(User.Role.STUDENT_ASSISTANT, "rbac_sa")
+    def test_proctor_cannot_create(self):
+        sa = make_user(User.Role.PROCTOR, "rbac_sa")
         self.assertEqual(self._post(sa).status_code, status.HTTP_403_FORBIDDEN)
 
     def test_student_cannot_create(self):

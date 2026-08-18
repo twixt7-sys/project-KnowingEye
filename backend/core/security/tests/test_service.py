@@ -74,7 +74,7 @@ class ActionPermissionTests(TestCase):
         self.assertFalse(service.can(student, "exams.create"))
 
     def test_grant_then_revoke(self):
-        sa = make_user(User.Role.STUDENT_ASSISTANT, "sa1")
+        sa = make_user(User.Role.PROCTOR, "sa1")
         self.assertFalse(service.can(sa, "behavior.resolve"))
         service.grant_action(sa, "behavior.resolve")
         self.assertTrue(service.can(sa, "behavior.resolve"))

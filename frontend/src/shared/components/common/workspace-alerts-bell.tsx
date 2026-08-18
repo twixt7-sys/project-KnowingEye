@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { Bell, Loader2 } from "lucide-react";
+import { Bell, Loader2 } from "@/shared/icons";
 import { apiClient, type AlertRow } from "../../../core/config/api";
 import { cn } from "../ui/utils";
 
 const SEVERITY_DOT: Record<string, string> = {
-  high: "bg-red-500",
-  medium: "bg-amber-500",
-  low: "bg-sky-500",
+  high: "bg-status-alert",
+  medium: "bg-status-watch",
+  low: "bg-secondary",
 };
 
 export function WorkspaceAlertsBell() {

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, formatApiError, type Question, type QuestionAttachment } from "@/core/config/api";
 import {
+  approveExam,
   createExamAssignment,
   createExamSection,
   createQuestion,
@@ -11,7 +12,9 @@ import {
   importExamAssignments,
   importQuestionsCsv,
   publishExam,
+  rejectExam,
   reorderQuestions,
+  submitExamForReview,
   updateExam,
   updateQuestion,
   uploadQuestionAttachment,
@@ -223,6 +226,45 @@ export function useExamBuilder(examId: number) {
     },
   });
 
+  const submitMutation = useMutation({
+    mutationFn: () => submitExamForReview(examId),
+    onMutate: () => {
+      setActionError(null);
+      setMessage(null);
+    },
+    onSuccess: async (res) => {
+      setMessage(res.message);
+      await invalidateBuilder();
+    },
+    onError: (e) => setActionError(formatApiError(e, "Submit for review failed")),
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: () => approveExam(examId),
+    onMutate: () => {
+      setActionError(null);
+      setMessage(null);
+    },
+    onSuccess: async (res) => {
+      setMessage(res.message);
+      await invalidateBuilder();
+    },
+    onError: (e) => setActionError(formatApiError(e, "Approve failed")),
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: (note: string) => rejectExam(examId, note),
+    onMutate: () => {
+      setActionError(null);
+      setMessage(null);
+    },
+    onSuccess: async (res) => {
+      setMessage(res.message);
+      await invalidateBuilder();
+    },
+    onError: (e) => setActionError(formatApiError(e, "Reject failed")),
+  });
+
   const createSectionMutation = useMutation({
     mutationFn: (title: string) => createExamSection(examId, { title }),
     onSuccess: () => setMessage("Section created. Assign questions to it when editing."),
@@ -373,6 +415,9 @@ export function useExamBuilder(examId: number) {
   };
 
   const publish = () => publishMutation.mutate();
+  const submitForReview = () => submitMutation.mutate();
+  const approveReview = () => approveMutation.mutate();
+  const rejectReview = (note: string) => rejectMutation.mutate(note);
 
   const addCandidate = () => {
     if (!candidateEmail.trim()) return;
@@ -428,6 +473,12 @@ export function useExamBuilder(examId: number) {
     handleImportFile,
     runImport,
     publish,
+    submitForReview,
+    submitPending: submitMutation.isPending,
+    approveReview,
+    approvePending: approveMutation.isPending,
+    rejectReview,
+    rejectPending: rejectMutation.isPending,
     candidateEmail,
     setCandidateEmail,
     candidateCsv,

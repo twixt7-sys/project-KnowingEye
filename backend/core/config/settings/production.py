@@ -34,3 +34,12 @@ SECURE_HSTS_SECONDS = int(decouple_config("SECURE_HSTS_SECONDS", default="315360
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+EMAIL_BACKEND = decouple_config(
+    "EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend"
+)
+EMAIL_HOST = decouple_config("EMAIL_HOST", default="")
+EMAIL_PORT = int(decouple_config("EMAIL_PORT", default="587"))
+EMAIL_HOST_USER = decouple_config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = decouple_config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", default=True)

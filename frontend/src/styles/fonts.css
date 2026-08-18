@@ -1,13 +1,14 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Schibsted+Grotesk:ital,wght@0,400..700;1,400&family=Spline+Sans+Mono:ital,wght@0,400..600;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&family=Schibsted+Grotesk:ital,wght@0,400..700;1,400&family=Spline+Sans+Mono:ital,wght@0,400..600;1,400&display=swap");
 
 /*
  * Knowing Eye type system — three deliberate voices:
- *  - Fraunces (display serif): page titles, hero, big numerals. Warm, academic.
+ *  - Space Grotesk (display grotesque): page titles, hero, big numerals.
+ *    A technical, monitoring-console face — used with restraint.
  *  - Schibsted Grotesk (UI sans): body, controls, tables.
  *  - Spline Sans Mono (data mono): kickers, codes, timers, stat values.
  */
 :root {
   --font-sans: "Schibsted Grotesk", system-ui, -apple-system, sans-serif;
-  --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-serif: "Space Grotesk", system-ui, -apple-system, sans-serif;
   --font-mono: "Spline Sans Mono", ui-monospace, "Cascadia Mono", monospace;
 }

@@ -1,4 +1,10 @@
-export type Role = "ADMIN" | "FACULTY" | "STUDENT_ASSISTANT" | "STUDENT";
+export type Role =
+  | "ADMIN"
+  | "GUIDANCE_STAFF"
+  | "PROGRAM_HEAD"
+  | "FACULTY"
+  | "PROCTOR"
+  | "STUDENT";
 
 export interface AuthUser {
   id: number;
@@ -25,6 +31,7 @@ export interface UserPermissions {
 
 export interface ProfileUser extends AuthUser {
   avatar_url: string | null;
+  email_verified: boolean;
   phone: string;
   institution: string;
   student_id: string;
@@ -72,10 +79,31 @@ export interface Exam {
   is_open?: boolean;
   attempts_remaining?: number | null;
   extra_time_minutes?: number;
+  approval_status?: "not_submitted" | "pending" | "approved" | "rejected";
+  submitted_by?: number | null;
+  submitted_by_name?: string;
+  submitted_at?: string | null;
+  reviewed_by?: number | null;
+  reviewed_by_name?: string;
+  reviewed_at?: string | null;
+  rejection_note?: string;
+  approval_events?: ExamApprovalEvent[];
+  created_by?: number;
+  created_by_name?: string;
+  created_by_email?: string;
   created_at: string;
   updated_at?: string;
   questions?: Question[];
   publish_readiness?: PublishReadiness;
+}
+
+export interface ExamApprovalEvent {
+  id: number;
+  action: "submit" | "approve" | "reject";
+  note: string;
+  actor: number | null;
+  actor_name?: string;
+  created_at: string;
 }
 
 export interface PublishReadiness {
@@ -310,8 +338,10 @@ export interface PaginatedResponse<T> {
 export interface UserStats {
   total: number;
   admins: number;
+  guidance_staff: number;
+  program_heads: number;
   faculty: number;
-  student_assistants: number;
+  proctors: number;
   students: number;
   inactive: number;
 }

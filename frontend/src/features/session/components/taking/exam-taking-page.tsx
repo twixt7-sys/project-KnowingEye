@@ -1,4 +1,4 @@
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2 } from "@/shared/icons";
 
 import { FocusShell } from "@/features/session/components/taking/focus-shell";
 import { ProctoringDock } from "@/features/session/components/taking/proctoring-dock";

@@ -4,24 +4,37 @@
   "section": "Chapter II · System Analysis",
   "format": "use_case",
   "actors": [
-    { "id": "admin", "name": "Administrator (Examiner)", "type": "primary" },
+    { "id": "admin", "name": "Administrator", "type": "primary" },
+    { "id": "program_head", "name": "Program Head", "type": "primary" },
+    { "id": "guidance_staff", "name": "Guidance Staff", "type": "primary" },
+    { "id": "faculty", "name": "Teacher / Exam Creator", "type": "primary" },
+    { "id": "proctor", "name": "Proctor", "type": "primary" },
     { "id": "examinee", "name": "Examinee", "type": "primary" },
     { "id": "webcam", "name": "Webcam Device", "type": "secondary" },
     { "id": "ai", "name": "AI Pipeline", "type": "system" }
   ],
   "use_cases": [
-    { "id": "UC01", "name": "Authenticate", "actors": ["admin", "examinee"] },
-    { "id": "UC02", "name": "Manage Exams & Questions", "actors": ["admin"] },
-    { "id": "UC03", "name": "Publish / Archive Exam", "actors": ["admin"] },
-    { "id": "UC04", "name": "Manage Users", "actors": ["admin"] },
-    { "id": "UC05", "name": "Start Exam Session", "actors": ["examinee"] },
-    { "id": "UC06", "name": "Take Exam & Submit Answers", "actors": ["examinee"] },
-    { "id": "UC07", "name": "Enroll Reference Face", "actors": ["examinee", "webcam", "ai"] },
-    { "id": "UC08", "name": "Stream Monitoring Frames", "actors": ["examinee", "webcam", "ai"] },
-    { "id": "UC09", "name": "View Live Alerts", "actors": ["admin"] },
-    { "id": "UC10", "name": "Resolve Alerts", "actors": ["admin"] },
-    { "id": "UC11", "name": "View Reports & Analytics", "actors": ["admin"] },
-    { "id": "UC12", "name": "Export Session CSV", "actors": ["admin"] },
-    { "id": "UC13", "name": "View Own Results", "actors": ["examinee"] }
+    { "id": "UC01", "name": "Authenticate", "actors": ["admin", "program_head", "guidance_staff", "faculty", "proctor", "examinee"] },
+    { "id": "UC02", "name": "Register & Verify Email (OTP)", "actors": ["admin", "program_head", "guidance_staff", "faculty", "proctor", "examinee"] },
+    { "id": "UC03", "name": "Manage Users & Roles", "actors": ["admin"] },
+    { "id": "UC04", "name": "Create / Edit Exam", "actors": ["admin", "program_head", "guidance_staff", "faculty"] },
+    { "id": "UC05", "name": "Submit Exam for Review", "actors": ["program_head", "guidance_staff", "faculty"] },
+    { "id": "UC06", "name": "Review, Approve or Reject Exam", "actors": ["admin", "program_head"] },
+    { "id": "UC07", "name": "Publish / Archive Exam", "actors": ["admin", "program_head", "guidance_staff", "faculty"] },
+    { "id": "UC08", "name": "Start Exam Session", "actors": ["examinee"] },
+    { "id": "UC09", "name": "Take Exam & Submit Answers", "actors": ["examinee"] },
+    { "id": "UC10", "name": "Enroll Reference Face", "actors": ["examinee", "webcam", "ai"] },
+    { "id": "UC11", "name": "Stream Monitoring Frames", "actors": ["examinee", "webcam", "ai"] },
+    { "id": "UC12", "name": "Monitor Live Session & View Alerts", "actors": ["admin", "program_head", "guidance_staff", "faculty", "proctor"] },
+    { "id": "UC13", "name": "Resolve Behavior Alerts", "actors": ["admin", "program_head", "guidance_staff", "faculty"] },
+    { "id": "UC14", "name": "View Reports & Analytics", "actors": ["admin", "program_head", "guidance_staff", "faculty", "proctor"] },
+    { "id": "UC15", "name": "Export Report Data", "actors": ["admin", "program_head", "guidance_staff", "faculty"] },
+    { "id": "UC16", "name": "Grade Essay Responses", "actors": ["admin", "program_head", "guidance_staff", "faculty"] },
+    { "id": "UC17", "name": "View Own Results", "actors": ["examinee"] }
+  ],
+  "notes": [
+    "Actor set mirrors backend/features/authentication/models.py User.Role (6 roles) as of the Sprint 1 RBAC/PBAC expansion.",
+    "UC06 (exams.approve) is restricted to program_head and admin per backend/core/security/permissions_registry.py ROLE_DEFAULT_ACTIONS - this is the Directive Area 01 'administrator responsibilities' approval chain.",
+    "UC12/UC14 module visibility and UC13/UC15/UC16 action grants are sourced from backend/core/security/modules.py and permissions_registry.py respectively; proctor has module-level (Tier 2) read access only, no Tier 3 action grants by default."
   ]
 }

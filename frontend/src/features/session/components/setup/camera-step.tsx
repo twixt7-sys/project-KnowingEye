@@ -1,4 +1,4 @@
-import { Camera } from "lucide-react";
+import { Camera } from "@/shared/icons";
 
 import { MonitoringVideoOverlay } from "@/shared/components/monitoring/monitoring-video-overlay";
 import { Badge } from "@/shared/components/ui/badge";

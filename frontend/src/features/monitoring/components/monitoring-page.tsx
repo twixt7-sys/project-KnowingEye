@@ -6,7 +6,7 @@ import {
   RefreshCw,
   ShieldAlert,
   Radio,
-} from "lucide-react";
+} from "@/shared/icons";
 import { Link } from "react-router";
 
 import { formatApiError, type AlertRow } from "@/core/config/api";
@@ -30,9 +30,9 @@ type LiveAlert = {
 };
 
 const SEVERITY_COLORS: Record<string, string> = {
-  high: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
-  medium: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-  low: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+  high: "bg-status-alert/10 text-status-alert border-status-alert/20",
+  medium: "bg-status-watch/10 text-status-watch border-status-watch/20",
+  low: "bg-secondary/10 text-secondary border-secondary/20",
 };
 
 export function MonitoringPage() {
@@ -136,7 +136,7 @@ export function MonitoringPage() {
             <span
               className={`status-pill inline-flex items-center gap-1.5 border ${
                 wsConnected
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                  ? "border-status-safe/30 bg-status-safe/10 text-status-safe"
                   : "border-border bg-muted text-muted-foreground"
               }`}
               title={wsConnected ? "Live WebSocket connected" : "Reconnecting…"}
@@ -262,7 +262,7 @@ export function MonitoringPage() {
                   <button
                     type="button"
                     onClick={() => void handleResolveAlert(a.id)}
-                    className="rounded-md bg-emerald-500/10 px-2 py-1 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300"
+                    className="rounded-md bg-status-safe/10 px-2 py-1 text-status-safe hover:bg-status-safe/20"
                   >
                     Resolve
                   </button>

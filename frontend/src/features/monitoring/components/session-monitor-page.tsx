@@ -7,7 +7,7 @@ import {
   Loader2,
   Power,
   RefreshCw,
-} from "lucide-react";
+} from "@/shared/icons";
 
 import { formatApiError } from "@/core/config/api";
 import { resolveAlert, terminateSession } from "@/features/monitoring/api/monitoring-api";
@@ -176,7 +176,7 @@ export function SessionMonitorPage() {
                       <button
                         type="button"
                         onClick={() => void handleResolve(a.id)}
-                        className="text-xs text-emerald-600 hover:underline"
+                        className="text-xs text-status-safe hover:underline"
                       >
                         Resolve
                       </button>
@@ -187,7 +187,7 @@ export function SessionMonitorPage() {
               {observer.alerts.slice(0, 10).map((a, i) => (
                 <li
                   key={`live-${a.type}-${i}`}
-                  className="rounded border border-amber-500/30 px-3 py-2"
+                  className="rounded border border-status-watch/30 px-3 py-2"
                 >
                   <p className="font-medium">{a.message}</p>
                   <p className="text-xs capitalize text-muted-foreground">{a.severity} · live</p>

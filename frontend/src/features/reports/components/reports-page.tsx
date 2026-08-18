@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   BarChart3,
@@ -8,8 +6,10 @@ import {
   Download,
   Search,
   TrendingUp,
-} from "lucide-react";
+} from "@/shared/icons";
+import { useQuery } from "@tanstack/react-query";
 import { BarChart, DonutChart, LineChart } from "@tremor/react";
+import { useState } from "react";
 import { Link } from "react-router";
 
 import { formatApiError } from "@/core/config/api";
@@ -129,7 +129,11 @@ export function ReportsPage() {
       {summary && (
         <>
           <div className="page-metrics grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard label="Total sessions" value={String(summary.total_sessions)} icon={Activity} />
+            <StatCard
+              label="Total sessions"
+              value={String(summary.total_sessions)}
+              icon={Activity}
+            />
             <StatCard
               label="Active now"
               value={String(summary.active_sessions)}
@@ -138,9 +142,7 @@ export function ReportsPage() {
             />
             <StatCard
               label="Average score"
-              value={
-                summary.average_score != null ? `${summary.average_score.toFixed(1)}%` : "-"
-              }
+              value={summary.average_score != null ? `${summary.average_score.toFixed(1)}%` : "-"}
               icon={TrendingUp}
             />
             <StatCard
@@ -170,7 +172,7 @@ export function ReportsPage() {
             data={series}
             index="day"
             categories={["sessions", "alerts", "behaviors"]}
-            colors={["emerald", "rose", "amber"]}
+            colors={["blue", "rose", "amber"]}
             yAxisWidth={40}
             showAnimation
           />
@@ -182,7 +184,7 @@ export function ReportsPage() {
             data={eventsData}
             index="name"
             category="value"
-            colors={["emerald", "teal", "lime", "amber", "cyan", "orange"]}
+            colors={["blue", "cyan", "emerald", "amber", "indigo", "violet"]}
             showAnimation
           />
         </SectionPanel>
@@ -194,7 +196,7 @@ export function ReportsPage() {
           data={summary?.alerts_by_severity ?? []}
           index="severity"
           categories={["count"]}
-          colors={["emerald"]}
+          colors={["amber"]}
           yAxisWidth={40}
           showAnimation
         />
@@ -211,7 +213,7 @@ export function ReportsPage() {
               data={departmentScoreData}
               index="department"
               categories={["Avg score", "Pass rate"]}
-              colors={["emerald", "teal"]}
+              colors={["blue", "cyan"]}
               yAxisWidth={40}
               showAnimation
               valueFormatter={(v) => `${v.toFixed(0)}%`}
@@ -258,7 +260,9 @@ export function ReportsPage() {
                         <Building2 className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="font-medium">{d.department_name}</p>
-                          <p className="text-xs text-muted-foreground">{d.department_abbreviation}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {d.department_abbreviation}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -414,7 +418,7 @@ function MetricTile({
 }) {
   const tones = {
     default: "text-foreground",
-    success: "text-emerald-600 dark:text-emerald-400",
+    success: "text-status-safe",
     danger: "text-destructive",
   };
   return (

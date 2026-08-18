@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import {
   AlertCircle,
   Calendar,
@@ -10,7 +9,8 @@ import {
   Loader2,
   PlayCircle,
   Sparkles,
-} from "lucide-react";
+} from "@/shared/icons";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 
@@ -22,6 +22,7 @@ import { IconAction } from "@/shared/components/common/icon-action";
 import { PageShell } from "@/shared/components/layout/page-shell";
 import { SectionPanel } from "@/shared/components/layout/section-panel";
 import { EmptyState } from "@/shared/components/patterns/empty-state";
+import { IrisGauge } from "@/shared/components/patterns/iris-gauge";
 import { Button } from "@/shared/components/ui/button";
 
 type DashboardExam = {
@@ -284,9 +285,16 @@ export function StudentDashboardPage() {
                     {exam.passed ? "Passed" : "Not passed"}
                   </span>
                 )}
-                <p className="w-16 text-right font-mono text-lg font-medium tabular-nums">
-                  {exam.score != null ? `${exam.score}%` : "—"}
-                </p>
+                {exam.score != null ? (
+                  <IrisGauge
+                    value={exam.score}
+                    size={44}
+                    suffix=""
+                    tone={exam.passed == null ? "default" : exam.passed ? "success" : "danger"}
+                  />
+                ) : (
+                  <p className="w-11 text-right font-mono text-lg font-medium tabular-nums">—</p>
+                )}
                 <IconAction
                   label="View results"
                   icon={Eye}

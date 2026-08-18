@@ -11,8 +11,8 @@ import {
   UserCheck,
   Eye,
   PersonStanding,
-  type LucideIcon,
-} from "lucide-react";
+  type AppIcon,
+} from "@/shared/icons";
 
 import type { FrameMetrics } from "@/core/config/api";
 import type { MonitoringDockPosition } from "@/features/session/hooks/use-exam-taking";
@@ -23,7 +23,7 @@ const DETECTION_PARAMS: {
   metricKey: keyof FrameMetrics;
   flagKey: string;
   label: string;
-  icon: LucideIcon;
+  icon: AppIcon;
 }[] = [
   { metricKey: "face_presence_pct", flagKey: "face_presence", label: "Face presence", icon: ScanFace },
   { metricKey: "identity_match_pct", flagKey: "identity", label: "Identity match", icon: UserCheck },

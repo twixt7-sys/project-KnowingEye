@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "@/shared/icons";
 
 import { BuilderCandidatesTab } from "@/features/exams/components/builder/builder-candidates-tab";
 import { BuilderPublishTab } from "@/features/exams/components/builder/builder-publish-tab";
@@ -32,7 +32,7 @@ export function ExamBuilderPage() {
   if (builder.loadError && !builder.exam) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
-        <p className="text-red-600 dark:text-red-400 max-w-md">{builder.loadError}</p>
+        <p className="text-status-alert max-w-md">{builder.loadError}</p>
         <Link
           to="/examiner"
           className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
@@ -74,12 +74,12 @@ export function ExamBuilderPage() {
       </div>
 
       {builder.error && (
-        <div className="mb-4 px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/5 text-red-600 text-sm">
+        <div className="mb-4 px-4 py-3 rounded-lg border border-status-alert/30 bg-status-alert/5 text-status-alert text-sm">
           {builder.error}
         </div>
       )}
       {builder.message && (
-        <div className="mb-4 px-4 py-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 text-emerald-700 text-sm">
+        <div className="mb-4 px-4 py-3 rounded-lg border border-status-safe/30 bg-status-safe/5 text-status-safe text-sm">
           {builder.message}
         </div>
       )}
@@ -164,6 +164,12 @@ export function ExamBuilderPage() {
           isDraft={builder.isDraft}
           saving={builder.saving}
           onPublish={builder.publish}
+          onSubmitForReview={builder.submitForReview}
+          submitPending={builder.submitPending}
+          onApprove={builder.approveReview}
+          approvePending={builder.approvePending}
+          onReject={builder.rejectReview}
+          rejectPending={builder.rejectPending}
         />
       )}
     </div>

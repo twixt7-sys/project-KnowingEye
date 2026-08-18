@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
@@ -5,6 +7,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 
 User = get_user_model()
+logger = logging.getLogger("knowing_eye")
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -18,6 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
             "id",
             "username",
             "email",
+            "email_verified",
             "first_name",
             "last_name",
             "role",
@@ -25,7 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
             "avatar_url",
             "created_at",
         ]
-        read_only_fields = ["id", "created_at", "avatar_url"]
+        read_only_fields = ["id", "created_at", "avatar_url", "email_verified"]
 
     def get_avatar_url(self, obj):
         request = self.context.get("request")
@@ -61,7 +65,10 @@ class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField()
     first_name = serializers.CharField(required=True, allow_blank=False, trim_whitespace=True)
     last_name = serializers.CharField(required=True, allow_blank=False, trim_whitespace=True)
-    avatar = serializers.ImageField(required=True)
+    # Optional at signup, per Directive Area 01 ("Registration & verification") -
+    # "remove the required profile photo at signup; make it optional and add
+    # later". Added afterward from the profile page.
+    avatar = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
         model = User
@@ -76,6 +83,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         ]
 
     def validate_avatar(self, value):
+        if value is None:
+            return value
         content_type = (getattr(value, "content_type", "") or "").split(";")[0].strip().lower()
         allowed = {"image/jpeg", "image/png", "image/gif", "image/webp"}
         if content_type and content_type not in allowed:
@@ -101,7 +110,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        avatar = validated_data.pop("avatar")
+        avatar = validated_data.pop("avatar", None)
         user = User.objects.create_user(
             username=validated_data["username"],
             email=validated_data["email"],
@@ -110,12 +119,24 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data["password"],
             role=User.Role.STUDENT,
         )
-        user.avatar = avatar
-        user.save(update_fields=["avatar"])
+        if avatar:
+            user.avatar = avatar
+            user.save(update_fields=["avatar"])
 
         from core.security.service import apply_role_defaults
 
         apply_role_defaults(user)
+
+        from .otp_service import issue_otp
+
+        try:
+            issue_otp(user)
+        except Exception:
+            # Registration already succeeded (the user row is committed) - a
+            # failed/misconfigured mail send shouldn't fail account creation.
+            # The user can request a new code from the verify-email screen.
+            logger.exception("Failed to send registration OTP to user %s", user.id)
+
         return user
 
 

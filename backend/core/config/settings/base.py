@@ -247,3 +247,14 @@ KNOWING_EYE = {
     "STORE_FRAMES": env_bool("KE_STORE_FRAMES", default=False),
     "ALERT_THRESHOLD": float(decouple_config("KE_ALERT_THRESHOLD", default="80")),
 }
+
+DEFAULT_FROM_EMAIL = decouple_config("DEFAULT_FROM_EMAIL", default="no-reply@knowingeye.local")
+EMAIL_SUBJECT_PREFIX = "[Knowing Eye] "
+
+# OTP / email verification (Directive Area 01 - "Registration & verification").
+# Environment-overridable so a longer TTL or lower attempt cap can be tuned
+# without a code change; defaults match what's documented in Chapter 2.
+OTP_CODE_LENGTH = 6
+OTP_TTL_MINUTES = int(decouple_config("OTP_TTL_MINUTES", default="10"))
+OTP_RESEND_COOLDOWN_SECONDS = int(decouple_config("OTP_RESEND_COOLDOWN_SECONDS", default="60"))
+OTP_MAX_ATTEMPTS = int(decouple_config("OTP_MAX_ATTEMPTS", default="5"))

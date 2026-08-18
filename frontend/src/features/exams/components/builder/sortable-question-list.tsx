@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Trash2 } from "lucide-react";
+import { GripVertical, Trash2 } from "@/shared/icons";
 
 import type { Question } from "@/core/config/api";
 import { BuilderIconBtn } from "@/features/exams/components/builder/builder-primitives";
@@ -73,7 +73,7 @@ function SortableQuestionRow({ question, isDraft, onEdit, onDelete }: SortableQu
             Edit
           </button>
           <BuilderIconBtn onClick={() => onDelete(question)} label="Delete">
-            <Trash2 className="w-4 h-4 text-red-500" />
+            <Trash2 className="w-4 h-4 text-status-alert" />
           </BuilderIconBtn>
         </div>
       )}

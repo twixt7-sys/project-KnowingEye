@@ -4,14 +4,14 @@ import {
   ShieldCheck,
   Sparkles,
   Video,
-  type LucideIcon,
-} from "lucide-react";
+  type AppIcon,
+} from "@/shared/icons";
 
 import { Progress } from "@/shared/components/ui/progress";
 
 export type SetupStep = "rules" | "camera" | "identity" | "ready";
 
-export const SETUP_STEPS: { id: SetupStep; label: string; icon: LucideIcon }[] = [
+export const SETUP_STEPS: { id: SetupStep; label: string; icon: AppIcon }[] = [
   { id: "rules", label: "Briefing", icon: ShieldCheck },
   { id: "camera", label: "Camera", icon: Video },
   { id: "identity", label: "Identity", icon: ScanFace },
@@ -24,7 +24,7 @@ function stepIndex(step: SetupStep) {
 
 interface SetupStepFlowProps {
   step: SetupStep;
-  steps?: { id: SetupStep; label: string; icon: LucideIcon }[];
+  steps?: { id: SetupStep; label: string; icon: AppIcon }[];
 }
 
 export function SetupStepFlow({ step, steps = SETUP_STEPS }: SetupStepFlowProps) {

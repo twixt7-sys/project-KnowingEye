@@ -3,16 +3,16 @@ import {
   BarChart3,
   ClipboardList,
   LayoutDashboard,
-  type LucideIcon,
+  type AppIcon,
   Settings,
   UserCircle,
   Users,
-} from "lucide-react";
+} from "@/shared/icons";
 
 export type WorkspaceNavItem = {
   label: string;
   path: string;
-  icon: LucideIcon;
+  icon: AppIcon;
   description?: string;
   /** Module key this item requires (see backend core/security/modules.py); omit to always show. */
   module?: string;

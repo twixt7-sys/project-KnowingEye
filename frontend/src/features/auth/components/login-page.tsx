@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, Eye, EyeOff, Loader2, Lock, User } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Loader2, Lock, User } from "@/shared/icons";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router";
@@ -58,7 +58,9 @@ export function LoginPage() {
     ? loginForm.formState.isSubmitting
     : registerForm.formState.isSubmitting;
 
-  const goHome = (signedInRole: "ADMIN" | "FACULTY" | "STUDENT_ASSISTANT" | "STUDENT") => {
+  const goHome = (
+    signedInRole: "ADMIN" | "GUIDANCE_STAFF" | "PROGRAM_HEAD" | "FACULTY" | "PROCTOR" | "STUDENT",
+  ) => {
     if (from !== "/" && from !== "/login") {
       navigate(from, { replace: true });
     } else if (signedInRole === "STUDENT") {
@@ -80,10 +82,6 @@ export function LoginPage() {
 
   const onRegister = async (values: RegisterFormValues) => {
     setSubmitError("");
-    if (!profilePhoto) {
-      setSubmitError("A profile photo is required");
-      return;
-    }
     try {
       const user = await register({
         username: values.username,
@@ -266,7 +264,7 @@ export function LoginPage() {
                     )}
                   />
                   {submitError && (
-                    <div className="flex items-center gap-2 rounded-lg bg-red-500/10 p-3 text-red-600 dark:text-red-400">
+                    <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-destructive">
                       <AlertCircle className="h-5 w-5 shrink-0" />
                       <span className="text-sm">{submitError}</span>
                     </div>
@@ -287,7 +285,7 @@ export function LoginPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            First name <span className="text-red-500">*</span>
+                            First name <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input placeholder="Your first name" {...field} />
@@ -302,7 +300,7 @@ export function LoginPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            Last name <span className="text-red-500">*</span>
+                            Last name <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input placeholder="Your last name" {...field} />
@@ -400,7 +398,7 @@ export function LoginPage() {
                     )}
                   />
                   {submitError && (
-                    <div className="flex items-center gap-2 rounded-lg bg-red-500/10 p-3 text-red-600 dark:text-red-400">
+                    <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-destructive">
                       <AlertCircle className="h-5 w-5 shrink-0" />
                       <span className="text-sm">{submitError}</span>
                     </div>

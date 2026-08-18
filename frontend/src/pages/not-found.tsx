@@ -1,4 +1,4 @@
-import { ArrowLeft, Home } from "lucide-react";
+import { ArrowLeft, Home } from "@/shared/icons";
 import { Link } from "react-router";
 
 import { Button } from "@/shared/components/ui/button";

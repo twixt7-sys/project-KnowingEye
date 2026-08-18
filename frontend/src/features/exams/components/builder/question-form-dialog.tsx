@@ -1,4 +1,4 @@
-import { FileText, Trash2, Upload } from "lucide-react";
+import { FileText, Trash2, Upload } from "@/shared/icons";
 
 import type { Question, QuestionAttachment } from "@/core/config/api";
 import {
@@ -178,7 +178,7 @@ export function QuestionFormDialog({
                     <button
                       type="button"
                       onClick={() => void onRemoveAttachment(a)}
-                      className="text-red-500 hover:text-red-600"
+                      className="text-status-alert hover:opacity-80"
                       aria-label="Remove attachment"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -194,7 +194,7 @@ export function QuestionFormDialog({
                   <button
                     type="button"
                     onClick={() => setPendingFiles((prev) => prev.filter((_, j) => j !== i))}
-                    className="text-red-500"
+                    className="text-status-alert"
                     aria-label="Remove pending file"
                   >
                     <Trash2 className="w-4 h-4" />

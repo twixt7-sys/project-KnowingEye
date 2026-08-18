@@ -2,13 +2,13 @@ import {
   BookOpen,
   LayoutDashboard,
   UserCircle,
-  type LucideIcon,
-} from "lucide-react";
+  type AppIcon,
+} from "@/shared/icons";
 
 export type WorkspaceNavItem = {
   label: string;
   path: string;
-  icon: LucideIcon;
+  icon: AppIcon;
   description?: string;
 };
 

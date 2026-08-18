@@ -1,11 +1,11 @@
-import type { LucideIcon } from "lucide-react";
+import type { AppIcon } from "@/shared/icons";
 import { cn } from "../ui/utils";
 
 type StatCardProps = {
   label: string;
   value: string;
   hint?: string;
-  icon: LucideIcon;
+  icon: AppIcon;
   tone?: "default" | "success" | "warning" | "danger";
   compact?: boolean;
   className?: string;
@@ -25,6 +25,15 @@ const toneTick = {
   danger: "bg-status-alert",
 };
 
+// Faint tone wash so the four stat cards read as distinct signals rather
+// than four identical flat panels with a different-colored tick.
+const toneBg = {
+  default: "bg-primary/[0.04]",
+  success: "bg-status-safe/[0.05]",
+  warning: "bg-status-watch/[0.05]",
+  danger: "bg-status-alert/[0.05]",
+};
+
 /**
  * Ledger-style stat: mono uppercase label with a tone tick, large tabular
  * numeral, and a ruled hint line. The icon sits ghosted in the corner.
@@ -40,7 +49,9 @@ export function StatCard({
 }: StatCardProps) {
   if (compact) {
     return (
-      <div className={cn("surface-panel relative overflow-hidden p-3 pl-4", className)}>
+      <div
+        className={cn("surface-panel relative overflow-hidden p-3 pl-4", toneBg[tone], className)}
+      >
         <span
           className={cn("absolute inset-y-3 left-0 w-[3px] rounded-r", toneTick[tone])}
           aria-hidden
@@ -63,6 +74,7 @@ export function StatCard({
     <div
       className={cn(
         "surface-panel group relative overflow-hidden p-5 transition-all duration-200 hover:-translate-y-0.5",
+        toneBg[tone],
         className,
       )}
     >
@@ -71,8 +83,8 @@ export function StatCard({
         aria-hidden
       />
       <Icon
-        className="pointer-events-none absolute -right-3 -top-3 h-16 w-16 text-foreground opacity-[0.05] transition-opacity duration-200 group-hover:opacity-[0.09]"
-        strokeWidth={1.25}
+        className="pointer-events-none absolute -right-3 -top-3 h-16 w-16 text-foreground opacity-[0.06] transition-opacity duration-200 group-hover:opacity-[0.1]"
+        weight="duotone"
         aria-hidden
       />
 

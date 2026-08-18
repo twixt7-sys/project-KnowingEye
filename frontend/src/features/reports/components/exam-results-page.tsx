@@ -1,6 +1,3 @@
-import { useMemo } from "react";
-import { Link, useParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -12,11 +9,15 @@ import {
   Target,
   TrendingUp,
   XCircle,
-} from "lucide-react";
+} from "@/shared/icons";
+import { useQuery } from "@tanstack/react-query";
 import { BarChart, DonutChart } from "@tremor/react";
+import { useMemo } from "react";
+import { Link, useParams } from "react-router";
 
 import { formatApiError } from "@/core/config/api";
 import { reportsQueries } from "@/features/reports/queries/queries";
+import { IrisGauge } from "@/shared/components/patterns/iris-gauge";
 
 function formatEventLabel(eventType: string): string {
   return eventType.replace(/_/g, " ");
@@ -44,7 +45,7 @@ export function ExamResultsPage() {
         name: formatEventLabel(row.event_type),
         Events: row.count,
       })),
-    [behaviorSummary]
+    [behaviorSummary],
   );
 
   const alertSeverityData = useMemo(() => {
@@ -96,7 +97,7 @@ export function ExamResultsPage() {
         </Link>
 
         {error && (
-          <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3 text-sm text-red-600">
+          <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {error}
           </div>
         )}
@@ -107,7 +108,9 @@ export function ExamResultsPage() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="mb-1 text-sm font-medium text-primary">Exam results</p>
-                  <h1 className="mb-2 text-3xl font-bold tracking-tight">{sessionRow.exam_title}</h1>
+                  <h1 className="mb-2 text-3xl font-bold tracking-tight">
+                    {sessionRow.exam_title}
+                  </h1>
                   <p className="text-muted-foreground">
                     Submitted{" "}
                     {sessionRow.submitted_at
@@ -121,30 +124,17 @@ export function ExamResultsPage() {
                     )}
                   </p>
                 </div>
-                <div
-                  className={`min-w-[9rem] rounded-2xl border px-6 py-4 text-center ${
-                    passed
-                      ? "border-emerald-500/30 bg-emerald-500/10"
-                      : passed === false
-                        ? "border-rose-500/30 bg-rose-500/10"
-                        : "border-border bg-card"
-                  }`}
-                >
-                  <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">Score</p>
-                  <p className="text-4xl font-bold tracking-tight">
-                    {score != null ? `${score.toFixed(1)}%` : "—"}
+                <div className="surface-panel min-w-[10rem] px-6 py-4 text-center">
+                  <p className="mb-2 font-mono text-[0.65rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                    Score
                   </p>
-                  <p
-                    className={`mt-1 text-sm font-semibold ${
-                      passed
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : passed === false
-                          ? "text-rose-600 dark:text-rose-400"
-                          : "text-muted-foreground"
-                    }`}
-                  >
-                    {passed == null ? "Pending" : passed ? "Passed" : "Did not pass"}
-                  </p>
+                  <IrisGauge
+                    value={score ?? 0}
+                    size={88}
+                    className="mx-auto"
+                    tone={passed == null ? "default" : passed ? "success" : "danger"}
+                    sublabel={passed == null ? "Pending" : passed ? "Passed" : "Did not pass"}
+                  />
                 </div>
               </div>
             </header>
@@ -194,7 +184,7 @@ export function ExamResultsPage() {
             </div>
 
             {departmentAnalytics && scoreComparisonData.length > 0 && (
-              <section className="mb-6 rounded-xl border border-border bg-card p-6">
+              <section className="mb-6 surface-panel p-6">
                 <div className="mb-1 flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-primary" />
                   <h2 className="font-semibold">Department performance</h2>
@@ -235,7 +225,7 @@ export function ExamResultsPage() {
                   data={scoreComparisonData}
                   index="label"
                   categories={["Score"]}
-                  colors={["emerald"]}
+                  colors={["blue"]}
                   yAxisWidth={40}
                   showAnimation
                   valueFormatter={(v) => `${v.toFixed(0)}%`}
@@ -263,7 +253,7 @@ export function ExamResultsPage() {
 
             <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
               {eventChartData.length > 0 && (
-                <section className="rounded-xl border border-border bg-card p-6">
+                <section className="surface-panel p-6">
                   <h2 className="mb-1 font-semibold">Behavior events</h2>
                   <p className="mb-4 text-sm text-muted-foreground">
                     Flags recorded during your session.
@@ -282,7 +272,7 @@ export function ExamResultsPage() {
               )}
 
               {alertSeverityData.length > 0 && (
-                <section className="rounded-xl border border-border bg-card p-6">
+                <section className="surface-panel p-6">
                   <h2 className="mb-1 font-semibold">Alert severity</h2>
                   <p className="mb-4 text-sm text-muted-foreground">
                     Distribution of proctoring alerts.
@@ -292,7 +282,7 @@ export function ExamResultsPage() {
                     data={alertSeverityData}
                     index="name"
                     category="value"
-                    colors={["emerald", "amber", "rose"]}
+                    colors={["emerald", "amber", "red"]}
                     showAnimation
                   />
                 </section>
@@ -300,7 +290,7 @@ export function ExamResultsPage() {
             </div>
 
             {alerts.length > 0 && (
-              <section className="mb-6 rounded-xl border border-border bg-card p-6">
+              <section className="mb-6 surface-panel p-6">
                 <h2 className="mb-4 font-semibold">Alerts ({alerts.length})</h2>
                 <ul className="space-y-2 text-sm">
                   {alerts.slice(0, 10).map((a) => (
@@ -320,7 +310,7 @@ export function ExamResultsPage() {
             )}
 
             {logs.length > 0 && (
-              <section className="rounded-xl border border-border bg-card p-6">
+              <section className="surface-panel p-6">
                 <h2 className="mb-4 font-semibold">Recent behavior events</h2>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   {logs.slice(0, 15).map((log) => (
@@ -336,7 +326,7 @@ export function ExamResultsPage() {
             )}
 
             {!behaviorSummary.length && !alerts.length && !logs.length && (
-              <section className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+              <section className="surface-panel p-8 text-center text-muted-foreground">
                 No proctoring events were recorded for this session.
               </section>
             )}
@@ -360,12 +350,12 @@ function MetricCard({
 }) {
   const tones = {
     default: "text-foreground",
-    success: "text-emerald-600 dark:text-emerald-400",
-    warning: "text-amber-600 dark:text-amber-400",
-    danger: "text-rose-600 dark:text-rose-400",
+    success: "text-status-safe",
+    warning: "text-status-watch",
+    danger: "text-status-alert",
   };
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="surface-panel p-4">
       <div className="mb-1 flex items-center gap-2 text-sm text-muted-foreground">
         <Icon className="h-4 w-4" />
         {label}

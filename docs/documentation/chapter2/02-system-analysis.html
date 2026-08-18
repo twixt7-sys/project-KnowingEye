@@ -108,40 +108,98 @@ flowchart TB
     <div class="cross-links"><a class="btn btn-sm" href="04-system-testing.html">Part D - System Testing</a><a class="btn btn-sm" href="../../testing/testing(IEEE)/README.md" target="_blank" rel="noopener">IEEE Test Pack ↗</a></div>
 
     <h2 id="use-case">Use Case Diagram</h2>
-    <p>Shows primary actors and their interactions with the Knowing Eye system boundary.</p>
+    <p>Shows the six RBAC roles from <a href="03-system-design.html#access-control">Access Control</a> (Administrator, Program Head, Guidance Staff, Teacher/Exam Creator, Proctor, Examinee) and their interactions with the Knowing Eye system boundary, including the exam approval chain and OTP email verification added in Area 01.</p>
     <figure class="doc-fig">
       <figcaption>Figure 2.2 - Use Case Diagram</figcaption>
       <pre class="mermaid">
 flowchart LR
   ADM((Administrator))
+  PH((Program Head))
+  GS((Guidance Staff))
+  FAC((Teacher / Exam Creator))
+  PRO((Proctor))
   EXM((Examinee))
+  CAM[[Webcam Device]]
+  AI[[AI Pipeline]]
   subgraph System["Knowing Eye System"]
     UC1[Authenticate]
-    UC2[Manage Exams]
-    UC3[Manage Users]
-    UC4[Start Session]
-    UC5[Take Exam]
-    UC6[Enroll Face]
-    UC7[Monitor Behavior]
-    UC8[View Alerts]
-    UC9[Resolve Alerts]
-    UC10[View Reports]
-    UC11[View Results]
+    UC2[Register & Verify Email OTP]
+    UC3[Manage Users & Roles]
+    UC4[Create / Edit Exam]
+    UC5[Submit Exam for Review]
+    UC6[Review, Approve or Reject Exam]
+    UC7[Publish / Archive Exam]
+    UC8[Start Exam Session]
+    UC9[Take Exam & Submit Answers]
+    UC10[Enroll Reference Face]
+    UC11[Stream Monitoring Frames]
+    UC12[Monitor Live Session & View Alerts]
+    UC13[Resolve Behavior Alerts]
+    UC14[View Reports & Analytics]
+    UC15[Export Report Data]
+    UC16[Grade Essay Responses]
+    UC17[View Own Results]
   end
   ADM --> UC1
   ADM --> UC2
   ADM --> UC3
-  ADM --> UC8
-  ADM --> UC9
-  ADM --> UC10
+  ADM --> UC4
+  ADM --> UC6
+  ADM --> UC7
+  ADM --> UC12
+  ADM --> UC13
+  ADM --> UC14
+  ADM --> UC15
+  ADM --> UC16
+  PH --> UC1
+  PH --> UC2
+  PH --> UC4
+  PH --> UC5
+  PH --> UC6
+  PH --> UC7
+  PH --> UC12
+  PH --> UC13
+  PH --> UC14
+  PH --> UC15
+  PH --> UC16
+  GS --> UC1
+  GS --> UC2
+  GS --> UC4
+  GS --> UC5
+  GS --> UC7
+  GS --> UC12
+  GS --> UC13
+  GS --> UC14
+  GS --> UC15
+  GS --> UC16
+  FAC --> UC1
+  FAC --> UC2
+  FAC --> UC4
+  FAC --> UC5
+  FAC --> UC7
+  FAC --> UC12
+  FAC --> UC13
+  FAC --> UC14
+  FAC --> UC15
+  FAC --> UC16
+  PRO --> UC1
+  PRO --> UC2
+  PRO --> UC12
+  PRO --> UC14
   EXM --> UC1
-  EXM --> UC4
-  EXM --> UC5
-  EXM --> UC6
-  EXM --> UC7
+  EXM --> UC2
+  EXM --> UC8
+  EXM --> UC9
+  EXM --> UC10
   EXM --> UC11
-  UC7 -.-> UC8
+  EXM --> UC17
+  CAM --> UC10
+  CAM --> UC11
+  AI --> UC10
+  AI --> UC11
+  UC11 -.-> UC12
       </pre>
+      <p class="doc-lead" style="font-size:0.85rem">Program Head and Administrator are the only roles with <code>exams.approve</code> (UC6); Guidance Staff and Teacher/Exam Creator create and submit but cannot self-approve. Proctor is monitoring/read-only by default (UC1, UC2, UC12, UC14) with no mutating action grants, mirroring the old <code>student_assistant</code> baseline it replaces.</p>
       <details class="graph-source"><summary>JSON source (Fig-2.2)</summary><pre id="json-uc">Loading…</pre></details>
     </figure>
 

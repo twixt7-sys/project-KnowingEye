@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { Inbox } from "lucide-react";
+import { Inbox } from "@/shared/icons";
 import { describe, expect, it } from "vitest";
 
 import { EmptyState } from "./empty-state";

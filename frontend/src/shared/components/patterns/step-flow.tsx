@@ -1,4 +1,4 @@
-import { CheckCircle2, type LucideIcon } from "lucide-react";
+import { CheckCircle2, type AppIcon } from "@/shared/icons";
 
 import { Progress } from "../ui/progress";
 import { cn } from "../ui/utils";
@@ -6,7 +6,7 @@ import { cn } from "../ui/utils";
 export type StepFlowItem<T extends string = string> = {
   id: T;
   label: string;
-  icon: LucideIcon;
+  icon: AppIcon;
 };
 
 type StepFlowProps<T extends string = string> = {

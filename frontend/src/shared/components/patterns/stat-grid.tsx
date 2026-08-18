@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { AppIcon } from "@/shared/icons";
 import type { ReactNode } from "react";
 
 import { StatCard } from "../layout/stat-card";
@@ -8,7 +8,7 @@ export type StatGridItem = {
   label: string;
   value: string;
   hint?: string;
-  icon: LucideIcon;
+  icon: AppIcon;
   tone?: "default" | "success" | "warning" | "danger";
 };
 

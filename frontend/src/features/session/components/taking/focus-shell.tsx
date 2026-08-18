@@ -1,4 +1,4 @@
-import { AlertTriangle, Camera, Loader2 } from "lucide-react";
+import { AlertTriangle, Camera, Loader2 } from "@/shared/icons";
 import type { ReactNode } from "react";
 
 import { ExamTimer } from "@/features/session/components/taking/exam-timer";

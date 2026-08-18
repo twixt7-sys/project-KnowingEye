@@ -27,7 +27,7 @@ interface AuthContextType {
     role?: Role;
     first_name: string;
     last_name: string;
-    avatar: File;
+    avatar?: File | null;
   }) => Promise<User>;
   logout: () => void;
   refresh: () => Promise<void>;
@@ -35,11 +35,15 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isGuidanceStaff: boolean;
+  isProgramHead: boolean;
   isFaculty: boolean;
-  isStudentAssistant: boolean;
+  isProctor: boolean;
   isStudent: boolean;
-  /** Any non-student role (admin/faculty/student_assistant) - the "staff workspace" audience. */
+  /** Any non-student role (admin/guidance_staff/program_head/faculty/proctor) - the "staff workspace" audience. */
   isStaff: boolean;
+  /** Program Head or Admin - Level 1 exam-approval authority (Directive A1). */
+  canApproveExams: boolean;
   /** Feature areas this user can see, e.g. "exams", "monitoring", "user-mgmt". */
   modules: Set<string>;
   /** Mutating actions this user is granted, e.g. "exams.update", "behavior.resolve". */
@@ -115,7 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role?: Role;
       first_name: string;
       last_name: string;
-      avatar: File;
+      avatar?: File | null;
     }) => {
       setIsLoading(true);
       try {
@@ -159,10 +163,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       isAuthenticated: !!user,
       isAdmin,
+      isGuidanceStaff: user?.role === "GUIDANCE_STAFF",
+      isProgramHead: user?.role === "PROGRAM_HEAD",
       isFaculty: user?.role === "FACULTY",
-      isStudentAssistant: user?.role === "STUDENT_ASSISTANT",
+      isProctor: user?.role === "PROCTOR",
       isStudent: user?.role === "STUDENT",
       isStaff: !!user && user.role !== "STUDENT",
+      canApproveExams: isAdmin || user?.role === "PROGRAM_HEAD",
       modules,
       permissions,
       hasModule,

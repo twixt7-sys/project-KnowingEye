@@ -107,9 +107,22 @@ erDiagram
         <tr><td>username</td><td>VARCHAR(150)</td><td>UNIQUE, NOT NULL</td><td>Login username</td></tr>
         <tr><td>email</td><td>VARCHAR(254)</td><td>UNIQUE, NOT NULL</td><td>Contact email</td></tr>
         <tr><td>password</td><td>VARCHAR(128)</td><td>NOT NULL</td><td>Hashed password (PBKDF2)</td></tr>
-        <tr><td>role</td><td>VARCHAR(20)</td><td>ADMIN | EXAMINEE</td><td>RBAC role</td></tr>
+        <tr><td>role</td><td>VARCHAR(20)</td><td>ADMIN | GUIDANCE_STAFF | PROGRAM_HEAD | FACULTY | PROCTOR | STUDENT</td><td>RBAC role (see <a href="#access-control">Access Control</a>)</td></tr>
+        <tr><td>email_verified</td><td>BOOLEAN</td><td>DEFAULT false</td><td>Set once the registration OTP is confirmed</td></tr>
         <tr><td>is_active</td><td>BOOLEAN</td><td>DEFAULT true</td><td>Account enabled flag</td></tr>
         <tr><td>created_at, updated_at</td><td>DATETIME</td><td>auto</td><td>Audit timestamps</td></tr>
+      </tbody>
+    </table></div>
+    <h3>authentication_email_verification</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>user_id</td><td>INTEGER</td><td>FK → authentication_user</td><td>Account the code was issued to</td></tr>
+        <tr><td>purpose</td><td>VARCHAR(20)</td><td>email_verify</td><td>Generalized for future OTP purposes (e.g. password reset)</td></tr>
+        <tr><td>code_hash</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>OTP hashed with Django's password hasher, never stored in plaintext</td></tr>
+        <tr><td>attempts</td><td>INTEGER</td><td>DEFAULT 0, max 5</td><td>Failed verification attempts before a new code is required</td></tr>
+        <tr><td>expires_at</td><td>DATETIME</td><td>NOT NULL</td><td>10 minutes from issue</td></tr>
+        <tr><td>consumed_at</td><td>DATETIME</td><td>NULL until used/invalidated</td><td>Set on successful verify or when superseded by a resend</td></tr>
       </tbody>
     </table></div>
     <h3>exams_exam &amp; exams_question</h3>
@@ -119,10 +132,24 @@ erDiagram
         <tr><td>exam.title</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Exam name</td></tr>
         <tr><td>exam.duration_minutes</td><td>INTEGER</td><td>DEFAULT 120</td><td>Time limit</td></tr>
         <tr><td>exam.passing_score</td><td>INTEGER</td><td>0–100</td><td>Minimum % to pass</td></tr>
-        <tr><td>exam.status</td><td>VARCHAR(20)</td><td>draft | active | archived</td><td>Lifecycle state</td></tr>
+        <tr><td>exam.status</td><td>VARCHAR(20)</td><td>draft | active | archived</td><td>Publish lifecycle state</td></tr>
+        <tr><td>exam.approval_status</td><td>VARCHAR(20)</td><td>not_submitted | pending | approved | rejected</td><td>Level 0/1 review chain gating publish (see <a href="#access-control">Access Control</a>)</td></tr>
+        <tr><td>exam.submitted_by, submitted_at</td><td>FK, DATETIME</td><td>NULL until submitted</td><td>Who submitted the exam for review, and when</td></tr>
+        <tr><td>exam.reviewed_by, reviewed_at</td><td>FK, DATETIME</td><td>NULL until reviewed</td><td>Who approved/rejected the exam, and when</td></tr>
+        <tr><td>exam.rejection_note</td><td>TEXT</td><td>blank by default</td><td>Reviewer feedback when rejected</td></tr>
         <tr><td>question.question_type</td><td>VARCHAR(20)</td><td>MCQ, T/F, etc.</td><td>Answer format</td></tr>
         <tr><td>question.options</td><td>JSON</td><td>DEFAULT []</td><td>MCQ choices</td></tr>
         <tr><td>question.correct_answer</td><td>TEXT</td><td>NOT NULL</td><td>Scoring key</td></tr>
+      </tbody>
+    </table></div>
+    <h3>exams_approval_event</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>exam_id</td><td>INTEGER</td><td>FK → exams_exam</td><td>Exam the event belongs to</td></tr>
+        <tr><td>actor_id</td><td>INTEGER</td><td>FK → authentication_user, SET_NULL</td><td>Who performed the transition</td></tr>
+        <tr><td>action</td><td>VARCHAR(10)</td><td>submit | approve | reject</td><td>One immutable row per transition - the audit trail behind "who approved this and when"</td></tr>
+        <tr><td>note</td><td>TEXT</td><td>blank by default</td><td>Reviewer feedback on reject</td></tr>
       </tbody>
     </table></div>
     <h3>exam_session, responses, logs, behavior &amp; identity</h3>
@@ -138,6 +165,33 @@ erDiagram
       </tbody>
     </table></div>
     <p class="doc-lead" style="font-size:0.85rem">Full dictionary in <code>database/database_schema.json</code> and Django models under <code>backend/features/</code>.</p>
+
+    <h2 id="access-control">Access Control (RBAC + PBAC)</h2>
+    <p>Per the Capstone Defense Revision Directive, Area 01 ("Authentication, Roles &amp; Access Control"): a single administrator account is a bottleneck and a single point of failure. Access is enforced in three tiers (<code>backend/core/security/</code>), mirroring the LCC OSAS System pattern: <strong>role guard</strong> (is this broadly this kind of user?), <strong>module access</strong> (can this user see this feature area?), and <strong>action permission</strong> (can this user perform this specific mutating operation?). An explicit per-user deny always overrides a role default; an explicit grant can extend it — so an admin can delegate a narrower slice of access without changing anyone's role.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Role</th><th>Hierarchy level</th><th>Default action grants</th><th>Typical scope</th></tr></thead>
+      <tbody>
+        <tr><td>Administrator</td><td>Level 0</td><td>Implicit — holds every permission</td><td>Oversight, user management, system settings</td></tr>
+        <tr><td>Program Head</td><td>Level 1</td><td><code>exams.create</code>, <code>exams.update</code>, <code>exams.approve</code>, <code>behavior.resolve</code>, <code>reports.export</code>, <code>sessions.grade</code></td><td>Reviews and approves submitted exams before they can publish</td></tr>
+        <tr><td>Guidance Staff</td><td>Operational</td><td><code>exams.create</code>, <code>exams.update</code>, <code>behavior.resolve</code>, <code>reports.export</code>, <code>sessions.grade</code></td><td>Day-to-day exam authoring and monitoring</td></tr>
+        <tr><td>Teacher / Exam Creator</td><td>Operational</td><td>Same as Guidance Staff</td><td>Creates and submits exams for their own courses</td></tr>
+        <tr><td>Proctor</td><td>Operational</td><td>None by default (module access only)</td><td>Live monitoring and behavior review; no mutating grants until delegated</td></tr>
+        <tr><td>Examinee</td><td>—</td><td>None</td><td>Takes assigned exams, views own results</td></tr>
+      </tbody>
+    </table></div>
+    <p class="doc-lead" style="font-size:0.85rem">Full registry in <code>backend/core/security/modules.py</code> (module visibility) and <code>backend/core/security/permissions_registry.py</code> (action grants).</p>
+
+    <h3>Exam approval chain</h3>
+    <p>Directly answers Area 01's "Administrator responsibilities" item: <em>stop making the administrator responsible for creating every exam.</em> Teachers, Guidance Staff, and Program Heads create and submit exams; a Program Head (or Admin) reviews, approves, or rejects them. Only an <strong>approved</strong> exam may be published by a non-admin creator — an admin retains the same bypass it holds everywhere else in the system, so this adds a review gate without introducing a second point of failure.</p>
+    <div class="two-col">
+      <div class="card"><h4>1. Draft</h4><p class="muted" style="font-size:0.9rem">Creator builds the exam. <code>approval_status = not_submitted</code>.</p></div>
+      <div class="card"><h4>2. Submit</h4><p class="muted" style="font-size:0.9rem">Creator submits once publish-readiness passes (≥1 question, valid answer keys). <code>approval_status = pending</code>; logged to <code>exams_approval_event</code>.</p></div>
+      <div class="card"><h4>3. Review</h4><p class="muted" style="font-size:0.9rem">Program Head/Admin approves or rejects (with a note). Rejection returns the exam to the creator, who can revise and resubmit.</p></div>
+      <div class="card"><h4>4. Publish</h4><p class="muted" style="font-size:0.9rem"><code>approval_status = approved</code> unlocks <code>POST /api/exams/{id}/publish/</code> for the creator; exam status moves <code>draft → active</code>.</p></div>
+    </div>
+
+    <h3>Registration &amp; OTP verification</h3>
+    <p>Answers Area 01's "Registration &amp; verification" item. Registration collects only essential fields — the profile photo is <strong>optional at signup</strong> and can be added later from the profile page, rather than blocking account creation. Password confirmation is required. Immediately after account creation, a 6-digit OTP is emailed; the code is stored hashed (never in plaintext), expires after 10 minutes, allows 5 incorrect attempts before requiring a resend, and is rate-limited to one send per 60 seconds. A "Verify your email" banner in the signed-in workspace (dismissible per session, not a hard gate) makes the pending step visually clear without blocking use of the app.</p>
 
     <h2 id="technologies">Technologies, Concepts, and Theories</h2>
     <p>The platform follows a classical computer-vision pipeline—<strong>data collection → preprocessing → feature extraction → classification/scoring</strong>—embedded in a full-stack web architecture. Technologies are grouped by layer; each entry notes where it is applied in Knowing Eye.</p>
@@ -251,7 +305,10 @@ erDiagram
         <div><h3>JWT (SimpleJWT, HS256)</h3><p>Access + refresh tokens issued at <code>/api/auth/token/</code>; auto-refreshed by <code>frontend/src/core/config/api.ts</code>. WebSocket auth via query-string token in <code>JWTAuthMiddleware</code>.</p></div>
       </article>
       <article class="tech-card">
-        <div><h3>RBAC</h3><p>Role-based access (<code>ADMIN</code> | <code>EXAMINEE</code>) enforced on REST endpoints and UI routes—draft exams and admin dashboards are hidden from examinees.</p></div>
+        <div><h3>RBAC + PBAC</h3><p>Three-tier role + module + action model (see <a href="#access-control">Access Control</a>) enforced on REST endpoints and UI routes—draft exams, approvals, and admin dashboards are gated per role, not just admin-vs-everyone-else.</p></div>
+      </article>
+      <article class="tech-card">
+        <div><h3>OTP email verification</h3><p>6-digit code hashed and stored in <code>authentication_email_verification</code>, emailed on registration and re-sendable from the workspace; 10-minute expiry, 5 attempts, 60s resend cooldown.</p></div>
       </article>
       <article class="tech-card">
         <div><h3>TLS, HSTS &amp; secure cookies</h3><p>Production settings (<code>settings/production.py</code>) enable <code>SECURE_SSL_REDIRECT</code>, HSTS, HttpOnly/Secure cookies, and <code>X-Frame-Options: DENY</code> when <code>DEBUG=False</code>.</p></div>
@@ -260,6 +317,27 @@ erDiagram
         <div><h3>CORS whitelist</h3><p><code>CORS_ALLOWED_ORIGINS</code> restricts API access to the deployed SPA origin; credentials are allowed only from trusted domains.</p></div>
       </article>
     </div>
+
+    <h2 id="readability">UI Readability &amp; Contrast Audit</h2>
+    <p>Directive Area 02 ("Readability &amp; contrast"): the panel cited poor contrast, an overly dark default theme, and "eliminate gray-on-gray combinations." Two root causes were found and fixed, and every design-token pair was measured against WCAG 2.1 (4.5:1 for body text, 3:1 for large text and UI-component boundaries like input borders) rather than adjusted by eye.</p>
+    <h3>Root cause 1 — the app defaulted to dark for every first-time visitor</h3>
+    <p><code>core/providers/theme-provider.tsx</code> set <code>defaultTheme="system"</code>, and the toggle button in <code>shared/components/common/theme-toggle.tsx</code> independently manipulated <code>&lt;html&gt;</code>'s class list with its own <code>useState("dark")</code> default — bypassing the theme provider entirely and defaulting anyone without a saved preference to dark, regardless of system preference. Fixed: the toggle now reads/writes theme exclusively through <code>next-themes</code>' <code>useTheme()</code>, and the provider defaults to <code>light</code>.</p>
+    <h3>Root cause 2 — input and button borders were measured, not eyeballed, and found near-invisible</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Token pair</th><th>Context</th><th>Before</th><th>After</th><th>Threshold</th></tr></thead>
+      <tbody>
+        <tr><td><code>--secondary-foreground</code> / <code>--secondary</code></td><td>Secondary button label</td><td>3.78:1</td><td>4.60:1</td><td>4.5:1</td></tr>
+        <tr><td><code>--status-safe</code> text / card</td><td>Status labels (52 usages)</td><td>4.33:1</td><td>4.56:1</td><td>4.5:1</td></tr>
+        <tr><td><code>--status-watch</code> text / card</td><td>Status labels</td><td>3.31:1</td><td>4.54:1</td><td>4.5:1</td></tr>
+        <tr><td><code>--care</code> text / card</td><td>Wellness &amp; Care badges (role, extra-time)</td><td>3.73:1</td><td>4.50:1</td><td>4.5:1</td></tr>
+        <tr><td><code>--input</code> / card</td><td>Button-outline, Select, RadioGroup, Tabs, Toggle borders</td><td>1.57:1</td><td>3.05:1</td><td>3:1</td></tr>
+        <tr><td><code>--form-field-border</code> / field bg</td><td>Actual <code>&lt;Input&gt;</code> border (login, registration, exam builder)</td><td>1.34:1</td><td>3.02:1</td><td>3:1</td></tr>
+        <tr><td><code>--destructive-foreground</code> / <code>--destructive</code> (dark mode)</td><td>Alert/notification badges</td><td>2.93:1</td><td>6.63:1</td><td>4.5:1</td></tr>
+        <tr><td><code>--input</code> / card (dark mode)</td><td>Same components, dark theme</td><td>1.6:1 (est.)</td><td>3.01:1</td><td>3:1</td></tr>
+        <tr><td><code>--form-field-border</code> / field bg (dark mode)</td><td><code>&lt;Input&gt;</code> border, dark theme</td><td>1.42:1</td><td>3.19:1</td><td>3:1</td></tr>
+      </tbody>
+    </table></div>
+    <p class="doc-lead" style="font-size:0.85rem">Body text (<code>--foreground</code>/<code>--background</code>, <code>--muted-foreground</code>/<code>--muted</code>) already passed at 4.7–15:1 in both themes and was left unchanged. Decorative-only borders (card outlines, table dividers, section rules) were deliberately <em>not</em> pushed to the 3:1 UI-component threshold — WCAG 1.4.11 scopes that requirement to boundaries needed to identify a component, and these carry redundant cues (shadow, background shift); forcing every card outline to 3:1 would have been a much larger, unrequested visual change for no accessibility gain. All values computed via the WCAG relative-luminance formula against the actual rendered/composited color, not the raw token in isolation.</p>
 
     <h3>CV Pipeline Stages</h3>
     <div class="two-col">

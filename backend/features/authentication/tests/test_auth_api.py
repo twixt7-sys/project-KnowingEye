@@ -74,7 +74,9 @@ class AuthenticationAPITests(APITestCase):
         self.assertEqual(user.role, User.Role.STUDENT)
         self.assertEqual(response.data["user"]["role"], User.Role.STUDENT)
 
-    def test_register_requires_avatar(self):
+    def test_register_without_avatar_succeeds(self):
+        """Directive Area 01 ('Registration & verification'): the profile
+        photo is optional at signup, added later from the profile page."""
         response = self.client.post(
             "/api/auth/register/",
             {
@@ -87,9 +89,26 @@ class AuthenticationAPITests(APITestCase):
             },
             format="multipart",
         )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        user = User.objects.get(username="no_photo")
+        self.assertFalse(user.avatar)
+
+    def test_register_password_mismatch_rejected(self):
+        response = self.client.post(
+            "/api/auth/register/",
+            {
+                "username": "mismatch",
+                "email": "mismatch@test.local",
+                "password": "TestPass123!",
+                "password2": "Different123!",
+                "first_name": "Mis",
+                "last_name": "Match",
+            },
+            format="multipart",
+        )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         details = validation_details(response)
-        self.assertIn("avatar", details)
+        self.assertIn("password", details)
 
     def test_profile_me(self):
         self.client.force_authenticate(user=self.examinee)

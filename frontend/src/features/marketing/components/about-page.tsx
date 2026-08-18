@@ -1,7 +1,12 @@
-import { Award, Lightbulb, Target } from "lucide-react";
+import { Lightbulb, MapPin, Target } from "@/shared/icons";
 
 import { brand } from "@/core/config/brand";
-import { PageHeaderV2 } from "@/shared/components/patterns/page-header-v2";
+import { DepartmentLogo, InstitutionLogo } from "@/shared/components/layout/logo";
+import {
+  SectionHeading,
+  StampChip,
+  TickList,
+} from "./marketing-primitives";
 
 const team = [
   { name: "Saturnino C. Ancog III", role: "Lead Developer" },
@@ -21,143 +26,169 @@ const objectives = [
   "Evaluate system usability, functionality, and effectiveness",
 ];
 
+const includedScope = [
+  "Web-based examination platform",
+  "Real-time webcam monitoring",
+  "Facial detection and posture analysis",
+  "Behavior scoring and anomaly detection",
+  "Admin dashboard with reports",
+  "Session logging and storage",
+];
+
+const outOfScope = [
+  "Mobile application support",
+  "External system integrations",
+  "Biometric hardware devices",
+  "Nationwide deployment",
+];
+
 export function AboutPage() {
   return (
-    <div className="w-full max-w-6xl py-4">
-      <PageHeaderV2
-        title="About Knowing Eye"
-        description="A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis"
-        className="text-center [&_.page-description]:mx-auto [&_.page-description]:max-w-4xl"
-      />
-      <div className="mb-20 text-center">
-        <div className="inline-block rounded-lg bg-accent px-4 py-2 text-accent-foreground">
-          Capstone Project 2026
-        </div>
-      </div>
+    <div className="mx-auto w-full max-w-6xl py-4">
+      {/* Hero */}
+      <header className="mx-auto mb-16 max-w-3xl text-center">
+        <StampChip>Capstone Project 2026</StampChip>
+        <h1 className="mt-5 font-serif text-4xl font-semibold tracking-tight sm:text-5xl">
+          About Knowing Eye
+        </h1>
+        <p className="mx-auto mt-4 max-w-2xl font-serif text-lg italic leading-relaxed text-muted-foreground">
+          A Web-Based Examination Platform with Behavior Monitoring Using Facial and
+          Postural Analysis
+        </p>
+      </header>
 
-      <section className="mb-20 rounded-2xl bg-gradient-to-b from-accent/20 to-transparent py-16">
-        <div className="mx-auto max-w-4xl">
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="rounded-xl border border-border bg-card p-8">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-                <Lightbulb className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="mb-4 text-2xl font-semibold">The Problem</h3>
-              <p className="text-muted-foreground">
-                Online examination systems lack reliable real-time monitoring, leading to increased
-                risk of cheating and heavy reliance on manual supervision.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-8">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-                <Target className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="mb-4 text-2xl font-semibold">Our Solution</h3>
-              <p className="text-muted-foreground">
-                A full-stack web-based examination platform integrated with AI-powered behavioral
-                monitoring using computer vision and deep learning to enhance exam integrity and
-                automate monitoring.
-              </p>
-            </div>
+      {/* Problem / Solution dossier */}
+      <section className="mb-24">
+        <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
+          <div className="tick-frame surface-panel relative overflow-hidden p-7 sm:p-8">
+            <span className="tick-frame-corners" aria-hidden />
+            <Lightbulb
+              className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 text-foreground opacity-[0.06]"
+              weight="duotone"
+              aria-hidden
+            />
+            <p className="kicker">The problem</p>
+            <p className="mt-4 font-serif text-xl font-medium leading-relaxed tracking-tight">
+              Online examination systems lack reliable real-time monitoring, leading to
+              increased risk of cheating and heavy reliance on manual supervision.
+            </p>
+          </div>
+          <div className="tick-frame surface-panel relative overflow-hidden p-7 sm:p-8">
+            <span className="tick-frame-corners" aria-hidden />
+            <Target
+              className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 text-foreground opacity-[0.06]"
+              weight="duotone"
+              aria-hidden
+            />
+            <p className="kicker">Our solution</p>
+            <p className="mt-4 font-serif text-xl font-medium leading-relaxed tracking-tight">
+              A full-stack examination platform with AI-powered behavioral monitoring —
+              computer vision and deep learning working to protect exam integrity,
+              automatically.
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="mb-20">
-        <PageHeaderV2
-          title="Project Objectives"
-          description="To design and develop a centralized web-based examination platform with integrated real-time behavioral monitoring"
-          className="text-center [&_.page-description]:mx-auto [&_.page-description]:max-w-2xl"
+      {/* Objectives ledger */}
+      <section className="mb-24">
+        <SectionHeading
+          kicker="Project objectives"
+          title="What this project set out to do"
+          description="To design and develop a centralized web-based examination platform with integrated real-time behavioral monitoring."
         />
-        <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-2">
-          {objectives.map((objective, index) => (
-            <div
-              key={objective}
-              className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/50"
-            >
-              <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
-                {index + 1}
-              </div>
-              <p className="text-sm">{objective}</p>
-            </div>
-          ))}
+        <div className="surface-panel mx-auto max-w-4xl overflow-hidden">
+          <ol className="grid md:grid-cols-2">
+            {objectives.map((objective, index) => (
+              <li
+                key={objective}
+                className="flex items-baseline gap-4 border-b border-border/60 px-6 py-4 last:border-b-0 md:odd:border-r md:[&:nth-last-child(2)]:border-b-0"
+              >
+                <span className="font-mono text-xs font-medium tabular-nums text-gold">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <p className="text-sm leading-relaxed text-foreground/85">{objective}</p>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
-      <section className="mb-20 rounded-2xl bg-gradient-to-b from-transparent via-accent/20 to-transparent py-16">
-        <div className="mx-auto max-w-4xl">
-          <PageHeaderV2 title="System Scope" className="text-center" />
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h3 className="mb-4 text-xl font-semibold text-green-600 dark:text-green-400">
-                Included Features
-              </h3>
-              <ul className="space-y-2 text-muted-foreground">
-                {[
-                  "Web-based examination platform",
-                  "Real-time webcam monitoring",
-                  "Facial detection and posture analysis",
-                  "Behavior scoring and anomaly detection",
-                  "Admin dashboard with reports",
-                  "Session logging and storage",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2">
-                    <div className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h3 className="mb-4 text-xl font-semibold text-muted-foreground">Out of Scope</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                {[
-                  "Mobile application support",
-                  "External system integrations",
-                  "Biometric hardware devices",
-                  "Nationwide deployment",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2">
-                    <div className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+      {/* Scope */}
+      <section className="mb-24">
+        <SectionHeading
+          kicker="Boundaries"
+          title="System Scope"
+          description="What the platform covers today — and what it deliberately leaves out."
+        />
+        <div className="mx-auto grid max-w-4xl gap-6 md:grid-cols-2">
+          <div className="surface-panel p-6 sm:p-7">
+            <p className="flex items-center gap-2 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-status-safe">
+              <span className="h-1.5 w-1.5 rounded-full bg-status-safe" aria-hidden />
+              Included features
+            </p>
+            <TickList items={includedScope} tone="safe" className="mt-4" />
+          </div>
+          <div className="surface-panel bg-muted/30 p-6 sm:p-7">
+            <p className="flex items-center gap-2 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60" aria-hidden />
+              Out of scope
+            </p>
+            <TickList items={outOfScope} tone="muted" className="mt-4" />
           </div>
         </div>
       </section>
 
-      <section className="mb-20">
-        <PageHeaderV2
+      {/* Team registry */}
+      <section className="mb-24">
+        <SectionHeading
+          kicker="The registry"
           title="Development Team"
           description={`${brand.departmentName} · ${brand.institutionName}`}
-          className="text-center [&_.page-description]:mx-auto"
         />
-        <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-2">
-          {team.map((member) => (
+        <div className="mx-auto grid max-w-4xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {team.map((member, i) => (
             <div
               key={member.name}
-              className="rounded-xl border border-border bg-card p-6 text-center transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
+              className="surface-panel-interactive relative p-6 pt-7 text-center"
             >
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-xl font-bold text-white">
+              <span className="portal-index absolute left-4 top-3" aria-hidden>
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-gold/50 bg-primary/10 font-serif text-2xl font-semibold text-primary shadow-[0_0_0_4px_var(--card),0_0_0_5px_var(--border)]">
                 {member.name.charAt(0)}
               </div>
-              <h3 className="mb-1 font-semibold">{member.name}</h3>
-              <p className="text-sm text-muted-foreground">{member.role}</p>
+              <h3 className="mt-4 font-serif text-[0.9975rem] font-semibold leading-snug tracking-tight">
+                {member.name}
+              </h3>
+              <p className="mt-1.5 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground">
+                {member.role}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="rounded-2xl bg-gradient-to-b from-transparent via-accent/20 to-transparent py-16">
-        <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-12 text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary">
-            <Award className="h-8 w-8 text-white" />
+      {/* Institution band */}
+      <section className="mb-8">
+        <div className="greeting-band mx-auto max-w-3xl px-7 py-8 text-center sm:px-10">
+          <div className="relative">
+            <div className="flex items-center justify-center gap-3">
+              <InstitutionLogo className="h-14 w-14 rounded-full border border-border bg-card p-1.5" />
+              <span className="h-8 w-px bg-border" aria-hidden />
+              <DepartmentLogo className="h-14 w-14 rounded-full border border-border bg-card p-1.5" />
+            </div>
+            <h2 className="mt-5 font-serif text-2xl font-semibold tracking-tight">
+              {brand.institutionName}
+            </h2>
+            <p className="mt-1 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-primary">
+              {brand.departmentName}
+            </p>
+            <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5" aria-hidden />
+              Compostela, Davao de Oro, Philippines
+            </p>
           </div>
-          <h2 className="mb-2 text-2xl font-bold">Legacy College of Compostela</h2>
-          <p className="mb-4 text-lg text-muted-foreground">{brand.departmentName}</p>
-          <p className="text-muted-foreground">Compostela, Davao de Oro, Philippines</p>
         </div>
       </section>
     </div>

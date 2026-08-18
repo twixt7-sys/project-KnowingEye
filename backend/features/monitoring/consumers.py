@@ -236,8 +236,8 @@ def _has_monitoring_module(user) -> bool:
 class SessionObserverConsumer(AsyncJsonWebsocketConsumer):
     """Read-only feed for a single session (analysis + snapshots).
 
-    Open to any role with the ``monitoring`` module (admin, faculty,
-    student_assistant) - matches the "student_assistant can live-monitor"
+    Open to any role with the ``monitoring`` module (admin, guidance_staff,
+    program_head, faculty, proctor) - matches the "proctor can live-monitor"
     capability, not admin-only.
     """
 

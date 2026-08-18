@@ -77,7 +77,7 @@ class ExamViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["status", "created_by"]
+    filterset_fields = ["status", "created_by", "approval_status"]
     search_fields = ["title", "description", "exam_code"]
     ordering_fields = ["created_at", "title"]
     ordering = ["-created_at"]
@@ -93,8 +93,10 @@ class ExamViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         """Pick the serializer appropriate to the action and the user's role."""
         if self.action == "retrieve":
+            from core.security import service as security
+
             user = self.request.user
-            if user.is_admin() or user.is_faculty():
+            if user.is_admin() or security.has_module(user, "exams"):
                 return ExamDetailSerializer
             return ExamTakeSerializer
         if self.action in {"create", "update", "partial_update"}:
@@ -136,6 +138,56 @@ class ExamViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_200_OK,
         )
+
+    @action(detail=True, methods=["post"])
+    def submit(self, request, pk=None):
+        """Submit a draft exam for program-head review."""
+        result = services.submit_exam_for_approval(self.get_object(), request.user)
+        return Response(
+            {
+                "message": result.message,
+                "exam": ExamDetailSerializer(result.exam, context={"request": request}).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["post"])
+    def approve(self, request, pk=None):
+        """Approve a pending exam submission (program head / admin)."""
+        result = services.approve_exam(self.get_object(), request.user)
+        return Response(
+            {
+                "message": result.message,
+                "exam": ExamDetailSerializer(result.exam, context={"request": request}).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["post"])
+    def reject(self, request, pk=None):
+        """Reject a pending exam submission, returning it to the creator for revision."""
+        note = (request.data.get("note") or "").strip()
+        result = services.reject_exam(self.get_object(), request.user, note=note)
+        return Response(
+            {
+                "message": result.message,
+                "exam": ExamDetailSerializer(result.exam, context={"request": request}).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=False, methods=["get"], url_path="pending-review")
+    def pending_review(self, request):
+        """Exams awaiting Level 1 review, for the program head approvals queue."""
+        services.assert_can_review_exam(request.user)
+        qs = self.filter_queryset(self.get_queryset()).filter(
+            approval_status=Exam.ApprovalStatus.PENDING
+        )
+        page = self.paginate_queryset(qs)
+        serializer = ExamListSerializer(page or qs, many=True, context={"request": request})
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
 
     @action(detail=True, methods=["post"])
     def archive(self, request, pk=None):
@@ -334,9 +386,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def list(self, request, *args, **kwargs):
-        """List questions, redacting answer keys for non-admin/faculty users."""
+        """List questions, redacting answer keys for users without exam-management access."""
+        from core.security import service as security
+
         qs = self.filter_queryset(self.get_queryset())
-        if request.user.is_admin() or request.user.is_faculty():
+        if request.user.is_admin() or security.has_module(request.user, "exams"):
             serializer = QuestionDetailSerializer(qs, many=True)
         else:
             from .serializers import QuestionTakeSerializer

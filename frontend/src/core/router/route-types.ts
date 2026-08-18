@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 
-export type AppRole = "ADMIN" | "FACULTY" | "STUDENT_ASSISTANT" | "STUDENT";
+export type AppRole =
+  | "ADMIN"
+  | "GUIDANCE_STAFF"
+  | "PROGRAM_HEAD"
+  | "FACULTY"
+  | "PROCTOR"
+  | "STUDENT";
 
 export interface ProtectedRouteProps {
   children: ReactNode;

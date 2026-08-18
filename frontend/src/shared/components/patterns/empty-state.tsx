@@ -1,10 +1,10 @@
-import type { LucideIcon } from "lucide-react";
+import type { AppIcon } from "@/shared/icons";
 import type { ReactNode } from "react";
 
 import { cn } from "../ui/utils";
 
 type EmptyStateProps = {
-  icon: LucideIcon;
+  icon: AppIcon;
   title: string;
   description?: string;
   action?: ReactNode;
@@ -17,7 +17,7 @@ export function EmptyState({ icon: Icon, title, description, action, className }
       className={cn("flex flex-col items-center justify-center px-6 py-12 text-center", className)}
     >
       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-dashed border-input bg-card">
-        <Icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} aria-hidden />
+        <Icon className="h-5 w-5 text-muted-foreground" weight="light" aria-hidden />
       </div>
       <p
         className="mb-2 font-mono text-[0.65rem] font-medium uppercase tracking-[0.18em] text-muted-foreground/80"

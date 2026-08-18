@@ -16,27 +16,31 @@ from __future__ import annotations
 MODULES: dict[str, dict] = {
     "dashboard": {
         "label": "Dashboard",
-        "roles": ["admin", "faculty", "student_assistant"],
+        "roles": ["admin", "guidance_staff", "program_head", "faculty", "proctor"],
     },
     "exams": {
         "label": "Exam Management",
-        "roles": ["admin", "faculty"],
+        "roles": ["admin", "guidance_staff", "program_head", "faculty"],
+    },
+    "exam-approvals": {
+        "label": "Exam Approvals",
+        "roles": ["admin", "program_head"],
     },
     "monitoring": {
         "label": "Live Monitoring",
-        "roles": ["admin", "faculty", "student_assistant"],
+        "roles": ["admin", "guidance_staff", "program_head", "faculty", "proctor"],
     },
     "behavior": {
         "label": "Behavior Events",
-        "roles": ["admin", "faculty", "student_assistant"],
+        "roles": ["admin", "guidance_staff", "program_head", "faculty", "proctor"],
     },
     "reports": {
         "label": "Reports",
-        "roles": ["admin", "faculty", "student_assistant"],
+        "roles": ["admin", "guidance_staff", "program_head", "faculty", "proctor"],
     },
     "sessions": {
         "label": "Exam Sessions",
-        "roles": ["admin", "faculty"],
+        "roles": ["admin", "guidance_staff", "program_head", "faculty"],
     },
     "user-mgmt": {
         "label": "User Management",
@@ -58,6 +62,6 @@ MODULES: dict[str, dict] = {
     },
     "my-profile": {
         "label": "My Profile",
-        "roles": ["student", "student_assistant", "faculty", "admin"],
+        "roles": ["student", "proctor", "faculty", "guidance_staff", "program_head", "admin"],
     },
 }

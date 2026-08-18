@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import type { AppIcon } from "@/shared/icons";
 import type { ComponentProps, ReactNode } from "react";
 import { Link } from "react-router";
 
@@ -10,7 +10,7 @@ type IconActionTone = "default" | "primary" | "danger";
 type IconActionBaseProps = {
   /** Tooltip text and accessible name — required, the button has no visible label. */
   label: string;
-  icon: LucideIcon;
+  icon: AppIcon;
   tone?: IconActionTone;
   className?: string;
   /** Optional custom icon node (e.g. a spinner) rendered instead of `icon`. */
@@ -40,7 +40,7 @@ const toneClass: Record<IconActionTone, string> = {
  */
 export function IconAction(props: IconActionProps) {
   const { label, icon: Icon, tone = "default", className, children } = props;
-  const content = children ?? <Icon className="h-4 w-4" strokeWidth={1.75} />;
+  const content = children ?? <Icon className="h-4 w-4" weight="regular" />;
   const classes = cn("icon-btn", toneClass[tone], className);
 
   const trigger =
