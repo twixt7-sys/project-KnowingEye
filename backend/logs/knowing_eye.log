@@ -4540,3 +4540,30 @@ django.db.utils.OperationalError: no such table: exams_assignment
 2026-08-18 08:39:52,261 [WARNING] django.request: Bad Request: /api/auth/profile/verify-email/confirm/
 2026-08-18 08:39:57,968 [WARNING] knowing_eye.api.errors: API error [not_authenticated] UserProfileViewSet.POST status=401 detail={'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')}
 2026-08-18 08:39:57,970 [WARNING] django.request: Unauthorized: /api/auth/profile/verify-email/request/
+2026-08-19 11:22:05,257 [WARNING] django.request: Forbidden: /api/auth/users/3/activate/
+2026-08-19 11:29:02,978 [WARNING] knowing_eye.api.errors: API error [validation_error] RegisterView.POST status=400 detail={'password': [ErrorDetail(string='Passwords must match.', code='invalid')]}
+2026-08-19 11:29:03,048 [WARNING] django.request: Bad Request: /api/auth/register/
+2026-08-19 11:30:35,651 [WARNING] knowing_eye.api.errors: API error [validation_error] UserProfileViewSet.POST status=400 detail={'code': ErrorDetail(string='Incorrect code.', code='invalid')}
+2026-08-19 11:30:35,656 [WARNING] django.request: Bad Request: /api/auth/profile/verify-email/confirm/
+2026-08-19 11:31:07,772 [WARNING] knowing_eye.api.errors: API error [not_authenticated] UserProfileViewSet.POST status=401 detail={'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')}
+2026-08-19 11:31:07,775 [WARNING] django.request: Unauthorized: /api/auth/profile/verify-email/request/
+2026-08-19 11:37:19,490 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.POST status=403 detail={'detail': ErrorDetail(string='You do not have permission to create exams.', code='permission_denied')}
+2026-08-19 11:37:19,570 [WARNING] django.request: Forbidden: /api/exams/
+2026-08-19 11:37:26,022 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.POST status=403 detail={'detail': ErrorDetail(string='You do not have permission to create exams.', code='permission_denied')}
+2026-08-19 11:37:26,025 [WARNING] django.request: Forbidden: /api/exams/
+2026-08-19 11:38:04,976 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.DELETE status=403 detail={'detail': ErrorDetail(string='You do not have permission to delete this exam.', code='permission_denied')}
+2026-08-19 11:38:04,977 [WARNING] django.request: Forbidden: /api/exams/1/
+2026-08-19 11:38:13,366 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.PATCH status=403 detail={'detail': ErrorDetail(string='You can only modify exams you created (or as admin).', code='permission_denied')}
+2026-08-19 11:38:13,368 [WARNING] django.request: Forbidden: /api/exams/1/
+2026-08-19 11:39:05,356 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'approval_status': ErrorDetail(string='Only a pending exam can be approved.', code='invalid')}
+2026-08-19 11:39:05,357 [WARNING] django.request: Bad Request: /api/exams/1/approve/
+2026-08-19 11:39:13,393 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'submit': [ErrorDetail(string='Add at least one question before publishing.', code='invalid')]}
+2026-08-19 11:39:13,393 [WARNING] django.request: Bad Request: /api/exams/2/submit/
+2026-08-19 11:39:44,306 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.GET status=403 detail={'detail': ErrorDetail(string='You do not have permission to review exam submissions.', code='permission_denied')}
+2026-08-19 11:39:44,307 [WARNING] django.request: Forbidden: /api/exams/pending-review/
+2026-08-19 11:39:57,004 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.POST status=403 detail={'detail': ErrorDetail(string='You do not have permission to review exam submissions.', code='permission_denied')}
+2026-08-19 11:39:57,005 [WARNING] django.request: Forbidden: /api/exams/1/approve/
+2026-08-19 11:40:18,371 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'approval_status': ErrorDetail(string='This exam must be submitted for review and approved by a program head before it can be published.', code='invalid')}
+2026-08-19 11:40:18,374 [WARNING] django.request: Bad Request: /api/exams/1/publish/
+2026-08-19 11:40:26,960 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.POST status=403 detail={'detail': ErrorDetail(string='You can only modify exams you created (or as admin).', code='permission_denied')}
+2026-08-19 11:40:26,960 [WARNING] django.request: Forbidden: /api/exams/1/submit/

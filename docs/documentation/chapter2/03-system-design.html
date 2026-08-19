@@ -338,6 +338,27 @@ erDiagram
       </tbody>
     </table></div>
     <p class="doc-lead" style="font-size:0.85rem">Body text (<code>--foreground</code>/<code>--background</code>, <code>--muted-foreground</code>/<code>--muted</code>) already passed at 4.7–15:1 in both themes and was left unchanged. Decorative-only borders (card outlines, table dividers, section rules) were deliberately <em>not</em> pushed to the 3:1 UI-component threshold — WCAG 1.4.11 scopes that requirement to boundaries needed to identify a component, and these carry redundant cues (shadow, background shift); forcing every card outline to 3:1 would have been a much larger, unrequested visual change for no accessibility gain. All values computed via the WCAG relative-luminance formula against the actual rendered/composited color, not the raw token in isolation.</p>
+    <p class="doc-lead" style="font-size:0.85rem">Every ratio above is asserted, not just written down: <code>frontend/src/styles/theme-contrast.test.ts</code> reimplements the WCAG relative-luminance formula and fails the build if a future token edit regresses a pair below its threshold. Disabled controls (<code>.icon-btn:disabled</code>'s 0.45 opacity, the shared Button/Input <code>disabled:opacity-50</code> utility) are deliberately excluded from that test rather than silently ignored — WCAG 2.1 SC 1.4.3 and 1.4.11 both exempt inactive UI components from contrast requirements, so opacity-dimming is the correct treatment, not a gap.</p>
+
+    <h2 id="institutional-identity">Institutional Identity</h2>
+    <p>Directive Area 02 ("Institutional identity", P0): the panel's core complaint was that the interface "felt like a generic SaaS template" rather than a system belonging to Legacy College of Compostela's Wellness and Care Center. Two things were required — real institutional marks in place of placeholder art, and a sweep to catch any component still wearing an unmodified component-library default.</p>
+    <h3>Branding assets</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Asset</th><th>File</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>Institution logo (login, header, footer)</td><td><code>public/branding/institution-logo.svg</code></td><td>Real asset — embedded photographic mark, not a placeholder</td></tr>
+        <tr><td>Campus background (home, workspace)</td><td><code>public/branding/school-campus.svg</code></td><td>Real asset — embedded campus photograph</td></tr>
+        <tr><td>App / product mark ("Knowing Eye" eye icon)</td><td>inline vector in <code>shared/components/layout/logo.tsx</code></td><td>Intentional design, not institutional branding — <code>brand.useImageAppLogo</code> is deliberately <code>false</code> so this hand-drawn mark renders instead of the unused <code>app-logo.svg</code> file kept only as a swap-in point</td></tr>
+        <tr><td>Department seal (Wellness and Care Center)</td><td><code>public/branding/department-logo.svg</code></td><td><strong>Open item</strong> — a labeled placeholder seal pending the office's official mark; see below</td></tr>
+      </tbody>
+    </table></div>
+    <p class="doc-lead" style="font-size:0.85rem"><strong>Known gap, not fabricated:</strong> the Wellness and Care Center does not have a digitized seal on file, so <code>department-logo.svg</code> stays a clearly-labeled placeholder (its own file header says so) rather than an invented "official" mark — inventing institutional artwork would be worse than flagging the gap. Swapping the file at that one path (see <code>core/config/brand.ts</code>) is the entire fix once a real seal exists.</p>
+    <p>The accent ramp (<code>--lcc-green</code> <code>#1b4d36</code>, <code>--lcc-green-vibrant</code> <code>#1f8a5b</code>, <code>--lcc-white</code> <code>#f7f5ea</code>, <code>--lcc-blue</code> <code>#10203a</code>, <code>--lcc-yellow</code>/<code>--gold</code> <code>#a67c2e</code>) is applied to the public marketing pages, the login brand panel, and the safe/pass status signal — see <a href="#readability">Readability &amp; Contrast Audit</a> for why <code>--status-safe</code> is a separately-tuned green rather than reusing <code>--lcc-green</code> directly (the institutional green alone did not clear 4.5:1 on a white card).</p>
+    <h3>Templated-component sweep</h3>
+    <p>Directive Area 02 also asks for a sweep of "obviously templated / AI-generated-looking" components. Rather than eyeball 45 files in <code>shared/components/ui/</code>, the check was run as a grep for the tell: unmodified shadcn/ui defaults lean on Tailwind's stock <code>gray-*</code>/<code>slate-*</code>/<code>zinc-*</code>/<code>neutral-*</code>/<code>stone-*</code> palette instead of this app's design tokens.</p>
+    <pre><code>grep -rE '\b(bg|text|border|ring|from|to|via)-(gray|slate|zinc|neutral|stone)-[0-9]+' frontend/src
+→ no matches</code></pre>
+    <p class="doc-lead" style="font-size:0.85rem">Zero hits across the entire frontend, not just <code>ui/</code>. Every surface — buttons, inputs, badges, cards, switches, tables, sidebars, dialogs — resolves color through the token layer in <code>styles/theme.css</code>, so the sweep is complete rather than partially spot-checked.</p>
 
     <h3>CV Pipeline Stages</h3>
     <div class="two-col">
