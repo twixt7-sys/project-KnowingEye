@@ -14,6 +14,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from .dto import ExamLifecycleResult
 from .models import Department, Exam, ExamAssignment, Question
+from .serializers import option_text
 
 User = get_user_model()
 
@@ -62,11 +63,27 @@ def assert_can_delete_exam(exam: Exam, user) -> None:
     raise PermissionDenied("You do not have permission to delete this exam.")
 
 
+def exam_has_active_session(exam: Exam) -> bool:
+    """Whether any examinee currently has an in-progress attempt on this exam.
+
+    Directive Area 03 ("Question management"): "lock question editing once
+    an exam is in progress - students may already be answering." Checked
+    against the live session state rather than only exam.status, so the
+    reason an edit is blocked is always the literal one the Directive names.
+    """
+    from features.session.models import ExamSession
+
+    return exam.sessions.filter(
+        status__in=(ExamSession.Status.SETUP, ExamSession.Status.IN_PROGRESS)
+    ).exists()
+
+
 def assert_exam_editable(exam: Exam) -> None:
-    """Ensure structural edits are only allowed on draft exams.
+    """Ensure structural edits are only allowed on draft exams with no live session.
 
     Raises:
-        ValidationError: If the exam is published or archived.
+        ValidationError: If the exam is published/archived, or an examinee
+            currently has an in-progress attempt on it.
     """
     if exam.status != Exam.Status.DRAFT:
         raise ValidationError(
@@ -77,6 +94,40 @@ def assert_exam_editable(exam: Exam) -> None:
                 )
             }
         )
+    if exam_has_active_session(exam):
+        raise ValidationError(
+            {
+                "status": (
+                    "Cannot modify this exam - an examinee currently has it in "
+                    "progress. Wait for active sessions to finish."
+                )
+            }
+        )
+
+
+def exam_schedule_state(exam: Exam) -> str | None:
+    """Derived Upcoming / Active / Closed / Expired state for the scheduling window.
+
+    Directive Area 03 ("Scheduling & exam codes"): "show clear states."
+    Computed, never stored, from `status` + the `available_from`/
+    `available_until` window - `None` for a draft, since the window is only
+    meaningful once an exam is published.
+
+    Returns:
+        One of ``"upcoming"``, ``"active"``, ``"closed"``, ``"expired"``, or
+        ``None`` if the exam is still a draft.
+    """
+    if exam.status == Exam.Status.DRAFT:
+        return None
+    if exam.status == Exam.Status.ARCHIVED:
+        return "closed"
+
+    now = timezone.now()
+    if exam.available_from and now < exam.available_from:
+        return "upcoming"
+    if exam.available_until and now > exam.available_until:
+        return "expired"
+    return "active"
 
 
 def assert_can_create_exam(user) -> None:
@@ -220,9 +271,10 @@ def exam_publish_readiness(exam: Exam) -> dict[str, Any]:
         total_points += q.points
 
         if q.question_type == Question.QuestionType.MULTIPLE_CHOICE:
-            if len(q.options or []) < 2:
+            option_texts = [option_text(o) for o in (q.options or [])]
+            if len([t for t in option_texts if t]) < 2:
                 issues.append(f"{label}: multiple choice needs at least 2 options.")
-            elif q.correct_answer not in (q.options or []):
+            elif q.correct_answer not in option_texts:
                 issues.append(f"{label}: correct answer must match an option.")
         elif q.question_type == Question.QuestionType.TRUE_FALSE:
             if (q.correct_answer or "").lower() not in ("true", "false"):
@@ -538,15 +590,29 @@ def reorder_questions(exam: Exam, user, ordered_ids: list[int]) -> list[Question
 
 
 # Canonical import template - matches the spreadsheet template offered in the UI.
+# `option_images` is optional and, when present, must align 1:1 with `options`
+# (pipe-delimited, same order; leave a segment blank for a text-only option) -
+# Directive Area 03 ("Bulk import"): "validate ... media references."
 CSV_TEMPLATE_HEADERS = [
     "question_text",
     "question_type",
     "options",
+    "option_images",
     "correct_answer",
     "points",
 ]
 _REQUIRED_HEADERS = {"question_text", "question_type"}
 _VALID_QUESTION_TYPES = {t.value for t in Question.QuestionType}
+
+
+def _is_plausible_media_reference(value: str) -> bool:
+    """Loose validation for an option-image reference in an import row.
+
+    Accepts an absolute http(s) URL or a same-origin media path (what the
+    option-image upload endpoint returns) - anything else is almost
+    certainly a typo'd filename rather than a usable reference.
+    """
+    return value.startswith(("http://", "https://", "/media/"))
 
 
 def _row_from_mapping(
@@ -567,7 +633,28 @@ def _row_from_mapping(
         )
 
     options_raw = (row.get("options") or "").strip()
-    options = [o.strip() for o in options_raw.split("|") if o.strip()] if options_raw else []
+    option_labels = [o.strip() for o in options_raw.split("|") if o.strip()] if options_raw else []
+
+    images_raw = (row.get("option_images") or "").strip()
+    image_refs = [seg.strip() for seg in images_raw.split("|")] if images_raw else []
+    if image_refs and len(image_refs) != len(option_labels):
+        errors.append(
+            f"Row {line_no}: 'option_images' has {len(image_refs)} segment(s) but "
+            f"'options' has {len(option_labels)} - use one image segment per option "
+            "(leave a segment blank for a text-only option)."
+        )
+        image_refs = []
+    for ref in image_refs:
+        if ref and not _is_plausible_media_reference(ref):
+            errors.append(
+                f"Row {line_no}: 'option_images' reference '{ref}' doesn't look like a "
+                "URL - upload the image first and paste the returned media URL."
+            )
+
+    options = [
+        {"text": label, "image": (image_refs[i] if i < len(image_refs) and image_refs[i] else None)}
+        for i, label in enumerate(option_labels)
+    ]
     correct_answer = (row.get("correct_answer") or "").strip()
 
     points_raw = (row.get("points") or "").strip()
@@ -771,6 +858,7 @@ def duplicate_exam(exam: Exam, user) -> Exam:
             duration_minutes=exam.duration_minutes,
             passing_score=exam.passing_score,
             department=exam.department,
+            category=exam.category,
             available_from=exam.available_from,
             available_until=exam.available_until,
             max_attempts=exam.max_attempts,
@@ -790,6 +878,7 @@ def duplicate_exam(exam: Exam, user) -> Exam:
         if exam.department:
             new_exam.exam_code = generate_exam_code(exam.department)
             new_exam.save(update_fields=['exam_code'])
+        new_exam.departments.set(exam.departments.all())
 
         section_map: dict[int, Any] = {}
         for section in exam.sections.order_by('order'):
@@ -848,7 +937,7 @@ def attach_creator(exam: Exam, user) -> None:
 
 
 def import_assignments(exam: Exam, user, *, csv_text: str) -> dict[str, Any]:
-    """Import candidate roster from CSV (email, extra_time_minutes)."""
+    """Import candidate roster from CSV (email, extra_time_minutes, seat_label)."""
     assert_can_modify_exam(exam, user)
 
     text = (csv_text or "").lstrip("\ufeff").strip()
@@ -875,6 +964,7 @@ def import_assignments(exam: Exam, user, *, csv_text: str) -> dict[str, Any]:
         except ValueError:
             errors.append(f"Row {line_no}: invalid extra_time_minutes.")
             continue
+        seat_label = (row.get("seat_label") or "").strip()[:32]
 
         _, was_created = ExamAssignment.objects.update_or_create(
             exam=exam,
@@ -882,6 +972,7 @@ def import_assignments(exam: Exam, user, *, csv_text: str) -> dict[str, Any]:
             defaults={
                 "status": ExamAssignment.Status.ELIGIBLE,
                 "extra_time_minutes": extra_time,
+                "seat_label": seat_label,
             },
         )
         if was_created:

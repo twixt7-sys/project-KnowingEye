@@ -15,11 +15,21 @@ from core.security.drf import IsAdminOrReadOnly
 
 from . import services
 from .attachment_utils import validate_attachment_file
-from .models import Department, Exam, ExamAssignment, ExamSection, Question, QuestionAttachment, QuestionPool
+from .models import (
+    Department,
+    Exam,
+    ExamAssignment,
+    ExamCategory,
+    ExamSection,
+    Question,
+    QuestionAttachment,
+    QuestionPool,
+)
 from .exam_service import ExamService
 from .repositories import QuestionRepository
 from .serializers import (
     DepartmentSerializer,
+    ExamCategorySerializer,
     ExamCreateUpdateSerializer,
     ExamDetailSerializer,
     ExamListSerializer,
@@ -54,11 +64,43 @@ class DepartmentViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         department = self.get_object()
-        if department.exams.exists():
+        if department.exams.exists() or department.shared_exams.exists():
             return Response(
                 {
                     "detail": "Cannot delete a department that has exams. Deactivate it instead."
                 },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().destroy(request, *args, **kwargs)
+
+
+class ExamCategoryViewSet(viewsets.ModelViewSet):
+    """CRUD for Guidance content categories (admin write, authenticated read).
+
+    Directive Area 03 ("Exam discovery"): the classification axis for
+    filtering exams by content type - psychological, mental/abstract,
+    behavioral/character - independent of academic department.
+    """
+
+    serializer_class = ExamCategorySerializer
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
+    filter_backends = [filters.OrderingFilter]
+    ordering_fields = ["sort_order", "name"]
+    ordering = ["sort_order", "name"]
+
+    def get_queryset(self):
+        qs = ExamCategory.objects.all()
+        if self.action in {"list", "retrieve"}:
+            active_only = self.request.query_params.get("active_only")
+            if active_only in {"1", "true", "True"}:
+                qs = qs.filter(is_active=True)
+        return qs
+
+    def destroy(self, request, *args, **kwargs):
+        category = self.get_object()
+        if category.exams.exists():
+            return Response(
+                {"detail": "Cannot delete a category that has exams. Deactivate it instead."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return super().destroy(request, *args, **kwargs)
@@ -77,9 +119,9 @@ class ExamViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["status", "created_by", "approval_status"]
+    filterset_fields = ["status", "created_by", "approval_status", "category", "departments"]
     search_fields = ["title", "description", "exam_code"]
-    ordering_fields = ["created_at", "title"]
+    ordering_fields = ["created_at", "title", "available_from", "available_until"]
     ordering = ["-created_at"]
     exam_service = ExamService()
 
@@ -448,3 +490,37 @@ class QuestionViewSet(viewsets.ModelViewSet):
         attachment.file.delete(save=False)
         attachment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["post"], url_path="option-image")
+    def upload_option_image(self, request, exam_id=None, pk=None):
+        """Upload an image for one multiple-choice option and return its URL.
+
+        Directive Area 03 ("Question management"): abstract/psychological
+        items need image-based answer choices, not just image-based question
+        bodies. The image is stored under media/ like other question
+        attachments, but returned as a bare URL for the client to place into
+        that option's ``image`` field - options don't have their own id to
+        hang a QuestionAttachment row off of.
+        """
+        from django.core.files.storage import default_storage
+
+        question = self.get_object()
+        services.assert_can_modify_exam(question.exam, request.user)
+        services.assert_exam_editable(question.exam)
+        uploaded = request.FILES.get("file")
+        if not uploaded:
+            return Response({"file": ["No file provided."]}, status=status.HTTP_400_BAD_REQUEST)
+        kind = validate_attachment_file(uploaded)
+        if kind != "image":
+            return Response(
+                {"file": ["Option images must be an image file (JPEG, PNG, GIF, or WebP)."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        path = default_storage.save(
+            f"questions/{question.exam_id}/{question.id}/options/{uploaded.name}",
+            uploaded,
+        )
+        url = default_storage.url(path)
+        if not url.startswith(("http://", "https://")):
+            url = request.build_absolute_uri(url)
+        return Response({"url": url}, status=status.HTTP_201_CREATED)

@@ -9,6 +9,7 @@ import type {
   BehaviorLogRow,
   Department,
   Exam,
+  ExamCategory,
   ExamSession,
   FrameAnalysis,
   ProfileUser,
@@ -252,10 +253,37 @@ class ApiClient {
     return this.request<void>(`/departments/${id}/`, { method: "DELETE" });
   }
 
-  async getExams(params?: { status?: string; search?: string }) {
-    const qs = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : "";
+  async getExams(params?: {
+    status?: string;
+    search?: string;
+    category?: number | string;
+    departments?: number | string;
+    ordering?: string;
+  }) {
+    const qs = params
+      ? `?${new URLSearchParams(
+          Object.fromEntries(
+            Object.entries(params).filter(([, v]) => v !== undefined && v !== ""),
+          ) as Record<string, string>,
+        ).toString()}`
+      : "";
     const data = await this.request<{ results?: Exam[]; count?: number } | Exam[]>(`/exams/${qs}`);
     return Array.isArray(data) ? data : (data.results ?? []);
+  }
+
+  async listCategories(params?: { active_only?: boolean }) {
+    const qs = params?.active_only ? "?active_only=1" : "";
+    const data = await this.request<
+      { results?: ExamCategory[]; count?: number } | ExamCategory[]
+    >(`/categories/${qs}`);
+    return Array.isArray(data) ? data : (data.results ?? []);
+  }
+
+  async createCategory(payload: Pick<ExamCategory, "name" | "slug"> & Partial<ExamCategory>) {
+    return this.request<ExamCategory>("/categories/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   }
 
   async getMyExams() {
@@ -460,6 +488,15 @@ class ApiClient {
     return this.request<void>(
       `/exams/${examId}/questions/${questionId}/attachments/${attachmentId}/`,
       { method: "DELETE" },
+    );
+  }
+
+  async uploadOptionImage(examId: number, questionId: number, file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    return this.request<{ url: string }>(
+      `/exams/${examId}/questions/${questionId}/option-image/`,
+      { method: "POST", body: form },
     );
   }
 

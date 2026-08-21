@@ -51,6 +51,21 @@ export interface Department {
   updated_at?: string;
 }
 
+/** Guidance content classification (psychological, behavioral, ...), independent of department. */
+export interface ExamCategory {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  is_active?: boolean;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** Derived from status + the scheduling window - never stored, always computed server-side. */
+export type ExamScheduleState = "upcoming" | "active" | "closed" | "expired" | null;
+
 export interface Exam {
   id: number;
   title: string;
@@ -59,10 +74,15 @@ export interface Exam {
   exam_code?: string | null;
   department?: Department | null;
   department_id?: number;
+  departments?: Department[];
+  department_ids?: number[];
+  category?: ExamCategory | null;
+  category_id?: number | null;
   duration_minutes: number;
   total_questions: number;
   passing_score: number;
   status: "draft" | "active" | "archived";
+  schedule_state?: ExamScheduleState;
   available_from?: string | null;
   available_until?: string | null;
   max_attempts?: number;
@@ -123,12 +143,18 @@ export interface QuestionAttachment {
   created_at?: string;
 }
 
+/** A multiple-choice answer option - image is a media URL, set via the option-image upload endpoint. */
+export interface QuestionOption {
+  text: string;
+  image: string | null;
+}
+
 export interface Question {
   id: number;
   exam: number;
   question_text: string;
   question_type: "multiple_choice" | "true_false" | "short_answer" | "essay";
-  options: string[];
+  options: QuestionOption[];
   correct_answer?: string;
   points: number;
   order: number;
@@ -318,6 +344,8 @@ export interface SessionReportRow {
   department_abbreviation?: string | null;
   user: string;
   user_full_name: string;
+  /** Physical seat/room/station identifier, when assigned - lets a proctor find a flagged examinee in person. */
+  seat_label?: string | null;
   status: string;
   started_at: string;
   submitted_at: string | null;

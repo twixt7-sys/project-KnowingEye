@@ -4,6 +4,10 @@ export function fetchDepartments(activeOnly = true) {
   return apiClient.listDepartments({ active_only: activeOnly });
 }
 
+export function fetchCategories(activeOnly = true) {
+  return apiClient.listCategories({ active_only: activeOnly });
+}
+
 export function fetchMyExams() {
   return apiClient.getMyExams();
 }

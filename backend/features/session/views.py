@@ -23,7 +23,12 @@ from .serializers import (
     SessionLogSerializer,
 )
 from .submission import submit_session_with_responses, upsert_response
-from .services import begin_exam_session, ensure_active_session, get_or_create_setup_session
+from .services import (
+    begin_exam_session,
+    ensure_active_session,
+    finalize_grading_if_complete,
+    get_or_create_setup_session,
+)
 
 
 class ExamSessionViewSet(viewsets.ModelViewSet):
@@ -417,6 +422,7 @@ class ResponseViewSet(viewsets.ReadOnlyModelViewSet):
             instance.is_correct = instance.points_awarded >= instance.question.points
             instance.flagged_for_review = False
             instance.save(update_fields=['is_correct', 'flagged_for_review'])
+            finalize_grading_if_complete(instance.session)
 
         return APIResponse(ResponseSerializer(instance).data, status=status.HTTP_200_OK)
 

@@ -4,6 +4,7 @@
 import {
   apiClient,
   type Exam,
+  type ExamCategory,
   type PublishReadiness,
   type Question,
   type QuestionAttachment,
@@ -19,8 +20,18 @@ export interface ExamAssignment {
   attempts_override: number | null;
 }
 
-export function fetchExams(params?: { status?: string; search?: string }) {
+export function fetchExams(params?: {
+  status?: string;
+  search?: string;
+  category?: number | string;
+  departments?: number | string;
+  ordering?: string;
+}) {
   return apiClient.getExams(params);
+}
+
+export function fetchCategories() {
+  return apiClient.listCategories();
 }
 
 export function fetchExamById(id: number) {
@@ -115,6 +126,10 @@ export function deleteQuestionAttachment(
   return apiClient.deleteQuestionAttachment(examId, questionId, attachmentId);
 }
 
+export function uploadOptionImage(examId: number, questionId: number, file: File) {
+  return apiClient.uploadOptionImage(examId, questionId, file);
+}
+
 export function fetchExamAssignments(examId: number) {
   return apiClient.listExamAssignments(examId);
 }
@@ -130,4 +145,4 @@ export function importExamAssignments(examId: number, csv: string) {
   return apiClient.importExamAssignments(examId, csv);
 }
 
-export type { Exam, Question, PublishReadiness, QuestionAttachment };
+export type { Exam, ExamCategory, Question, PublishReadiness, QuestionAttachment };

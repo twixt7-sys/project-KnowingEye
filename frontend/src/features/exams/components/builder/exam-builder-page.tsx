@@ -138,6 +138,7 @@ export function ExamBuilderPage() {
           onSaveQuestion={builder.saveQuestion}
           onAttachmentPick={(files) => void builder.handleAttachmentPick(files)}
           onRemoveAttachment={(a) => void builder.removeAttachment(a)}
+          onUploadOptionImage={builder.uploadOptionImageForQuestion}
           onImportFile={(file) => void builder.handleImportFile(file)}
           onRunImport={builder.runImport}
         />

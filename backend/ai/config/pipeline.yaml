@@ -1,10 +1,20 @@
 # Knowing Eye - production AI pipeline configuration (backend/ai)
 # §2.1.4 AI & Monitoring Architecture
+#
+# Directive Area 04 ("Define every CV parameter" / "Threshold justification", P0):
+# every threshold below is cited here AND in docs/documentation/chapter2/03-system-design.html
+# (sections "CV Parameter Specification" and "Threshold justification") so the citation lives
+# next to the value. See that doc for the full 7-row parameter table and per-threshold sources.
 
 pipeline:
-  target_fps: 5
-  alert_threshold_pct: 80
-  identity_match_threshold: 0.42
+  target_fps: 5                    # Snapshot cadence, not continuous video - see 03-system-design.html
+                                    # "Snapshot monitoring" for the bandwidth/retention rationale.
+  alert_threshold_pct: 80          # Session-level compliance-score cutoff used by the classification
+                                    # methodology in 04-system-testing.html#ai-evaluation.
+  identity_match_threshold: 0.42   # Cosine distance (~0.58 similarity). InsightFace's own model guide
+                                    # gives a 0.40-similarity worked example for buffalo_l; this is
+                                    # deliberately stricter (fewer false accepts). See "Threshold
+                                    # justification" in 03-system-design.html for the full citation.
   frame_buffer_depth: 3
 
 preprocessing:
@@ -19,27 +29,34 @@ detection:
 recognition:
   embedding_backend: arcface
   arcface_model: buffalo_l
-  gaze_yaw_threshold_deg: 40
-  gaze_pitch_threshold_deg: 35
-  posture_shoulder_tilt_max: 0.18
-  posture_spine_lean_max: 0.55
-  no_face_grace_seconds: 2.0
+  gaze_yaw_threshold_deg: 40        # Head yaw used as the gaze proxy (no true pupil/eye tracking -
+  gaze_pitch_threshold_deg: 35      # standard practice at webcam, non-IR resolution). Angle alone
+                                     # never flags anything; it must also persist across the temporal
+                                     # window below (behavior.suspicious_pattern) - see "Threshold
+                                     # justification" for the cited rationale on duration-pairing.
+  posture_shoulder_tilt_max: 0.18   # Landmark-geometry ratios tuned against MediaPipe's own BlazePose
+  posture_spine_lean_max: 0.55      # topology, not an external benchmark - documented as internally
+                                     # derived, not misattributed to a paper that doesn't set these units.
+  no_face_grace_seconds: 2.0        # Anomaly = absence beyond this grace period, not a single missed
+                                     # frame - this is the literal answer to "why not flag every blink."
 
 behavior:
-  leaving_seat_grace_seconds: 3.0
+  leaving_seat_grace_seconds: 3.0   # Same grace-period principle as no_face_grace_seconds, applied to
+                                     # upper-body-visibility (pose landmark presence).
   suspicious_pattern:
-    window_seconds: 60
-    min_flags: 3
-    cooldown_seconds: 120
-  metric_weights:
-    face: 0.3
-    gaze: 0.3
-    posture: 0.25
+    window_seconds: 60              # Sliding-window temporal aggregation to suppress single-frame
+    min_flags: 3                    # false positives - an established anomaly-detection technique
+    cooldown_seconds: 120           # (see cited literature in 03-system-design.html); this is a
+                                     # project-tuned instance of that general technique.
+  metric_weights:                   # Combined-signal weighting for the escalation ladder in
+    face: 0.3                       # backend/features/behavior/escalation.py - weighting combined
+    gaze: 0.3                       # signals higher than one isolated signal, per Directive Area 04
+    posture: 0.25                   # ("Anomaly accumulation model").
     identity: 0.15
-  weights:
-    no_face: 1.0
-    multiple_faces: 0.9
-    looking_away: 0.7
+  weights:                          # Per-event-type weight - identity_mismatch and no_face are
+    no_face: 1.0                    # weighted highest since they most directly threaten exam
+    multiple_faces: 0.9             # integrity; bad_posture lowest since it is the weakest signal
+    looking_away: 0.7                # on its own.
     bad_posture: 0.6
     leaving_seat: 0.75
     identity_mismatch: 0.95
@@ -56,4 +73,6 @@ behavior:
 paths:
   reference_faces_dir: data/reference_faces
   sessions_output_dir: data/sessions
-  training_data_dir: training/data
+  training_data_dir: training/data  # Present but empty - see "Dataset Methodology" in
+                                     # 03-system-design.html. MediaPipe/ArcFace run as frozen
+                                     # pre-trained models; nothing here trains against this path yet.

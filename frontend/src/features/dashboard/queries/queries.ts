@@ -1,5 +1,10 @@
 import { apiClient } from "@/core/config/api";
-import { fetchDepartments, fetchCompletedSessions, fetchMyExams } from "@/features/dashboard/api/dashboard-api";
+import {
+  fetchCategories,
+  fetchCompletedSessions,
+  fetchDepartments,
+  fetchMyExams,
+} from "@/features/dashboard/api/dashboard-api";
 import { dashboardKeys } from "@/features/dashboard/queries/keys";
 
 export const dashboardQueries = {
@@ -31,5 +36,9 @@ export const dashboardQueries = {
   departments: (activeOnly = true) => ({
     queryKey: dashboardKeys.departments(activeOnly),
     queryFn: () => fetchDepartments(activeOnly),
+  }),
+  categories: (activeOnly = true) => ({
+    queryKey: dashboardKeys.categories(activeOnly),
+    queryFn: () => fetchCategories(activeOnly),
   }),
 };

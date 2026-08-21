@@ -5,6 +5,7 @@ export const QUESTION_IMPORT_HEADERS = [
   "question_text",
   "question_type",
   "options",
+  "option_images",
   "correct_answer",
   "points",
 ] as const;
@@ -14,12 +15,14 @@ export const QUESTION_IMPORT_EXAMPLE_ROWS: string[][] = [
     "What is 2 + 2?",
     "multiple_choice",
     "3|4|5",
+    "",
     "4",
     "1",
   ],
   [
     "Water boils at 100 degrees Celsius at sea level.",
     "true_false",
+    "",
     "",
     "true",
     "1",
@@ -28,12 +31,14 @@ export const QUESTION_IMPORT_EXAMPLE_ROWS: string[][] = [
     "Name the largest planet in our solar system.",
     "short_answer",
     "",
+    "",
     "Jupiter",
     "2",
   ],
   [
     "Explain, in your own words, how photosynthesis works.",
     "essay",
+    "",
     "",
     "Mentions sunlight, water, and carbon dioxide producing glucose and oxygen",
     "5",
@@ -79,6 +84,7 @@ export function downloadImportTemplateXlsx() {
     { wch: 52 },
     { wch: 18 },
     { wch: 26 },
+    { wch: 26 },
     { wch: 34 },
     { wch: 8 },
   ];
@@ -96,11 +102,17 @@ export function downloadImportTemplateXlsx() {
     ["question_text", "The question prompt (required)."],
     ["question_type", "multiple_choice, true_false, short_answer, or essay (required)."],
     ["options", "Multiple choice only: choices separated by | (pipe). Leave empty otherwise."],
-    ["correct_answer", "Must match an option exactly for multiple choice; true or false for true_false."],
+    [
+      "option_images",
+      "Optional: one image URL per option, separated by | in the same order as options. " +
+        "Upload the image via the question editor first to get a URL. Leave a segment blank " +
+        "for a text-only option, or leave the whole column blank for no images.",
+    ],
+    ["correct_answer", "Must match an option's text exactly for multiple choice; true or false for true_false."],
     ["points", "Whole number (defaults to 1 if left blank)."],
     [""],
     ["Tips"],
-    ["Leave options empty for true_false, short_answer, and essay questions."],
+    ["Leave options and option_images empty for true_false, short_answer, and essay questions."],
     ["Imported questions are appended after any existing ones, in row order."],
     ["Delete the example rows if you do not want them imported."],
   ]);

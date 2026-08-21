@@ -16,6 +16,7 @@ from core.utils.constants import MAX_REPORT_EXPORT_ROWS
 
 from core.pagination import StandardResultsPagination
 from features.behavior.models import Alert, BehaviorLog
+from features.exams.models import ExamAssignment
 from features.session.models import ExamSession
 from features.session.serializers import ExamSessionDetailSerializer
 
@@ -77,7 +78,25 @@ def _department_analytics(sessions):
     return result
 
 
+def _seat_labels_for(sessions: list) -> dict[tuple[int, int], str]:
+    """Exam+user -> seat_label lookup (Directive Area 04 - "proctor locator").
+
+    A flagged examinee needs to be findable physically, not just as a list
+    row - see ExamAssignment.seat_label and its CSV-roster-import column.
+    """
+    pairs = {(s.exam_id, s.user_id) for s in sessions}
+    if not pairs:
+        return {}
+    assignments = ExamAssignment.objects.filter(
+        exam_id__in={p[0] for p in pairs},
+        user_id__in={p[1] for p in pairs},
+    ).exclude(seat_label="")
+    return {(a.exam_id, a.user_id): a.seat_label for a in assignments}
+
+
 def _serialize_session_rows(sessions):
+    sessions = list(sessions)
+    seat_labels = _seat_labels_for(sessions)
     return [
         {
             "id": str(s.id),
@@ -92,6 +111,7 @@ def _serialize_session_rows(sessions):
             ),
             "user": s.user.username,
             "user_full_name": f"{s.user.first_name} {s.user.last_name}".strip(),
+            "seat_label": seat_labels.get((s.exam_id, s.user_id)),
             "status": s.status,
             "started_at": s.started_at,
             "submitted_at": s.submitted_at,
@@ -311,6 +331,8 @@ def export_sessions_csv(request):
         .order_by("-started_at")[:MAX_REPORT_EXPORT_ROWS]
     )
 
+    seat_labels = _seat_labels_for(list(qs))
+
     buffer = StringIO()
     writer = csv.writer(buffer)
     writer.writerow(
@@ -319,6 +341,7 @@ def export_sessions_csv(request):
             "exam_id",
             "exam_title",
             "username",
+            "seat_label",
             "status",
             "started_at",
             "submitted_at",
@@ -337,6 +360,7 @@ def export_sessions_csv(request):
                 s.exam_id,
                 s.exam.title,
                 s.user.username,
+                seat_labels.get((s.exam_id, s.user_id), ""),
                 s.status,
                 s.started_at.isoformat() if s.started_at else "",
                 s.submitted_at.isoformat() if s.submitted_at else "",

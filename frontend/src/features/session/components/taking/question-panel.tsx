@@ -1,12 +1,17 @@
 import { ChevronLeft, ChevronRight, Flag, Loader2 } from "@/shared/icons";
 
-import type { Question, QuestionAttachment } from "@/core/config/api";
+import type { Question, QuestionAttachment, QuestionOption } from "@/core/config/api";
 import type { SavedAnswer } from "@/features/session/hooks/use-exam-attempt";
 import { Textarea } from "@/shared/components/ui/textarea";
 
-function choiceOptions(question: Question): string[] {
+const TRUE_FALSE_FALLBACK: QuestionOption[] = [
+  { text: "True", image: null },
+  { text: "False", image: null },
+];
+
+function choiceOptions(question: Question): QuestionOption[] {
   if (question.question_type === "true_false") {
-    return question.options?.length >= 2 ? question.options : ["True", "False"];
+    return question.options?.length >= 2 ? question.options : TRUE_FALSE_FALLBACK;
   }
   return question.options ?? [];
 }
@@ -76,9 +81,9 @@ function QuestionAnswerFields({
         <button
           key={`${question.id}-${index}`}
           type="button"
-          onClick={() => onChange(option)}
+          onClick={() => onChange(option.text)}
           className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-            value === option
+            value === option.text
               ? "border-primary bg-primary/5"
               : "border-border hover:border-primary/50 hover:bg-accent/50"
           }`}
@@ -86,12 +91,21 @@ function QuestionAnswerFields({
           <div className="flex items-center gap-3">
             <div
               className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                value === option ? "border-primary bg-primary" : "border-muted-foreground"
+                value === option.text ? "border-primary bg-primary" : "border-muted-foreground"
               }`}
             >
-              {value === option && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
+              {value === option.text && (
+                <div className="w-2 h-2 rounded-full bg-primary-foreground" />
+              )}
             </div>
-            <span>{option}</span>
+            {option.image && (
+              <img
+                src={option.image}
+                alt=""
+                className="h-14 w-14 shrink-0 rounded-md border border-border object-cover"
+              />
+            )}
+            <span>{option.text}</span>
           </div>
         </button>
       ))}

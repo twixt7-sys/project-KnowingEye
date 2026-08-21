@@ -1,7 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
+
 import { Save } from "@/shared/icons";
 
 import type { Exam } from "@/core/config/api";
 import { BuilderField } from "@/features/exams/components/builder/builder-primitives";
+import { dashboardQueries } from "@/features/dashboard/queries/queries";
 import type { ExamForm } from "@/features/exams/schemas/builder-schemas";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 
@@ -14,6 +17,13 @@ interface BuilderSettingsTabProps {
   onSave: () => void;
 }
 
+const SCHEDULE_STATE_LABEL: Record<string, string> = {
+  upcoming: "Upcoming - not open yet",
+  active: "Active - open now",
+  closed: "Closed - archived",
+  expired: "Expired - window passed",
+};
+
 export function BuilderSettingsTab({
   exam,
   form,
@@ -23,10 +33,28 @@ export function BuilderSettingsTab({
   onSave,
 }: BuilderSettingsTabProps) {
   const update = (patch: Partial<ExamForm>) => setForm((prev) => (prev ? { ...prev, ...patch } : prev));
+  const categoriesQuery = useQuery(dashboardQueries.categories(true));
+  const departmentsQuery = useQuery(dashboardQueries.departments(true));
+  const categories = categoriesQuery.data ?? [];
+  const departments = departmentsQuery.data ?? [];
+
+  const toggleDepartment = (id: number) => {
+    const set = new Set(form.department_ids);
+    if (set.has(id)) set.delete(id);
+    else set.add(id);
+    update({ department_ids: Array.from(set) });
+  };
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-      <h2 className="text-lg font-semibold">Entrance exam details</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold">Entrance exam details</h2>
+        {exam.schedule_state && (
+          <span className="status-pill bg-muted text-muted-foreground">
+            {SCHEDULE_STATE_LABEL[exam.schedule_state] ?? exam.schedule_state}
+          </span>
+        )}
+      </div>
       <div className="grid md:grid-cols-2 gap-4">
         <BuilderField label="Title">
           <input
@@ -36,7 +64,7 @@ export function BuilderSettingsTab({
             disabled={!isDraft}
           />
         </BuilderField>
-        <BuilderField label="Department">
+        <BuilderField label="Home department">
           <input
             value={
               exam.department
@@ -47,6 +75,9 @@ export function BuilderSettingsTab({
             disabled
             readOnly
           />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Locked after creation - used to generate the exam code.
+          </p>
         </BuilderField>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
@@ -61,7 +92,49 @@ export function BuilderSettingsTab({
             Assigned automatically when the exam was created.
           </p>
         </BuilderField>
+        <BuilderField label="Category">
+          <select
+            value={form.category_id ?? ""}
+            onChange={(e) => update({ category_id: e.target.value ? Number(e.target.value) : null })}
+            className="field-input"
+            disabled={!isDraft}
+          >
+            <option value="">No category</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </BuilderField>
       </div>
+      <BuilderField label="Also visible to (shared/general-ed departments)">
+        <div className="flex flex-wrap gap-2">
+          {departments.map((d) => {
+            const checked = form.department_ids.includes(d.id);
+            return (
+              <label
+                key={d.id}
+                className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${
+                  checked ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                }`}
+              >
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={() => toggleDepartment(d.id)}
+                  disabled={!isDraft}
+                  className="h-3.5 w-3.5"
+                />
+                {d.abbreviation}
+              </label>
+            );
+          })}
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          The home department above is always included. Add more for shared or general-education
+          exams discoverable from other departments too.
+        </p>
+      </BuilderField>
       <BuilderField label="Description">
         <textarea
           rows={2}

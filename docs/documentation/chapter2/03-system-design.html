@@ -193,6 +193,22 @@ erDiagram
     <h3>Registration &amp; OTP verification</h3>
     <p>Answers Area 01's "Registration &amp; verification" item. Registration collects only essential fields — the profile photo is <strong>optional at signup</strong> and can be added later from the profile page, rather than blocking account creation. Password confirmation is required. Immediately after account creation, a 6-digit OTP is emailed; the code is stored hashed (never in plaintext), expires after 10 minutes, allows 5 incorrect attempts before requiring a resend, and is rate-limited to one send per 60 seconds. A "Verify your email" banner in the signed-in workspace (dismissible per session, not a hard gate) makes the pending step visually clear without blocking use of the app.</p>
 
+    <h2 id="exam-lifecycle">Exam Discovery, Scheduling &amp; Lifecycle Locks</h2>
+    <p>Directive Area 03 ("Exam Management &amp; LMS Behavior") - see the <a href="02-system-analysis.html#lms-benchmark">LMS Benchmarking</a> matrix for how each item below was checked against Google Forms, Jotform, and Moodle before being built.</p>
+    <h3>Categories, multi-department assignment, and search/filter/sort</h3>
+    <p><code>ExamCategory</code> is a new classification axis seeded with the three Guidance content types the Directive names - <em>Psychological</em>, <em>Mental / Abstract Reasoning</em>, <em>Behavioral / Character</em> - deliberately not academic subjects. <code>Exam.department</code> stays a single FK (it generates the exam code and can't change after creation), and a new <code>Exam.departments</code> M2M holds every department an exam should be discoverable from; creating an exam defaults <code>departments</code> to just the home department, so nothing loses visibility, and a shared/general-ed exam can add more. This directly answers Area 03's "reconsider whether department should be a primary exam attribute" - it demotes department from the exam's only classification axis to one of three (department, category, and now a proper M2M) without removing the code-generation behavior that already depends on it.</p>
+    <p>The exam list endpoint's <code>SearchFilter</code>/<code>OrderingFilter</code>/<code>filterset_fields</code> (status, category, department, approval_status - already present before this sprint) is now paired with a reusable <code>&lt;FilterBar&gt;</code> component (search + status/category chips + a sort dropdown) on the examiner dashboard, replacing an inline search box and status-only chip row that filtered nothing but status client-side.</p>
+    <h3>Derived schedule state</h3>
+    <p>A published exam now reports one of four states - <strong>Upcoming</strong>, <strong>Active</strong>, <strong>Closed</strong>, <strong>Expired</strong> - computed from <code>status</code> and the existing <code>available_from</code>/<code>available_until</code> window (<code>services.exam_schedule_state</code>), never stored: <code>Draft</code> exams report no state (the window isn't meaningful yet), <code>Archived</code> always reports Closed regardless of the window, and an <code>Active</code> exam reports Upcoming/Active/Expired by comparing "now" to the window. The window itself was already enforced server-side before this sprint (<code>assert_exam_available_for_user</code> blocks session start once the deadline passes) - this sprint's work was making that enforcement <em>visible</em> as the four named states, not adding the enforcement itself.</p>
+    <h3>Question editing locked during an active session</h3>
+    <p><code>assert_exam_editable</code> already blocked edits on any non-draft exam; it now additionally raises the moment any examinee has a <code>setup</code> or <code>in_progress</code> <code>ExamSession</code> against that exam (<code>exam_has_active_session</code>), with a message naming the actual reason rather than just "not a draft." This is the literal mechanism the Directive names - <em>"students may already be answering"</em> - checked against live session state instead of only inferred from the exam's publish status.</p>
+    <h3>Image-based answer choices</h3>
+    <p><code>Question.options</code> moved from a flat list of strings to a list of <code>{"text": str, "image": str | null}</code> objects (migration <code>0013</code> backfills every existing row losslessly). A new <code>POST /exams/{id}/questions/{id}/option-image/</code> endpoint uploads one image and returns its URL for the client to attach to an option - for the abstract/psychological items the Directive calls out by name, where the answer choice is a shape or image rather than text. Existing plain-string API payloads are still accepted and normalized (<code>option_text()</code> in <code>serializers.py</code>), so nothing that posted the old shape breaks.</p>
+    <h3>Bulk import: media references</h3>
+    <p>The CSV/XLSX template gained an optional <code>option_images</code> column, pipe-delimited and positionally aligned with <code>options</code>. The importer validates the segment count matches <code>options</code> and that every non-empty reference looks like a usable URL (<code>http(s)://</code> or a same-origin <code>/media/</code> path) rather than a typo'd filename - the "validate ... media references" line item from Area 03's bulk-import requirement.</p>
+    <h3>Essay results held for grading</h3>
+    <p><code>ExamSession.submit_session</code> already moved a session with any ungraded flagged response (essay, or a short answer that didn't auto-match) into <code>PENDING_REVIEW</code>. What was missing was the other half: the session's score fields were still serialized to the examinee even while pending review, showing an artificially low score (ungraded essays score 0 until graded). <code>total_score</code>/<code>percentage_score</code>/<code>passed</code> are now withheld from the examinee (graders still see them, for context while grading) until every flagged response is graded; <code>finalize_grading_if_complete</code> then recomputes the score, flips the session to <code>Completed</code>, and emails the examinee that results are ready - so "hold essay results" and "email notification on release" are the same mechanism, not two separate features bolted together.</p>
+
     <h2 id="technologies">Technologies, Concepts, and Theories</h2>
     <p>The platform follows a classical computer-vision pipeline—<strong>data collection → preprocessing → feature extraction → classification/scoring</strong>—embedded in a full-stack web architecture. Technologies are grouped by layer; each entry notes where it is applied in Knowing Eye.</p>
 
@@ -272,7 +288,7 @@ erDiagram
         <div><h3>Let's Encrypt TLS</h3><p>HTTPS/WSS certificates for secure browser camera access (requires secure context) and encrypted API traffic.</p></div>
       </article>
       <article class="tech-card">
-        <div><h3>Optional CUDA GPU</h3><p>Accelerates YOLO inference on the server when available; CPU fallback via ONNX Runtime for ArcFace.</p></div>
+        <div><h3>Optional CUDA GPU</h3><p>Accelerates ArcFace embedding extraction via ONNX Runtime's CUDA execution provider when available; the pipeline runs CPU-only by default (<code>providers=["CPUExecutionProvider"]</code> in <code>arcface_backend.py</code>), which is what production currently targets — see <a href="#algorithm-comparison">Algorithm Comparison</a> for why CPU-only MediaPipe + ArcFace was chosen over a GPU-dependent detector.</p></div>
       </article>
     </div>
 
@@ -359,6 +375,155 @@ erDiagram
     <pre><code>grep -rE '\b(bg|text|border|ring|from|to|via)-(gray|slate|zinc|neutral|stone)-[0-9]+' frontend/src
 → no matches</code></pre>
     <p class="doc-lead" style="font-size:0.85rem">Zero hits across the entire frontend, not just <code>ui/</code>. Every surface — buttons, inputs, badges, cards, switches, tables, sidebars, dialogs — resolves color through the token layer in <code>styles/theme.css</code>, so the sweep is complete rather than partially spot-checked.</p>
+
+    <h2 id="cv-parameters">CV Parameter Specification</h2>
+    <p>Directive Area 04 ("Define every CV parameter", P0) - the panel's most technical line of questioning: <em>"are your threshold values based on research, or did the team just decide them?"</em> Every value below is the literal, live production value from <code>backend/ai/config/pipeline.yaml</code> - the same file is annotated with the same citations inline (search for "Directive Area 04" in that file). Where a parameter has no dedicated detection algorithm of its own, the table says so explicitly rather than inventing one: <strong>head-facing camera</strong>, <strong>eye gaze</strong>, and <strong>head movement</strong> are three interpretations of one head-pose signal (yaw/pitch from MediaPipe's facial transformation matrix), not three separate models - true pupil/eye tracking needs higher resolution and often infrared illumination than a typical laptop webcam provides, so head-pose-as-gaze-proxy is standard practice in webcam-based (non-IR) proctoring systems, not a shortcut unique to this project.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Parameter</th><th>What it measures</th><th>Why it matters</th><th>Normal vs. suspicious</th><th>Detecting algorithm</th><th>Threshold</th><th>Action on breach</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Face presence</td>
+          <td>Whether ≥1 face is detected in frame</td>
+          <td>No face at all means the examinee may have stepped away or is being impersonated by proxy</td>
+          <td>Normal: face present. Suspicious: absent beyond the grace period.</td>
+          <td>MediaPipe Face Landmarker (<code>face_detector.py</code>)</td>
+          <td><code>no_face_grace_seconds: 2.0</code> - momentary occlusion (adjusting the webcam, a blink-length head turn) is not flagged</td>
+          <td><code>no_face</code> event, weight <code>1.0</code> (highest), severity <code>high</code></td>
+        </tr>
+        <tr>
+          <td>Identity match</td>
+          <td>Cosine distance between the enrolled reference embedding and the current frame's embedding</td>
+          <td>Confirms the person taking the exam is the enrolled examinee, not a proxy</td>
+          <td>Normal: distance below threshold (same person). Suspicious: at/above it (different person, or enrollment failed).</td>
+          <td>ArcFace/InsightFace <code>buffalo_l</code>, 512-D embeddings (<code>arcface_backend.py</code>)</td>
+          <td><code>identity_match_threshold: 0.42</code> (cosine distance; equivalent to requiring cosine <strong>similarity &gt; 0.58</strong>)</td>
+          <td><code>identity_mismatch</code> event, weight <code>0.95</code>, severity <code>high</code></td>
+        </tr>
+        <tr>
+          <td>Head-facing camera</td>
+          <td>Whether the head is oriented toward the camera at all (coarse yaw/pitch check)</td>
+          <td>A face turned fully away is functionally equivalent to no face for identity/behavior purposes</td>
+          <td>Normal: within threshold. Suspicious: yaw or pitch beyond it.</td>
+          <td>MediaPipe facial transformation matrix → yaw/pitch (<code>face_detector.py</code>); OpenCV Haar-cascade positional heuristic only when MediaPipe is unavailable</td>
+          <td>Same as eye gaze below - one signal, shared threshold</td>
+          <td>Contributes to <code>looking_away</code>, weight <code>0.7</code>, severity <code>medium</code></td>
+        </tr>
+        <tr>
+          <td>Eye gaze</td>
+          <td>Head yaw/pitch as a proxy for where the examinee is looking</td>
+          <td>Sustained off-screen gaze suggests reading from a second device or notes</td>
+          <td>Normal: within threshold. Suspicious: exceeds it.</td>
+          <td>Same head-pose signal as above (<code>behavior/scoring.py</code>)</td>
+          <td><code>gaze_yaw_threshold_deg: 40</code>, <code>gaze_pitch_threshold_deg: 35</code></td>
+          <td><code>looking_away</code> event, weight <code>0.7</code>, severity <code>medium</code></td>
+        </tr>
+        <tr>
+          <td>Head movement</td>
+          <td>Frequency/instability of the same yaw/pitch signal across the rolling frame window, not a single reading</td>
+          <td>Distinguishes one glance away (normal) from repeated, rhythmic head movement (consistent with reading off-screen material)</td>
+          <td>Normal: isolated deviations. Suspicious: repeated deviations within the window.</td>
+          <td><code>behavior/temporal.py</code>, over <code>frame_buffer_depth: 3</code> and the suspicious-pattern window</td>
+          <td><code>suspicious_pattern.window_seconds: 60</code>, <code>min_flags: 3</code></td>
+          <td><code>suspicious_pattern</code> event, weight <code>0.9</code>, severity <code>high</code></td>
+        </tr>
+        <tr>
+          <td>Posture</td>
+          <td>Shoulder-line tilt and spine lean ratios from body-pose landmarks</td>
+          <td>Extreme lean/tilt is consistent with reaching for hidden material or a second person entering frame</td>
+          <td>Normal: within threshold. Suspicious: exceeds it.</td>
+          <td>MediaPipe Pose Landmarker Lite, shoulder (11/12) + nose (0) + hip (23) landmarks (<code>pose_detector.py</code>)</td>
+          <td><code>posture_shoulder_tilt_max: 0.18</code>, <code>posture_spine_lean_max: 0.55</code></td>
+          <td><code>bad_posture</code> event, weight <code>0.6</code>, severity <code>low</code></td>
+        </tr>
+        <tr>
+          <td>Upper-body visibility</td>
+          <td>Whether shoulder/hip pose landmarks are detected at all</td>
+          <td>Absence of the upper body (not just the face) indicates the examinee has left the seat entirely</td>
+          <td>Normal: landmarks present. Suspicious: absent beyond the grace period.</td>
+          <td>MediaPipe Pose Landmarker Lite landmark-presence check</td>
+          <td><code>leaving_seat_grace_seconds: 3.0</code></td>
+          <td><code>leaving_seat</code> event, weight <code>0.75</code>, severity <code>medium</code></td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <h3>Threshold justification</h3>
+    <p>Directive Area 04 ("Threshold justification", P0) asks four things explicitly: define "anomaly" precisely per parameter, base thresholds on cited research rather than internal judgment, make Normal → Suspicious → Anomalous explicit tiers rather than a binary flag, and factor in duration/frequency rather than single-frame events.</p>
+    <p><strong>Anomaly, precisely:</strong> for every parameter above, an anomaly is not "the metric crossed the line once" - it is the metric remaining on the wrong side of its threshold for longer than that parameter's grace period (<code>no_face_grace_seconds</code>, <code>leaving_seat_grace_seconds</code>), or recurring often enough within the 60-second/3-flag window to count as a pattern rather than a glance. This directly answers the Directive's fourth requirement - <code>no_face_grace_seconds: 2.0</code> and the <code>suspicious_pattern</code> window were built for exactly this reason, and are the citable answer to "why don't you flag every blink."</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Threshold</th><th>Value</th><th>Basis</th></tr></thead>
+      <tbody>
+        <tr><td><code>identity_match_threshold</code></td><td>0.42 cosine distance (≈0.58 similarity)</td><td>InsightFace's own model-selection guide gives a worked example verification threshold of <strong>0.40 cosine similarity</strong> for <code>buffalo_l</code>-family embeddings <a href="https://www.insightface.ai/guides/choose-face-recognition-model-and-evaluate">(InsightFace, "Choosing a Face Recognition Model")</a>. Knowing Eye's 0.42-distance / 0.58-similarity bar is <em>stricter</em> than that reference example - a deliberate choice, since a false accept (letting an impersonator through) is a worse failure mode for exam integrity than a false reject (prompting a legitimate examinee to re-center in frame).</td></tr>
+        <tr><td><code>gaze_yaw_threshold_deg</code> / <code>gaze_pitch_threshold_deg</code></td><td>40° / 35°</td><td>Published proctoring-CV literature confirms gaze/head-pose deviation as the standard cheating-detection signal but does not converge on one universal degree threshold - published systems tune it per camera geometry and typically pair it with a duration requirement rather than a single angle <a href="https://arxiv.org/pdf/2409.16923">(Yassine et al., "AI-assisted Gaze Detection for Proctoring Online Exams")</a>. Knowing Eye follows that duration-pairing practice: 40°/35° alone does not flag anything - it must also persist across the temporal window (see Anomaly, above) before it becomes an event.</td></tr>
+        <tr><td><code>posture_shoulder_tilt_max</code> / <code>posture_spine_lean_max</code></td><td>0.18 / 0.55</td><td>These are geometric ratios (landmark-distance ratios, not literature-standardized units), so they are tuned against MediaPipe's own BlazePose landmark topology rather than an external paper - documented here as an internally-derived value, not misrepresented as externally cited.</td></tr>
+        <tr><td><code>suspicious_pattern.window_seconds</code> / <code>min_flags</code></td><td>60s / 3 flags</td><td>Sliding-window temporal aggregation to suppress single-frame false positives is an established anomaly-detection technique in video surveillance literature <a href="https://www.nature.com/articles/s41598-025-12388-7">(Nature Sci. Rep., multi-camera spatiotemporal anomaly detection, 2025)</a>; the specific 60s/3-flag parameterization is a project-tuned instance of that general technique, consistent with the literature's finding that combining temporal reasoning with confidence-based filtering reduces false positives versus per-frame flagging.</td></tr>
+        <tr><td>Appearance-fallback identity threshold</td><td>0.15 cosine distance</td><td><strong>Explicitly not research-derived</strong> - the code comment (<code>identity.py:18-20</code>) says so directly: tuned so a matching crop scores near-zero distance and a different face exceeds it. This only activates in the degraded "stub"/no-ML-dependencies fallback path, never in production with MediaPipe+InsightFace installed - documented honestly rather than dressed up with a citation it doesn't have.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Escalation tiers: Normal → Warning → Suspicious → Critical → Action</h3>
+    <p>Per-event <code>Alert.severity</code> (low/medium/high) already existed before this sprint, but nothing counted <em>repeated</em> or <em>combined</em> signals into a session-level escalation state - each alert was evaluated alone. <code>backend/features/behavior/escalation.py</code> adds that layer without replacing per-event severity:</p>
+    <div class="two-col">
+      <div class="card"><h4>Normal</h4><p class="muted" style="font-size:0.9rem">No unresolved flags in the rolling window. No action.</p></div>
+      <div class="card"><h4>Warning</h4><p class="muted" style="font-size:0.9rem">A single low/medium-weight signal. Logged only - not surfaced to the proctor as an alert.</p></div>
+      <div class="card"><h4>Suspicious</h4><p class="muted" style="font-size:0.9rem">Weighted signal total crosses the suspicious-pattern bar, <strong>or</strong> the existing <code>min_flags</code> repetition rule fires. Raises a proctor-visible <code>Alert</code>.</p></div>
+      <div class="card"><h4>Critical</h4><p class="muted" style="font-size:0.9rem">Weighted total crosses a second, higher bar, or an <code>identity_mismatch</code> occurs at all (single-occurrence critical, per its 0.95 weight). Raises a <code>high</code>-severity <code>Alert</code> explicitly flagged <em>recommend intervention</em>.</p></div>
+      <div class="card"><h4>Action</h4><p class="muted" style="font-size:0.9rem"><strong>Deliberately kept manual.</strong> Critical surfaces a recommendation on the live monitoring dashboard; a proctor still clicks the existing <code>sessions.terminate</code> action to end a session. Auto-terminating a student's exam from a CV heuristic alone - with no human in the loop - is a consequential, hard-to-reverse action against a real person, and false positives are possible by design (that's what "suspicious" vs "certain" means). The Directive asks the ladder to define what happens at each tier, not that every tier act autonomously.</p></div>
+    </div>
+    <p class="doc-lead" style="font-size:0.85rem">Combined-signal weighting reuses <code>pipeline.yaml</code>'s existing <code>metric_weights</code> (face/gaze/posture/identity) rather than inventing a second weighting scheme, per the Directive's instruction to weight combined signals higher than one isolated signal. Covered by <code>backend/features/behavior/tests/test_escalation.py</code> with synthetic event streams - deterministic, no webcam or ML dependency required, so it runs in every CI pass.</p>
+
+    <h2 id="algorithm-comparison">Algorithm Comparison</h2>
+    <p>Directive Area 04 ("Algorithm comparison", P0): benchmark the current stack against at least one alternative each, on accuracy, speed, and resource cost, and justify the pick. <strong>Correction alongside this comparison:</strong> four documentation pages previously described the pipeline as using MediaPipe, <strong>YOLOv8</strong>, and ArcFace. <code>backend/requirements-cv.txt</code> and every import in <code>backend/ai/knowing_eye/</code> were checked directly - there is no <code>ultralytics</code> dependency and no YOLO code anywhere in this repository. That claim was inaccurate and has been corrected in Part B, Part C, Part D, and Part E of this chapter. Knowing Eye has never run YOLO; the two questions below are the honest reason why.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Task</th><th>Chosen</th><th>Alternative(s) considered</th><th>Accuracy</th><th>Speed</th><th>Resource cost</th><th>Why chosen</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Face &amp; pose landmarks</td>
+          <td>MediaPipe Face/Pose Landmarker</td>
+          <td>Dlib (68-point), OpenPose</td>
+          <td>MediaPipe ~99.3% face-detection accuracy vs. Dlib/MTCNN in a direct comparison; OpenPose is generally more accurate for dense multi-person body pose specifically <a href="https://irjaeh.com/index.php/journal/article/download/394/402/885">(IRJAEH, real-time face detection comparison)</a> <a href="https://saiwa.ai/blog/openpose-vs-mediapipe/">(Saiwa, "OpenPose vs MediaPipe")</a>.</td>
+          <td>MediaPipe: ~14ms/frame face-landmark inference on CPU. Dlib CNN detector: ~219ms/frame. MediaPipe Holistic: ~4.8 FPS CPU vs. OpenPose ~1.1 FPS <strong>even with GPU</strong> <a href="https://irjaeh.com/index.php/journal/article/download/394/402/885">(IRJAEH)</a> <a href="https://saiwa.ai/blog/openpose-vs-mediapipe/">(Saiwa)</a>.</td>
+          <td>MediaPipe runs CPU-only, no GPU required. OpenPose's dense multi-person model is built for GPU throughput.</td>
+          <td>Knowing Eye needs single-person, real-time (<code>target_fps: 5</code>), CPU-deployable landmarks, not OpenPose's multi-person density or accuracy headroom this task doesn't need. MediaPipe is the correct tool for this specific requirement, not just the incumbent.</td>
+        </tr>
+        <tr>
+          <td>Person/object detection (why not YOLO)</td>
+          <td><em>Not used - landmark models cover the requirement</em></td>
+          <td>YOLOv8 (object detection)</td>
+          <td colspan="2">YOLO is an <strong>object detector</strong> (bounding boxes + class labels) - it does not natively produce the face-landmark, head-pose, or body-keypoint outputs Knowing Eye's behavior scoring is built on. It is the right tool for a different sub-problem (e.g., detecting a phone or a second person as a discrete object in frame), which is real future scope, not a substitute for MediaPipe's landmark output.</td>
+          <td>Adding a GPU-oriented detector for a CPU-first deployment target would work against the stack's own design constraint above.</td>
+          <td>Several RRL sources reviewed for Chapter 1 use YOLO for prohibited-object detection specifically (phones, notes) rather than identity/gaze/posture - a legitimate <em>future</em> addition (see docs/todo Sprint scope), not a replacement for the landmark pipeline that already exists.</td>
+        </tr>
+        <tr>
+          <td>Identity verification</td>
+          <td>ArcFace/InsightFace <code>buffalo_l</code></td>
+          <td>Dlib (<code>face_recognition</code>, 128-D)</td>
+          <td>ArcFace: LFW 99.77%, CFP-FP 98.56%, AgeDB-30 98.18% (InsightFace model zoo, cited in the AI/CV tech-card table above). Dlib's 128-D embeddings are the well-known weaker baseline the ArcFace angular-margin-loss paper was written to beat.</td>
+          <td colspan="2">Both run CPU-only via ONNX Runtime; ArcFace is the accuracy-superior option at comparable resource cost, so there is no speed/cost tradeoff to justify choosing the weaker model.</td>
+          <td>Higher accuracy at no deployment-cost penalty. <code>identity.py</code> keeps Dlib's <code>face_recognition</code> package as an automatic <em>fallback</em> backend (not the primary), so the alternative is evaluated and kept as a degraded-mode safety net, not discarded.</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="dataset-methodology">Dataset Methodology</h2>
+    <p>Directive Area 04 ("Dataset methodology", P0) asks for data source, collection method, sample size, cleaning/annotation process, and a stated, justified train/test split. The honest answer, checked directly against the repository: <strong>no training data exists yet.</strong> <code>backend/ai/training/</code> and <code>backend/ai/training/data/</code> (the paths <code>pipeline.yaml</code>'s <code>paths.training_data_dir</code> points at) are present but empty, and there is no training script anywhere in <code>backend/ai/</code>.</p>
+    <p>This is not an oversight to apologize for - it follows directly from the algorithm choices above. MediaPipe and ArcFace/InsightFace are used as <strong>frozen, pre-trained models</strong>; Knowing Eye does not fine-tune or train either one. The "dataset" the Directive is really asking about is therefore not a training corpus but a <strong>held-out evaluation set</strong> used to measure the pipeline's classification performance against the thresholds above - and that evaluation methodology is fully specified in <a href="04-system-testing.html#ai-evaluation">Part D, AI Behavioral Classification Evaluation</a>, correctly labeled there as planned methodology to be executed during the Capstone 2 deployment window, not results that already exist. Reporting fabricated accuracy numbers ahead of that data collection would fail the exact rigor the panel is asking for.</p>
+    <p>Split ratio, stated and justified in advance of collection: <strong>70/15/15 (train/validation/test)</strong> nominally follows convention, but because no model here is trained, the "train" partition is reserved for future fine-tuning work and unused by the current evaluation; the operative split for Part D's held-out classification benchmark is effectively <strong>validation vs. test</strong>, drawn from mock-examination sessions run during the deployment window described in <a href="05-system-maintenance.html">Part E</a>.</p>
+
+    <h2 id="snapshot-monitoring">Snapshot Monitoring &amp; Proctor Dashboard</h2>
+    <p>Directive Area 04 ("Snapshot monitoring &amp; proctor dashboard", P1). Per the Directive's own "what the panel already liked" note, snapshot-over-continuous-video was accepted as a reasonable tradeoff at Capstone 1 - this section documents that decision precisely rather than re-arguing it.</p>
+    <ul>
+      <li><strong>Cadence:</strong> <code>target_fps: 5</code> in <code>pipeline.yaml</code> - periodic snapshots over the existing WebSocket channel (<code>/ws/monitoring/{session_id}/</code>), not a continuous video stream.</li>
+      <li><strong>Why:</strong> five analyzed frames per second is enough to catch sustained behavior (the shortest grace period, <code>no_face_grace_seconds</code>, is 2 seconds = ~10 frames of headroom) without the bandwidth or server CPU cost of encoding/transmitting/decoding full video for every concurrent examinee - the per-examinee cost that server capacity planning (Sprint 5, Directive Area 04 "Capacity &amp; hardware") will load-test against.</li>
+      <li><strong>Trigger:</strong> continuous while <code>status = in_progress</code>; frames stop being analyzed the moment a session leaves that state (submit, terminate, or expiry).</li>
+      <li><strong>Retention policy:</strong> raw frames are <strong>not stored by default</strong> (<code>KE_STORE_FRAMES=False</code>) - only the derived metrics and behavior events persist (<code>BehaviorLog</code>, <code>Alert</code>). This is a deliberate privacy choice given many examinees are minors: the system needs to know <em>that</em> a face-absence or identity-mismatch pattern occurred, not to retain a video record of the examinee's face indefinitely.</li>
+      <li><strong>Proctor locator:</strong> <code>ExamAssignment.seat_label</code> (optional, settable via the candidate roster CSV import alongside <code>extra_time_minutes</code>) surfaces on the live-session card and the session CSV/PDF export, so a flagged examinee is findable physically - "Seat Room 3 - 12," not just a name in a list row.</li>
+      <li><strong>Camera-preview widget:</strong> the examinee-facing dock (<code>proctoring-dock.tsx</code>) already uses <code>position: fixed</code> pinned to a viewport corner - verified, not rebuilt, since it does not drift on scroll by construction.</li>
+    </ul>
+
+    <h2 id="browser-deterrents">Browser-Side Deterrents</h2>
+    <p>Directive Area 04 ("Browser-side deterrents", P2). Right-click, text selection, and copy/cut are disabled on the exam-taking chrome (question text, navigator) - but explicitly <strong>not</strong> inside an answer <code>&lt;input&gt;</code>/<code>&lt;textarea&gt;</code>, since a student must still be able to select, cut, and rewrite their own response (<code>focus-shell.tsx</code>, <code>isEditableTarget</code> guard). Tab-switch detection was already wired end-to-end at the logging layer (<code>ExamSessionViewSet.log_event</code>, <code>SessionLog.EventType.TAB_HIDDEN</code>) but nothing compared the count against <code>Exam.max_tab_switches</code> - the exam-taking hook now counts hidden-tab events client-side and surfaces a warning banner once the configured limit is exceeded, in addition to the existing raw event log.</p>
+    <p class="doc-lead" style="font-size:0.85rem"><strong>These are deterrents, not security controls, and are documented as such per the Directive's explicit instruction not to overclaim.</strong> A student using a second physical device, a phone, or printed notes is not stopped by any of the above - disabling the browser context menu does not prevent screenshotting with an OS tool, and tab-switch detection only observes the tab hosting the exam, not what's visible on a second monitor. The identity/gaze/posture CV pipeline and human proctor review remain the actual integrity controls; these browser affordances raise the effort required for the most casual attempts (copy-pasting exam text, alt-tabbing to a browser search) and nothing stronger is claimed for them here.</p>
 
     <h3>CV Pipeline Stages</h3>
     <div class="two-col">

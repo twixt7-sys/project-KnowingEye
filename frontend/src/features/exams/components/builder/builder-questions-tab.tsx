@@ -39,6 +39,7 @@ interface BuilderQuestionsTabProps {
   onSaveQuestion: () => void;
   onAttachmentPick: (files: FileList | null) => void;
   onRemoveAttachment: (attachment: QuestionAttachment) => void;
+  onUploadOptionImage: (questionId: number, file: File) => Promise<string>;
   onImportFile: (file: File) => void;
   onRunImport: () => void;
 }
@@ -68,6 +69,7 @@ export function BuilderQuestionsTab({
   onSaveQuestion,
   onAttachmentPick,
   onRemoveAttachment,
+  onUploadOptionImage,
   onImportFile,
   onRunImport,
 }: BuilderQuestionsTabProps) {
@@ -178,8 +180,13 @@ export function BuilderQuestionsTab({
                         only)
                       </li>
                       <li>
-                        <code>correct_answer</code> — must match an option exactly; use true / false
-                        for true_false
+                        <code>option_images</code> — optional, one image URL per option separated by{" "}
+                        <code>|</code> (upload the image first via the question editor to get a URL,
+                        leave a segment blank for a text-only option)
+                      </li>
+                      <li>
+                        <code>correct_answer</code> — must match an option's text exactly; use true /
+                        false for true_false
                       </li>
                       <li>
                         <code>points</code> — whole number (defaults to 1)
@@ -244,6 +251,7 @@ export function BuilderQuestionsTab({
         onSave={onSaveQuestion}
         onAttachmentPick={onAttachmentPick}
         onRemoveAttachment={onRemoveAttachment}
+        onUploadOptionImage={onUploadOptionImage}
       />
     </div>
   );

@@ -27,6 +27,7 @@ export function ExamTakingPage() {
     monitoringEnabled,
     webcamActive,
     behaviorAlerts,
+    tabSwitchWarning,
     feedOpen,
     setFeedOpen,
     enrolling,
@@ -76,6 +77,7 @@ export function ExamTakingPage() {
       monitoringEnabled={monitoringEnabled}
       webcamActive={webcamActive}
       behaviorAlerts={behaviorAlerts}
+      tabSwitchWarning={tabSwitchWarning}
       timeRemaining={attempt.timeRemaining}
       submitting={submitting}
       onSubmitClick={() => setShowSubmitModal(true)}

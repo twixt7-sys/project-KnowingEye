@@ -27,6 +27,34 @@ class Department(models.Model):
         return f"{self.name} ({self.abbreviation})"
 
 
+class ExamCategory(models.Model):
+    """Guidance-content classification, independent of academic department.
+
+    Directive Area 03 ("Guidance-specific scope"): the panel asked the team
+    to re-examine whether department should be a primary exam attribute at
+    all, since Guidance's process (psychological/behavioral assessment)
+    is broader than one academic department. Category is the discovery axis
+    built for that: seeded with Guidance content types, not subjects.
+    """
+
+    name = models.CharField(max_length=255, unique=True)
+    slug = models.SlugField(max_length=64, unique=True)
+    description = models.TextField(blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "exams_category"
+        verbose_name = "Exam category"
+        verbose_name_plural = "Exam categories"
+        ordering = ["sort_order", "name"]
+
+    def __str__(self):
+        return self.name
+
+
 def _question_attachment_path(instance: "QuestionAttachment", filename: str) -> str:
     return f"questions/{instance.question.exam_id}/{instance.question_id}/{filename}"
 
@@ -89,7 +117,25 @@ class Exam(models.Model):
         null=True,
         blank=True,
         related_name="exams",
-        help_text="Department that owns this exam (used for auto-generated codes)",
+        help_text="Home department that owns this exam (used for auto-generated codes)",
+    )
+    departments = models.ManyToManyField(
+        Department,
+        blank=True,
+        related_name="shared_exams",
+        help_text=(
+            "Every department this exam is assigned to, including the home department. "
+            "Lets shared/general-ed exams be discovered from more than one department "
+            "without giving up the single home department the exam code is generated from."
+        ),
+    )
+    category = models.ForeignKey(
+        ExamCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="exams",
+        help_text="Guidance content classification (psychological, behavioral, ...), independent of department",
     )
     exam_code = models.CharField(
         max_length=32,
@@ -223,6 +269,7 @@ class Exam(models.Model):
             models.Index(fields=['exam_code']),
             models.Index(fields=['available_from', 'available_until']),
             models.Index(fields=['approval_status']),
+            models.Index(fields=['category']),
         ]
 
     def __str__(self):
@@ -309,6 +356,16 @@ class ExamAssignment(models.Model):
     access_code = models.CharField(max_length=64, blank=True, default='')
     attempts_override = models.PositiveIntegerField(null=True, blank=True)
     extra_time_minutes = models.PositiveIntegerField(default=0)
+    seat_label = models.CharField(
+        max_length=32,
+        blank=True,
+        default='',
+        help_text=(
+            "Physical seat/room/station identifier, so a proctor can find a flagged "
+            "examinee in person rather than only in a list row (Directive Area 04 - "
+            "'proctor locator')."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -367,7 +424,12 @@ class Question(models.Model):
     options = models.JSONField(
         default=list,
         blank=True,
-        help_text='JSON array of answer options for multiple choice'
+        help_text=(
+            'JSON array of answer options for multiple choice. Each item is '
+            '{"text": str, "image": str | null} - image is a media URL, set '
+            'via the option-image upload endpoint, for abstract/psychological '
+            'items that need image-based options rather than plain text.'
+        ),
     )
     correct_answer = models.TextField(
         help_text='The correct answer or answer key'

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 
+from core.security import service as security
 from features.exams import services as exam_services
 from features.exams.serializers import ExamDetailSerializer, ExamTakeSerializer
 
@@ -108,12 +109,35 @@ class ResponseCreateSerializer(serializers.ModelSerializer):
         return value
 
 
+def _requester_is_grader(context) -> bool:
+    request = context.get('request')
+    user = getattr(request, 'user', None) if request else None
+    if not user:
+        return False
+    return bool(getattr(user, 'is_admin', lambda: False)() or security.can(user, 'sessions.grade'))
+
+
+def _score_if_visible(obj, context, field: str):
+    """Withhold a session's score fields from the examinee while any essay/
+    short-answer response is still pending manual grading (session status
+    PENDING_REVIEW) - Directive Area 03 ("Results"): "hold essay results
+    for manual grading (can't auto-release)." Graders still see the raw,
+    in-progress score so they have context while grading.
+    """
+    if obj.status == ExamSession.Status.PENDING_REVIEW and not _requester_is_grader(context):
+        return None
+    return getattr(obj, field)
+
+
 class ExamSessionListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for session lists."""
 
     exam_title = serializers.CharField(source='exam.title', read_only=True)
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)
     time_remaining_seconds = serializers.SerializerMethodField()
+    total_score = serializers.SerializerMethodField()
+    percentage_score = serializers.SerializerMethodField()
+    passed = serializers.SerializerMethodField()
 
     class Meta:
         model = ExamSession
@@ -125,6 +149,15 @@ class ExamSessionListSerializer(serializers.ModelSerializer):
 
     def get_time_remaining_seconds(self, obj):
         return obj.time_remaining_seconds
+
+    def get_total_score(self, obj):
+        return _score_if_visible(obj, self.context, 'total_score')
+
+    def get_percentage_score(self, obj):
+        return _score_if_visible(obj, self.context, 'percentage_score')
+
+    def get_passed(self, obj):
+        return _score_if_visible(obj, self.context, 'passed')
 
 
 class ExamSessionDetailSerializer(serializers.ModelSerializer):
@@ -140,6 +173,9 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
     responses = ResponseSerializer(many=True, read_only=True)
     time_elapsed_seconds = serializers.SerializerMethodField()
     time_remaining_seconds = serializers.SerializerMethodField()
+    total_score = serializers.SerializerMethodField()
+    percentage_score = serializers.SerializerMethodField()
+    passed = serializers.SerializerMethodField()
 
     class Meta:
         model = ExamSession
@@ -173,10 +209,16 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
             "started_at",
             "exam_started_at",
             "submitted_at",
-            "total_score",
-            "percentage_score",
-            "passed",
         ]
+
+    def get_total_score(self, obj):
+        return _score_if_visible(obj, self.context, "total_score")
+
+    def get_percentage_score(self, obj):
+        return _score_if_visible(obj, self.context, "percentage_score")
+
+    def get_passed(self, obj):
+        return _score_if_visible(obj, self.context, "passed")
 
     def get_exam(self, obj):
         request = self.context.get("request")

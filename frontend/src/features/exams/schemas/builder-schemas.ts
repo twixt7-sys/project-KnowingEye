@@ -31,23 +31,33 @@ export const examFormSchema = z.object({
   available_from: z.string(),
   available_until: z.string(),
   results_release_at: z.string(),
+  category_id: z.number().nullable(),
+  department_ids: z.array(z.number()),
+});
+
+export const questionOptionSchema = z.object({
+  text: z.string(),
+  image: z.string().nullable(),
 });
 
 export const questionDraftSchema = z.object({
   question_text: z.string(),
   question_type: questionTypeSchema,
-  options: z.array(z.string()),
+  options: z.array(questionOptionSchema),
   correct_answer: z.string(),
   points: z.number().min(1),
 });
 
 export type ExamForm = z.infer<typeof examFormSchema>;
 export type QuestionDraft = z.infer<typeof questionDraftSchema>;
+export type QuestionOptionDraft = z.infer<typeof questionOptionSchema>;
+
+const EMPTY_OPTION: QuestionOptionDraft = { text: "", image: null };
 
 export const EMPTY_QUESTION: QuestionDraft = {
   question_text: "",
   question_type: "multiple_choice",
-  options: ["", "", "", ""],
+  options: [{ ...EMPTY_OPTION }, { ...EMPTY_OPTION }, { ...EMPTY_OPTION }, { ...EMPTY_OPTION }],
   correct_answer: "",
   points: 1,
 };
@@ -82,6 +92,8 @@ export function examToForm(exam: Exam): ExamForm {
     available_from: toDatetimeLocal(exam.available_from),
     available_until: toDatetimeLocal(exam.available_until),
     results_release_at: toDatetimeLocal(exam.results_release_at),
+    category_id: exam.category?.id ?? null,
+    department_ids: exam.departments?.map((d) => d.id) ?? [],
   };
 }
 
@@ -103,5 +115,7 @@ export function examFormToPayload(form: ExamForm): Partial<Exam> {
     available_from: toIsoOrNull(form.available_from),
     available_until: toIsoOrNull(form.available_until),
     results_release_at: toIsoOrNull(form.results_release_at),
+    category_id: form.category_id,
+    department_ids: form.department_ids,
   };
 }

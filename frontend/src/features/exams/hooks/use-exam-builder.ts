@@ -17,6 +17,7 @@ import {
   submitExamForReview,
   updateExam,
   updateQuestion,
+  uploadOptionImage,
   uploadQuestionAttachment,
 } from "@/features/exams/api/exam-api";
 import { examBuilderKeys } from "@/features/exams/queries/keys";
@@ -57,7 +58,7 @@ export function useExamBuilder(examId: number) {
   const [importCsv, setImportCsv] = useState(CSV_TEMPLATE);
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [candidateEmail, setCandidateEmail] = useState("");
-  const [candidateCsv, setCandidateCsv] = useState("email,extra_time_minutes\n");
+  const [candidateCsv, setCandidateCsv] = useState("email,extra_time_minutes,seat_label\n");
 
   const examQuery = useQuery(examBuilderQueries.exam(examId));
   const questionsQuery = useQuery(examBuilderQueries.questions(examId));
@@ -130,7 +131,7 @@ export function useExamBuilder(examId: number) {
         question_type: draft.question_type,
         options:
           draft.question_type === "multiple_choice"
-            ? draft.options.filter((o) => o.trim())
+            ? draft.options.filter((o) => o.text.trim())
             : [],
         correct_answer: draft.correct_answer,
         points: draft.points,
@@ -302,7 +303,7 @@ export function useExamBuilder(examId: number) {
 
   const openNewQuestion = () => {
     setEditingQuestion(null);
-    setQuestionDraft({ ...EMPTY_QUESTION, options: ["", "", "", ""] });
+    setQuestionDraft({ ...EMPTY_QUESTION, options: EMPTY_QUESTION.options.map((o) => ({ ...o })) });
     setQuestionAttachments([]);
     setPendingFiles([]);
     setShowQuestionForm(true);
@@ -313,13 +314,20 @@ export function useExamBuilder(examId: number) {
     setQuestionDraft({
       question_text: q.question_text,
       question_type: q.question_type,
-      options: q.options?.length ? [...q.options] : ["", ""],
+      options: q.options?.length
+        ? q.options.map((o) => ({ ...o }))
+        : [{ text: "", image: null }, { text: "", image: null }],
       correct_answer: q.correct_answer ?? "",
       points: q.points,
     });
     setQuestionAttachments(q.attachments ?? []);
     setPendingFiles([]);
     setShowQuestionForm(true);
+  };
+
+  const uploadOptionImageForQuestion = async (questionId: number, file: File) => {
+    const { url } = await uploadOptionImage(examId, questionId, file);
+    return url;
   };
 
   const uploadAttachment = async (questionId: number, file: File) => {
@@ -463,6 +471,7 @@ export function useExamBuilder(examId: number) {
     openEditQuestion,
     handleAttachmentPick,
     removeAttachment,
+    uploadOptionImageForQuestion,
     saveQuestion,
     removeQuestion,
     reorderQuestionsByIds,

@@ -117,15 +117,31 @@ export function useExamTaking() {
     }
   }, [attempt.timeRemaining, handleAutoSubmit, session?.status, submitting]);
 
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const maxTabSwitches = session?.exam?.max_tab_switches ?? null;
+  const [tabSwitchWarning, setTabSwitchWarning] = useState<string | null>(null);
+
   useEffect(() => {
     if (!sessionId) return;
     const onVisibility = () => {
-      const event = document.hidden ? "tab_hidden" : "tab_visible";
-      void apiClient.logSessionEvent(sessionId, event).catch(() => undefined);
+      const hidden = document.hidden;
+      const event = hidden ? "tab_hidden" : "tab_visible";
+      setTabSwitchCount((prev) => {
+        const next = hidden ? prev + 1 : prev;
+        if (hidden && maxTabSwitches != null && next > maxTabSwitches) {
+          setTabSwitchWarning(
+            `You've left this tab ${next} time(s), above the ${maxTabSwitches} allowed for this exam. This has been recorded.`
+          );
+        }
+        void apiClient
+          .logSessionEvent(sessionId, event, hidden ? { count: next, max: maxTabSwitches } : undefined)
+          .catch(() => undefined);
+        return next;
+      });
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [sessionId]);
+  }, [sessionId, maxTabSwitches]);
 
   useEffect(() => {
     const questionTimer = setInterval(() => {
@@ -226,6 +242,8 @@ export function useExamTaking() {
     monitoringEnabled,
     webcamActive,
     behaviorAlerts,
+    tabSwitchCount,
+    tabSwitchWarning,
     feedOpen,
     setFeedOpen,
     enrolling,

@@ -31,7 +31,7 @@
           <tr><td>Users</td><td>Administrator, Examinee</td><td>Web browser</td><td>HTTPS + WSS to backend</td></tr>
           <tr><td>Presentation</td><td>React SPA</td><td>React 18, Vite, TypeScript</td><td>REST JSON, WebSocket frames</td></tr>
           <tr><td>Application</td><td>Django monolith</td><td>Django 6, DRF, Channels</td><td>Business logic, RBAC, session orchestration</td></tr>
-          <tr><td>AI / CV</td><td>Behavior pipeline</td><td>MediaPipe, YOLOv8, ArcFace</td><td>In-process via <code>backend/ai/knowing_eye</code></td></tr>
+          <tr><td>AI / CV</td><td>Behavior pipeline</td><td>MediaPipe (face/pose landmarks), ArcFace/InsightFace <code>buffalo_l</code> (identity)</td><td>In-process via <code>backend/ai/knowing_eye</code></td></tr>
           <tr><td>Data</td><td>Relational DB</td><td>SQLite (dev) / PostgreSQL (prod)</td><td>ORM persistence</td></tr>
           <tr><td>Hardware</td><td>Webcam</td><td>USB / built-in camera</td><td>Captured by browser MediaDevices API</td></tr>
         </tbody>
@@ -106,6 +106,71 @@ flowchart TB
       <li><strong>Privacy:</strong> Raw video frames are not stored by default (<code>KE_STORE_FRAMES=False</code>); only derived metrics and events persist.</li>
     </ol>
     <div class="cross-links"><a class="btn btn-sm" href="04-system-testing.html">Part D - System Testing</a><a class="btn btn-sm" href="../../testing/testing(IEEE)/README.md" target="_blank" rel="noopener">IEEE Test Pack ↗</a></div>
+
+    <h2 id="lms-benchmark">LMS Benchmarking</h2>
+    <p>Directive Area 03 ("LMS benchmarking", P0): <em>"don't reinvent the LMS examination workflow - benchmark it"</em> against Google Forms, Jotform, and a comparable LMS quiz engine <strong>before</strong> finalizing the exam-creation workflow. This section is placed before the design artifacts below it (rather than written up after the fact) because the Directive's design decisions in this chapter cite it directly. Google Forms and Jotform are general-purpose form builders occasionally used for quizzes; <strong>Moodle's Quiz activity</strong> is used as the "comparable LMS" column because it is the most widely deployed open-source exam-specific quiz engine and the closest architectural peer to an admissions-testing platform.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Capability</th><th>Google Forms</th><th>Jotform</th><th>Moodle Quiz</th><th>Knowing Eye</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Question creation flow</td>
+          <td>Inline single-page builder; each question is a card with an inline type picker.</td>
+          <td>Drag-and-drop palette of form-field widgets onto a canvas.</td>
+          <td>Questions authored independently in the Question Bank, then added to a quiz.</td>
+          <td>Inline "Add question" dialog on the exam builder, typed to one of 4 question types - closer to Forms' inline model, but exam-scoped rather than a global bank.</td>
+        </tr>
+        <tr>
+          <td>Drag-and-drop reordering</td>
+          <td>Yes - drag any question card to reorder.</td>
+          <td>Yes - full builder is drag-and-drop.</td>
+          <td>Yes - drag handle on the quiz's "Edit quiz" page.</td>
+          <td>Yes (<code>sortable-question-list.tsx</code>, server-persisted via <code>questions/reorder</code>) - locked once published or while a session is in progress, matching how Moodle locks a quiz with existing attempts.</td>
+        </tr>
+        <tr>
+          <td>Question types supported</td>
+          <td>10: short/paragraph text, multiple choice, checkboxes, dropdown, linear scale, grids, date, time, file upload.</td>
+          <td>General-purpose form fields (text, choice, matrix/Likert, ranking, signature, payment, file upload) - not exam-specific.</td>
+          <td>12+: multiple choice, true/false, short answer, matching, numerical, essay, calculated, drag-and-drop, cloze, and more.</td>
+          <td>4, deliberately: multiple choice, true/false, short answer, essay. <strong>Justification:</strong> Guidance's psychological/behavioral content (Directive "Guidance-specific scope") doesn't need Moodle's calculated or cloze types - matching that breadth would add builder complexity with no assessment value here.</td>
+        </tr>
+        <tr>
+          <td>Randomization / shuffling</td>
+          <td>Shuffle question order (global toggle) and shuffle answer order per multiple-choice question; no true per-student random draw from a bank without an external Sheets workaround.</td>
+          <td>No native shuffling - a submission tool, not a quiz engine; branching uses conditional logic, not randomization.</td>
+          <td>Shuffle within quiz, shuffle answer choices, <strong>and</strong> a "Random question" slot type that draws N questions from a question-bank category per attempt.</td>
+          <td><code>shuffle_questions</code> + <code>shuffle_options</code> (with a per-question override) <strong>plus</strong> <code>QuestionPool</code> random-draw-N-of-M - matches Moodle's random-bank-draw capability, going beyond Google Forms' simple reorder-only shuffle.</td>
+        </tr>
+        <tr>
+          <td>Search &amp; filtering</td>
+          <td>None in Forms itself - relies on Google Drive's file search.</td>
+          <td>Dashboard-level search/filter/sort by folder across forms, not within one form's questions.</td>
+          <td>Question Bank has a category tree plus search and filter by type/tag - the strongest comparator.</td>
+          <td>DRF <code>SearchFilter</code> + <code>OrderingFilter</code> + <code>filterset_fields</code> (status, category, department, approval_status) on the exam list endpoint, with an <code>ExamCategory</code> taxonomy - classification at the exam level rather than per-question, appropriate for Guidance's exam-level content types rather than a shared cross-exam item bank.</td>
+        </tr>
+        <tr>
+          <td>Scheduling / publishing</td>
+          <td>Only an "Accepting responses" on/off toggle; no native open/close date-time window without Apps Script.</td>
+          <td>A "Form Scheduler" widget sets an open/close date and a closed-form message.</td>
+          <td>Native "Open the quiz" / "Close the quiz" date-time fields, enforced server-side.</td>
+          <td><code>available_from</code>/<code>available_until</code> enforced server-side (<code>assert_exam_available_for_user</code>, blocks session start outside the window), a derived Upcoming/Active/Closed/Expired state, <strong>plus</strong> the submit -&gt; review -&gt; approve chain from Area 01 gating publish itself - stricter than all three benchmarks, since Directive Area 01 explicitly rejected single-admin-controls-everything.</td>
+        </tr>
+        <tr>
+          <td>Question bank behavior</td>
+          <td>None.</td>
+          <td>None.</td>
+          <td>Dedicated Question Bank app: questions are reusable and versioned across many quizzes.</td>
+          <td>Questions belong to one exam, not a cross-exam bank. <strong>Justification:</strong> exam cloning (<code>duplicate_exam</code>, carries questions/sections/pools/attachments) plus in-exam <code>QuestionPool</code> draw covers reuse within an admissions cycle, which is what Guidance actually does; a shared cross-exam bank isn't cited anywhere in the Directive and would be scope the panel didn't ask for.</td>
+        </tr>
+        <tr>
+          <td>Results workflow</td>
+          <td>Auto-grades objective questions instantly; manual review only via the per-response view; no release-scheduling or grading-hold gate.</td>
+          <td>No auto-grading (not a quiz tool) - submissions land in Jotform Tables for manual review.</td>
+          <td>Auto-grades objective types instantly; essay/short-answer needs manual grading; a teacher can manually toggle "don't show grades" until grading is done.</td>
+          <td>Auto-grades objective types on submit; an essay or unmatched short-answer flags the session <code>PENDING_REVIEW</code> and the score fields are withheld from the examinee (not just the answer key) until every flagged response is graded, then the session auto-completes and emails the examinee - the hold is computed automatically rather than depending on a teacher remembering to toggle it, as Moodle requires.</td>
+        </tr>
+      </tbody>
+    </table></div>
+    <p class="doc-lead" style="font-size:0.85rem">Every Sprint 3 design choice that comes out narrower than a benchmark (question types, cross-exam question bank) is a deliberate scope decision cited above, not an oversight; every choice that comes out stricter (scheduling, results release) traces directly to an earlier Directive area (Area 01's approval chain, Area 03's own "hold essay results" instruction) rather than being invented here.</p>
 
     <h2 id="use-case">Use Case Diagram</h2>
     <p>Shows the six RBAC roles from <a href="03-system-design.html#access-control">Access Control</a> (Administrator, Program Head, Guidance Staff, Teacher/Exam Creator, Proctor, Examinee) and their interactions with the Knowing Eye system boundary, including the exam approval chain and OTP email verification added in Area 01.</p>

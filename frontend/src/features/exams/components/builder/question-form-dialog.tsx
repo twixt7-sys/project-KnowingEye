@@ -1,4 +1,6 @@
-import { FileText, Trash2, Upload } from "@/shared/icons";
+import { useState } from "react";
+
+import { FileText, ImagePlus, Loader2, Trash2, Upload, X } from "@/shared/icons";
 
 import type { Question, QuestionAttachment } from "@/core/config/api";
 import {
@@ -21,6 +23,7 @@ interface QuestionFormDialogProps {
   onSave: () => void;
   onAttachmentPick: (files: FileList | null) => void;
   onRemoveAttachment: (attachment: QuestionAttachment) => void;
+  onUploadOptionImage: (questionId: number, file: File) => Promise<string>;
 }
 
 export function QuestionFormDialog({
@@ -37,8 +40,35 @@ export function QuestionFormDialog({
   onSave,
   onAttachmentPick,
   onRemoveAttachment,
+  onUploadOptionImage,
 }: QuestionFormDialogProps) {
+  const [optionImageBusy, setOptionImageBusy] = useState<number | null>(null);
+  const [optionImageError, setOptionImageError] = useState<string | null>(null);
+
   if (!open) return null;
+
+  const updateOption = (index: number, patch: Partial<QuestionDraft["options"][number]>) => {
+    const options = [...questionDraft.options];
+    options[index] = { ...options[index], ...patch };
+    setQuestionDraft({ ...questionDraft, options });
+  };
+
+  const pickOptionImage = async (index: number, file: File) => {
+    if (!editingQuestion) {
+      setOptionImageError("Save this question first, then edit it to add option images.");
+      return;
+    }
+    setOptionImageError(null);
+    setOptionImageBusy(index);
+    try {
+      const url = await onUploadOptionImage(editingQuestion.id, file);
+      updateOption(index, { image: url });
+    } catch {
+      setOptionImageError("Could not upload that image. Try a JPEG, PNG, GIF, or WebP under 10 MB.");
+    } finally {
+      setOptionImageBusy(null);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -92,18 +122,56 @@ export function QuestionFormDialog({
           {questionDraft.question_type === "multiple_choice" && (
             <div className="space-y-2">
               <p className="text-sm font-medium">Options</p>
+              <p className="text-xs text-muted-foreground">
+                Add an image to an option for abstract/psychological items that need image-based
+                answer choices rather than plain text.
+              </p>
+              {optionImageError && <p className="text-xs text-status-alert">{optionImageError}</p>}
               {questionDraft.options.map((opt, i) => (
-                <input
-                  key={i}
-                  value={opt}
-                  onChange={(e) => {
-                    const options = [...questionDraft.options];
-                    options[i] = e.target.value;
-                    setQuestionDraft({ ...questionDraft, options });
-                  }}
-                  placeholder={`Option ${i + 1}`}
-                  className="field-input"
-                />
+                <div key={i} className="flex items-start gap-2">
+                  <input
+                    value={opt.text}
+                    onChange={(e) => updateOption(i, { text: e.target.value })}
+                    placeholder={`Option ${i + 1}`}
+                    className="field-input flex-1"
+                  />
+                  {opt.image ? (
+                    <div className="relative shrink-0">
+                      <img
+                        src={opt.image}
+                        alt={`Option ${i + 1} illustration`}
+                        className="h-10 w-10 rounded-md border border-border object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => updateOption(i, { image: null })}
+                        className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-destructive-foreground"
+                        aria-label="Remove option image"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md border border-dashed border-border hover:bg-accent/50">
+                      {optionImageBusy === i ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : (
+                        <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={optionImageBusy !== null}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) void pickOptionImage(i, file);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
               ))}
               <BuilderField label="Correct option (must match text exactly)">
                 <input

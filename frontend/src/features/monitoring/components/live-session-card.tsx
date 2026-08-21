@@ -72,8 +72,11 @@ export function LiveSessionCard({
 
         {/* Monitor chrome: name plate + status */}
         <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/75 to-transparent px-3 pb-2 pt-6">
-          <p className="truncate font-mono text-[0.6875rem] tracking-[0.06em] text-white/90">
+          <p className="min-w-0 truncate font-mono text-[0.6875rem] tracking-[0.06em] text-white/90">
             {name}
+            {session.seat_label && (
+              <span className="ml-1.5 text-white/60">· Seat {session.seat_label}</span>
+            )}
           </p>
           <span
             className={`inline-flex shrink-0 items-center gap-1.5 rounded-[0.3125rem] px-1.5 py-0.5 font-mono text-[0.625rem] uppercase tracking-[0.1em] ${

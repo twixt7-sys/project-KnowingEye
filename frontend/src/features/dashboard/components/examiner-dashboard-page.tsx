@@ -9,7 +9,6 @@ import {
   FileText,
   Inbox,
   Plus,
-  Search,
   Send,
   TrendingUp,
   Users,
@@ -30,6 +29,7 @@ import { PageShell } from "@/shared/components/layout/page-shell";
 import { SectionPanel } from "@/shared/components/layout/section-panel";
 import { StatCard } from "@/shared/components/layout/stat-card";
 import { EmptyState } from "@/shared/components/patterns/empty-state";
+import { FilterBar } from "@/shared/components/patterns/filter-bar";
 import { IrisGauge } from "@/shared/components/patterns/iris-gauge";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
@@ -41,6 +41,7 @@ interface CreateExamForm {
   passing_score: number;
   instructions?: string;
   department_id: number | "";
+  category_id: number | "";
   max_attempts: number;
   monitoring_enabled: boolean;
   shuffle_questions: boolean;
@@ -53,10 +54,38 @@ const EMPTY_FORM: CreateExamForm = {
   passing_score: 50,
   instructions: "",
   department_id: "",
+  category_id: "",
   max_attempts: 1,
   monitoring_enabled: true,
   shuffle_questions: false,
 };
+
+const SORT_OPTIONS = [
+  { value: "-created_at", label: "Newest first" },
+  { value: "created_at", label: "Oldest first" },
+  { value: "title", label: "Title (A-Z)" },
+  { value: "-available_until", label: "Closing soonest" },
+] as const;
+
+function sortValueOf(exam: Exam, key: string): string {
+  if (key === "title") return exam.title;
+  if (key === "available_until") return exam.available_until ?? "";
+  return exam.created_at;
+}
+
+function sortExams(exams: Exam[], sort: string): Exam[] {
+  const desc = sort.startsWith("-");
+  const key = desc ? sort.slice(1) : sort;
+  const sorted = [...exams].sort((a, b) => {
+    const av = sortValueOf(a, key);
+    const bv = sortValueOf(b, key);
+    if (!av && !bv) return 0;
+    if (!av) return 1;
+    if (!bv) return -1;
+    return av < bv ? -1 : av > bv ? 1 : 0;
+  });
+  return desc ? sorted.reverse() : sorted;
+}
 
 function timeOfDayGreeting() {
   const hour = new Date().getHours();
@@ -78,6 +107,8 @@ export function ExaminerDashboardPage() {
   const dashboardQuery = useQuery(dashboardQueries.examiner());
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [sort, setSort] = useState<string>("-created_at");
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<CreateExamForm>(EMPTY_FORM);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -88,12 +119,14 @@ export function ExaminerDashboardPage() {
     ...dashboardQueries.departments(true),
     enabled: showCreate,
   });
+  const categoriesQuery = useQuery(dashboardQueries.categories(true));
 
   const summary = dashboardQuery.data?.summary ?? null;
   const exams = dashboardQuery.data?.exams ?? [];
   const activeSessions = dashboardQuery.data?.activeSessions ?? [];
   const departments = departmentsQuery.data ?? [];
   const departmentsLoading = departmentsQuery.isLoading;
+  const categories = categoriesQuery.data ?? [];
 
   const loadError = dashboardQuery.error != null ? formatApiError(dashboardQuery.error) : null;
   const error = actionError ?? loadError;
@@ -105,17 +138,18 @@ export function ExaminerDashboardPage() {
     ? `${selectedDepartment.abbreviation}-${new Date().getFullYear()}-A`
     : null;
 
-  const filteredExams = useMemo(
-    () =>
-      exams.filter((e) => {
-        const matchesQuery =
-          e.title.toLowerCase().includes(query.toLowerCase()) ||
-          (e.exam_code ?? "").toLowerCase().includes(query.toLowerCase());
-        const matchesStatus = statusFilter === "all" || e.status === statusFilter;
-        return matchesQuery && matchesStatus;
-      }),
-    [exams, query, statusFilter],
-  );
+  const filteredExams = useMemo(() => {
+    const filtered = exams.filter((e) => {
+      const matchesQuery =
+        e.title.toLowerCase().includes(query.toLowerCase()) ||
+        (e.exam_code ?? "").toLowerCase().includes(query.toLowerCase());
+      const matchesStatus = statusFilter === "all" || e.status === statusFilter;
+      const matchesCategory =
+        categoryFilter === "all" || String(e.category?.id ?? "") === categoryFilter;
+      return matchesQuery && matchesStatus && matchesCategory;
+    });
+    return sortExams(filtered, sort);
+  }, [exams, query, statusFilter, categoryFilter, sort]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,6 +165,7 @@ export function ExaminerDashboardPage() {
         description: form.description,
         instructions: form.instructions,
         department_id: form.department_id,
+        category_id: form.category_id || null,
         duration_minutes: form.duration_minutes,
         passing_score: form.passing_score,
         max_attempts: form.max_attempts,
@@ -275,28 +310,42 @@ export function ExaminerDashboardPage() {
           title="Examinations"
           description="Draft, publish, and manage your exam catalog."
           toolbar={
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="relative min-w-0 flex-1 sm:max-w-sm">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search by title or code…"
-                  className="form-field w-full py-2 pl-9 pr-3 text-sm"
-                />
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {(["all", "draft", "active", "archived"] as const).map((s) => (
+            <div className="flex flex-col gap-2">
+              <FilterBar
+                search={query}
+                onSearchChange={setQuery}
+                searchPlaceholder="Search by title or code…"
+                chips={(["all", "draft", "active", "archived"] as const).map((s) => ({
+                  value: s,
+                  label: s,
+                }))}
+                activeChip={statusFilter}
+                onChipChange={setStatusFilter}
+                sortOptions={SORT_OPTIONS as unknown as { value: string; label: string }[]}
+                sortValue={sort}
+                onSortChange={setSort}
+              />
+              {categories.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
                   <button
-                    key={s}
                     type="button"
-                    onClick={() => setStatusFilter(s)}
-                    className={`filter-chip ${statusFilter === s ? "filter-chip--active" : ""}`}
+                    onClick={() => setCategoryFilter("all")}
+                    className={`filter-chip ${categoryFilter === "all" ? "filter-chip--active" : ""}`}
                   >
-                    {s}
+                    all categories
                   </button>
-                ))}
-              </div>
+                  {categories.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setCategoryFilter(String(c.id))}
+                      className={`filter-chip ${categoryFilter === String(c.id) ? "filter-chip--active" : ""}`}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           }
         >
@@ -323,6 +372,7 @@ export function ExaminerDashboardPage() {
                       </p>
                       <div className="flex items-center gap-1.5">
                         {exam.status === "draft" && <ApprovalPill status={exam.approval_status} />}
+                        <ScheduleStatePill state={exam.schedule_state} />
                         <StatusPill status={exam.status} />
                       </div>
                     </div>
@@ -330,6 +380,10 @@ export function ExaminerDashboardPage() {
                     <h3 className="mt-2 line-clamp-2 font-serif text-[1.0625rem] font-semibold leading-snug tracking-tight">
                       {exam.title}
                     </h3>
+
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {exam.category?.name ?? "Uncategorized"}
+                    </p>
 
                     <p className="mt-1.5 font-mono text-xs tabular-nums text-muted-foreground">
                       {exam.total_questions} questions · {exam.duration_minutes} min
@@ -506,6 +560,27 @@ export function ExaminerDashboardPage() {
               </div>
 
               <div>
+                <label className="mb-1 block text-sm">Category (optional)</label>
+                <select
+                  value={form.category_id}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      category_id: e.target.value ? Number(e.target.value) : "",
+                    })
+                  }
+                  className="form-field"
+                >
+                  <option value="">No category</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="mb-1 block text-sm">Description</label>
                 <textarea
                   rows={3}
@@ -625,6 +700,18 @@ function StatusPill({ status }: { status: string }) {
     archived: "bg-muted text-muted-foreground",
   };
   return <span className={`status-pill ${styles[status] ?? styles.archived}`}>{status}</span>;
+}
+
+/** Derived Upcoming/Active/Closed/Expired window state (Directive A3 - "show clear states"). */
+function ScheduleStatePill({ state }: { state?: Exam["schedule_state"] }) {
+  if (!state) return null;
+  const styles: Record<string, string> = {
+    upcoming: "bg-chart-4/12 text-chart-4",
+    active: "bg-status-safe/12 text-status-safe",
+    closed: "bg-muted text-muted-foreground",
+    expired: "bg-status-alert/12 text-status-alert",
+  };
+  return <span className={`status-pill ${styles[state] ?? ""}`}>{state}</span>;
 }
 
 /** Surfaces where a draft sits in the submit -> review -> approve chain (Directive A1). */

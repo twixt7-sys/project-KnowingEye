@@ -4,4 +4,6 @@ export const dashboardKeys = {
   student: () => [...dashboardKeys.all, "student"] as const,
   departments: (activeOnly = true) =>
     [...dashboardKeys.all, "departments", { activeOnly }] as const,
+  categories: (activeOnly = true) =>
+    [...dashboardKeys.all, "categories", { activeOnly }] as const,
 };

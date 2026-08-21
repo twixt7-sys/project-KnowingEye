@@ -22,33 +22,33 @@ Panel concern: one administrator account is a bottleneck and a single point of
 failure. They explicitly raised staff logins and delegated operational access.
 
 1.1 Role-based access control [P0]
-    [ ] Replace the single-administrator model with real RBAC
-    [ ] Do not allow admin privileges to be casually shared/delegated
-    [ ] Define roles: Administrator, Guidance Staff, Program Head,
+    [x] Replace the single-administrator model with real RBAC
+    [x] Do not allow admin privileges to be casually shared/delegated
+    [x] Define roles: Administrator, Guidance Staff, Program Head,
         Teacher/Exam Creator, Proctor, Examinee
-    [ ] Define permissions per role: create, read, update, delete, approve,
+    [x] Define permissions per role: create, read, update, delete, approve,
         monitor, manage users, manage exams, view reports
-    [ ] Consider permission-based access if RBAC alone isn't dynamic enough
-    [ ] Model access around the actual Guidance Office workflow
+    [x] Consider permission-based access if RBAC alone isn't dynamic enough
+    [x] Model access around the actual Guidance Office workflow
 
 1.2 Administrator responsibilities [P0]
-    [ ] Separate administrative oversight from operational tasks
-    [ ] Stop making the administrator create every exam personally
-    [ ] Let teachers / program heads create or submit exams
-    [ ] Let program heads review / revise / approve submitted exams
-    [ ] Define a hierarchy, e.g.:
+    [x] Separate administrative oversight from operational tasks
+    [x] Stop making the administrator create every exam personally
+    [x] Let teachers / program heads create or submit exams
+    [x] Let program heads review / revise / approve submitted exams
+    [x] Define a hierarchy, e.g.:
           Level 0: Administrator
           Level 1: Program Head / authorized staff
           Other: operational roles
 
 1.3 Registration & verification [P0]
-    [ ] Simplify registration to essential fields only
-    [ ] Remove required profile photo at signup -- make it optional,
+    [x] Simplify registration to essential fields only
+    [x] Remove required profile photo at signup -- make it optional,
         add/change after registration
-    [ ] Implement OTP verification
-    [ ] Add email verification
-    [ ] Add password confirmation
-    [ ] Make the registration flow visually clear about where OTP happens
+    [x] Implement OTP verification
+    [x] Add email verification
+    [x] Add password confirmation
+    [x] Make the registration flow visually clear about where OTP happens
 
 ================================================================================
  2. UI / UX REDESIGN
@@ -57,26 +57,28 @@ Largest volume of feedback. Panel could not read the UI comfortably and did
 not feel "Legacy College" in the design.
 
 2.1 Readability & contrast [P0]
-    [ ] Increase text/background contrast app-wide
-    [ ] Review button, disabled-state, and input-field contrast
-    [ ] Eliminate gray-on-gray combinations
-    [ ] Make status states visually distinguishable at a glance
+    [x] Increase text/background contrast app-wide
+    [x] Review button, disabled-state, and input-field contrast
+    [x] Eliminate gray-on-gray combinations
+    [x] Make status states visually distinguishable at a glance
 
 2.2 Tone & theme [P1]
-    [ ] Pull back from the current dark "night theme" look
-    [ ] Rebuild visual hierarchy so it reads well under real classroom light
+    [x] Pull back from the current dark "night theme" look
+    [x] Rebuild visual hierarchy so it reads well under real classroom light
 
 2.3 Institutional identity [P0]
     [ ] Add Legacy College branding: colors, marks, recognizable elements
-    [ ] Make it feel like a school system, not a generic SaaS dashboard
-    [ ] Redesign obviously templated / AI-generated-looking components
-    [ ] Make every layout decision intentional and defensible
+        (institution logo + campus photo done; department seal is still a
+        labeled placeholder pending the office's official mark)
+    [x] Make it feel like a school system, not a generic SaaS dashboard
+    [x] Redesign obviously templated / AI-generated-looking components
+    [x] Make every layout decision intentional and defensible
 
 2.4 Dashboard organization [P2]
     [ ] Review placement/hierarchy of every major component
-    [ ] Improve sort / search / filter interfaces
+    [x] Improve sort / search / filter interfaces
     [ ] Decongest cramped views
-    [ ] Make status colors meaningful and consistent
+    [x] Make status colors meaningful and consistent
 
 ================================================================================
  3. EXAM MANAGEMENT & LMS BEHAVIOR
@@ -85,56 +87,59 @@ Instruction from panel: "Don't reinvent the LMS examination workflow --
 benchmark it."
 
 3.1 Exam discovery [P0]
-    [ ] Add exam categories for filtering
-    [ ] Add search, filter, sort -- don't rely on cards alone at scale
+    [x] Add exam categories for filtering
+    [x] Add search, filter, sort -- don't rely on cards alone at scale
 
 3.2 Scheduling & exam codes [P0]
-    [ ] Add opening + closing date/time (a real examination window)
-    [ ] Block access after deadline
-    [ ] Show clear states: Upcoming / Active / Closed / Expired
-    [ ] Keep automatic exam-code generation (dept abbreviation + year),
+    [x] Add opening + closing date/time (a real examination window)
+    [x] Block access after deadline
+    [x] Show clear states: Upcoming / Active / Closed / Expired
+    [x] Keep automatic exam-code generation (dept abbreviation + year),
         lock it from accidental edits
-    [ ] Keep exam title editable separately from the generated code
+    [x] Keep exam title editable separately from the generated code
 
 3.3 Department & section assignment [P1]
-    [ ] Allow one exam to be assigned to multiple departments (multi-select)
+    [x] Allow one exam to be assigned to multiple departments (multi-select)
         for shared/general-ed exams
     [ ] Support section-level assignment and per-group schedules
-    [ ] Add exam cloning/duplication instead of full re-creation per group
+    [x] Add exam cloning/duplication instead of full re-creation per group
 
 3.4 Question management [P1]
-    [ ] Support reordering (drag-and-drop), editing, deleting
-    [ ] Lock question editing once an exam is in progress
+    [x] Support reordering (drag-and-drop), editing, deleting
+    [x] Lock question editing once an exam is in progress
         (students may already be answering)
-    [ ] Support images in questions AND in answer choices
+    [x] Support images in questions AND in answer choices
         (abstract/psychological items need image-based options)
 
 3.5 Bulk import [P1]
-    [ ] Support XLSX/CSV import with a downloadable template
-    [ ] Validate: question type, choices, correct answer, ordering,
+    [x] Support XLSX/CSV import with a downloadable template
+    [x] Validate: question type, choices, correct answer, ordering,
         media references
-    [ ] Document template columns + example row + accepted question types
+    [x] Document template columns + example row + accepted question types
 
 3.6 LMS benchmarking [P0]
-    [ ] Study Google Forms, Jotform, and comparable LMS platforms
-    [ ] Compare: question creation flow, drag-and-drop reordering,
+    [x] Study Google Forms, Jotform, and comparable LMS platforms
+    [x] Compare: question creation flow, drag-and-drop reordering,
         question types, randomization/shuffling, search/filtering,
         scheduling/publishing, question bank behavior, results workflow
-    [ ] Turn this into an actual comparison table in the documentation
+    [x] Turn this into an actual comparison table in the documentation
 
 3.7 Guidance-specific scope [P1]
-    [ ] Design for psychological / mental / abstract / behavioral content,
+    [x] Design for psychological / mental / abstract / behavioral content,
         not a generic academic quiz
     [ ] Restrict question access -- confidential content stays in
-        Guidance Office
-    [ ] Reconsider whether "department" should be a primary exam attribute
+        Guidance Office (RBAC/module access already scopes exam
+        management; no distinct Guidance-only content restriction beyond
+        that has been built)
+    [x] Reconsider whether "department" should be a primary exam attribute
         at all, since Guidance's process is broader than one department
 
 3.8 Results [P1]
-    [ ] Hold essay results for manual grading (can't auto-release)
-    [ ] Add email notification on result release
+    [x] Hold essay results for manual grading (can't auto-release)
+    [x] Add email notification on result release
     [ ] Give admins/proctors per-exam results, warnings, terminations,
-        exportable reports
+        exportable reports (generic session reports already filter by
+        exam/status and export CSV/PDF; no dedicated per-exam report yet)
 
 ================================================================================
  4. COMPUTER VISION & MONITORING
@@ -149,39 +154,54 @@ justification, not developer judgment calls.
 4.1 Define every CV parameter [P0]
     For EACH of: face presence, identity match, head-facing camera,
     upper-body visibility, head movement, eye gaze, posture -- document:
-    [ ] What it measures
-    [ ] Why it matters
-    [ ] What is normal vs. suspicious
-    [ ] What algorithm detects it
-    [ ] What threshold triggers a flag
-    [ ] What action happens when the threshold is exceeded
+    [x] What it measures
+    [x] Why it matters
+    [x] What is normal vs. suspicious
+    [x] What algorithm detects it
+    [x] What threshold triggers a flag
+    [x] What action happens when the threshold is exceeded
 
 4.2 Threshold justification [P0]
-    [ ] Define "anomaly" precisely per parameter
-    [ ] Base thresholds on cited research, not internal judgment
-    [ ] Use explicit tiers: Normal -> Suspicious -> Anomalous
-    [ ] Factor in duration and frequency, not single-frame events
+    [x] Define "anomaly" precisely per parameter
+    [x] Base thresholds on cited research, not internal judgment
+        (identity threshold: InsightFace's own guide; gaze: proctoring-CV
+        literature; temporal window: anomaly-detection literature; posture
+        ratios documented as internally-derived, not misattributed)
+    [x] Use explicit tiers: Normal -> Suspicious -> Anomalous
+    [x] Factor in duration and frequency, not single-frame events
         (reduces false positives)
 
 4.3 Anomaly accumulation model [P0]
     Replace "one head turn = anomaly" with accumulation over time/signals.
     Escalation path:  Normal -> Warning -> Suspicious -> Critical -> Action
-    [ ] Count repeated occurrences of the same signal
+    [x] Count repeated occurrences of the same signal
         (e.g. face missing x1, x2, x3...)
-    [ ] Weight combined signals higher than one isolated signal
-    [ ] Define what happens at each tier: notify, warn, pause,
-        proctor intervention, terminate
+    [x] Weight combined signals higher than one isolated signal
+    [x] Define what happens at each tier: notify, warn, pause,
+        proctor intervention, terminate (Action tier deliberately kept
+        manual -- Critical recommends intervention, a proctor still clicks
+        terminate; see rationale in docs/documentation/chapter2/
+        03-system-design.html)
 
 4.4 Dataset methodology [P0]
-    [ ] Document data source, collection method, sample size
-    [ ] Document cleaning, annotation, labeling process
-    [ ] State and justify train/test split
-        (panel asked directly: 70/30? 80/20?)
+    [x] Document data source, collection method, sample size
+        (honest answer: no dataset exists yet -- MediaPipe/ArcFace run as
+        frozen pretrained models, no custom training occurs; documented as
+        planned methodology for the deployment window, not fabricated
+        results)
+    [x] Document cleaning, annotation, labeling process (planned, per above)
+    [x] State and justify train/test split
+        (70/15/15 stated in advance; train partition reserved/unused since
+        no model is trained here)
 
 4.5 Algorithm comparison [P0]
-    [ ] Benchmark current stack (YOLOv8, MediaPipe) against alternatives
-    [ ] Compare accuracy, speed, resource cost
-    [ ] State why the selected algorithm best fits the requirements
+    [x] Benchmark current stack (MediaPipe, ArcFace/InsightFace) against
+        alternatives (Dlib, OpenPose, Dlib face_recognition), using
+        published literature numbers -- also corrected 4 doc pages that
+        falsely claimed YOLOv8 was implemented (it never was: zero
+        ultralytics dependency or code anywhere in the repo)
+    [x] Compare accuracy, speed, resource cost
+    [x] State why the selected algorithm best fits the requirements
 
 4.6 Camera & hardware requirements [P0]
     Camera:
@@ -202,16 +222,24 @@ justification, not developer judgment calls.
     [ ] Answer directly: can it handle ~30/room and ~100 total?
 
 4.8 Snapshot monitoring & proctor dashboard [P1]
-    [ ] Document: monitoring uses periodic snapshots over WebSockets,
+    [x] Document: monitoring uses periodic snapshots over WebSockets,
         NOT continuous video -- explain why (bandwidth/processing cost)
-    [ ] State snapshot frequency, trigger, retention policy
-    [ ] Give proctor a locator to find a flagged student physically
-    [ ] Fix the camera-preview widget in one screen position (no scroll drift)
+    [x] State snapshot frequency, trigger, retention policy
+    [x] Give proctor a locator to find a flagged student physically
+        (ExamAssignment.seat_label, set via roster CSV import, surfaced on
+        the live-session card and session exports)
+    [x] Fix the camera-preview widget in one screen position (no scroll drift)
+        (already position:fixed in proctoring-dock.tsx -- verified, not rebuilt)
 
 4.9 Browser-side deterrents [P2]
-    [ ] Disable right-click, text selection, copy where appropriate
-    [ ] Detect tab-switching; consider fullscreen mode
-    [ ] Document these as deterrents, NOT absolute security --
+    [x] Disable right-click, text selection, copy where appropriate
+        (never inside an answer input/textarea)
+    [x] Detect tab-switching; consider fullscreen mode
+        (detection + logging already existed end-to-end; added counting
+        against Exam.max_tab_switches with an on-screen warning once
+        exceeded. Fullscreen: not force-mandated -- browser permission
+        quirks make forcing it unreliable across environments)
+    [x] Document these as deterrents, NOT absolute security --
         don't overclaim in the paper
 
 ================================================================================
@@ -259,16 +287,17 @@ Chapters 1-2 need to stand on their own before Capstone 2 begins.
 ================================================================================
 
 --- P0 : MUST FIX BEFORE THE NEXT DEFENSE (19) ---
-  [ ] RBAC & permission system
-  [ ] Administrator scope split (oversight vs. operational)
-  [ ] Registration simplification
-  [ ] OTP / account verification
-  [ ] Contrast & readability fixes
-  [ ] Legacy College visual identity
-  [ ] De-genericize / de-AI-template the UI
-  [ ] Exam search / filter / sort
-  [ ] Exam scheduling window (open/close, deadline states)
-  [ ] LMS benchmarking (Google Forms, Jotform, etc.)
+  [x] RBAC & permission system
+  [x] Administrator scope split (oversight vs. operational)
+  [x] Registration simplification
+  [x] OTP / account verification
+  [x] Contrast & readability fixes
+  [ ] Legacy College visual identity (institution logo + campus photo done;
+      department seal still a placeholder pending the official mark)
+  [x] De-genericize / de-AI-template the UI
+  [x] Exam search / filter / sort
+  [x] Exam scheduling window (open/close, deadline states)
+  [x] LMS benchmarking (Google Forms, Jotform, etc.)
   [ ] CV parameter definitions (measure/threshold/action per factor)
   [ ] Threshold justification (research-backed, not arbitrary)
   [ ] Anomaly accumulation model (duration + frequency + combined signals)
@@ -280,13 +309,14 @@ Chapters 1-2 need to stand on their own before Capstone 2 begins.
   [ ] RRL strengthening + citations for all technical claims
 
 --- P1 : PLAN IT INTO THE SPRINT (13) ---
-  [ ] Multi-department exam assignment
-  [ ] Exam cloning / duplication
-  [ ] Question reordering + locking during active exams
-  [ ] Image-based questions and answer choices
-  [ ] Bulk import templates (XLSX/CSV) with documentation
-  [ ] Guidance-specific scope realignment
-  [ ] Results workflow (essay grading, notifications)
+  [x] Multi-department exam assignment
+  [x] Exam cloning / duplication
+  [x] Question reordering + locking during active exams
+  [x] Image-based questions and answer choices
+  [x] Bulk import templates (XLSX/CSV) with documentation
+  [ ] Guidance-specific scope realignment (category + department
+      re-scoping done; distinct question-access restriction not built)
+  [x] Results workflow (essay grading, notifications)
   [ ] Snapshot monitoring documentation
   [ ] Proctor locator for flagged students
   [ ] Fixed camera preview widget
@@ -296,11 +326,11 @@ Chapters 1-2 need to stand on their own before Capstone 2 begins.
 
 --- P2 : REFINEMENT / POLISH (8) ---
   [ ] Dashboard information hierarchy
-  [ ] Status indicator / color-coding design
+  [x] Status indicator / color-coding design
   [ ] Browser-side exam deterrents (right-click, copy, tab detection)
-  [ ] Report filtering & export
-  [ ] Result email notifications
-  [ ] Use-case diagram refresh
+  [ ] Report filtering & export (per-exam dedicated report still open)
+  [x] Result email notifications
+  [x] Use-case diagram refresh
   [ ] General interaction polish
   [ ] Additional CV optimization
 

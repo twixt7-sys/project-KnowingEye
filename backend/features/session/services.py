@@ -5,6 +5,8 @@ from __future__ import annotations
 import random
 from datetime import timedelta
 
+from django.conf import settings
+from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -304,6 +306,43 @@ def _create_in_progress_session(
         },
     )
     return session
+
+
+def finalize_grading_if_complete(session: ExamSession) -> bool:
+    """Recompute score and release results once every flagged response is graded.
+
+    Directive Area 03 ("Results"): "hold essay results for manual grading
+    (can't auto-release)" and "add email notification on result release."
+    A session moves to PENDING_REVIEW at submit time when it has essay/
+    unmatched short-answer responses (see ExamSession.submit_session); this
+    is the other half - called after each manual grade so the session
+    flips to COMPLETED, with a fresh score, the moment the last flagged
+    response is graded, and the examinee is emailed that results are ready.
+
+    Returns:
+        True if this call completed the session (grading just finished).
+    """
+    if session.status != ExamSession.Status.PENDING_REVIEW:
+        return False
+    if session.responses.filter(flagged_for_review=True, points_awarded__isnull=True).exists():
+        return False
+
+    session.calculate_score()
+    session.status = ExamSession.Status.COMPLETED
+    session.save(update_fields=["status", "total_score", "percentage_score", "passed"])
+
+    if session.user.email:
+        send_mail(
+            subject="Your exam results are ready",
+            message=(
+                f'Grading for "{session.exam.title}" is complete and your results '
+                "are now available in Knowing Eye."
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[session.user.email],
+            fail_silently=True,
+        )
+    return True
 
 
 def get_or_create_setup_session(user, exam, *, ip_address: str | None, user_agent: str) -> tuple[ExamSession, bool]:
