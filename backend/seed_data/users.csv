@@ -1,5 +1,7 @@
 id,username,email,first_name,last_name,role,is_active,created_at,updated_at,raw_password
-1,admin,nexushellstein@knowingeye.test,Admin,User,ADMIN,True,2026-06-01 09:00:00,2026-06-01 09:00:00,adminpass
+# NOTE: the id=1 administrator is provisioned by `manage.py seed_db` from the
+# SEED_ADMIN_* environment variables (see backend/.env / .env.example), not from
+# this file, so the bootstrap admin password stays out of version control.
 2,examiner1,examiner1@knowingeye.test,Elena,Examiner,ADMIN,True,2026-06-01 09:00:00,2026-06-01 09:00:00,examiner1
 3,examiner2,examiner2@knowingeye.test,Marcus,Proctor,ADMIN,True,2026-06-01 09:00:00,2026-06-01 09:00:00,examiner2
 4,examiner3,examiner3@knowingeye.test,Priya,Invigilator,ADMIN,True,2026-06-01 09:00:00,2026-06-01 09:00:00,examiner3

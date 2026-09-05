@@ -30,8 +30,12 @@ Webcam frames ──WebSocket──► monitoring consumer ──► same pipeli
 
 | Role | Username | Password |
 |------|----------|----------|
-| Admin | `admin` | `adminpass` |
-| Examinee | `user02` | `pass002` |
+| Admin | `SEED_ADMIN_USERNAME` (default `admin`) | `SEED_ADMIN_PASSWORD` (default `adminpass`) |
+| Examinee | `examinee02` | `pass002` |
+
+The admin account is provisioned from `SEED_ADMIN_*` in `backend/.env`
+(gitignored), **not** from `seed_data/users.csv`. Examinee seeds are
+`examinee01`–`examinee20` (`pass001`–`pass020`), all role `STUDENT`.
 
 ## Directory map
 
@@ -53,7 +57,7 @@ project-KnowingEye/
 ## Backend conventions
 
 - **Feature apps** under `backend/features/<name>/`: `models`, `serializers`, `views`, `urls`, `services`, `tests`.
-- **Permissions** use the custom `User.role` field (`ADMIN` / `EXAMINEE`), not Django `is_staff`.
+- **Permissions** use the custom `User.role` field — six roles: `ADMIN`, `GUIDANCE_STAFF`, `PROGRAM_HEAD`, `FACULTY`, `PROCTOR`, `STUDENT` — layered with per-user PBAC grants in `backend/core/security/`, not Django `is_staff`.
 - **Shared repository base** lives in `backend/shared/repositories/base_repository.py` (used by exams).
 - **Run with Daphne**, not `runserver`, so WebSockets work.
 
@@ -80,7 +84,7 @@ cd backend
 python -m pytest ai/tests/
 ```
 
-Backend: **32 tests** across auth, exams, sessions, monitoring (REST + WebSocket), behavior, reports.
+Backend: **140+ tests** across auth (JWT, OTP, RBAC/PBAC), exams (lifecycle, scheduling, bulk import), sessions, monitoring (REST + WebSocket), behavior (escalation), and reports, plus the AI pipeline suite under `ai/tests/`.
 
 Frontend: Vitest unit tests via `npm test` (also included in `test-all.cmd`).
 
@@ -93,7 +97,7 @@ Prior thesis artifacts, OSAS reference packs from another project, duplicate doc
 1. **Fresh clone** - run `start-setup.cmd` once before `start-dev.cmd` (venv, migrate, seed, npm).
 2. **Stale JSON schemas** in `docs/database/` and `docs/backend/` may differ from live models - trust the code and [Implementation_Status_Summary.md](docs/general/Implementation_Status_Summary.md).
 3. **ML stack is optional** - without MediaPipe/YOLO the API uses a deterministic stub; monitoring still works end-to-end.
-4. **Registration always creates EXAMINEE** - admin users must be seeded or promoted in the database.
+4. **Registration always creates `STUDENT`** - staff roles (admin, guidance staff, program head, faculty, proctor) must be seeded or promoted via the Users admin screen / database.
 
 ## Documentation index
 
