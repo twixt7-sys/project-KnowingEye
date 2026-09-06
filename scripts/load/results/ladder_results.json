@@ -1,0 +1,17 @@
+[
+  {
+    "users": 3,
+    "free_ram_gb_before": 0.44,
+    "free_ram_gb_after": 0.27,
+    "peak_cpu_pct": 100.1,
+    "avg_cpu_pct": 41.8,
+    "peak_rss_mb": 271.1,
+    "requests": 12,
+    "failures": 2,
+    "median_ms": 98.0,
+    "p95_ms": 164000.0,
+    "rps": 0.06966344674202493,
+    "locust_exit_code": 1,
+    "locust_stderr_tail": ""
+  }
+]

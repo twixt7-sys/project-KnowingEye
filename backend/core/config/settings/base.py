@@ -251,6 +251,18 @@ KNOWING_EYE = {
 DEFAULT_FROM_EMAIL = decouple_config("DEFAULT_FROM_EMAIL", default="no-reply@knowingeye.local")
 EMAIL_SUBJECT_PREFIX = "[Knowing Eye] "
 
+# Seed administrator credentials (consumed by ``manage.py seed_db``).
+# Kept out of the committed CSV seed so the bootstrap admin password is
+# supplied via the environment (see ``backend/.env``, gitignored) rather
+# than living in version control. Defaults are dev-only conveniences.
+SEED_ADMIN = {
+    "username": decouple_config("SEED_ADMIN_USERNAME", default="admin"),
+    "email": decouple_config("SEED_ADMIN_EMAIL", default="admin@knowingeye.test"),
+    "password": decouple_config("SEED_ADMIN_PASSWORD", default="adminpass"),
+    "first_name": decouple_config("SEED_ADMIN_FIRST_NAME", default="Admin"),
+    "last_name": decouple_config("SEED_ADMIN_LAST_NAME", default="User"),
+}
+
 # OTP / email verification (Directive Area 01 - "Registration & verification").
 # Environment-overridable so a longer TTL or lower attempt cap can be tuned
 # without a code change; defaults match what's documented in Chapter 2.

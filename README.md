@@ -81,10 +81,14 @@ npm run dev
 
 ### Seed accounts
 
-| Role     | Username | Password    |
-|----------|----------|-------------|
-| Admin    | `admin`  | `adminpass` |
-| Examinee | `user02` | `pass002`   |
+| Role     | Username     | Password    |
+|----------|--------------|-------------|
+| Admin    | `admin`      | `adminpass` |
+| Examinee | `examinee02` | `pass002`   |
+
+The admin account is provisioned by `seed_db` from the `SEED_ADMIN_*` variables
+in `backend/.env` (gitignored) — the defaults above apply when they're unset.
+Examinee seeds are `examinee01`–`examinee20` (`pass001`–`pass020`).
 
 ## API surface
 
@@ -158,14 +162,14 @@ $env:OPENBLAS_NUM_THREADS = "1"
 python manage.py test features
 ```
 
-Currently **32 tests** across:
+Currently **140+ tests** across:
 
-* `features.authentication` - JWT, registration, profile, password change, refresh
-* `features.exams` - CRUD, publish/archive
-* `features.session` - start, submit, lifecycle
+* `features.authentication` - JWT, registration, profile, password change, refresh, **OTP email verification**, **RBAC/PBAC delegation**
+* `features.exams` - CRUD, publish/archive, **scheduling window**, **categories**, **multi-department**, **question reorder/lock**, **image attachments**, **bulk XLSX/CSV import**
+* `features.session` - start, submit, lifecycle, autosave, auto-submit, grading
 * `features.monitoring` - REST frame, enroll, **WebSocket consumer**, RBAC
-* `features.behavior` - logs + alerts persistence
-* `features.reports` - summary, detail, CSV export, timeseries
+* `features.behavior` - logs + alerts persistence, **anomaly escalation tiers**
+* `features.reports` - summary, detail, CSV/PDF export, timeseries
 * `ai.tests` - production CV pipeline unit tests
 
 ## Production deployment

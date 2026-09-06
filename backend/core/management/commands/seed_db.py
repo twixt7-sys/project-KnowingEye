@@ -46,6 +46,7 @@ class Command(BaseCommand):
                 return
 
         with transaction.atomic():
+            self.ensure_admin()
             self.load_users(data_dir)
             self.load_departments(data_dir)
             self.load_exams(data_dir)
@@ -59,12 +60,59 @@ class Command(BaseCommand):
     def get_data_dir(self):
         return Path(__file__).resolve().parents[3] / 'seed_data'
 
+    def ensure_admin(self):
+        """Upsert the bootstrap administrator from environment settings.
+
+        The admin's credentials come from ``settings.SEED_ADMIN`` (env-driven,
+        see ``backend/.env``) rather than the committed ``users.csv`` so the
+        password never lives in version control. Pinned to ``id=1`` because the
+        exam/session CSV seeds reference the admin as ``created_by_id=1``.
+        """
+        cfg = settings.SEED_ADMIN
+        fields = {
+            'username': cfg['username'],
+            'email': cfg['email'],
+            'first_name': cfg['first_name'],
+            'last_name': cfg['last_name'],
+            'role': 'ADMIN',
+            'is_active': True,
+        }
+
+        admin = (
+            self.user_model.objects.filter(username=cfg['username']).first()
+            or self.user_model.objects.filter(pk=1).first()
+        )
+
+        if admin is None:
+            admin = self.user_model(pk=1, **fields)
+            admin.set_password(cfg['password'])
+            admin.save()
+            self.stdout.write(f"Created admin {admin.username} (from environment).")
+            return
+
+        updated = False
+        for field, value in fields.items():
+            if getattr(admin, field) != value:
+                setattr(admin, field, value)
+                updated = True
+        if updated:
+            admin.save(update_fields=list(fields.keys()))
+            self.stdout.write(f"Updated admin {admin.username} (from environment).")
+
+        admin.set_password(cfg['password'])
+        admin.save(update_fields=['password'])
+
     def load_users(self, data_dir):
         path = data_dir / 'users.csv'
         with path.open(newline='', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                user_id = int(row['id'])
+                raw_id = (row.get('id') or '').strip()
+                # Skip blank lines and `#` comment rows (e.g. the note that the
+                # admin is provisioned from the environment, not this CSV).
+                if not raw_id or raw_id.startswith('#'):
+                    continue
+                user_id = int(raw_id)
                 username = row['username']
                 email = row['email']
                 defaults = {
