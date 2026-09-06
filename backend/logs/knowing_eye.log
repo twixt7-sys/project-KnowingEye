@@ -4780,3 +4780,76 @@ django.db.utils.OperationalError: no such table: exams_assignment
 2026-08-20 08:45:55,023 [WARNING] django.request: Bad Request: /api/auth/profile/verify-email/confirm/
 2026-08-20 08:45:59,824 [WARNING] knowing_eye.api.errors: API error [not_authenticated] UserProfileViewSet.POST status=401 detail={'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')}
 2026-08-20 08:45:59,825 [WARNING] django.request: Unauthorized: /api/auth/profile/verify-email/request/
+2026-09-07 01:23:11,575 [INFO] matplotlib.font_manager: generated new fontManager
+2026-09-07 01:23:21,125 [WARNING] django.request: Forbidden: /api/auth/users/3/activate/
+2026-09-07 01:23:55,644 [WARNING] knowing_eye.api.errors: API error [validation_error] RegisterView.POST status=400 detail={'password': [ErrorDetail(string='Passwords must match.', code='invalid')]}
+2026-09-07 01:23:55,646 [WARNING] django.request: Bad Request: /api/auth/register/
+2026-09-07 01:24:08,096 [WARNING] knowing_eye.api.errors: API error [validation_error] UserProfileViewSet.POST status=400 detail={'code': ErrorDetail(string='Incorrect code.', code='invalid')}
+2026-09-07 01:24:08,097 [WARNING] django.request: Bad Request: /api/auth/profile/verify-email/confirm/
+2026-09-07 01:24:12,976 [WARNING] knowing_eye.api.errors: API error [not_authenticated] UserProfileViewSet.POST status=401 detail={'detail': ErrorDetail(string='Authentication credentials were not provided.', code='not_authenticated')}
+2026-09-07 01:24:12,978 [WARNING] django.request: Unauthorized: /api/auth/profile/verify-email/request/
+2026-09-07 01:24:55,116 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.PATCH status=400 detail={'department_id': [ErrorDetail(string='Department cannot be changed after creation.', code='invalid')]}
+2026-09-07 01:24:55,117 [WARNING] django.request: Bad Request: /api/exams/1/
+2026-09-07 01:24:59,252 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'department_id': [ErrorDetail(string='Select a department to create an exam.', code='invalid')]}
+2026-09-07 01:24:59,253 [WARNING] django.request: Bad Request: /api/exams/
+2026-09-07 01:25:15,624 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'approval_status': ErrorDetail(string='Only a pending exam can be approved.', code='invalid')}
+2026-09-07 01:25:15,625 [WARNING] django.request: Bad Request: /api/exams/1/approve/
+2026-09-07 01:25:20,601 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'submit': [ErrorDetail(string='Add at least one question before publishing.', code='invalid')]}
+2026-09-07 01:25:20,603 [WARNING] django.request: Bad Request: /api/exams/2/submit/
+2026-09-07 01:25:35,453 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.GET status=403 detail={'detail': ErrorDetail(string='You do not have permission to review exam submissions.', code='permission_denied')}
+2026-09-07 01:25:35,454 [WARNING] django.request: Forbidden: /api/exams/pending-review/
+2026-09-07 01:25:40,367 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.POST status=403 detail={'detail': ErrorDetail(string='You do not have permission to review exam submissions.', code='permission_denied')}
+2026-09-07 01:25:40,369 [WARNING] django.request: Forbidden: /api/exams/1/approve/
+2026-09-07 01:25:50,402 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.POST status=400 detail={'approval_status': ErrorDetail(string='This exam must be submitted for review and approved by a program head before it can be published.', code='invalid')}
+2026-09-07 01:25:50,403 [WARNING] django.request: Bad Request: /api/exams/1/publish/
+2026-09-07 01:25:55,454 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.POST status=403 detail={'detail': ErrorDetail(string='You can only modify exams you created (or as admin).', code='permission_denied')}
+2026-09-07 01:25:55,456 [WARNING] django.request: Forbidden: /api/exams/1/submit/
+2026-09-07 01:26:12,977 [WARNING] knowing_eye.api.errors: API error [validation_error] QuestionViewSet.POST status=400 detail={'status': ErrorDetail(string="Cannot modify exam while status is 'active'. Only draft exams can be edited.", code='invalid')}
+2026-09-07 01:26:12,978 [WARNING] django.request: Bad Request: /api/exams/1/questions/
+2026-09-07 01:26:14,202 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamViewSet.PATCH status=400 detail={'status': ErrorDetail(string="Cannot modify exam while status is 'active'. Only draft exams can be edited.", code='invalid')}
+2026-09-07 01:26:14,203 [WARNING] django.request: Bad Request: /api/exams/1/
+2026-09-07 01:26:26,685 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.POST status=403 detail={'detail': ErrorDetail(string='You do not have permission to create exams.', code='permission_denied')}
+2026-09-07 01:26:26,686 [WARNING] django.request: Forbidden: /api/exams/
+2026-09-07 01:26:27,952 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.POST status=403 detail={'detail': ErrorDetail(string='You do not have permission to create exams.', code='permission_denied')}
+2026-09-07 01:26:27,953 [WARNING] django.request: Forbidden: /api/exams/
+2026-09-07 01:26:35,371 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.DELETE status=403 detail={'detail': ErrorDetail(string='You do not have permission to delete this exam.', code='permission_denied')}
+2026-09-07 01:26:35,372 [WARNING] django.request: Forbidden: /api/exams/1/
+2026-09-07 01:26:38,997 [WARNING] knowing_eye.api.errors: API error [permission_denied] ExamViewSet.PATCH status=403 detail={'detail': ErrorDetail(string='You can only modify exams you created (or as admin).', code='permission_denied')}
+2026-09-07 01:26:38,998 [WARNING] django.request: Forbidden: /api/exams/1/
+2026-09-07 01:27:24,770 [WARNING] knowing_eye.api.errors: API error [validation_error] QuestionViewSet.PATCH status=400 detail={'status': ErrorDetail(string='Cannot modify this exam - an examinee currently has it in progress. Wait for active sessions to finish.', code='invalid')}
+2026-09-07 01:27:24,770 [WARNING] django.request: Bad Request: /api/exams/1/questions/1/
+2026-09-07 01:27:41,098 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-09-07 01:27:41,110 [INFO] knowing_eye.ai.adapter: identity enrolled session=565290f4-5541-4c47-9f24-6a5d2493f157 dims=256 backend=disabled
+2026-09-07 01:27:41,111 [INFO] knowing_eye.monitoring.views: enroll session=565290f4-5541-4c47-9f24-6a5d2493f157 ok=True backend=disabled
+2026-09-07 01:27:43,558 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-09-07 01:27:43,561 [INFO] knowing_eye.ai.adapter: identity enrolled session=8a11c614-e53f-4d0e-8a30-764e9e6ce900 dims=256 backend=disabled
+2026-09-07 01:27:43,562 [INFO] knowing_eye.monitoring.views: enroll session=8a11c614-e53f-4d0e-8a30-764e9e6ce900 ok=True backend=disabled
+2026-09-07 01:27:46,122 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-09-07 01:27:46,125 [INFO] knowing_eye.ai.adapter: identity enrolled session=18810c89-3af2-4ac1-9814-51993bbe5d84 dims=256 backend=disabled
+2026-09-07 01:27:46,126 [INFO] knowing_eye.monitoring.views: enroll session=18810c89-3af2-4ac1-9814-51993bbe5d84 ok=True backend=disabled
+2026-09-07 01:27:48,586 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-09-07 01:27:51,129 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-09-07 01:27:51,132 [INFO] knowing_eye.ai.adapter: identity enrolled session=92a0b65f-a9de-4b53-ba7b-a6738b6c3fff dims=256 backend=disabled
+2026-09-07 01:27:51,133 [INFO] knowing_eye.monitoring.views: enroll session=92a0b65f-a9de-4b53-ba7b-a6738b6c3fff ok=True backend=disabled
+2026-09-07 01:27:53,721 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-09-07 01:27:53,724 [INFO] knowing_eye.ai.adapter: identity enrolled session=c3a76ad8-d432-44bf-9bef-705b6c076a1f dims=256 backend=disabled
+2026-09-07 01:27:53,725 [INFO] knowing_eye.monitoring.views: enroll session=c3a76ad8-d432-44bf-9bef-705b6c076a1f ok=True backend=disabled
+2026-09-07 01:27:56,213 [INFO] knowing_eye.ai.adapter: AI pipeline disabled via settings; using stub.
+2026-09-07 01:27:56,216 [INFO] knowing_eye.ai.adapter: identity enrolled session=b21f9772-a2c9-443f-a20b-fb029eb8b2b2 dims=256 backend=disabled
+2026-09-07 01:27:56,217 [INFO] knowing_eye.monitoring.views: enroll session=b21f9772-a2c9-443f-a20b-fb029eb8b2b2 ok=True backend=disabled
+2026-09-07 01:28:04,903 [WARNING] django.request: Forbidden: /api/monitoring/frame/
+2026-09-07 01:28:22,447 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'identity': ErrorDetail(string='Enroll a reference face before beginning the exam.', code='invalid')}
+2026-09-07 01:28:22,449 [WARNING] django.request: Bad Request: /api/sessions/e7092288-04f2-42af-9ab5-81879e2c6e4e/begin/
+2026-09-07 01:28:28,657 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': ErrorDetail(string='You already have an exam being set up: "Session Exam". Finish or wait for that session to end before starting another exam.', code='invalid')}
+2026-09-07 01:28:28,658 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-09-07 01:28:31,734 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': {'exam': ErrorDetail(string='This exam has not opened yet. Check the scheduled start time.', code='invalid')}}
+2026-09-07 01:28:31,735 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-09-07 01:28:34,788 [WARNING] django.request: Bad Request: /api/sessions/2cf54c6b-0b06-4286-a68a-6ef56a8f338d/submit/
+2026-09-07 01:28:37,645 [WARNING] knowing_eye.api.errors: API error [validation_error] ExamSessionViewSet.POST status=400 detail={'exam': {'exam': ErrorDetail(string='Maximum attempts (1) reached for this exam.', code='invalid')}}
+2026-09-07 01:28:37,646 [WARNING] django.request: Bad Request: /api/sessions/start/
+2026-09-07 01:28:55,951 [WARNING] django.request: Bad Request: /api/sessions/69570e84-7389-444c-b0be-d3e383963b38/begin/
+2026-09-07 01:29:35,438 [WARNING] knowing_eye.api.errors: API error [validation_error] _DummyView.GET status=400 detail={'field': [ErrorDetail(string='bad', code='invalid')]}
+2026-09-07 01:32:06,650 [INFO] daphne.cli: Starting server at tcp:port=8000:interface=0.0.0.0
+2026-09-07 01:32:06,651 [INFO] daphne.server: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+2026-09-07 01:32:06,652 [INFO] daphne.server: Configuring endpoint tcp:port=8000:interface=0.0.0.0
+2026-09-07 01:32:06,654 [INFO] daphne.server: Listening on TCP address 0.0.0.0:8000
