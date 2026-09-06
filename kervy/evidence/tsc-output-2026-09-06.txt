@@ -1,0 +1,16 @@
+src/features/exams/components/grader/exam-grader-page.tsx(31,60): error TS2339: Property 'points' does not exist on type 'PendingGradeRow'.
+src/features/exams/components/grader/exam-grader-page.tsx(35,36): error TS2339: Property 'points' does not exist on type 'PendingGradeRow'.
+src/features/exams/components/grader/exam-grader-page.tsx(94,28): error TS2339: Property 'points' does not exist on type 'PendingGradeRow'.
+src/features/exams/components/grader/exam-grader-page.tsx(95,51): error TS2339: Property 'points' does not exist on type 'PendingGradeRow'.
+src/shared/components/common/error-boundary.test.tsx(16,10): error TS2786: 'Boom' cannot be used as a JSX component.
+  Its type '() => void' is not a valid JSX element type.
+    Type '() => void' is not assignable to type '(props: any) => ReactNode | Promise<ReactNode>'.
+      Type 'void' is not assignable to type 'ReactNode | Promise<ReactNode>'.
+src/shared/components/layout/page-header.tsx(1,10): error TS1484: 'ReactNode' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/shared/components/layout/page-shell.tsx(1,10): error TS1484: 'ReactNode' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/shared/components/layout/section-panel.tsx(1,10): error TS1484: 'ReactNode' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/shared/components/ui/sidebar.tsx(5,10): error TS1484: 'VariantProps' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/shared/lib/api-client.ts(31,15): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
+src/shared/lib/api-error.ts(5,5): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
+src/shared/lib/api-error.ts(6,5): error TS1294: This syntax is not allowed when 'erasableSyntaxOnly' is enabled.
+EXIT: 2
