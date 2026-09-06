@@ -21,7 +21,7 @@ the repo root.
 |---|---|---|
 | `tsc-output-2026-09-06.txt` | DEF-001, KE-GEN-004 | Full `tsc -b --noEmit` output — 12 real type errors, the first typecheck this codebase has ever had |
 | `vitest-output-2026-09-06.txt` | DEF-002, KE-GEN-005 | `npm test -- --run` — 32 passed, 1 failed (CSV header drift) |
-| `backend-tests-2026-09-06.log` | KE-GEN-001 and others | Full `manage.py test features core shared` run — 163/163 pass with `requirements-core.txt` + `requirements-cv.txt` installed |
+| `backend-tests-2026-09-06.txt` | KE-GEN-001 and others | Full `manage.py test features core shared` run — 163/163 pass with `requirements-core.txt` + `requirements-cv.txt` installed |
 | `pipeline-mode-2026-09-06.txt` | KE-MON-006, KE-MON-007, DEF-010 | Live confirmation that the CV pipeline reaches `production` mode but the identity backend falls back to `appearance` |
 
 Screenshots for the manual checklists in `07-manual-checklists.md` (RBAC
