@@ -4,8 +4,13 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+backend/venv/
 .env
 *.sqlite3
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 
 # Node
 node_modules/
