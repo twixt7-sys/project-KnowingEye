@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -71,6 +72,11 @@ class RegisterView(viewsets.ModelViewSet):
             {
                 "message": "User registered successfully",
                 "user": UserSerializer(user, context={"request": request}).data,
+                # False when the OTP email failed to send (e.g. mail
+                # misconfiguration) - registration still succeeds, but the
+                # frontend can tell the user to use "Resend code" instead of
+                # assuming a code is already on its way.
+                "verification_email_sent": getattr(user, "_verification_email_sent", True),
             },
             status=status.HTTP_201_CREATED,
         )
@@ -121,8 +127,11 @@ class UserProfileViewSet(viewsets.ViewSet):
 
         if request.user.email_verified:
             return Response({"message": "Email is already verified."})
-        issue_otp(request.user)
-        return Response({"message": f"A verification code was sent to {request.user.email}."})
+        code = issue_otp(request.user)
+        payload = {"message": f"A verification code was sent to {request.user.email}."}
+        if settings.DEBUG and settings.OTP_DEBUG_RETURN_CODE:
+            payload["debug_code"] = code
+        return Response(payload)
 
     @action(detail=False, methods=["post"], url_path="verify-email/confirm")
     def confirm_email_verification(self, request):

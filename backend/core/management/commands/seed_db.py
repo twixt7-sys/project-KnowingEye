@@ -10,7 +10,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from features.exams.models import Department, Exam, Question
+from features.exams.models import Department, Exam, ExamCategory, Question
 from features.session.models import ExamSession, Response
 
 
@@ -34,7 +34,19 @@ class Command(BaseCommand):
         data_dir = self.get_data_dir()
 
         if options['flush']:
+            if not options['noinput']:
+                confirm = input(
+                    'This will PERMANENTLY DELETE every exam, session, and account '
+                    '(including admins) from this database. Continue? [y/N]: '
+                ).strip().lower()
+                if confirm not in ('y', 'yes'):
+                    self.stdout.write(self.style.WARNING('Flush aborted by user.'))
+                    return
             self.flush_data()
+            # Wiping deletes every account, including the bootstrap admin -
+            # recreate it immediately so a login is never lost.
+            self.ensure_admin()
+            self.reset_sequences()
             return
 
         if not options['noinput']:
@@ -46,6 +58,7 @@ class Command(BaseCommand):
                 return
 
         with transaction.atomic():
+            self.ensure_admin()
             self.load_users(data_dir)
             self.load_departments(data_dir)
             self.load_exams(data_dir)
@@ -59,12 +72,59 @@ class Command(BaseCommand):
     def get_data_dir(self):
         return Path(__file__).resolve().parents[3] / 'seed_data'
 
+    def ensure_admin(self):
+        """Upsert the bootstrap administrator from environment settings.
+
+        The admin's credentials come from ``settings.SEED_ADMIN`` (env-driven,
+        see ``backend/.env``) rather than the committed ``users.csv`` so the
+        password never lives in version control. Pinned to ``id=1`` because the
+        exam/session CSV seeds reference the admin as ``created_by_id=1``.
+        """
+        cfg = settings.SEED_ADMIN
+        fields = {
+            'username': cfg['username'],
+            'email': cfg['email'],
+            'first_name': cfg['first_name'],
+            'last_name': cfg['last_name'],
+            'role': 'ADMIN',
+            'is_active': True,
+        }
+
+        admin = (
+            self.user_model.objects.filter(username=cfg['username']).first()
+            or self.user_model.objects.filter(pk=1).first()
+        )
+
+        if admin is None:
+            admin = self.user_model(pk=1, **fields)
+            admin.set_password(cfg['password'])
+            admin.save()
+            self.stdout.write(f"Created admin {admin.username} (from environment).")
+            return
+
+        updated = False
+        for field, value in fields.items():
+            if getattr(admin, field) != value:
+                setattr(admin, field, value)
+                updated = True
+        if updated:
+            admin.save(update_fields=list(fields.keys()))
+            self.stdout.write(f"Updated admin {admin.username} (from environment).")
+
+        admin.set_password(cfg['password'])
+        admin.save(update_fields=['password'])
+
     def load_users(self, data_dir):
         path = data_dir / 'users.csv'
         with path.open(newline='', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                user_id = int(row['id'])
+                raw_id = (row.get('id') or '').strip()
+                # Skip blank lines and `#` comment rows (e.g. the note that the
+                # admin is provisioned from the environment, not this CSV).
+                if not raw_id or raw_id.startswith('#'):
+                    continue
+                user_id = int(raw_id)
                 username = row['username']
                 email = row['email']
                 defaults = {
@@ -282,35 +342,52 @@ class Command(BaseCommand):
                         self.stdout.write(f'Updated response {response.id}.')
 
     def flush_data(self):
-        self.stdout.write('Removing all exam data and application users...')
+        """Delete every exam, session, and account, in FK-safe order.
+
+        Most of the schema cascades from just two roots once ExamSession is
+        gone first: Exam.delete() cascades Question (-> QuestionAttachment),
+        ExamSection, QuestionPool, ExamAssignment, and ExamApprovalEvent;
+        User.delete() cascades PermissionChange and EmailVerification. The
+        only rows that *block* deletion here (Exam.created_by/department are
+        PROTECT) protect against deleting a User/Department out from under a
+        surviving Exam - moot once Exam itself is gone. This intentionally
+        removes every account, including any existing superuser - callers
+        (``--flush``) recreate the bootstrap admin immediately after.
+        """
+        self.stdout.write('Removing all exam, session, and account data...')
 
         deleted_sessions = ExamSession.objects.count()
         ExamSession.objects.all().delete()
         if deleted_sessions:
-            self.stdout.write(f'Deleted {deleted_sessions} session(s).')
-
-        deleted_questions = Question.objects.count()
-        Question.objects.all().delete()
-        if deleted_questions:
-            self.stdout.write(f'Deleted {deleted_questions} question(s).')
+            self.stdout.write(
+                f'Deleted {deleted_sessions} session(s) '
+                '(+ responses, logs, behavior/alert/identity records).'
+            )
 
         deleted_exams = Exam.objects.count()
         Exam.objects.all().delete()
         if deleted_exams:
-            self.stdout.write(f'Deleted {deleted_exams} exam(s).')
+            self.stdout.write(
+                f'Deleted {deleted_exams} exam(s) '
+                '(+ questions, sections, pools, assignments, approval history).'
+            )
+
+        deleted_categories = ExamCategory.objects.count()
+        ExamCategory.objects.all().delete()
+        if deleted_categories:
+            self.stdout.write(f'Deleted {deleted_categories} exam categor(y/ies).')
 
         deleted_departments = Department.objects.count()
         Department.objects.all().delete()
         if deleted_departments:
             self.stdout.write(f'Deleted {deleted_departments} department(s).')
 
-        removed = self.user_model.objects.filter(is_superuser=False).count()
-        self.user_model.objects.filter(is_superuser=False).delete()
+        removed = self.user_model.objects.count()
+        self.user_model.objects.all().delete()
         if removed:
-            self.stdout.write(f'Deleted {removed} user(s).')
+            self.stdout.write(f'Deleted {removed} user(s) (all accounts).')
 
-        self.reset_sequences()
-        self.stdout.write(self.style.SUCCESS('Database cleared for reseed.'))
+        self.stdout.write(self.style.SUCCESS('Database cleared.'))
 
     def reset_sequences(self):
         """Bump PostgreSQL sequences after rows inserted with explicit IDs."""

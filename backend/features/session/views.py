@@ -124,6 +124,37 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
+    @action(detail=True, methods=['post'], url_path='cancel-setup')
+    def cancel_setup(self, request, pk=None):
+        """Let an examinee abandon their own not-yet-started proctoring setup.
+
+        Without this, a student who backs out of camera/identity setup has
+        to wait out SETUP_MAX_MINUTES (30 min) before assert_no_other_active_exam
+        stops treating it as blocking - which reads as "stuck" during testing
+        or when someone just changes their mind about which exam to start.
+        """
+        session = self.get_object()
+        if session.user != request.user:
+            return APIResponse({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        if session.status != ExamSession.Status.SETUP:
+            return APIResponse(
+                {'error': f'Cannot cancel session with status: {session.get_status_display()}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        session.status = ExamSession.Status.EXPIRED
+        session.submitted_at = timezone.now()
+        session.save(update_fields=['status', 'submitted_at'])
+
+        SessionLog.objects.create(
+            session=session,
+            event_type=SessionLog.EventType.EXPIRED,
+            ip_address=self._get_client_ip(request),
+            details={'reason': 'cancelled_by_examinee'},
+        )
+        return APIResponse({'message': 'Setup cancelled.'}, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'])
     def submit(self, request, pk=None):
         """

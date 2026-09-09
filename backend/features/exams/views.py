@@ -166,7 +166,7 @@ class ExamViewSet(viewsets.ModelViewSet):
     def readiness(self, request, pk=None):
         """Return the publish-readiness report for an exam."""
         exam = self.get_object()
-        services.assert_can_modify_exam(exam, request.user)
+        services.assert_can_view_readiness(exam, request.user)
         return Response(services.exam_publish_readiness(exam))
 
     @action(detail=True, methods=["post"])
@@ -332,6 +332,27 @@ class ExamViewSet(viewsets.ModelViewSet):
             ExamSectionSerializer(section).data,
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=True, methods=["patch", "delete"], url_path=r"sections/(?P<section_id>\d+)")
+    def section_detail(self, request, pk=None, section_id=None):
+        """Update or remove a single section (title/instructions/order/paging)."""
+        from .serializers import ExamSectionSerializer
+
+        exam = self.get_object()
+        services.assert_can_modify_exam(exam, request.user)
+        services.assert_exam_editable(exam)
+        section = get_object_or_404(exam.sections, pk=section_id)
+
+        if request.method == "DELETE":
+            # Questions pointing at this section fall back to unsectioned
+            # (Question.section is SET_NULL) rather than blocking deletion.
+            section.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        serializer = ExamSectionSerializer(section, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(ExamSectionSerializer(section).data)
 
     @action(detail=True, methods=["get", "post"], url_path="pools")
     def pools(self, request, pk=None):

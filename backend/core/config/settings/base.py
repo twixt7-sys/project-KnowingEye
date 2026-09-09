@@ -251,6 +251,33 @@ KNOWING_EYE = {
 DEFAULT_FROM_EMAIL = decouple_config("DEFAULT_FROM_EMAIL", default="no-reply@knowingeye.local")
 EMAIL_SUBJECT_PREFIX = "[Knowing Eye] "
 
+# Supabase (optional). When set, ``EMAIL_BACKEND`` defaults to
+# ``core.utils.supabase_email_backend.SupabaseEmailBackend``, which relays
+# outgoing mail (OTP codes included) through the ``send-email`` Supabase Edge
+# Function - see ``supabase/functions/send-email`` and ``docs/backend`` for
+# setup. Leave both blank to keep the console/SMTP backends unchanged.
+SUPABASE_URL = decouple_config("SUPABASE_URL", default="")
+SUPABASE_OTP_FUNCTION_SECRET = decouple_config("SUPABASE_OTP_FUNCTION_SECRET", default="")
+# Sender address for mail relayed through the Supabase edge function. Left
+# blank on purpose: Django's DEFAULT_FROM_EMAIL defaults to a placeholder
+# (no-reply@knowingeye.local) that Resend will never accept as a verified
+# sender, so SupabaseEmailBackend omits "from" unless this is explicitly
+# set - letting the edge function's own RESEND_FROM_EMAIL/onboarding@resend.dev
+# default apply instead of silently failing every send.
+SUPABASE_FROM_EMAIL = decouple_config("SUPABASE_FROM_EMAIL", default="")
+
+# Seed administrator credentials (consumed by ``manage.py seed_db``).
+# Kept out of the committed CSV seed so the bootstrap admin password is
+# supplied via the environment (see ``backend/.env``, gitignored) rather
+# than living in version control. Defaults are dev-only conveniences.
+SEED_ADMIN = {
+    "username": decouple_config("SEED_ADMIN_USERNAME", default="admin"),
+    "email": decouple_config("SEED_ADMIN_EMAIL", default="admin@knowingeye.test"),
+    "password": decouple_config("SEED_ADMIN_PASSWORD", default="adminpass"),
+    "first_name": decouple_config("SEED_ADMIN_FIRST_NAME", default="Admin"),
+    "last_name": decouple_config("SEED_ADMIN_LAST_NAME", default="User"),
+}
+
 # OTP / email verification (Directive Area 01 - "Registration & verification").
 # Environment-overridable so a longer TTL or lower attempt cap can be tuned
 # without a code change; defaults match what's documented in Chapter 2.
@@ -258,3 +285,8 @@ OTP_CODE_LENGTH = 6
 OTP_TTL_MINUTES = int(decouple_config("OTP_TTL_MINUTES", default="10"))
 OTP_RESEND_COOLDOWN_SECONDS = int(decouple_config("OTP_RESEND_COOLDOWN_SECONDS", default="60"))
 OTP_MAX_ATTEMPTS = int(decouple_config("OTP_MAX_ATTEMPTS", default="5"))
+# Dev/test convenience: echoes the plaintext code back on the verify-email
+# request endpoint so a code can be verified with no working mail transport
+# at all. Off by default everywhere; only meaningful when DEBUG is also on
+# (the view checks both) - never enable this against a real deployment.
+OTP_DEBUG_RETURN_CODE = env_bool("OTP_DEBUG_RETURN_CODE", default=False)

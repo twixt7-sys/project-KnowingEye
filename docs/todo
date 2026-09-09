@@ -205,21 +205,36 @@ justification, not developer judgment calls.
 
 4.6 Camera & hardware requirements [P0]
     Camera:
-      [ ] Position, angle, distance, field of view
-      [ ] Minimum / recommended resolution, lighting conditions
+      [x] Position, angle, distance, field of view
+      [x] Minimum / recommended resolution, lighting conditions
     Client device:
-      [ ] RAM, processor, OS, browser, camera, internet requirement
+      [x] RAM, processor, OS, browser, camera, internet requirement
     Server:
-      [ ] CPU, RAM, storage, network, hosting environment,
+      [x] CPU, RAM, storage, network, hosting environment,
           concurrent-user target
+          (CPU/RAM figures are extrapolated from a real n=3 measurement,
+          not a validated 30/100-concurrency benchmark - see 4.7)
     NOTE: "It's web-based" is not a technical requirements section --
     camera processing still has real hardware demands.
+    See docs/documentation/chapter2/03-system-design.html#capacity.
 
 4.7 Capacity & performance [P0]
+    [x] Build the load-test harness (scripts/load/ - Locust, REST + the
+        WebSocket snapshot channel, real ~1fps frontend capture profile)
     [ ] Establish max simultaneous examinees per room and per server
-    [ ] Load-test at increasing concurrency: 5 -> 10 -> 20 -> 30 -> 50 -> 100
-    [ ] Measure response time, CPU, RAM, network, error rate at each step
+        -- NOT validated at target scale. Harness only got to run n=3 on
+        this sprint's dev hardware (see below) before being intentionally
+        stopped rather than risk crashing a memory-constrained shared
+        machine. Re-run on dedicated hardware to get the real numbers.
+    [~] Load-test at increasing concurrency: 5 -> 10 -> 20 -> 30 -> 50 -> 100
+        -- only n=3 actually run (twice, for harness validation); higher
+        rungs blocked by <1GB free host RAM, not by the harness or the app
+    [x] Measure response time, CPU, RAM, network, error rate at each step
+        (done for n=3; same methodology scales to every rung once hardware
+        allows it)
     [ ] Answer directly: can it handle ~30/room and ~100 total?
+        -- Honest answer given real data: not established yet. See
+        "Answering the Directive's question" in the design doc.
 
 4.8 Snapshot monitoring & proctor dashboard [P1]
     [x] Document: monitoring uses periodic snapshots over WebSockets,

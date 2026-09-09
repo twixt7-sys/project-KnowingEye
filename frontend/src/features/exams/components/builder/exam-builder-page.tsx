@@ -115,6 +115,7 @@ export function ExamBuilderPage() {
       {builder.tab === "questions" && (
         <BuilderQuestionsTab
           questions={builder.questions}
+          sections={builder.sections}
           isDraft={builder.isDraft}
           saving={builder.saving}
           showQuestionForm={builder.showQuestionForm}
@@ -130,7 +131,9 @@ export function ExamBuilderPage() {
           importErrors={builder.importErrors}
           importBusy={builder.importBusy}
           onOpenNew={builder.openNewQuestion}
-          onAddSection={() => void builder.addSection()}
+          onAddSection={builder.addSection}
+          onRenameSection={builder.renameSection}
+          onRemoveSection={(sectionId, title) => void builder.removeSection(sectionId, title)}
           onEdit={builder.openEditQuestion}
           onDelete={(q) => void builder.removeQuestion(q)}
           onReorder={builder.reorderQuestionsByIds}

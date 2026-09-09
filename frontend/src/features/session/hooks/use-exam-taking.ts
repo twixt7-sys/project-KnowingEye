@@ -51,6 +51,7 @@ export function useExamTaking() {
     (monitoring.status === "live" || monitoring.status === "fallback-rest");
 
   const questions = (session?.exam.questions ?? []) as Question[];
+  const sections = session?.exam.sections ?? [];
   const activeQuestion = questions[currentQuestion];
   const answeredCount = questions.filter(
     (q) => (attempt.answers[q.id]?.answer_text ?? "").trim().length > 0
@@ -230,6 +231,7 @@ export function useExamTaking() {
     session,
     attempt,
     questions,
+    sections,
     activeQuestion,
     currentQuestion,
     setCurrentQuestion,

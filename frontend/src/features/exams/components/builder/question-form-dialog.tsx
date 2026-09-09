@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { FileText, ImagePlus, Loader2, Trash2, Upload, X } from "@/shared/icons";
 
-import type { Question, QuestionAttachment } from "@/core/config/api";
+import type { ExamSection, Question, QuestionAttachment } from "@/core/config/api";
 import {
   AttachmentIcon,
   BuilderField,
@@ -14,6 +14,7 @@ interface QuestionFormDialogProps {
   editingQuestion: Question | null;
   questionDraft: QuestionDraft;
   setQuestionDraft: React.Dispatch<React.SetStateAction<QuestionDraft>>;
+  sections: ExamSection[];
   questionAttachments: QuestionAttachment[];
   pendingFiles: File[];
   setPendingFiles: React.Dispatch<React.SetStateAction<File[]>>;
@@ -31,6 +32,7 @@ export function QuestionFormDialog({
   editingQuestion,
   questionDraft,
   setQuestionDraft,
+  sections,
   questionAttachments,
   pendingFiles,
   setPendingFiles,
@@ -118,6 +120,26 @@ export function QuestionFormDialog({
               />
             </BuilderField>
           </div>
+
+          <BuilderField label="Section (for in-exam navigation)">
+            <select
+              value={questionDraft.section ?? ""}
+              onChange={(e) =>
+                setQuestionDraft({
+                  ...questionDraft,
+                  section: e.target.value ? Number(e.target.value) : null,
+                })
+              }
+              className="field-input"
+            >
+              <option value="">No section</option>
+              {sections.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.title}
+                </option>
+              ))}
+            </select>
+          </BuilderField>
 
           {questionDraft.question_type === "multiple_choice" && (
             <div className="space-y-2">

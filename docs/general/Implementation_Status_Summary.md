@@ -1,6 +1,6 @@
 # Knowing Eye - Implementation Status Summary
 
-*Last updated: 2026-07-05. This is the canonical status doc - prefer it over the
+*Last updated: 2026-09-04. This is the canonical status doc - prefer it over the
 root README when in conflict.*
 
 ## Exam system refactor (2026-07)
@@ -48,7 +48,7 @@ root README when in conflict.*
 * **Production-grade settings.** Decouple-based env config, structured logging to file + stdout, conditional production hardening (HSTS, secure cookies, SSL proxy), Redis-ready Channels layer.
 * **Reports & analytics.** Pass-rate, severity histogram, behavior-event histogram, day-by-day timeseries, downloadable CSV.
 * **Profile & avatars.** ImageField avatar, phone, institution, student-id; multipart upload endpoint; signed media via `MEDIA_URL`.
-* **Tests.** Now 23 unit tests including 3 WebSocket-consumer integration tests through the full ASGI stack.
+* **Tests.** 140+ backend tests (feature apps) plus the AI pipeline suite, including WebSocket-consumer integration tests through the full ASGI stack, OTP verification, and RBAC/PBAC delegation.
 
 ## Quick run (Windows)
 
@@ -74,10 +74,13 @@ Open <http://127.0.0.1:5173/>. API base defaults to <http://127.0.0.1:8000/api>.
 
 ## Test accounts (after `seed_db`)
 
-| Role     | Username | Password    |
-|----------|----------|-------------|
-| Admin    | `admin`  | `adminpass` |
-| Examinee | `user02` | `pass002`   |
+| Role     | Username     | Password    |
+|----------|--------------|-------------|
+| Admin    | `admin`      | `adminpass` |
+| Examinee | `examinee02` | `pass002`   |
+
+> Admin credentials come from `SEED_ADMIN_*` in `backend/.env` (gitignored);
+> the defaults above apply when unset. Examinees are `examinee01`–`examinee20`.
 
 ## Smoke checks
 
@@ -97,7 +100,8 @@ $env:OPENBLAS_NUM_THREADS = "1"
 python manage.py test features
 ```
 
-All 23 tests pass.
+All backend feature tests pass (140+ as of 2026-09-04); run `.\test-all.cmd`
+from the repo root to include the AI pipeline suite and frontend Vitest.
 
 ## Documentation
 

@@ -20,7 +20,16 @@ CORS_ALLOWED_ORIGINS = decouple_config(  # noqa: F405
 )
 CORS_ALLOW_CREDENTIALS = True
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = decouple_config(
+    "EMAIL_BACKEND",
+    default=(
+        "core.utils.supabase_email_backend.SupabaseEmailBackend"
+        # Both must be set - a blank secret would send x-otp-secret: "" and
+        # the edge function would reject every call with 401.
+        if SUPABASE_URL and SUPABASE_OTP_FUNCTION_SECRET  # noqa: F405
+        else "django.core.mail.backends.console.EmailBackend"
+    ),
+)
 
 import sys  # noqa: E402
 

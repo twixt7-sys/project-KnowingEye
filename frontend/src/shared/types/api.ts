@@ -114,7 +114,19 @@ export interface Exam {
   created_at: string;
   updated_at?: string;
   questions?: Question[];
+  sections?: ExamSection[];
   publish_readiness?: PublishReadiness;
+}
+
+/** An in-exam question grouping - separate from the exam-level ExamCategory. */
+export interface ExamSection {
+  id: number;
+  exam?: number;
+  title: string;
+  instructions?: string;
+  order: number;
+  questions_per_page?: number;
+  created_at?: string;
 }
 
 export interface ExamApprovalEvent {

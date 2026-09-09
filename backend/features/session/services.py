@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 from datetime import timedelta
 
@@ -15,6 +16,8 @@ from ai.identity_store import has_reference
 from features.exams.models import ExamAssignment
 from features.session.models import ExamSession, SessionLog
 from features.session.submission import auto_submit_expired_session
+
+logger = logging.getLogger(__name__)
 
 
 def build_question_order(exam) -> list[int]:
@@ -54,7 +57,11 @@ def build_option_order(exam, question_ids: list[int]) -> dict[str, list[str]]:
             shuffle = question.shuffle_options_override
         options = list(question.options or [])
         if question.question_type == 'true_false' and not options:
-            options = ['True', 'False']
+            # Match the {text, image} shape every other option uses (see
+            # exams/serializers.py option_text()) - the taking UI reads
+            # option.text, so plain strings here render as blank, unclickable
+            # choices once shuffled into option_order.
+            options = [{'text': 'True', 'image': None}, {'text': 'False', 'image': None}]
         if shuffle and len(options) > 1:
             options = options.copy()
             random.shuffle(options)
@@ -214,6 +221,18 @@ def _raise_if_integrity_blocks_create(user, exam, *, ip_address: str | None = No
     )
 
 
+def _identity_check_bypassable() -> bool:
+    """True only when running with DEBUG on and the AI pipeline explicitly
+    disabled (``KE_ENABLE_PIPELINE=False``) - i.e. an environment where no
+    real camera enrollment can ever succeed (CI, a headless dev/test box).
+    Never true outside DEBUG, so this can't loosen monitoring anywhere real
+    (staging/production always run with DEBUG off)."""
+    if not settings.DEBUG:
+        return False
+    ke_settings = getattr(settings, "KNOWING_EYE", {})
+    return not ke_settings.get("ENABLE_PIPELINE", True)
+
+
 def begin_exam_session(
     session: ExamSession,
     *,
@@ -225,9 +244,17 @@ def begin_exam_session(
             {"status": f"Cannot begin exam with status '{session.status}'."}
         )
     if session.exam.monitoring_enabled and not has_reference(session.id):
-        raise ValidationError(
-            {"identity": "Enroll a reference face before beginning the exam."}
-        )
+        if _identity_check_bypassable():
+            logger.warning(
+                "Bypassing identity enrollment check for session %s: DEBUG is on "
+                "and the AI pipeline is disabled, so no reference could ever be "
+                "enrolled here.",
+                session.id,
+            )
+        else:
+            raise ValidationError(
+                {"identity": "Enroll a reference face before beginning the exam."}
+            )
 
     extra_time, _ = get_assignment_accommodation(session.exam, session.user)
     session.accommodation_extra_minutes = extra_time

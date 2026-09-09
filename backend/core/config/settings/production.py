@@ -36,7 +36,14 @@ SECURE_HSTS_PRELOAD = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 EMAIL_BACKEND = decouple_config(
-    "EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend"
+    "EMAIL_BACKEND",
+    default=(
+        "core.utils.supabase_email_backend.SupabaseEmailBackend"
+        # Both must be set - a blank secret would send x-otp-secret: "" and
+        # the edge function would reject every call with 401.
+        if SUPABASE_URL and SUPABASE_OTP_FUNCTION_SECRET  # noqa: F405
+        else "django.core.mail.backends.smtp.EmailBackend"
+    ),
 )
 EMAIL_HOST = decouple_config("EMAIL_HOST", default="")
 EMAIL_PORT = int(decouple_config("EMAIL_PORT", default="587"))

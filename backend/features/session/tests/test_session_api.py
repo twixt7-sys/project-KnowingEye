@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework import status
@@ -6,7 +7,11 @@ from rest_framework.test import APITestCase
 
 from features.exams.models import Exam, Question
 from features.session.models import ExamSession
-from features.session.services import expire_session_if_timed_out, touch_setup_activity
+from features.session.services import (
+    build_option_order,
+    expire_session_if_timed_out,
+    touch_setup_activity,
+)
 from features.session.submission import upsert_response
 
 User = get_user_model()
@@ -366,3 +371,151 @@ class SessionAPITests(APITestCase):
         self.assertEqual(start.status_code, status.HTTP_201_CREATED)
         stale.refresh_from_db()
         self.assertEqual(stale.status, ExamSession.Status.EXPIRED)
+
+    def test_true_false_default_options_are_dict_shaped(self):
+        """A true/false question with no explicit options must present {text,
+        image} choices, matching every other option shape - plain strings
+        render as blank, unclickable buttons in the taking UI."""
+        q = Question.objects.create(
+            exam=self.exam,
+            question_text="No explicit options",
+            question_type=Question.QuestionType.TRUE_FALSE,
+            options=[],
+            correct_answer="True",
+            points=1,
+            order=3,
+        )
+        order = build_option_order(self.exam, [q.id])
+        options = order[str(q.id)]
+        self.assertEqual(len(options), 2)
+        for opt in options:
+            self.assertIsInstance(opt, dict)
+            self.assertIn(opt["text"], ("True", "False"))
+
+    def test_cancel_setup_frees_the_slot_immediately(self):
+        other_exam = Exam.objects.create(
+            title="Other Exam",
+            description="",
+            duration_minutes=10,
+            passing_score=50,
+            status=Exam.Status.ACTIVE,
+            created_by=self.admin,
+        )
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        session_id = start.data["session"]["id"]
+
+        blocked = self.client.post("/api/sessions/start/", {"exam": other_exam.id}, format="json")
+        self.assertEqual(blocked.status_code, status.HTTP_400_BAD_REQUEST)
+
+        cancel = self.client.post(f"/api/sessions/{session_id}/cancel-setup/")
+        self.assertEqual(cancel.status_code, status.HTTP_200_OK)
+        session = ExamSession.objects.get(pk=session_id)
+        self.assertEqual(session.status, ExamSession.Status.EXPIRED)
+
+        now_allowed = self.client.post(
+            "/api/sessions/start/", {"exam": other_exam.id}, format="json"
+        )
+        self.assertEqual(now_allowed.status_code, status.HTTP_201_CREATED)
+
+    def test_cancel_setup_rejects_in_progress_session(self):
+        self.exam.monitoring_enabled = False
+        self.exam.save(update_fields=["monitoring_enabled"])
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        session_id = start.data["session"]["id"]
+
+        cancel = self.client.post(f"/api/sessions/{session_id}/cancel-setup/")
+        self.assertEqual(cancel.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @override_settings(DEBUG=True)
+    def test_begin_bypasses_identity_check_when_pipeline_disabled_in_debug(self):
+        from django.conf import settings
+
+        orig = settings.KNOWING_EYE.get("ENABLE_PIPELINE", True)
+        settings.KNOWING_EYE["ENABLE_PIPELINE"] = False
+        try:
+            start = self.client.post(
+                "/api/sessions/start/", {"exam": self.exam.id}, format="json"
+            )
+            session_id = start.data["session"]["id"]
+            begin = self.client.post(f"/api/sessions/{session_id}/begin/", format="json")
+            self.assertEqual(begin.status_code, status.HTTP_200_OK)
+        finally:
+            settings.KNOWING_EYE["ENABLE_PIPELINE"] = orig
+
+    def test_begin_still_requires_identity_when_pipeline_enabled(self):
+        # DEBUG defaults True in the dev settings tests run under, so this
+        # confirms the bypass needs the pipeline disabled too, not DEBUG alone.
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        session_id = start.data["session"]["id"]
+        begin = self.client.post(f"/api/sessions/{session_id}/begin/", format="json")
+        self.assertEqual(begin.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_submit_rejects_question_outside_attempt(self):
+        """A question that belongs to the exam but wasn't drawn into this
+        attempt's question_order (e.g. from an unused pool) must be rejected,
+        matching the autosave path's membership check."""
+        self.exam.monitoring_enabled = False
+        self.exam.save(update_fields=["monitoring_enabled"])
+        outside_question = Question.objects.create(
+            exam=self.exam,
+            question_text="Not in this attempt",
+            question_type=Question.QuestionType.TRUE_FALSE,
+            options=["True", "False"],
+            correct_answer="True",
+            points=1,
+            order=4,
+        )
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        session_id = start.data["session"]["id"]
+        session = ExamSession.objects.get(pk=session_id)
+        session.question_order = [self.question.id]
+        session.save(update_fields=["question_order"])
+
+        submit = self.client.post(
+            f"/api/sessions/{session_id}/submit/",
+            {
+                "responses": [
+                    {
+                        "question_id": outside_question.id,
+                        "answer_text": "True",
+                        "time_spent": 5,
+                    }
+                ],
+                "time_remaining": 100,
+            },
+            format="json",
+        )
+        self.assertEqual(submit.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_unanswered_counts_as_wrong_false_excludes_from_total(self):
+        self.exam.unanswered_counts_as_wrong = False
+        self.exam.monitoring_enabled = False
+        self.exam.save(update_fields=["unanswered_counts_as_wrong", "monitoring_enabled"])
+        q2 = Question.objects.create(
+            exam=self.exam,
+            question_text="Second?",
+            question_type=Question.QuestionType.TRUE_FALSE,
+            options=["True", "False"],
+            correct_answer="False",
+            points=1,
+            order=5,
+        )
+        start = self.client.post("/api/sessions/start/", {"exam": self.exam.id}, format="json")
+        session_id = start.data["session"]["id"]
+
+        # Only answer self.question, leave q2 untouched.
+        submit = self.client.post(
+            f"/api/sessions/{session_id}/submit/",
+            {
+                "responses": [
+                    {"question_id": self.question.id, "answer_text": "True", "time_spent": 5}
+                ],
+                "time_remaining": 100,
+            },
+            format="json",
+        )
+        self.assertEqual(submit.status_code, status.HTTP_200_OK)
+        session = ExamSession.objects.get(pk=session_id)
+        # Full credit - the unanswered question is excluded entirely rather
+        # than counted as wrong (which would have made this 50%).
+        self.assertEqual(float(session.percentage_score), 100.0)

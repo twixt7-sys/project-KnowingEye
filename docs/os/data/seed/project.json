@@ -6,7 +6,7 @@
   "type": "Capstone Project",
   "subject": "BSIT Capstone",
   "team_name": "",
-  "version_label": "June 2026 · codebase-aligned",
+  "version_label": "September 2026 · post defense-directive sprints (1-4) + consistency pass",
   "vision": {
     "problem_statement": "Online examination systems lack reliable real-time behavioral monitoring, resulting in increased cheating risks and heavy reliance on manual supervision.",
     "solution": "A centralized web-based examination platform integrated with AI-powered behavioral monitoring using computer vision and deep learning.",
