@@ -1,6 +1,9 @@
-import { AlertTriangle, Download, Plus, Upload } from "@/shared/icons";
+import { useState } from "react";
 
-import type { Question, QuestionAttachment } from "@/core/config/api";
+import { AlertTriangle, Download, Plus, Trash2, Upload } from "@/shared/icons";
+
+import type { ExamSection, Question, QuestionAttachment } from "@/core/config/api";
+import { BuilderField } from "@/features/exams/components/builder/builder-primitives";
 import { QuestionFormDialog } from "@/features/exams/components/builder/question-form-dialog";
 import { SortableQuestionList } from "@/features/exams/components/builder/sortable-question-list";
 import {
@@ -16,6 +19,7 @@ import {
 
 interface BuilderQuestionsTabProps {
   questions: Question[];
+  sections: ExamSection[];
   isDraft: boolean;
   saving: boolean;
   showQuestionForm: boolean;
@@ -31,7 +35,9 @@ interface BuilderQuestionsTabProps {
   importErrors: string[];
   importBusy: boolean;
   onOpenNew: () => void;
-  onAddSection: () => void;
+  onAddSection: (title: string, instructions?: string) => void;
+  onRenameSection: (sectionId: number, title: string) => void;
+  onRemoveSection: (sectionId: number, title: string) => void;
   onEdit: (q: Question) => void;
   onDelete: (q: Question) => void;
   onReorder: (questionIds: number[]) => void;
@@ -44,8 +50,99 @@ interface BuilderQuestionsTabProps {
   onRunImport: () => void;
 }
 
+function SectionManager({
+  sections,
+  isDraft,
+  onAddSection,
+  onRenameSection,
+  onRemoveSection,
+}: {
+  sections: ExamSection[];
+  isDraft: boolean;
+  onAddSection: (title: string, instructions?: string) => void;
+  onRenameSection: (sectionId: number, title: string) => void;
+  onRemoveSection: (sectionId: number, title: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-sm">Sections</h3>
+        <button
+          type="button"
+          disabled={!isDraft}
+          onClick={() => setOpen((v) => !v)}
+          className="text-xs px-3 py-1.5 rounded-lg border border-border hover:bg-accent disabled:opacity-50"
+        >
+          {open ? "Close" : "Manage sections"}
+        </button>
+      </div>
+
+      {sections.length > 0 && (
+        <ul className="space-y-1.5">
+          {sections.map((s) => (
+            <li key={s.id} className="flex items-center gap-2 text-sm">
+              <input
+                defaultValue={s.title}
+                disabled={!isDraft}
+                onBlur={(e) => {
+                  const value = e.target.value.trim();
+                  if (value && value !== s.title) onRenameSection(s.id, value);
+                }}
+                className="field-input flex-1 py-1"
+              />
+              {isDraft && (
+                <button
+                  type="button"
+                  onClick={() => onRemoveSection(s.id, s.title)}
+                  className="text-status-alert hover:opacity-80"
+                  aria-label={`Remove section ${s.title}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {sections.length === 0 && !open && (
+        <p className="text-xs text-muted-foreground">
+          No sections yet - questions present as a flat list to examinees.
+        </p>
+      )}
+
+      {open && (
+        <div className="flex items-end gap-2 pt-2 border-t border-border">
+          <BuilderField label="New section title">
+            <input
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="e.g. Part A - Vocabulary"
+              className="field-input"
+            />
+          </BuilderField>
+          <button
+            type="button"
+            disabled={!newTitle.trim()}
+            onClick={() => {
+              onAddSection(newTitle);
+              setNewTitle("");
+            }}
+            className="px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm disabled:opacity-50"
+          >
+            Add
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function BuilderQuestionsTab({
   questions,
+  sections,
   isDraft,
   saving,
   showQuestionForm,
@@ -62,6 +159,8 @@ export function BuilderQuestionsTab({
   importBusy,
   onOpenNew,
   onAddSection,
+  onRenameSection,
+  onRemoveSection,
   onEdit,
   onDelete,
   onReorder,
@@ -73,6 +172,8 @@ export function BuilderQuestionsTab({
   onImportFile,
   onRunImport,
 }: BuilderQuestionsTabProps) {
+  const sectionTitleById = new Map(sections.map((s) => [s.id, s.title]));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-3">
@@ -84,18 +185,19 @@ export function BuilderQuestionsTab({
         >
           <Plus className="w-4 h-4" /> Add question
         </button>
-        <button
-          type="button"
-          disabled={!isDraft}
-          onClick={onAddSection}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border disabled:opacity-50"
-        >
-          Add section
-        </button>
       </div>
+
+      <SectionManager
+        sections={sections}
+        isDraft={isDraft}
+        onAddSection={onAddSection}
+        onRenameSection={onRenameSection}
+        onRemoveSection={onRemoveSection}
+      />
 
       <SortableQuestionList
         questions={questions}
+        sectionTitleById={sectionTitleById}
         isDraft={isDraft}
         onEdit={onEdit}
         onDelete={onDelete}
@@ -242,6 +344,7 @@ export function BuilderQuestionsTab({
         editingQuestion={editingQuestion}
         questionDraft={questionDraft}
         setQuestionDraft={setQuestionDraft}
+        sections={sections}
         questionAttachments={questionAttachments}
         pendingFiles={pendingFiles}
         setPendingFiles={setPendingFiles}

@@ -5,6 +5,7 @@ import {
   apiClient,
   type Exam,
   type ExamCategory,
+  type ExamSection,
   type PublishReadiness,
   type Question,
   type QuestionAttachment,
@@ -102,11 +103,27 @@ export function reorderQuestions(examId: number, questionIds: number[]) {
   return apiClient.reorderQuestions(examId, questionIds);
 }
 
+export function fetchExamSections(examId: number) {
+  return apiClient.listExamSections(examId);
+}
+
 export function createExamSection(
   examId: number,
   payload: { title: string; instructions?: string; order?: number; questions_per_page?: number }
 ) {
   return apiClient.createExamSection(examId, payload);
+}
+
+export function updateExamSection(
+  examId: number,
+  sectionId: number,
+  payload: Partial<Pick<ExamSection, "title" | "instructions" | "order" | "questions_per_page">>
+) {
+  return apiClient.updateExamSection(examId, sectionId, payload);
+}
+
+export function deleteExamSection(examId: number, sectionId: number) {
+  return apiClient.deleteExamSection(examId, sectionId);
 }
 
 export function uploadQuestionAttachment(

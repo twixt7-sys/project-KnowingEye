@@ -22,12 +22,19 @@ import { BuilderIconBtn } from "@/features/exams/components/builder/builder-prim
 
 interface SortableQuestionRowProps {
   question: Question;
+  sectionTitleById: Map<number, string>;
   isDraft: boolean;
   onEdit: (q: Question) => void;
   onDelete: (q: Question) => void;
 }
 
-function SortableQuestionRow({ question, isDraft, onEdit, onDelete }: SortableQuestionRowProps) {
+function SortableQuestionRow({
+  question,
+  sectionTitleById,
+  isDraft,
+  onEdit,
+  onDelete,
+}: SortableQuestionRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: question.id,
     disabled: !isDraft,
@@ -61,6 +68,9 @@ function SortableQuestionRow({ question, isDraft, onEdit, onDelete }: SortableQu
             ? ` · ${question.options.length} options`
             : ""}
           {question.attachments?.length ? ` · ${question.attachments.length} attachment(s)` : ""}
+          {question.section != null && sectionTitleById.has(question.section)
+            ? ` · ${sectionTitleById.get(question.section)}`
+            : ""}
         </p>
       </div>
       {isDraft && (
@@ -83,6 +93,7 @@ function SortableQuestionRow({ question, isDraft, onEdit, onDelete }: SortableQu
 
 interface SortableQuestionListProps {
   questions: Question[];
+  sectionTitleById: Map<number, string>;
   isDraft: boolean;
   onEdit: (q: Question) => void;
   onDelete: (q: Question) => void;
@@ -91,6 +102,7 @@ interface SortableQuestionListProps {
 
 export function SortableQuestionList({
   questions,
+  sectionTitleById,
   isDraft,
   onEdit,
   onDelete,
@@ -126,6 +138,7 @@ export function SortableQuestionList({
           <SortableQuestionRow
             key={q.id}
             question={q}
+            sectionTitleById={sectionTitleById}
             isDraft={false}
             onEdit={onEdit}
             onDelete={onDelete}
@@ -143,6 +156,7 @@ export function SortableQuestionList({
             <SortableQuestionRow
               key={q.id}
               question={q}
+              sectionTitleById={sectionTitleById}
               isDraft={isDraft}
               onEdit={onEdit}
               onDelete={onDelete}

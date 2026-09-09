@@ -209,7 +209,14 @@ class ExamSession(models.Model):
         )
 
     def calculate_score(self):
-        """Calculate total score and percentage from all presented questions."""
+        """Calculate total score and percentage from all presented questions.
+
+        ``exam.unanswered_counts_as_wrong`` (default True) controls whether a
+        question the examinee never answered still counts toward the total:
+        True (default) - it does, at zero points, same as answering wrong.
+        False - it's excluded from both earned and total points entirely, so
+        the percentage reflects only what was actually attempted.
+        """
         presented_ids = self.presented_question_ids()
         if not presented_ids:
             self.total_score = 0
@@ -222,6 +229,7 @@ class ExamSession(models.Model):
             for q in self.exam.questions.filter(id__in=presented_ids)
         }
         responses_by_q = {r.question_id: r for r in self.responses.all()}
+        count_unanswered = self.exam.unanswered_counts_as_wrong
 
         total_points = 0
         earned_points = 0
@@ -230,8 +238,16 @@ class ExamSession(models.Model):
             question = questions_by_id.get(qid)
             if not question:
                 continue
-            total_points += question.points
             response = responses_by_q.get(qid)
+            # A manually-awarded grade always counts, even over a blank
+            # answer_text, so a grader's override is never silently dropped.
+            answered = bool(
+                response
+                and ((response.answer_text or '').strip() or response.points_awarded is not None)
+            )
+            if not answered and not count_unanswered:
+                continue
+            total_points += question.points
             if response:
                 if response.points_awarded is not None:
                     earned_points += response.points_awarded

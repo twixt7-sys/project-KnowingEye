@@ -10,6 +10,7 @@ import type {
   Department,
   Exam,
   ExamCategory,
+  ExamSection,
   ExamSession,
   FrameAnalysis,
   ProfileUser,
@@ -125,7 +126,11 @@ class ApiClient {
     if (userData.role) {
       form.append("role", userData.role);
     }
-    return this.request<{ message: string; user: AuthUser }>("/auth/register/", {
+    return this.request<{
+      message: string;
+      user: AuthUser;
+      verification_email_sent: boolean;
+    }>("/auth/register/", {
       method: "POST",
       body: form,
     });
@@ -345,24 +350,33 @@ class ApiClient {
   }
 
   async listExamSections(examId: number) {
-    return this.request<
-      {
-        id: number;
-        title: string;
-        instructions: string;
-        order: number;
-        questions_per_page: number;
-      }[]
-    >(`/exams/${examId}/sections/`);
+    return this.request<ExamSection[]>(`/exams/${examId}/sections/`);
   }
 
   async createExamSection(
     examId: number,
     payload: { title: string; instructions?: string; order?: number; questions_per_page?: number },
   ) {
-    return this.request(`/exams/${examId}/sections/`, {
+    return this.request<ExamSection>(`/exams/${examId}/sections/`, {
       method: "POST",
       body: JSON.stringify(payload),
+    });
+  }
+
+  async updateExamSection(
+    examId: number,
+    sectionId: number,
+    payload: Partial<Pick<ExamSection, "title" | "instructions" | "order" | "questions_per_page">>,
+  ) {
+    return this.request<ExamSection>(`/exams/${examId}/sections/${sectionId}/`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteExamSection(examId: number, sectionId: number) {
+    return this.request<void>(`/exams/${examId}/sections/${sectionId}/`, {
+      method: "DELETE",
     });
   }
 
@@ -513,6 +527,13 @@ class ApiClient {
       method: "POST",
     });
     return res.session;
+  }
+
+  /** Abandon a not-yet-started proctoring setup so it stops blocking other exams. */
+  async cancelSetupSession(sessionId: string) {
+    return this.request<{ message: string }>(`/sessions/${sessionId}/cancel-setup/`, {
+      method: "POST",
+    });
   }
 
   async submitExamSession(sessionId: string, data: SubmitSessionData) {

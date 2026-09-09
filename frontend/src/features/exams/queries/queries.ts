@@ -2,6 +2,7 @@ import {
   fetchExamAssignments,
   fetchExamById,
   fetchExamReadiness,
+  fetchExamSections,
   fetchQuestions,
 } from "@/features/exams/api/exam-api";
 import { examBuilderKeys } from "@/features/exams/queries/keys";
@@ -28,6 +29,14 @@ export const examBuilderQueries = {
   assignments: (examId: number) => ({
     queryKey: examBuilderKeys.assignments(examId),
     queryFn: () => fetchExamAssignments(examId).catch(() => []),
+    enabled: examId > 0 && !Number.isNaN(examId),
+  }),
+  sections: (examId: number) => ({
+    queryKey: examBuilderKeys.sections(examId),
+    queryFn: async () => {
+      const list = await fetchExamSections(examId);
+      return list.sort((a, b) => a.order - b.order);
+    },
     enabled: examId > 0 && !Number.isNaN(examId),
   }),
 };

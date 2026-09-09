@@ -115,6 +115,7 @@ class QuestionTakeSerializer(serializers.ModelSerializer):
             "points",
             "order",
             "attachments",
+            "section",
         ]
         read_only_fields = fields
 
@@ -356,6 +357,13 @@ class ExamTakeSerializer(serializers.ModelSerializer):
     """Examinee-safe exam detail - questions without answer keys."""
 
     questions = QuestionTakeSerializer(many=True, read_only=True)
+    # Section grouping for in-exam navigation (Question.section). A plain
+    # SerializerMethodField (rather than ExamSectionSerializer(many=True))
+    # because ExamSectionSerializer is defined later in this module - a
+    # declared field would be evaluated at class-body time and NameError;
+    # a method is only called at request time, after the whole module has
+    # loaded.
+    sections = serializers.SerializerMethodField()
     is_open = serializers.SerializerMethodField()
     schedule_state = serializers.SerializerMethodField()
     department = DepartmentSummarySerializer(read_only=True)
@@ -392,9 +400,13 @@ class ExamTakeSerializer(serializers.ModelSerializer):
             "max_tab_switches",
             "is_open",
             "schedule_state",
+            "sections",
             "questions",
         ]
         read_only_fields = fields
+
+    def get_sections(self, obj):
+        return ExamSectionSerializer(obj.sections.order_by("order"), many=True).data
 
     def get_is_open(self, obj):
         from . import services

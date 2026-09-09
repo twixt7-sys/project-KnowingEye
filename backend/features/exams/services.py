@@ -63,6 +63,27 @@ def assert_can_delete_exam(exam: Exam, user) -> None:
     raise PermissionDenied("You do not have permission to delete this exam.")
 
 
+def assert_can_view_readiness(exam: Exam, user) -> None:
+    """Ensure ``user`` may see this exam's publish-readiness report.
+
+    Two audiences legitimately need this: whoever can modify the exam
+    (creator, admin - checking their own work while building) and whoever
+    has Level 1 review authority (program head, admin - judging a
+    submission before approving it). Requiring only the first left a
+    reviewer unable to load the "Review & publish" tab for an exam they
+    didn't create, silently blanking it instead of showing the checklist.
+
+    Raises:
+        PermissionDenied: If the user is neither.
+    """
+    try:
+        assert_can_modify_exam(exam, user)
+        return
+    except PermissionDenied:
+        pass
+    assert_can_review_exam(user)
+
+
 def exam_has_active_session(exam: Exam) -> bool:
     """Whether any examinee currently has an in-progress attempt on this exam.
 

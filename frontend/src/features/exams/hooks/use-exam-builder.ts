@@ -7,6 +7,7 @@ import {
   createExamAssignment,
   createExamSection,
   createQuestion,
+  deleteExamSection,
   deleteQuestion,
   deleteQuestionAttachment,
   importExamAssignments,
@@ -16,6 +17,7 @@ import {
   reorderQuestions,
   submitExamForReview,
   updateExam,
+  updateExamSection,
   updateQuestion,
   uploadOptionImage,
   uploadQuestionAttachment,
@@ -64,11 +66,13 @@ export function useExamBuilder(examId: number) {
   const questionsQuery = useQuery(examBuilderQueries.questions(examId));
   const readinessQuery = useQuery(examBuilderQueries.readiness(examId));
   const assignmentsQuery = useQuery(examBuilderQueries.assignments(examId));
+  const sectionsQuery = useQuery(examBuilderQueries.sections(examId));
 
   const exam = examQuery.data ?? null;
   const questions = questionsQuery.data ?? [];
   const readiness = readinessQuery.data ?? null;
   const assignments = assignmentsQuery.data ?? [];
+  const sections = sectionsQuery.data ?? [];
 
   const loading =
     examQuery.isLoading ||
@@ -94,6 +98,7 @@ export function useExamBuilder(examId: number) {
       queryClient.invalidateQueries({ queryKey: examBuilderKeys.questions(examId) }),
       queryClient.invalidateQueries({ queryKey: examBuilderKeys.readiness(examId) }),
       queryClient.invalidateQueries({ queryKey: examBuilderKeys.assignments(examId) }),
+      queryClient.invalidateQueries({ queryKey: examBuilderKeys.sections(examId) }),
     ]);
   }, [examId, queryClient]);
 
@@ -135,6 +140,7 @@ export function useExamBuilder(examId: number) {
             : [],
         correct_answer: draft.correct_answer,
         points: draft.points,
+        section: draft.section,
       };
       if (editing) {
         await updateQuestion(examId, editing.id, payload);
@@ -267,8 +273,36 @@ export function useExamBuilder(examId: number) {
   });
 
   const createSectionMutation = useMutation({
-    mutationFn: (title: string) => createExamSection(examId, { title }),
-    onSuccess: () => setMessage("Section created. Assign questions to it when editing."),
+    mutationFn: (payload: { title: string; instructions?: string }) =>
+      createExamSection(examId, payload),
+    onSuccess: async () => {
+      setMessage("Section created. Assign questions to it from the question editor.");
+      await invalidateBuilder();
+    },
+    onError: (e) => setActionError(formatApiError(e)),
+  });
+
+  const updateSectionMutation = useMutation({
+    mutationFn: ({
+      sectionId,
+      payload,
+    }: {
+      sectionId: number;
+      payload: { title?: string; instructions?: string; order?: number };
+    }) => updateExamSection(examId, sectionId, payload),
+    onSuccess: async () => {
+      setMessage("Section updated.");
+      await invalidateBuilder();
+    },
+    onError: (e) => setActionError(formatApiError(e)),
+  });
+
+  const deleteSectionMutation = useMutation({
+    mutationFn: (sectionId: number) => deleteExamSection(examId, sectionId),
+    onSuccess: async () => {
+      setMessage("Section removed. Its questions are now unsectioned.");
+      await invalidateBuilder();
+    },
     onError: (e) => setActionError(formatApiError(e)),
   });
 
@@ -319,6 +353,7 @@ export function useExamBuilder(examId: number) {
         : [{ text: "", image: null }, { text: "", image: null }],
       correct_answer: q.correct_answer ?? "",
       points: q.points,
+      section: q.section ?? null,
     });
     setQuestionAttachments(q.attachments ?? []);
     setPendingFiles([]);
@@ -434,10 +469,25 @@ export function useExamBuilder(examId: number) {
 
   const importCandidates = () => importCandidatesMutation.mutate(candidateCsv);
 
-  const addSection = async () => {
-    const title = window.prompt("Section title?");
-    if (!title?.trim()) return;
-    createSectionMutation.mutate(title.trim());
+  const addSection = (title: string, instructions?: string) => {
+    if (!title.trim()) return;
+    createSectionMutation.mutate({ title: title.trim(), instructions: instructions?.trim() });
+  };
+
+  const renameSection = (sectionId: number, title: string) => {
+    if (!title.trim()) return;
+    updateSectionMutation.mutate({ sectionId, payload: { title: title.trim() } });
+  };
+
+  const removeSection = async (sectionId: number, title: string) => {
+    const confirmed = await confirm({
+      title: `Remove section "${title}"?`,
+      description: "Questions in this section become unsectioned - they are not deleted.",
+      confirmLabel: "Remove",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    deleteSectionMutation.mutate(sectionId);
   };
 
   return {
@@ -449,6 +499,7 @@ export function useExamBuilder(examId: number) {
     questions,
     readiness,
     assignments,
+    sections,
     loading,
     loadError,
     error,
@@ -495,7 +546,11 @@ export function useExamBuilder(examId: number) {
     addCandidate,
     importCandidates,
     addSection,
+    renameSection,
+    removeSection,
     createSectionPending: createSectionMutation.isPending,
+    updateSectionPending: updateSectionMutation.isPending,
+    deleteSectionPending: deleteSectionMutation.isPending,
     addCandidatePending: addCandidateMutation.isPending,
     importCandidatesPending: importCandidatesMutation.isPending,
   };

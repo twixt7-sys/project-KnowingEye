@@ -271,7 +271,19 @@ export function ExamSetupPage() {
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
             <p className="text-destructive mb-4">{error}</p>
-            <Button variant="outline" onClick={() => navigate("/examinee")}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Best-effort: free up the setup slot so it doesn't block
+                // starting another exam for the next 30 minutes. Ignore
+                // failures (e.g. it already progressed past setup) - we're
+                // navigating away regardless.
+                if (session?.status === "setup") {
+                  void apiClient.cancelSetupSession(session.id).catch(() => {});
+                }
+                navigate("/examinee");
+              }}
+            >
               Back to dashboard
             </Button>
           </CardContent>

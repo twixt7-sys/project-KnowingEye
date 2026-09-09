@@ -131,11 +131,15 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         try:
             issue_otp(user)
+            user._verification_email_sent = True
         except Exception:
             # Registration already succeeded (the user row is committed) - a
             # failed/misconfigured mail send shouldn't fail account creation.
             # The user can request a new code from the verify-email screen.
+            # _verification_email_sent (read by RegisterView) tells the
+            # frontend not to assume a code is already on its way.
             logger.exception("Failed to send registration OTP to user %s", user.id)
+            user._verification_email_sent = False
 
         return user
 

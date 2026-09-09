@@ -142,6 +142,7 @@ interface QuestionPanelProps {
   question: Question;
   questionIndex: number;
   totalQuestions: number;
+  sectionTitle?: string | null;
   answer: SavedAnswer | undefined;
   answerText: string;
   submitting: boolean;
@@ -156,6 +157,7 @@ export function QuestionPanel({
   question,
   questionIndex,
   totalQuestions,
+  sectionTitle,
   answer,
   answerText,
   submitting,
@@ -171,9 +173,16 @@ export function QuestionPanel({
     <div className="bg-card rounded-xl border border-border p-6 md:p-8 mb-6">
       <div className="mb-6">
         <div className="flex items-start justify-between mb-4">
-          <h2 className="text-xl font-semibold">
-            Question {questionIndex + 1} of {totalQuestions}
-          </h2>
+          <div>
+            {sectionTitle && (
+              <p className="text-xs font-medium uppercase tracking-wide text-primary mb-1">
+                {sectionTitle}
+              </p>
+            )}
+            <h2 className="text-xl font-semibold">
+              Question {questionIndex + 1} of {totalQuestions}
+            </h2>
+          </div>
           <button
             type="button"
             onClick={onToggleFlag}

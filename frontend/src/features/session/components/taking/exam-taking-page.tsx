@@ -15,6 +15,7 @@ export function ExamTakingPage() {
     session,
     attempt,
     questions,
+    sections,
     activeQuestion,
     currentQuestion,
     setCurrentQuestion,
@@ -89,6 +90,11 @@ export function ExamTakingPage() {
               question={activeQuestion}
               questionIndex={currentQuestion}
               totalQuestions={questions.length}
+              sectionTitle={
+                activeQuestion.section != null
+                  ? (sections.find((s) => s.id === activeQuestion.section)?.title ?? null)
+                  : null
+              }
               answer={attempt.answers[activeQuestion.id]}
               answerText={activeAnswer}
               submitting={submitting}
@@ -105,6 +111,7 @@ export function ExamTakingPage() {
           <div className="lg:col-span-1">
             <QuestionNavigator
               questions={questions}
+              sections={sections}
               currentQuestion={currentQuestion}
               answers={attempt.answers}
               answeredCount={answeredCount}

@@ -335,6 +335,13 @@ class ExamSessionSubmitSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     f"Question {question_id} does not exist in this exam."
                 )
+            # Match the autosave path (ResponseUpsertSerializer): a question
+            # can belong to the exam but not this attempt (e.g. not drawn
+            # from a pool), so exam-membership alone isn't enough.
+            if session.question_order and question_id not in session.question_order:
+                raise serializers.ValidationError(
+                    f"Question {question_id} is not part of this attempt."
+                )
 
             validated_responses.append({
                 'question': question,

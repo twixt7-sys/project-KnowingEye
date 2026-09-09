@@ -46,6 +46,7 @@ export const questionDraftSchema = z.object({
   options: z.array(questionOptionSchema),
   correct_answer: z.string(),
   points: z.number().min(1),
+  section: z.number().nullable(),
 });
 
 export type ExamForm = z.infer<typeof examFormSchema>;
@@ -60,6 +61,7 @@ export const EMPTY_QUESTION: QuestionDraft = {
   options: [{ ...EMPTY_OPTION }, { ...EMPTY_OPTION }, { ...EMPTY_OPTION }, { ...EMPTY_OPTION }],
   correct_answer: "",
   points: 1,
+  section: null,
 };
 
 export function toDatetimeLocal(iso?: string | null): string {

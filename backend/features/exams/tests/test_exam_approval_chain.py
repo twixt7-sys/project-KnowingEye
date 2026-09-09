@@ -102,6 +102,21 @@ class ExamApprovalChainTests(APITestCase):
         response = self._submit(self.other_faculty)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_program_head_can_view_readiness_for_someone_elses_exam(self):
+        """A reviewer needs the readiness checklist to judge a submission -
+        not just the creator building it - so the "Review & publish" tab
+        doesn't silently blank out for anyone but the exam's own creator."""
+        self._submit(self.faculty)
+        self.client.force_authenticate(user=self.program_head)
+        response = self.client.get(f"/api/exams/{self.exam.id}/readiness/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["ready"])
+
+    def test_unrelated_faculty_cannot_view_readiness(self):
+        self.client.force_authenticate(user=self.other_faculty)
+        response = self.client.get(f"/api/exams/{self.exam.id}/readiness/")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_program_head_can_approve_pending_exam(self):
         self._submit(self.faculty)
         response = self._approve(self.program_head)
