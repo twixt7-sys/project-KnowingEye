@@ -21,6 +21,7 @@ import type {
   ResponseData,
   Role,
   SessionDepartmentAnalytics,
+  SessionExamBehaviorIndex,
   SessionReportRow,
   SubmitSessionData,
   UserPermissions,
@@ -674,6 +675,7 @@ class ApiClient {
   async getSessionReport(sessionId: string) {
     return this.request<{
       session: ExamSession;
+      exam_behavior_index: SessionExamBehaviorIndex;
       behavior_summary: { event_type: string; count: number; avg_score: number }[];
       behavior_logs: BehaviorLogRow[];
       alerts: AlertRow[];

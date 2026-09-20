@@ -153,19 +153,22 @@ class BehaviorTemporalTracker:
 
         metrics = result.metrics
         if face_count == 0:
-            from ai.knowing_eye.behavior.normalize import overall_compliance_pct
+            from ai.knowing_eye.behavior.normalize import exam_behavior_index_pct
 
+            ebi, ebi_count = exam_behavior_index_pct(
+                0.0,
+                0.0,
+                result.metrics.posture_compliance_pct,
+                result.metrics.identity_match_pct,
+            )
             metrics = MetricScores(
                 face_presence_pct=0.0,
                 gaze_focus_pct=0.0,
                 posture_compliance_pct=result.metrics.posture_compliance_pct,
                 identity_match_pct=result.metrics.identity_match_pct,
-                overall_compliance_pct=overall_compliance_pct(
-                    0.0,
-                    0.0,
-                    result.metrics.posture_compliance_pct,
-                    result.metrics.identity_match_pct,
-                ),
+                overall_compliance_pct=ebi,
+                exam_behavior_index_pct=ebi,
+                ebi_indicator_count=ebi_count,
                 alert_threshold_pct=result.metrics.alert_threshold_pct,
             )
 

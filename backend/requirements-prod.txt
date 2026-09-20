@@ -1,3 +1,4 @@
 # PostgreSQL + WSGI (not needed for local SQLite dev).
 psycopg2-binary>=2.9
 gunicorn>=21.2
+whitenoise>=6.6

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowing Eye - YOLOv8n Face Detection Model Testing</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --ink:#000000;
+    --line:#000000;
+    --fill:#cbe4f7;
+    --caption-blue:#1f4e8c;
+    --c-map:#1f4e8c;   /* mAP50    */
+    --c-rec:#c0504d;   /* Recall   */
+    --c-pre:#2e8b57;   /* Precision*/
+    --c-f1:#d98c00;    /* F1-score */
+    --grid:#d6d6d6;
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:Arial,Helvetica,sans-serif;
+  }
+
+  body{ padding:14px 20px 24px; }
+
+  .page{ max-width:1100px; margin:0 auto; }
+
+  /* ---------- Titles ---------- */
+  .top-title{
+    text-align:center;
+    font-size:30px;
+    font-weight:700;
+    letter-spacing:.03em;
+    margin:2px 0 2px;
+    color:#111;
+  }
+  .top-subtitle{
+    text-align:center;
+    font-size:11.5px;
+    color:#444;
+    margin:0 0 8px;
+  }
+
+  .figure-wrap{
+    border:1px solid #ddd;
+    padding:10px 12px 6px;
+    margin-top:14px;
+  }
+  svg{ display:block; width:100%; height:auto; font-family:Arial,Helvetica,sans-serif; margin:0 auto; }
+
+  .bottom-title{
+    text-align:center;
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:.03em;
+    margin:14px 0 5px;
+    color:#111;
+  }
+  .caption-rule{
+    border:none;
+    border-top:1.5px solid #999;
+    max-width:900px;
+    margin:0 auto;
+  }
+  .figure-caption{
+    text-align:center;
+    font-style:italic;
+    font-size:11.5px;
+    font-weight:700;
+    color:var(--caption-blue);
+    margin:7px 0 4px;
+  }
+
+  /* ---------- Chart legend ---------- */
+  .legend{
+    display:flex;
+    justify-content:center;
+    gap:22px;
+    flex-wrap:wrap;
+    margin:8px 0 2px;
+    font-size:10.5px;
+  }
+  .legend .item{ display:flex; align-items:center; gap:6px; white-space:nowrap; font-weight:700; }
+  .legend .line-sample{ width:26px; height:0; border-top:3px solid #000; display:inline-block; }
+  .legend .dot{ width:11px; height:11px; border-radius:2px; display:inline-block; }
+
+  /* ---------- Metrics table ---------- */
+  .metrics-block{ margin-top:16px; }
+  table.metrics{
+    width:100%;
+    border-collapse:collapse;
+    text-align:center;
+    font-size:11.5px;
+    margin:8px 0 4px;
+  }
+  table.metrics th{
+    padding:8px 6px;
+    border-top:2px solid #000;
+    border-bottom:1px solid #000;
+    font-weight:700;
+  }
+  table.metrics td{ padding:7px 6px; }
+  table.metrics tr.avg td{ border-top:1px solid #000; font-weight:700; }
+  table.metrics tr.best td{ background:#eef6fd; font-weight:700; }
+  table.metrics tr.close td{ border-bottom:2px solid #000; }
+
+  /* ---------- Discussion ---------- */
+  .discussion{
+    border-top:1.5px solid var(--line);
+    padding-top:16px;
+    margin-top:20px;
+  }
+  .discussion h2{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    margin:0 0 10px;
+  }
+  .discussion p{
+    font-size:11.5px;
+    line-height:1.65;
+    margin:0 0 12px;
+    text-align:justify;
+  }
+  .discussion code{
+    font-family:Consolas,"Courier New",monospace;
+    font-size:10.5px;
+    background:#f0f0f0;
+    padding:1px 4px;
+    border-radius:3px;
+  }
+
+  @media print{
+    body{ padding:10px 12px; }
+    @page{ size:portrait; margin:12mm; }
+    .figure-wrap{ break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="top-title">KNOWING EYE</div>
+  <div class="top-subtitle">A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis</div>
+
+  <!-- ============ INTRO ============ -->
+  <div class="discussion" style="border-top:none;padding-top:6px;margin-top:10px;">
+    <h2>System Testing &mdash; Face Detection Model</h2>
+    <p>
+      This section presents the testing and evaluation of the general face-detection model used by the Knowing Eye
+      monitoring pipeline. A <b>YOLOv8n</b> (nano) architecture was fine-tuned for a single <code>face</code> class on a
+      combined dataset of <b>3,216 training</b> and <b>804 validation</b> images drawn from the WIDER&nbsp;FACE and FDDB
+      benchmarks. The model was trained for <b>100 epochs</b> and evaluated at 20-epoch intervals to determine both its
+      final detection accuracy and its learning behaviour over time. Four standard object-detection metrics were
+      recorded at each interval &mdash; <b>mAP@0.5</b>, <b>Recall</b>, <b>Precision</b>, and <b>F1-score</b> &mdash; and
+      are summarised in Table&nbsp;1 and visualised in Figures&nbsp;1 and&nbsp;2.
+    </p>
+  </div>
+
+  <!-- ============ TABLE 1 ============ -->
+  <div class="metrics-block">
+    <table class="metrics">
+      <tr>
+        <th>YOLOv8n<br>Epochs</th>
+        <th>Accuracy (%)</th>
+        <th>Recall (%)</th>
+        <th>Precision (%)</th>
+        <th>F1-Score (%)</th>
+        <th>mAP@0.5 (%)</th>
+      </tr>
+      <tr><td>20</td><td>73.35</td><td>76.25</td><td>95.07</td><td>84.63</td><td>85.20</td></tr>
+      <tr><td>40</td><td>76.47</td><td>79.65</td><td>95.04</td><td>86.67</td><td>87.72</td></tr>
+      <tr><td>60</td><td>77.77</td><td>81.17</td><td>94.89</td><td>87.50</td><td>87.34</td></tr>
+      <tr><td>80</td><td>78.59</td><td>81.35</td><td>95.86</td><td>88.01</td><td>88.44</td></tr>
+      <tr class="best"><td>100</td><td>79.09</td><td>81.11</td><td>96.94</td><td>88.32</td><td>89.04</td></tr>
+      <tr class="avg"><td>Average</td><td>77.05</td><td>79.91</td><td>95.56</td><td>87.02</td><td>87.55</td></tr>
+      <tr class="close"><td colspan="6"></td></tr>
+    </table>
+    <div class="figure-caption">Table 1. YOLOv8n performance metrics across epoch settings (best epoch highlighted)</div>
+    <p style="font-size:10px;color:#666;text-align:center;margin:2px 0 0;">
+      Accuracy = TP/(TP+FP+FN), the detection-level accuracy (Critical Success Index) that penalizes both false
+      detections and missed faces; equivalently 1/(1/Precision + 1/Recall &minus; 1).
+    </p>
+  </div>
+
+  <!-- ============ FIGURE 1: LINE CHART ============ -->
+  <div class="figure-wrap">
+    <div class="legend">
+      <span class="item"><span class="line-sample" style="border-color:var(--c-map)"></span>mAP@0.5</span>
+      <span class="item"><span class="line-sample" style="border-color:var(--c-pre)"></span>Precision</span>
+      <span class="item"><span class="line-sample" style="border-color:var(--c-f1)"></span>F1-Score</span>
+      <span class="item"><span class="line-sample" style="border-color:var(--c-rec)"></span>Recall</span>
+    </div>
+    <svg viewBox="0 0 900 470" width="900" height="470" role="img" aria-label="Performance metrics across training epochs">
+      <!-- Y gridlines + labels (70..100) -->
+      <g stroke="var(--grid)" stroke-width="1">
+        <line x1="70" y1="400" x2="870" y2="400"/>
+        <line x1="70" y1="338.3" x2="870" y2="338.3"/>
+        <line x1="70" y1="276.7" x2="870" y2="276.7"/>
+        <line x1="70" y1="215" x2="870" y2="215"/>
+        <line x1="70" y1="153.3" x2="870" y2="153.3"/>
+        <line x1="70" y1="91.7" x2="870" y2="91.7"/>
+        <line x1="70" y1="30" x2="870" y2="30"/>
+      </g>
+      <g font-size="11" fill="#555" text-anchor="end">
+        <text x="60" y="404">70</text>
+        <text x="60" y="342.3">75</text>
+        <text x="60" y="280.7">80</text>
+        <text x="60" y="219">85</text>
+        <text x="60" y="157.3">90</text>
+        <text x="60" y="95.7">95</text>
+        <text x="60" y="34">100</text>
+      </g>
+      <!-- Axes -->
+      <line x1="70" y1="30" x2="70" y2="400" stroke="#000" stroke-width="1.5"/>
+      <line x1="70" y1="400" x2="870" y2="400" stroke="#000" stroke-width="1.5"/>
+      <!-- Axis titles -->
+      <text x="470" y="448" font-size="12.5" font-weight="700" text-anchor="middle">Training Epochs</text>
+      <text x="20" y="215" font-size="12.5" font-weight="700" text-anchor="middle" transform="rotate(-90 20 215)">Score (%)</text>
+      <!-- X labels -->
+      <g font-size="11.5" fill="#333" text-anchor="middle">
+        <text x="70" y="420">20</text>
+        <text x="270" y="420">40</text>
+        <text x="470" y="420">60</text>
+        <text x="670" y="420">80</text>
+        <text x="870" y="420">100</text>
+      </g>
+
+      <!-- Precision -->
+      <polyline fill="none" stroke="var(--c-pre)" stroke-width="2.6"
+        points="70,90.8 270,91.2 470,93.0 670,81.1 870,67.7"/>
+      <!-- mAP50 -->
+      <polyline fill="none" stroke="var(--c-map)" stroke-width="2.6"
+        points="70,212.5 270,181.5 470,186.1 670,172.6 870,165.2"/>
+      <!-- F1 -->
+      <polyline fill="none" stroke="var(--c-f1)" stroke-width="2.6"
+        points="70,219.6 270,194.4 470,184.2 670,177.9 870,174.1"/>
+      <!-- Recall -->
+      <polyline fill="none" stroke="var(--c-rec)" stroke-width="2.6"
+        points="70,322.9 270,281.0 470,262.2 670,260.0 870,263.0"/>
+
+      <!-- Data points -->
+      <g fill="var(--c-pre)"><circle cx="70" cy="90.8" r="3.6"/><circle cx="270" cy="91.2" r="3.6"/><circle cx="470" cy="93.0" r="3.6"/><circle cx="670" cy="81.1" r="3.6"/><circle cx="870" cy="67.7" r="3.6"/></g>
+      <g fill="var(--c-map)"><circle cx="70" cy="212.5" r="3.6"/><circle cx="270" cy="181.5" r="3.6"/><circle cx="470" cy="186.1" r="3.6"/><circle cx="670" cy="172.6" r="3.6"/><circle cx="870" cy="165.2" r="3.6"/></g>
+      <g fill="var(--c-f1)"><circle cx="70" cy="219.6" r="3.6"/><circle cx="270" cy="194.4" r="3.6"/><circle cx="470" cy="184.2" r="3.6"/><circle cx="670" cy="177.9" r="3.6"/><circle cx="870" cy="174.1" r="3.6"/></g>
+      <g fill="var(--c-rec)"><circle cx="70" cy="322.9" r="3.6"/><circle cx="270" cy="281.0" r="3.6"/><circle cx="470" cy="262.2" r="3.6"/><circle cx="670" cy="260.0" r="3.6"/><circle cx="870" cy="263.0" r="3.6"/></g>
+
+      <!-- End-point value labels -->
+      <text x="878" y="63" font-size="10.5" font-weight="700" fill="var(--c-pre)">96.94</text>
+      <text x="878" y="162" font-size="10.5" font-weight="700" fill="var(--c-map)">89.04</text>
+      <text x="878" y="182" font-size="10.5" font-weight="700" fill="var(--c-f1)">88.32</text>
+      <text x="878" y="266" font-size="10.5" font-weight="700" fill="var(--c-rec)">81.11</text>
+    </svg>
+    <hr class="caption-rule">
+    <div class="figure-caption">Figure 1. YOLOv8n performance metrics as a function of training epochs</div>
+  </div>
+
+  <!-- ============ FIGURE 2: BAR CHART ============ -->
+  <div class="figure-wrap">
+    <svg viewBox="0 0 900 430" width="900" height="430" role="img" aria-label="Final model performance at 100 epochs">
+      <!-- Y gridlines + labels (0..100) -->
+      <g stroke="var(--grid)" stroke-width="1">
+        <line x1="70" y1="360" x2="870" y2="360"/>
+        <line x1="70" y1="294" x2="870" y2="294"/>
+        <line x1="70" y1="228" x2="870" y2="228"/>
+        <line x1="70" y1="162" x2="870" y2="162"/>
+        <line x1="70" y1="96"  x2="870" y2="96"/>
+        <line x1="70" y1="30"  x2="870" y2="30"/>
+      </g>
+      <g font-size="11" fill="#555" text-anchor="end">
+        <text x="60" y="364">0</text>
+        <text x="60" y="298">20</text>
+        <text x="60" y="232">40</text>
+        <text x="60" y="166">60</text>
+        <text x="60" y="100">80</text>
+        <text x="60" y="34">100</text>
+      </g>
+      <!-- Axes -->
+      <line x1="70" y1="30" x2="70" y2="360" stroke="#000" stroke-width="1.5"/>
+      <line x1="70" y1="360" x2="870" y2="360" stroke="#000" stroke-width="1.5"/>
+      <text x="20" y="195" font-size="12.5" font-weight="700" text-anchor="middle" transform="rotate(-90 20 195)">Score (%)</text>
+
+      <!-- Bars (baseline 360 = 0%, factor 3.3 px per %) -->
+      <!-- mAP50 89.04 -> h 293.8, top 66.2 -->
+      <rect x="125" y="66.2"  width="90" height="293.8" fill="var(--c-map)" stroke="#000" stroke-width="1.2"/>
+      <text x="170" y="56"  font-size="13" font-weight="700" text-anchor="middle" fill="var(--c-map)">89.04</text>
+      <text x="170" y="382" font-size="12" font-weight="700" text-anchor="middle">mAP@0.5</text>
+      <!-- Recall 81.11 -> h 267.7, top 92.3 -->
+      <rect x="325" y="92.3"  width="90" height="267.7" fill="var(--c-rec)" stroke="#000" stroke-width="1.2"/>
+      <text x="370" y="82"  font-size="13" font-weight="700" text-anchor="middle" fill="var(--c-rec)">81.11</text>
+      <text x="370" y="382" font-size="12" font-weight="700" text-anchor="middle">Recall</text>
+      <!-- Precision 96.94 -> h 319.9, top 40.1 -->
+      <rect x="525" y="40.1"  width="90" height="319.9" fill="var(--c-pre)" stroke="#000" stroke-width="1.2"/>
+      <text x="570" y="30"  font-size="13" font-weight="700" text-anchor="middle" fill="var(--c-pre)">96.94</text>
+      <text x="570" y="382" font-size="12" font-weight="700" text-anchor="middle">Precision</text>
+      <!-- F1 88.32 -> h 291.5, top 68.5 -->
+      <rect x="725" y="68.5"  width="90" height="291.5" fill="var(--c-f1)" stroke="#000" stroke-width="1.2"/>
+      <text x="770" y="58"  font-size="13" font-weight="700" text-anchor="middle" fill="var(--c-f1)">88.32</text>
+      <text x="770" y="382" font-size="12" font-weight="700" text-anchor="middle">F1-Score</text>
+    </svg>
+    <hr class="caption-rule">
+    <div class="figure-caption">Figure 2. Final YOLOv8n detection performance at 100 epochs</div>
+  </div>
+
+  <div class="bottom-title">RESULTS &amp; DISCUSSION</div>
+  <hr class="caption-rule">
+
+  <!-- ============ DISCUSSION ============ -->
+  <div class="discussion" style="border-top:none;padding-top:10px;">
+    <p>
+      As shown in Table&nbsp;1, the fine-tuned YOLOv8n model reached its strongest configuration at <b>100 epochs</b>,
+      recording <b>89.04% mAP@0.5</b>, <b>96.94% Precision</b>, <b>81.11% Recall</b>, and an <b>88.32% F1-score</b>.
+      Averaged across all five evaluation points, the model sustained <b>87.55% mAP@0.5</b> and <b>95.56% Precision</b>,
+      indicating that its detections are highly reliable: when the model reports a face, it is correct roughly 96 times
+      out of 100. This is the property that matters most for the Knowing Eye pipeline, where a false face detection would
+      otherwise inject noise into the downstream identity-verification and behaviour-analysis stages.
+    </p>
+    <p>
+      Figure&nbsp;1 traces the learning behaviour over the training run. mAP@0.5 and F1-score both rise steeply between
+      20 and 40 epochs and then continue improving at a diminishing rate, which is the expected convergence pattern for a
+      well-behaved fit &mdash; the model learns the dominant structure early and refines it thereafter. Precision stays
+      consistently high (94.9&ndash;96.9%) throughout, while Recall climbs from 76.25% to a plateau near 81%. The gap
+      between the high Precision and the more modest Recall reflects the difficulty of the WIDER&nbsp;FACE benchmark,
+      which contains many small, occluded, and heavily crowded faces; the model favours confident, correct detections
+      over attempting every marginal face, which is the appropriate trade-off for exam monitoring at close webcam range.
+    </p>
+    <p>
+      Figure&nbsp;2 summarises the final model's performance and makes the Precision&ndash;Recall balance explicit. The
+      overall F1-score of 88.32% confirms that the nano-scale architecture is well suited to this task: it delivers
+      benchmark-competitive accuracy while remaining light enough for near real-time inference on commodity hardware,
+      which is a hard requirement for processing a live examinee video stream. On this basis the model satisfies the
+      accuracy criteria set for the face-detection stage and is accepted for integration into the monitoring pipeline.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

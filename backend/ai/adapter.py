@@ -129,12 +129,15 @@ def _apply_temporal_stub(session_id: str, payload: dict[str, Any]) -> dict[str, 
     face_raw = payload.get("face", {})
     posture_raw = payload.get("posture", {})
 
+    _ebi_raw = metrics_raw.get("exam_behavior_index_pct")
     metrics = MetricScores(
         face_presence_pct=float(metrics_raw.get("face_presence_pct", 0)),
         gaze_focus_pct=float(metrics_raw.get("gaze_focus_pct", 0)),
         posture_compliance_pct=float(metrics_raw.get("posture_compliance_pct", 0)),
         identity_match_pct=metrics_raw.get("identity_match_pct"),
         overall_compliance_pct=float(metrics_raw.get("overall_compliance_pct", 0)),
+        exam_behavior_index_pct=float(_ebi_raw) if _ebi_raw is not None else None,
+        ebi_indicator_count=int(metrics_raw.get("ebi_indicator_count", 0)),
         alert_threshold_pct=float(metrics_raw.get("alert_threshold_pct", 80)),
     )
     face = FaceAnalysis(
@@ -261,9 +264,9 @@ class _StubPipeline:
     ) -> dict[str, Any]:
         face_count = _stub_detect_face_count(frame_bgr)
         from ai.knowing_eye.behavior.normalize import (
+            exam_behavior_index_pct,
             face_presence_pct,
             gaze_focus_pct,
-            overall_compliance_pct,
             posture_compliance_pct,
         )
 
@@ -273,7 +276,7 @@ class _StubPipeline:
 
         identity_pct, identity_distance = self._identity_score(frame_bgr, reference_embedding)
 
-        overall = overall_compliance_pct(face_presence, gaze, posture, identity_pct)
+        overall, ebi_count = exam_behavior_index_pct(face_presence, gaze, posture, identity_pct)
 
         t = _ALERT_THRESHOLD_PCT
         flagged: list[str] = []
@@ -292,6 +295,14 @@ class _StubPipeline:
             "posture_compliance_pct": posture,
             "identity_match_pct": identity_pct,
             "overall_compliance_pct": overall,
+            "exam_behavior_index_pct": overall,
+            "ebi_indicator_count": ebi_count,
+            "ebi_components": {
+                "face_presence": face_presence,
+                "face_identity": identity_pct,
+                "upper_body_presence": posture,
+                "looking_away_compliance": gaze,
+            },
             "alert_threshold_pct": t,
             "flagged_metrics": flagged,
             "all_compliant": len(flagged) == 0,
@@ -369,6 +380,7 @@ class _StubPipeline:
             "frame_size": [w, h] if w and h else None,
             "metrics": metrics,
             "overall_compliance_pct": overall,
+            "exam_behavior_index_pct": overall,
             "behavior_score": round(overall / 100.0, 4),
             "events": events,
             "alerts": alerts,

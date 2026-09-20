@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowing Eye - Agile Work Breakdown Structure</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --ink:#000000;
+    --line:#000000;
+    --box-bg:#ffffff;
+    --box-border:#000000;
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:Arial,Helvetica,sans-serif;
+  }
+
+  body{
+    padding:24px 26px;
+  }
+
+  .page{
+    max-width:1600px;
+    margin:0 auto;
+  }
+
+  /* ---------- Root node ---------- */
+  .root-wrap{
+    display:flex;
+    justify-content:center;
+  }
+  .root-box{
+    background:var(--box-bg);
+    border:1.5px solid var(--box-border);
+    border-radius:6px;
+    padding:12px 28px;
+    text-align:center;
+    max-width:640px;
+  }
+  .root-box .title{
+    font-size:14px;
+    font-weight:700;
+    line-height:1.3;
+  }
+
+  .stem{
+    width:2px;
+    height:16px;
+    background:var(--line);
+    margin:0 auto;
+  }
+
+  /* ---------- Branch row (spanning connector) ---------- */
+  .branches{
+    display:flex;
+    align-items:flex-start;
+  }
+  .branch{
+    position:relative;
+    flex:1 1 0;
+    min-width:0;
+    padding:0 8px;
+  }
+  .branch::before,
+  .branch::after{
+    content:'';
+    position:absolute;
+    top:0;
+    width:50%;
+    height:16px;
+    border-top:2px solid var(--line);
+  }
+  .branch::before{ left:0; border-right:2px solid var(--line); }
+  .branch::after{ right:0; }
+  .branch:first-child::before{ border-right-color:transparent; border-top-color:transparent; }
+  .branch:last-child::after{ border-top-color:transparent; }
+  .branch:only-child::before,
+  .branch:only-child::after{ display:none; }
+
+  .branch-body{
+    margin-top:16px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  /* ---------- Category box ---------- */
+  .cat-box{
+    width:100%;
+    background:var(--box-bg);
+    border:1.5px solid var(--box-border);
+    border-radius:6px;
+    padding:9px 8px;
+    text-align:center;
+  }
+  .cat-box .phase-name{
+    font-size:12.5px;
+    font-weight:700;
+    line-height:1.25;
+  }
+  /* ---------- Items ---------- */
+  .items{
+    width:100%;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+  }
+  .items::before{
+    content:'';
+    position:absolute;
+    top:0;
+    bottom:0;
+    left:50%;
+    width:2px;
+    margin-left:-1px;
+    background:var(--line);
+    z-index:0;
+  }
+  .item-box{
+    position:relative;
+    z-index:1;
+    width:100%;
+    background:var(--box-bg);
+    border:1.5px solid var(--box-border);
+    border-radius:5px;
+    padding:7px 9px;
+    text-align:center;
+  }
+  .item-box .label{
+    font-size:11px;
+    font-weight:400;
+    line-height:1.3;
+  }
+
+  @media (max-width: 980px){
+    .branches{ flex-wrap:wrap; }
+    .branch{ flex:1 1 46%; margin-bottom:26px; }
+    .branch::before,.branch::after{ display:none; }
+  }
+
+  @media print{
+    body{ padding:8px 12px; }
+    @page{ size:landscape; margin:8mm; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="root-wrap">
+    <div class="root-box">
+      <div class="title">Knowing Eye: A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis<br>(Agile Work Breakdown Structure)</div>
+    </div>
+  </div>
+
+  <div class="stem"></div>
+
+  <div class="branches">
+
+    <!-- Backlog -->
+    <div class="branch">
+      <div class="branch-body">
+        <div class="cat-box">
+          <div class="phase-name">Product Backlog</div>
+        </div>
+        <div class="stem"></div>
+        <div class="items">
+          <div class="item-box"><div class="label">Epic: Authentication, Roles &amp; Access Control</div></div>
+          <div class="item-box"><div class="label">Epic: Examination Management &amp; LMS Workflow</div></div>
+          <div class="item-box"><div class="label">Epic: Computer Vision &amp; Monitoring</div></div>
+          <div class="item-box"><div class="label">Epic: UI / UX Experience</div></div>
+          <div class="item-box"><div class="label">Epic: AI Module &amp; Analytics</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sprint 0 -->
+    <div class="branch">
+      <div class="branch-body">
+        <div class="cat-box">
+          <div class="phase-name">Sprint 0 - Inception</div>
+        </div>
+        <div class="stem"></div>
+        <div class="items">
+          <div class="item-box"><div class="label">Define Core Product Goals &amp; Scope</div></div>
+          <div class="item-box"><div class="label">Capture Requirements from Documentation</div></div>
+          <div class="item-box"><div class="label">Sprint Planning &amp; Backlog Grooming</div></div>
+          <div class="item-box"><div class="label">System Architecture Design</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sprint 1-2 -->
+    <div class="branch">
+      <div class="branch-body">
+        <div class="cat-box">
+          <div class="phase-name">Sprint 1-2 - Backend &amp; AI Increment</div>
+        </div>
+        <div class="stem"></div>
+        <div class="items">
+          <div class="item-box"><div class="label">Backend Development (Auth &amp; API)</div></div>
+          <div class="item-box"><div class="label">AI Module Development</div></div>
+          <div class="item-box"><div class="label">Daily Scrum Standups</div></div>
+          <div class="item-box"><div class="label">Sprint Review &amp; Retrospective</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sprint 3 -->
+    <div class="branch">
+      <div class="branch-body">
+        <div class="cat-box">
+          <div class="phase-name">Sprint 3 - Frontend &amp; UX Increment</div>
+        </div>
+        <div class="stem"></div>
+        <div class="items">
+          <div class="item-box"><div class="label">Frontend Development</div></div>
+          <div class="item-box"><div class="label">User Interface &amp; User Experience</div></div>
+          <div class="item-box"><div class="label">Examination Management &amp; LMS Workflow</div></div>
+          <div class="item-box"><div class="label">Sprint Review &amp; Retrospective</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sprint 4 -->
+    <div class="branch">
+      <div class="branch-body">
+        <div class="cat-box">
+          <div class="phase-name">Sprint 4 - Monitoring &amp; Hardening</div>
+        </div>
+        <div class="stem"></div>
+        <div class="items">
+          <div class="item-box"><div class="label">Computer Vision &amp; Examination Monitoring</div></div>
+          <div class="item-box"><div class="label">Documentation &amp; Research</div></div>
+          <div class="item-box"><div class="label">Deployment Readiness &amp; Validation</div></div>
+          <div class="item-box"><div class="label">Sprint Review &amp; Retrospective</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sprint 5 -->
+    <div class="branch">
+      <div class="branch-body">
+        <div class="cat-box">
+          <div class="phase-name">Sprint 5 - Release</div>
+        </div>
+        <div class="stem"></div>
+        <div class="items">
+          <div class="item-box"><div class="label">Six-Week Deployment Preparation</div></div>
+          <div class="item-box"><div class="label">User Acceptance &amp; Peer Testing</div></div>
+          <div class="item-box"><div class="label">Production Launch</div></div>
+          <div class="item-box"><div class="label">Sprint Review &amp; Retrospective</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

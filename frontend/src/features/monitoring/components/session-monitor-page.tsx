@@ -54,6 +54,12 @@ export function SessionMonitorPage() {
   };
 
   const metrics = observer.analysis?.metrics;
+  const liveEbi =
+    observer.analysis?.exam_behavior_index_pct ??
+    metrics?.exam_behavior_index_pct ??
+    observer.analysis?.overall_compliance_pct ??
+    null;
+  const ebiReport = reportQuery.data?.exam_behavior_index;
 
   const handleResolve = async (alertId: string) => {
     try {
@@ -145,7 +151,24 @@ export function SessionMonitorPage() {
                 </div>
               )}
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="mt-4 flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Exam Behavior Index (live)
+                </p>
+                <p className="text-[0.7rem] text-muted-foreground">
+                  Equal-weight mean of the indicators below
+                </p>
+              </div>
+              <p
+                className={`text-2xl font-bold tabular-nums ${
+                  liveEbi != null && liveEbi < 80 ? "text-destructive" : ""
+                }`}
+              >
+                {liveEbi === null ? "—" : `${liveEbi.toFixed(0)}%`}
+              </p>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {METRICS.map((m) => {
                 const raw = metrics?.[m.key];
                 const val = typeof raw === "number" ? raw : null;
@@ -159,6 +182,48 @@ export function SessionMonitorPage() {
                 );
               })}
             </div>
+
+            {ebiReport && ebiReport.average != null && (
+              <div className="mt-4 rounded-lg border p-4">
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <h3 className="font-semibold">Session EBI (average)</h3>
+                    <p className="font-mono text-[0.7rem] text-muted-foreground">
+                      {ebiReport.formula} · {ebiReport.indicator_count} indicators ·{" "}
+                      {ebiReport.sample_count} frame
+                      {ebiReport.sample_count === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <p
+                    className={`text-2xl font-bold tabular-nums ${
+                      ebiReport.average < 80 ? "text-destructive" : ""
+                    }`}
+                  >
+                    {ebiReport.average.toFixed(1)}%
+                  </p>
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[
+                    { label: "Face presence (Fₚ)", v: ebiReport.components.face_presence },
+                    { label: "Identity (Fᵢ)", v: ebiReport.components.face_identity },
+                    { label: "Upper body (Uₚ)", v: ebiReport.components.upper_body_presence },
+                    { label: "Looking-away (G𝒸)", v: ebiReport.components.looking_away_compliance },
+                  ].map((c) => (
+                    <div key={c.label} className="rounded-md bg-muted/40 px-2 py-1.5">
+                      <dt className="text-[0.68rem] text-muted-foreground">{c.label}</dt>
+                      <dd className="font-mono text-sm font-medium tabular-nums">
+                        {c.v == null ? "n/e" : `${c.v.toFixed(0)}%`}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                {ebiReport.identity_sample_count === 0 && (
+                  <p className="mt-2 text-[0.7rem] text-muted-foreground">
+                    Identity not evaluated (no reference face enrolled); averaged over 3 indicators.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-4 rounded-xl border bg-card p-4">

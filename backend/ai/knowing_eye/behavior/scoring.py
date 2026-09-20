@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 from ai.knowing_eye.behavior.normalize import (
+    exam_behavior_index_pct,
     face_presence_pct,
     gaze_focus_pct,
     identity_match_pct,
-    overall_compliance_pct,
     posture_compliance_pct,
 )
 from ai.knowing_eye.detection.face_detector import DetectedFace
@@ -86,13 +86,15 @@ class BehaviorScorer:
             self._lean_max,
         )
         ip = identity_match_pct(identity_match, face.identity_distance, self._identity_threshold)
-        overall = overall_compliance_pct(fp, gp, pp, ip, self._metric_weights)
+        ebi, ebi_count = exam_behavior_index_pct(fp, gp, pp, ip)
         return MetricScores(
             face_presence_pct=fp,
             gaze_focus_pct=gp,
             posture_compliance_pct=pp,
             identity_match_pct=ip,
-            overall_compliance_pct=overall,
+            overall_compliance_pct=ebi,
+            exam_behavior_index_pct=ebi,
+            ebi_indicator_count=ebi_count,
             alert_threshold_pct=self._alert_threshold_pct,
         )
 

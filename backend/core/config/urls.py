@@ -33,5 +33,8 @@ urlpatterns = [
 
 
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# No S3/CDN is configured for user-uploaded media (avatars); WhiteNoise only
+# covers STATIC_URL, so serve MEDIA_URL directly regardless of DEBUG.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

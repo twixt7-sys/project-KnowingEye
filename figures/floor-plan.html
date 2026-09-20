@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowing Eye - Examination Room Floor Plan</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --ink:#000000;
+    --line:#000000;
+    --grid-line:#bbbbbb;
+    --fill-station:#d9d9d9;
+    --fill-hatch-a:#fff;
+    --fill-hatch-b:#c9c9c9;
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:Arial,Helvetica,sans-serif;
+  }
+
+  body{
+    padding:24px 26px 40px;
+  }
+
+  .page{
+    max-width:1120px;
+    margin:0 auto;
+  }
+
+  /* ---------- Title ---------- */
+  .root-wrap{
+    display:flex;
+    justify-content:center;
+    margin-bottom:14px;
+  }
+  .root-box{
+    background:var(--bg);
+    border:1.5px solid var(--line);
+    border-radius:6px;
+    padding:12px 28px;
+    text-align:center;
+    max-width:720px;
+  }
+  .root-box .title{
+    font-size:14px;
+    font-weight:700;
+    line-height:1.3;
+  }
+  .root-box .sub{
+    font-size:10.5px;
+    font-weight:400;
+    margin-top:4px;
+    color:#333;
+  }
+
+  /* ---------- Capacity note ---------- */
+  .capacity-note{
+    border:1px dashed #888;
+    border-radius:5px;
+    padding:9px 16px;
+    font-size:10.5px;
+    color:#333;
+    text-align:center;
+    max-width:820px;
+    margin:16px auto 24px;
+    line-height:1.5;
+  }
+  .capacity-note b{ font-weight:700; }
+
+  /* ---------- Flow legend (shared) ---------- */
+  .flow-legend{
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:10px 16px 12px;
+    max-width:900px;
+    margin:0 auto 26px;
+  }
+  .flow-legend .flow-title{
+    font-size:10.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    margin-bottom:8px;
+    text-align:center;
+  }
+  .flow-legend ol{
+    margin:0;
+    padding-left:0;
+    list-style:none;
+    columns:2;
+    column-gap:32px;
+    font-size:10.5px;
+    line-height:1.55;
+  }
+  .flow-legend li{
+    margin-bottom:4px;
+  }
+  .flow-legend .num{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:15px;
+    height:15px;
+    border:1.4px solid var(--line);
+    border-radius:50%;
+    font-size:9px;
+    font-weight:700;
+    margin-right:6px;
+    flex:0 0 auto;
+  }
+
+  /* ---------- Symbol legend ---------- */
+  .legend{
+    display:flex;
+    justify-content:center;
+    gap:16px;
+    flex-wrap:wrap;
+    margin:0 0 26px;
+    font-size:9.5px;
+  }
+  .legend .item{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    white-space:nowrap;
+  }
+  .legend .swatch{
+    width:20px;
+    height:13px;
+    border:1.2px solid var(--line);
+    display:inline-block;
+    background:#fff;
+  }
+  .legend .swatch.station{ background:var(--fill-station); }
+  .legend .dot{
+    width:8px; height:8px; border-radius:50%; background:#000; display:inline-block;
+  }
+  .legend .arrow-sample{
+    width:26px; height:0; border-top:1.6px dashed #000; display:inline-block;
+  }
+  .legend .arrow-sample2{
+    width:26px; height:0; border-top:2px solid #000; display:inline-block;
+  }
+
+  /* ---------- Variation sections ---------- */
+  .variation{
+    margin-bottom:36px;
+  }
+  .var-label{
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    border-bottom:1.5px solid var(--line);
+    padding-bottom:5px;
+    margin-bottom:10px;
+  }
+  .var-label .range{
+    font-weight:400;
+    text-transform:none;
+    color:#333;
+  }
+  .diagram-wrap{
+    border:1px solid var(--grid-line);
+    padding:6px;
+    overflow-x:auto;
+  }
+  svg{ display:block; font-family:Arial,Helvetica,sans-serif; }
+
+  .why-note{
+    font-size:10.5px;
+    color:#333;
+    margin-top:8px;
+    font-style:italic;
+  }
+
+  @media print{
+    body{ padding:10px 12px; }
+    @page{ size:landscape; margin:9mm; }
+    .variation{ page-break-after:always; }
+    .variation:last-of-type{ page-break-after:auto; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="root-wrap">
+    <div class="root-box">
+      <div class="title">Knowing Eye: A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis</div>
+      <div class="sub">Examination Room Floor Plan &amp; Proctoring Flow</div>
+    </div>
+  </div>
+
+  <div class="capacity-note">
+    Shown at <b>1 proctor : 20 candidate workstations</b> - the ideal capacity for a standard-size computer laboratory, balancing proctor oversight with efficient use of AI-assisted monitoring. The layout is modular: it scales down to as few as <b>~8 units</b> for a small seminar room, or up to <b>40+ units</b> for a large lab, by adding or removing rows/columns. The proctoring flow described below is identical regardless of room size.
+  </div>
+
+  <div class="flow-legend">
+    <div class="flow-title">Exam Session Flow (numbered on both diagrams below)</div>
+    <ol>
+      <li><span class="num">1</span>Student logs in &amp; completes face-ID calibration at their workstation</li>
+      <li><span class="num">2</span>Live webcam captures facial &amp; postural behavior throughout the exam</li>
+      <li><span class="num">3</span>Behavior data streams in real time to the AI Behavior Analysis Engine</li>
+      <li><span class="num">4</span>Engine flags anomalies (no-face, multiple faces, poor posture, etc.) to the Proctor Dashboard</li>
+      <li><span class="num">5</span>Proctor reviews the alert and intervenes on-site if warranted</li>
+      <li><span class="num">6</span>Student submits the exam; session log &amp; behavior report are finalized</li>
+    </ol>
+  </div>
+
+  <div class="legend">
+    <span class="item"><span class="swatch"></span>Student Workstation</span>
+    <span class="item"><span class="dot"></span>Webcam (facial/postural capture)</span>
+    <span class="item"><span class="swatch station"></span>Proctor Station</span>
+    <span class="item"><span class="swatch" style="background:repeating-linear-gradient(45deg,#fff 0 3px,#c9c9c9 3px 6px);"></span>AI Behavior Analysis Engine (backend)</span>
+    <span class="item"><span class="arrow-sample"></span>Monitoring data flow</span>
+    <span class="item"><span class="arrow-sample2"></span>Proctor intervention</span>
+  </div>
+
+  <!-- ================= VARIATION A ================= -->
+  <div class="variation">
+    <div class="var-label">Variation A <span class="range">- Rows Facing Front (recommended default) - 20 workstations, 4 rows x 5 columns</span></div>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 1060 650" width="1060" height="650">
+        <defs>
+          <marker id="arrowA" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#000"/>
+          </marker>
+        </defs>
+
+        <!-- room walls -->
+        <rect x="40" y="50" width="820" height="540" fill="none" stroke="#000" stroke-width="2.5"/>
+        <!-- door gap + swing -->
+        <rect x="768" y="587" width="64" height="6" fill="#fff"/>
+        <path d="M768,590 A62,62 0 0 0 830,528" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="800" y="610" font-size="9" text-anchor="middle">DOOR</text>
+
+        <!-- proctor station -->
+        <rect x="390" y="70" width="140" height="55" rx="4" fill="#d9d9d9" stroke="#000" stroke-width="1.75"/>
+        <rect x="402" y="86" width="26" height="18" fill="#fff" stroke="#000" stroke-width="1"/>
+        <line x1="415" y1="86" x2="415" y2="104" stroke="#000" stroke-width="0.75"/>
+        <line x1="402" y1="95" x2="428" y2="95" stroke="#000" stroke-width="0.75"/>
+        <text x="460" y="97" font-size="10.5" font-weight="700" text-anchor="middle">PROCTOR</text>
+        <text x="460" y="109" font-size="8.5" font-style="italic" text-anchor="middle">Monitoring Dashboard</text>
+
+        <!-- student grid: 4 rows x 5 cols -->
+        <!-- row y: 140,228,316,404 | col x: 100,250,400,550,700 | desk 60x38 -->
+        <g stroke="#000" stroke-width="1.3" fill="#fff">
+          <!-- row 1 -->
+          <rect x="100" y="140" width="60" height="38" rx="3"/>
+          <rect x="250" y="140" width="60" height="38" rx="3"/>
+          <rect x="400" y="140" width="60" height="38" rx="3"/>
+          <rect x="550" y="140" width="60" height="38" rx="3"/>
+          <rect x="700" y="140" width="60" height="38" rx="3"/>
+          <!-- row 2 -->
+          <rect x="100" y="228" width="60" height="38" rx="3"/>
+          <rect x="250" y="228" width="60" height="38" rx="3"/>
+          <rect x="400" y="228" width="60" height="38" rx="3"/>
+          <rect x="550" y="228" width="60" height="38" rx="3"/>
+          <rect x="700" y="228" width="60" height="38" rx="3"/>
+          <!-- row 3 -->
+          <rect x="100" y="316" width="60" height="38" rx="3"/>
+          <rect x="250" y="316" width="60" height="38" rx="3"/>
+          <rect x="400" y="316" width="60" height="38" rx="3"/>
+          <rect x="550" y="316" width="60" height="38" rx="3"/>
+          <rect x="700" y="316" width="60" height="38" rx="3"/>
+          <!-- row 4 -->
+          <rect x="100" y="404" width="60" height="38" rx="3"/>
+          <rect x="250" y="404" width="60" height="38" rx="3"/>
+          <rect x="400" y="404" width="60" height="38" rx="3"/>
+          <rect x="550" y="404" width="60" height="38" rx="3"/>
+          <rect x="700" y="404" width="60" height="38" rx="3"/>
+        </g>
+        <!-- webcams: dot at top-center of every desk -->
+        <g fill="#000">
+          <circle cx="130" cy="140" r="3.5"/><circle cx="280" cy="140" r="3.5"/><circle cx="430" cy="140" r="3.5"/><circle cx="580" cy="140" r="3.5"/><circle cx="730" cy="140" r="3.5"/>
+          <circle cx="130" cy="228" r="3.5"/><circle cx="280" cy="228" r="3.5"/><circle cx="430" cy="228" r="3.5"/><circle cx="580" cy="228" r="3.5"/><circle cx="730" cy="228" r="3.5"/>
+          <circle cx="130" cy="316" r="3.5"/><circle cx="280" cy="316" r="3.5"/><circle cx="430" cy="316" r="3.5"/><circle cx="580" cy="316" r="3.5"/><circle cx="730" cy="316" r="3.5"/>
+          <circle cx="130" cy="404" r="3.5"/><circle cx="280" cy="404" r="3.5"/><circle cx="430" cy="404" r="3.5"/><circle cx="580" cy="404" r="3.5"/><circle cx="730" cy="404" r="3.5"/>
+        </g>
+
+        <!-- AI engine box (backend, outside physical room) -->
+        <rect x="900" y="230" width="140" height="90" rx="4" fill="url(#hatchA)" stroke="#000" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <defs>
+          <pattern id="hatchA" width="8" height="8" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+            <rect width="8" height="8" fill="#fff"/>
+            <line x1="0" y1="0" x2="0" y2="8" stroke="#c9c9c9" stroke-width="4"/>
+          </pattern>
+        </defs>
+        <text x="970" y="265" font-size="9" font-weight="700" text-anchor="middle">AI BEHAVIOR</text>
+        <text x="970" y="277" font-size="9" font-weight="700" text-anchor="middle">ANALYSIS ENGINE</text>
+        <text x="970" y="291" font-size="8" font-style="italic" text-anchor="middle">(backend / cloud)</text>
+
+        <!-- data flow: workstation area -> AI engine -->
+        <path d="M800,300 L860,300 L900,278" fill="none" stroke="#000" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrowA)"/>
+        <circle cx="845" cy="300" r="11" fill="#fff" stroke="#000" stroke-width="1.4"/>
+        <text x="845" y="303.5" font-size="9" font-weight="700" text-anchor="middle">3</text>
+
+        <!-- AI engine -> proctor dashboard -->
+        <path d="M970,230 L970,100 L532,100" fill="none" stroke="#000" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrowA)"/>
+        <circle cx="750" cy="100" r="11" fill="#fff" stroke="#000" stroke-width="1.4"/>
+        <text x="750" y="103.5" font-size="9" font-weight="700" text-anchor="middle">4</text>
+
+        <!-- proctor -> flagged desk (intervention) -->
+        <path d="M460,125 L460,178 L430,178 L430,226" fill="none" stroke="#000" stroke-width="2.2" marker-end="url(#arrowA)"/>
+        <circle cx="445" cy="178" r="11" fill="#fff" stroke="#000" stroke-width="1.4"/>
+        <text x="445" y="181.5" font-size="9" font-weight="700" text-anchor="middle">5</text>
+
+        <!-- step 1: login/calibration -->
+        <circle cx="78" cy="118" r="11" fill="#fff" stroke="#000" stroke-width="1.4"/>
+        <text x="78" y="121.5" font-size="9" font-weight="700" text-anchor="middle">1</text>
+
+        <!-- step 2: live monitoring -->
+        <circle cx="163" cy="152" r="11" fill="#fff" stroke="#000" stroke-width="1.4"/>
+        <text x="163" y="155.5" font-size="9" font-weight="700" text-anchor="middle">2</text>
+
+        <!-- step 6: submission near door -->
+        <circle cx="800" cy="560" r="11" fill="#fff" stroke="#000" stroke-width="1.4"/>
+        <text x="800" y="563.5" font-size="9" font-weight="700" text-anchor="middle">6</text>
+        <text x="800" y="580" font-size="8.5" text-anchor="middle">Submit &amp; exit</text>
+      </svg>
+    </div>
+    <div class="why-note">Best for: general use. Familiar row layout, clear proctor sightlines down every aisle, and the simplest to scale by adding rows or columns.</div>
+  </div>
+
+  <!-- ================= VARIATION B ================= -->
+  <div class="variation">
+    <div class="var-label">Variation B <span class="range">- Perimeter / Anti-Collusion Layout - 20 workstations around the walls, proctor centered</span></div>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 1060 650" width="1060" height="650">
+        <defs>
+          <marker id="arrowB" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L7,3 L0,6 Z" fill="#000"/>
+          </marker>
+          <pattern id="hatchB" width="8" height="8" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+            <rect width="8" height="8" fill="#fff"/>
+            <line x1="0" y1="0" x2="0" y2="8" stroke="#c9c9c9" stroke-width="4"/>
+          </pattern>
+        </defs>
+
+        <!-- room walls -->
+        <rect x="40" y="50" width="820" height="540" fill="none" stroke="#000" stroke-width="2.5"/>
+        <rect x="768" y="587" width="64" height="6" fill="#fff"/>
+        <path d="M768,590 A62,62 0 0 0 830,528" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="3,3"/>
+        <text x="800" y="610" font-size="9" text-anchor="middle">DOOR</text>
+
+        <!-- proctor station, centered -->
+        <rect x="380" y="290" width="140" height="60" rx="4" fill="#d9d9d9" stroke="#000" stroke-width="1.75"/>
+        <rect x="392" y="307" width="26" height="18" fill="#fff" stroke="#000" stroke-width="1"/>
+        <line x1="405" y1="307" x2="405" y2="325" stroke="#000" stroke-width="0.75"/>
+        <line x1="392" y1="316" x2="418" y2="316" stroke="#000" stroke-width="0.75"/>
+        <text x="450" y="317" font-size="10.5" font-weight="700" text-anchor="middle">PROCTOR</text>
+        <text x="450" y="329" font-size="8.5" font-style="italic" text-anchor="middle">Monitoring Dashboard</text>
+
+        <!-- top wall desks (6), student faces up toward wall, webcam on top edge -->
+        <g stroke="#000" stroke-width="1.3" fill="#fff">
+          <rect x="100" y="70" width="60" height="38" rx="3"/>
+          <rect x="220" y="70" width="60" height="38" rx="3"/>
+          <rect x="340" y="70" width="60" height="38" rx="3"/>
+          <rect x="460" y="70" width="60" height="38" rx="3"/>
+          <rect x="580" y="70" width="60" height="38" rx="3"/>
+          <rect x="700" y="70" width="60" height="38" rx="3"/>
+        </g>
+        <g fill="#000">
+          <circle cx="130" cy="70" r="3.5"/><circle cx="250" cy="70" r="3.5"/><circle cx="370" cy="70" r="3.5"/><circle cx="490" cy="70" r="3.5"/><circle cx="610" cy="70" r="3.5"/><circle cx="730" cy="70" r="3.5"/>
+        </g>
+
+        <!-- bottom wall desks (6), webcam on bottom edge -->
+        <g stroke="#000" stroke-width="1.3" fill="#fff">
+          <rect x="100" y="500" width="60" height="38" rx="3"/>
+          <rect x="220" y="500" width="60" height="38" rx="3"/>
+          <rect x="340" y="500" width="60" height="38" rx="3"/>
+          <rect x="460" y="500" width="60" height="38" rx="3"/>
+          <rect x="580" y="500" width="60" height="38" rx="3"/>
+          <rect x="700" y="500" width="60" height="38" rx="3"/>
+        </g>
+        <g fill="#000">
+          <circle cx="130" cy="538" r="3.5"/><circle cx="250" cy="538" r="3.5"/><circle cx="370" cy="538" r="3.5"/><circle cx="490" cy="538" r="3.5"/><circle cx="610" cy="538" r="3.5"/><circle cx="730" cy="538" r="3.5"/>
+        </g>
+
+        <!-- left wall desks (4), rotated footprint, webcam on left edge -->
+        <g stroke="#000" stroke-width="1.3" fill="#fff">
+          <rect x="62" y="130" width="38" height="60" rx="3"/>
+          <rect x="62" y="210" width="38" height="60" rx="3"/>
+          <rect x="62" y="400" width="38" height="60" rx="3"/>
+          <rect x="62" y="480" width="38" height="60" rx="3"/>
+        </g>
+        <g fill="#000">
+          <circle cx="62" cy="160" r="3.5"/><circle cx="62" cy="240" r="3.5"/><circle cx="62" cy="430" r="3.5"/><circle cx="62" cy="510" r="3.5"/>
+        </g>
+
+        <!-- right wall desks (4), webcam on right edge -->
+        <g stroke="#000" stroke-width="1.3" fill="#fff">
+          <rect x="800" y="130" width="38" height="60" rx="3"/>
+          <rect x="800" y="210" width="38" height="60" rx="3"/>
+          <rect x="800" y="400" width="38" height="60" rx="3"/>
+          <rect x="800" y="480" width="38" height="60" rx="3"/>
+        </g>
+        <g fill="#000">
+          <circle cx="838" cy="160" r="3.5"/><circle cx="838" cy="240" r="3.5"/><circle cx="838" cy="430" r="3.5"/><circle cx="838" cy="510" r="3.5"/>
+        </g>
+
+        <!-- AI engine box -->
+        <rect x="900" y="230" width="140" height="90" rx="4" fill="url(#hatchB)" stroke="#000" stroke-width="1.5" stroke-dasharray="4,3"/>
+        <text x="970" y="265" font-size="9" font-weight="700" text-anchor="middle">AI BEHAVIOR</text>
+        <text x="970" y="277" font-size="9" font-weight="700" text-anchor="middle">ANALYSIS ENGINE</text>
+        <text x="970" y="291" font-size="8" font-style="italic" text-anchor="middle">(backend / cloud)</text>
+
+        <!-- data flow: room -> AI engine -->
+        <path d="M860,320 L880,320 L900,278" fill="none" stroke="#000" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrowB)"/>
+        <circle cx="878" cy="300" r="11" fill="#fff" stroke="#000" stroke-width="1.4"/>
+        <text x="878" y="303.5" font-size="9" font-weight="700" text-anchor="middle">3</text>
+
+        <!-- AI engine -> proctor (centered) -->
+        <path d="M900,255 L520,255 L520,288" fill="none" stroke="#000" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrowB)"/>
+        <circle cx="700" cy="255" r="11" fill="#fff" stroke="#000" stroke-width="1.4"/>
+        <text x="700" y="258.5" font-size="9" font-weight="700" text-anchor="middle">4</text>
+
+        <!-- proctor -> intervention target (left wall desk) -->
+        <path d="M380,320 L200,320 L200,240 L102,240" fill="none" stroke="#000" stroke-width="2.2" marker-end="url(#arrowB)"/>
+        <circle cx="200" cy="280" r="11" fill="#fff" stroke="#000" stroke-width="1.4"/>
+        <text x="200" y="283.5" font-size="9" font-weight="700" text-anchor="middle">5</text>
+
+        <!-- step 1: login/calibration -->
+        <circle cx="78" cy="106" r="11" fill="#fff" stroke="#000" stroke-width="1.4"/>
+        <text x="78" y="109.5" font-size="9" font-weight="700" text-anchor="middle">1</text>
+
+        <!-- step 2: live monitoring -->
+        <circle cx="280" cy="52" r="11" fill="#fff" stroke="#000" stroke-width="1.4"/>
+        <text x="280" y="55.5" font-size="9" font-weight="700" text-anchor="middle">2</text>
+
+        <!-- step 6: submission near door -->
+        <circle cx="800" cy="560" r="11" fill="#fff" stroke="#000" stroke-width="1.4"/>
+        <text x="800" y="563.5" font-size="9" font-weight="700" text-anchor="middle">6</text>
+        <text x="800" y="580" font-size="8.5" text-anchor="middle">Submit &amp; exit</text>
+      </svg>
+    </div>
+    <div class="why-note">Best for: high-stakes exams. Facing the walls removes line-of-sight between candidates, so peer copying drops without relying on the proctor watching every screen directly - oversight instead comes from the centralized AI dashboard, which is the point of this system.</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1 @@
+{"model": "yolov8n", "mAP50 (%)": 88.98, "mAP50-95 (%)": 66.1, "Precision (%)": 95.84, "Recall (%)": 81.78, "F1 (%)": 88.25, "Mean Confidence (%)": 79.19, "Detections (n)": 1941}

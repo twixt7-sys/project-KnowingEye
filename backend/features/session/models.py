@@ -108,6 +108,31 @@ class ExamSession(models.Model):
         help_text='Extra time granted for this attempt (minutes)',
     )
 
+    # --- Exam Behavior Index (EBI) running aggregates -------------------
+    # Session-level EBI is the mean of every analyzed frame's Exam Behavior
+    # Index (0-100). Stored as an incremental running mean so the value is
+    # reproducible and provable: ebi_average == mean(frame EBI over
+    # ebi_sample_count frames). Component means let a report show which
+    # indicator (face presence, identity, upper-body presence, looking-away
+    # compliance) drove a low index. See features.behavior.services.
+    ebi_average = models.FloatField(
+        null=True,
+        blank=True,
+        help_text='Mean Exam Behavior Index (0-100) across all analyzed frames',
+    )
+    ebi_face_presence_avg = models.FloatField(null=True, blank=True)
+    ebi_face_identity_avg = models.FloatField(null=True, blank=True)
+    ebi_upper_body_avg = models.FloatField(null=True, blank=True)
+    ebi_looking_away_avg = models.FloatField(null=True, blank=True)
+    ebi_sample_count = models.PositiveIntegerField(
+        default=0,
+        help_text='Number of analyzed frames folded into the EBI running mean',
+    )
+    ebi_identity_sample_count = models.PositiveIntegerField(
+        default=0,
+        help_text='Frames where identity was evaluated (denominator for identity mean)',
+    )
+
     class Meta:
         db_table = 'user_sessions_exam_session'
         verbose_name = 'Exam Session'

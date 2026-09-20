@@ -51,6 +51,46 @@ def identity_match_pct(
     return 100.0 if match else 0.0
 
 
+def exam_behavior_index_pct(
+    face_pct: float,
+    gaze_pct: float,
+    posture_pct: float,
+    identity_pct: float | None,
+) -> tuple[float, int]:
+    """Composite **Exam Behavior Index (EBI)** as an equal-weight formative index.
+
+    EBI is the arithmetic mean of the normalized examination-monitoring
+    indicators (all on the same 0-100 "higher = more compliant" scale)::
+
+        EBI = (Fp + Fi + Up + Gc) / N
+
+    where the four indicators are Face Presence (``Fp`` = ``face_pct``), Face
+    Identity (``Fi`` = ``identity_pct``), Upper-Body Presence (``Up`` =
+    ``posture_pct``) and Looking-Away Compliance (``Gc`` = ``gaze_pct``).
+
+    Equal weighting is a deliberate formative-measurement design decision: the
+    indicators collectively *define* the monitoring construct and are not
+    required to be interchangeable or strongly correlated, so an equal-weight
+    arithmetic mean is the appropriate initial aggregation once every indicator
+    has been normalized to the same direction and scale.
+
+    **Identity is only counted when it was evaluated.** When no reference face
+    is enrolled ``identity_pct`` is ``None`` and identity is *not evaluated*
+    rather than scored zero - otherwise a single face-absence event would be
+    penalised twice (through both Face Presence and Face Identity). In that
+    case ``N`` is 3; when identity is evaluated ``N`` is 4.
+
+    Returns:
+        ``(ebi_pct, indicator_count)`` - the 0-100 index and the number ``N``
+        of indicators actually averaged (3 or 4).
+    """
+    indicators = [face_pct, gaze_pct, posture_pct]
+    if identity_pct is not None:
+        indicators.append(identity_pct)
+    count = len(indicators)
+    return clamp_pct(sum(indicators) / count), count
+
+
 def overall_compliance_pct(
     face_pct: float,
     gaze_pct: float,
@@ -58,24 +98,12 @@ def overall_compliance_pct(
     identity_pct: float | None,
     weights: dict[str, float] | None = None,
 ) -> float:
-    w = weights or {
-        "face": 0.3,
-        "gaze": 0.3,
-        "posture": 0.25,
-        "identity": 0.15,
-    }
-    total_w = w["face"] + w["gaze"] + w["posture"]
-    score = (
-        face_pct * w["face"]
-        + gaze_pct * w["gaze"]
-        + posture_pct * w["posture"]
-    )
-    if identity_pct is not None:
-        total_w += w["identity"]
-        score += identity_pct * w["identity"]
-    else:
-        # Redistribute identity weight across the remaining metrics
-        bonus = w["identity"] / 3
-        score += (face_pct + gaze_pct + posture_pct) * bonus
-        total_w += w["identity"]
-    return clamp_pct(score / total_w)
+    """Overall compliance score, defined as the equal-weight Exam Behavior Index.
+
+    The system's composite compliance figure is the averaged EBI (see
+    :func:`exam_behavior_index_pct`). The ``weights`` argument is retained for
+    backward compatibility but ignored: the EBI is an equal-weight formative
+    index by design, so the KPIs are averaged rather than weighted here.
+    """
+    ebi, _ = exam_behavior_index_pct(face_pct, gaze_pct, posture_pct, identity_pct)
+    return ebi

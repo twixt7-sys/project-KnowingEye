@@ -4,6 +4,7 @@ import {
   Building2,
   CheckCircle,
   Download,
+  Eye,
   Search,
   TrendingUp,
 } from "@/shared/icons";
@@ -128,7 +129,7 @@ export function ReportsPage() {
 
       {summary && (
         <>
-          <div className="page-metrics grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="page-metrics grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-5">
             <StatCard
               label="Total sessions"
               value={String(summary.total_sessions)}
@@ -144,6 +145,21 @@ export function ReportsPage() {
               label="Average score"
               value={summary.average_score != null ? `${summary.average_score.toFixed(1)}%` : "-"}
               icon={TrendingUp}
+            />
+            <StatCard
+              label="Average EBI"
+              value={summary.average_ebi != null ? `${summary.average_ebi.toFixed(1)}%` : "-"}
+              icon={Eye}
+              tone={
+                summary.average_ebi != null && summary.average_ebi < 80 ? "warning" : "success"
+              }
+              hint={
+                summary.ebi_session_count
+                  ? `Exam Behavior Index across ${summary.ebi_session_count} monitored session${
+                      summary.ebi_session_count === 1 ? "" : "s"
+                    }`
+                  : "Exam Behavior Index — equal-weight mean of the monitoring indicators"
+              }
             />
             <StatCard
               label="Pass rate"
@@ -248,6 +264,7 @@ export function ReportsPage() {
                   <th>Department</th>
                   <th className="text-right">Completed</th>
                   <th className="text-right">Avg score</th>
+                  <th className="text-right">Avg EBI</th>
                   <th className="text-right">Pass rate</th>
                   <th className="text-right">Alerts</th>
                 </tr>
@@ -269,6 +286,9 @@ export function ReportsPage() {
                     <td className="text-right">{d.completed_sessions}</td>
                     <td className="text-right font-medium">
                       {d.average_score != null ? `${d.average_score.toFixed(1)}%` : "—"}
+                    </td>
+                    <td className="text-right font-medium tabular-nums">
+                      {d.average_ebi != null ? `${d.average_ebi.toFixed(1)}%` : "—"}
                     </td>
                     <td className="text-right">
                       {d.pass_rate != null ? `${d.pass_rate.toFixed(1)}%` : "—"}
@@ -339,6 +359,7 @@ export function ReportsPage() {
                 <th className="hidden md:table-cell">Dept</th>
                 <th>Status</th>
                 <th className="text-right">Score</th>
+                <th className="text-right" title="Exam Behavior Index">EBI</th>
                 <th className="hidden text-right md:table-cell">Alerts</th>
                 <th className="hidden text-right lg:table-cell">Events</th>
                 <th className="hidden xl:table-cell">Started</th>
@@ -364,6 +385,13 @@ export function ReportsPage() {
                   <td className="text-right font-medium">
                     {s.percentage_score != null ? `${s.percentage_score.toFixed(1)}%` : "-"}
                   </td>
+                  <td
+                    className={`text-right font-medium tabular-nums ${
+                      s.ebi_average != null && s.ebi_average < 80 ? "text-destructive" : ""
+                    }`}
+                  >
+                    {s.ebi_average != null ? `${s.ebi_average.toFixed(0)}%` : "—"}
+                  </td>
                   <td className="hidden text-right md:table-cell">
                     {s.alert_count}
                     {s.unresolved_alert_count > 0 && (
@@ -385,7 +413,7 @@ export function ReportsPage() {
               ))}
               {sessions.length === 0 && !tableLoading && (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-sm text-muted-foreground">
+                  <td colSpan={10} className="py-12 text-center text-sm text-muted-foreground">
                     No sessions match the current filters.
                   </td>
                 </tr>

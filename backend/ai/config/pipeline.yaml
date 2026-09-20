@@ -48,11 +48,11 @@ behavior:
     min_flags: 3                    # false positives - an established anomaly-detection technique
     cooldown_seconds: 120           # (see cited literature in 03-system-design.html); this is a
                                      # project-tuned instance of that general technique.
-  metric_weights:                   # Combined-signal weighting for the escalation ladder in
-    face: 0.3                       # backend/features/behavior/escalation.py - weighting combined
-    gaze: 0.3                       # signals higher than one isolated signal, per Directive Area 04
-    posture: 0.25                   # ("Anomaly accumulation model").
-    identity: 0.15
+  metric_weights:                   # LEGACY / UNUSED. The composite is now the equal-weight
+    face: 0.3                       # Exam Behavior Index (EBI = mean of the four normalized
+    gaze: 0.3                       # indicators) - see behavior/normalize.exam_behavior_index_pct
+    posture: 0.25                   # and docs/documentation/chapter2/04-system-testing.html#ebi.
+    identity: 0.15                  # Retained only for reference; no code reads these to weight EBI.
   weights:                          # Per-event-type weight - identity_mismatch and no_face are
     no_face: 1.0                    # weighted highest since they most directly threaten exam
     multiple_faces: 0.9             # integrity; bad_posture lowest since it is the weakest signal

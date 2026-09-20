@@ -52,6 +52,7 @@ def _department_analytics(sessions):
             average_score=Avg("percentage_score"),
             passed_count=Count("id", filter=Q(passed=True)),
             alert_count=Count("alerts", distinct=True),
+            average_ebi=Avg("ebi_average", filter=Q(ebi_average__isnull=False)),
         )
         .order_by("exam__department__name")
     )
@@ -73,6 +74,11 @@ def _department_analytics(sessions):
                     row["passed_count"] / completed_count * 100.0 if completed_count else None
                 ),
                 "alert_count": row["alert_count"] or 0,
+                "average_ebi": (
+                    round(float(row["average_ebi"]), 2)
+                    if row["average_ebi"] is not None
+                    else None
+                ),
             }
         )
     return result
@@ -122,6 +128,10 @@ def _serialize_session_rows(sessions):
             "alert_count": s._alert_count,
             "unresolved_alert_count": s._unresolved,
             "behavior_event_count": s._behavior_count,
+            "ebi_average": (
+                round(float(s.ebi_average), 2) if s.ebi_average is not None else None
+            ),
+            "ebi_sample_count": s.ebi_sample_count,
         }
         for s in sessions
     ]
@@ -147,6 +157,8 @@ def report_summary(request):
     )
 
     completed_count = completed.count()
+    monitored = sessions.filter(ebi_average__isnull=False)
+    ebi_stats = monitored.aggregate(avg=Avg("ebi_average"), n=Count("id"))
     return Response(
         {
             "total_sessions": sessions.count(),
@@ -156,6 +168,10 @@ def report_summary(request):
             "unresolved_alerts": alert_qs.filter(resolved=False).count(),
             "resolved_alerts": alert_qs.filter(resolved=True).count(),
             "behavior_events": behavior_qs.count(),
+            "average_ebi": (
+                round(float(ebi_stats["avg"]), 2) if ebi_stats["avg"] is not None else None
+            ),
+            "ebi_session_count": ebi_stats["n"] or 0,
             "average_score": completed.aggregate(avg=Avg("percentage_score"))["avg"],
             "pass_rate": completed.filter(passed=True).count() / completed_count * 100.0
             if completed_count
@@ -257,11 +273,28 @@ def session_report(request, session_id):
             ),
         }
 
+    exam_behavior_index = {
+        "average": (
+            round(float(session.ebi_average), 2) if session.ebi_average is not None else None
+        ),
+        "sample_count": session.ebi_sample_count,
+        "indicator_count": 4 if session.ebi_identity_sample_count else 3,
+        "components": {
+            "face_presence": session.ebi_face_presence_avg,
+            "face_identity": session.ebi_face_identity_avg,
+            "upper_body_presence": session.ebi_upper_body_avg,
+            "looking_away_compliance": session.ebi_looking_away_avg,
+        },
+        "identity_sample_count": session.ebi_identity_sample_count,
+        "formula": "EBI = (Fp + Fi + Up + Gc) / N",
+    }
+
     return Response(
         {
             "session": ExamSessionDetailSerializer(
                 session, context={"request": request}
             ).data,
+            "exam_behavior_index": exam_behavior_index,
             "behavior_summary": list(behavior_summary),
             "behavior_logs": list(
                 BehaviorLog.objects.filter(session=session)
@@ -347,6 +380,8 @@ def export_sessions_csv(request):
             "submitted_at",
             "percentage_score",
             "passed",
+            "exam_behavior_index",
+            "ebi_sample_count",
             "alert_count",
             "unresolved_alerts",
             "behavior_event_count",
@@ -366,6 +401,8 @@ def export_sessions_csv(request):
                 s.submitted_at.isoformat() if s.submitted_at else "",
                 float(s.percentage_score) if s.percentage_score is not None else "",
                 s.passed if s.passed is not None else "",
+                round(float(s.ebi_average), 2) if s.ebi_average is not None else "",
+                s.ebi_sample_count,
                 s._alert_count,
                 s._unresolved,
                 s._behavior_count,
@@ -404,8 +441,8 @@ def export_sessions_pdf(request):
     y -= 30
 
     pdf.setFont("Helvetica-Bold", 9)
-    headers = ["Session", "Exam", "User", "Status", "Score", "Alerts"]
-    col_x = [50, 130, 250, 330, 410, 470]
+    headers = ["Session", "Exam", "User", "Status", "Score", "EBI", "Alerts"]
+    col_x = [50, 125, 235, 315, 390, 445, 500]
     for x, label in zip(col_x, headers):
         pdf.drawString(x, y, label)
     y -= 16
@@ -422,12 +459,18 @@ def export_sessions_pdf(request):
             if session.percentage_score is not None
             else "-"
         )
+        ebi = (
+            f"{float(session.ebi_average):.0f}"
+            if session.ebi_average is not None
+            else "-"
+        )
         row = [
             str(session.id)[:8],
-            (session.exam.title or "")[:18],
-            session.user.username[:14],
-            session.status[:12],
+            (session.exam.title or "")[:16],
+            session.user.username[:12],
+            session.status[:11],
             score,
+            ebi,
             str(session._alert_count),
         ]
         for x, value in zip(col_x, row):

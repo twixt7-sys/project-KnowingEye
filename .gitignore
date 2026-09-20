@@ -34,3 +34,6 @@ backend/staticfiles/
 *.pt
 *.onnx
 runs/
+
+# Training datasets
+datasets/

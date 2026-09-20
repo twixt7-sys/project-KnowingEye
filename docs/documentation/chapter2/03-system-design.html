@@ -93,7 +93,8 @@ erDiagram
     <p>The API response contract for frame analysis (used by the frontend and WebSocket) follows this structure:</p>
     <pre><code>{
   "metrics": { "face_presence_pct", "gaze_focus_pct", "posture_compliance_pct",
-               "identity_match_pct", "overall_compliance_pct" },
+               "identity_match_pct", "overall_compliance_pct",
+               "exam_behavior_index_pct", "ebi_indicator_count", "ebi_components" },
   "events": [{ "event_type", "score_pct", "confidence_pct", "metadata" }],
   "alerts": [{ "type", "severity", "message", "metric_pct" }]
 }</code></pre>
@@ -470,7 +471,7 @@ erDiagram
       <div class="card"><h4>Critical</h4><p class="muted" style="font-size:0.9rem">Weighted total crosses a second, higher bar, or an <code>identity_mismatch</code> occurs at all (single-occurrence critical, per its 0.95 weight). Raises a <code>high</code>-severity <code>Alert</code> explicitly flagged <em>recommend intervention</em>.</p></div>
       <div class="card"><h4>Action</h4><p class="muted" style="font-size:0.9rem"><strong>Deliberately kept manual.</strong> Critical surfaces a recommendation on the live monitoring dashboard; a proctor still clicks the existing <code>sessions.terminate</code> action to end a session. Auto-terminating a student's exam from a CV heuristic alone - with no human in the loop - is a consequential, hard-to-reverse action against a real person, and false positives are possible by design (that's what "suspicious" vs "certain" means). The Directive asks the ladder to define what happens at each tier, not that every tier act autonomously.</p></div>
     </div>
-    <p class="doc-lead" style="font-size:0.85rem">Combined-signal weighting reuses <code>pipeline.yaml</code>'s existing <code>metric_weights</code> (face/gaze/posture/identity) rather than inventing a second weighting scheme, per the Directive's instruction to weight combined signals higher than one isolated signal. Covered by <code>backend/features/behavior/tests/test_escalation.py</code> with synthetic event streams - deterministic, no webcam or ML dependency required, so it runs in every CI pass.</p>
+    <p class="doc-lead" style="font-size:0.85rem">Combined-signal weighting reuses <code>pipeline.yaml</code>'s per-event <code>behavior.weights</code> (no_face, looking_away, identity_mismatch, …) rather than inventing a second weighting scheme, per the Directive's instruction to weight combined signals higher than one isolated signal. (This is separate from the composite compliance score, which is the equal-weight <a href="04-system-testing.html#ebi">Exam Behavior Index</a>.) Covered by <code>backend/features/behavior/tests/test_escalation.py</code> with synthetic event streams - deterministic, no webcam or ML dependency required, so it runs in every CI pass.</p>
 
     <h2 id="algorithm-comparison">Algorithm Comparison</h2>
     <p>Directive Area 04 ("Algorithm comparison", P0): benchmark the current stack against at least one alternative each, on accuracy, speed, and resource cost, and justify the pick. <strong>Correction alongside this comparison:</strong> four documentation pages previously described the pipeline as using MediaPipe, <strong>YOLOv8</strong>, and ArcFace. <code>backend/requirements-cv.txt</code> and every import in <code>backend/ai/knowing_eye/</code> were checked directly - there is no <code>ultralytics</code> dependency and no YOLO code anywhere in this repository. That claim was inaccurate and has been corrected in Part B, Part C, Part D, and Part E of this chapter. Knowing Eye has never run YOLO; the two questions below are the honest reason why.</p>
@@ -570,7 +571,7 @@ erDiagram
       <div class="card"><h4>1. Data Collection</h4><p class="muted" style="font-size:0.9rem">Browser <code>getUserMedia()</code> captures webcam video; canvas encodes JPEG/base64 at ~1 FPS. Transport: WebSocket <code>/ws/monitoring/{session_id}/</code> (REST <code>/api/monitoring/frame/</code> fallback).</p></div>
       <div class="card"><h4>2. Pre-processing</h4><p class="muted" style="font-size:0.9rem">Base64 → BGR; resize to ≤640px; optional denoise; YCbCr histogram equalization. Config: <code>backend/ai/config/pipeline.yaml</code>.</p></div>
       <div class="card"><h4>3. Feature Extraction</h4><p class="muted" style="font-size:0.9rem">MediaPipe (468 face landmarks, head yaw/pitch, posture ratios) and ArcFace identity embedding.</p></div>
-      <div class="card"><h4>4. Classification &amp; Scoring</h4><p class="muted" style="font-size:0.9rem">Threshold-based 0–100% metrics, rule-based event flags, sliding-window temporal patterns, and weighted aggregation into <code>overall_compliance_pct</code>.</p></div>
+      <div class="card"><h4>4. Classification &amp; Scoring</h4><p class="muted" style="font-size:0.9rem">Threshold-based 0–100% metrics, rule-based event flags, sliding-window temporal patterns, and equal-weight aggregation into the <a href="04-system-testing.html#ebi">Exam Behavior Index</a> (<code>exam_behavior_index_pct</code>, also exposed as <code>overall_compliance_pct</code>).</p></div>
     </div>
 
     <div class="doc-nav" style="margin-top:2.5rem">

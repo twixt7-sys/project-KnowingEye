@@ -68,6 +68,12 @@ export function ProctoringDock({
 }: ProctoringDockProps) {
   const dockLayout = DOCK_POSITIONS.find((p) => p.id === dockPosition) ?? DOCK_POSITIONS[0];
 
+  const ebiScore =
+    monitoring.analysis?.exam_behavior_index_pct ??
+    monitoring.analysis?.metrics?.exam_behavior_index_pct ??
+    monitoring.analysis?.overall_compliance_pct ??
+    null;
+
   return (
     <div
       className={`fixed z-40 max-w-[calc(100vw-2rem)] ${dockLayout.className} ${
@@ -88,14 +94,13 @@ export function ProctoringDock({
             <span className="flex items-center gap-2 shrink-0">
               <span
                 className={`text-xs font-medium ${
-                  monitoring.analysis && monitoring.analysis.overall_compliance_pct < 80
+                  ebiScore != null && ebiScore < 80
                     ? "text-destructive"
                     : "text-muted-foreground"
                 }`}
+                title="Exam Behavior Index"
               >
-                {monitoring.analysis
-                  ? `${monitoring.analysis.overall_compliance_pct.toFixed(0)}%`
-                  : "…"}
+                {ebiScore != null ? `EBI ${ebiScore.toFixed(0)}%` : "…"}
               </span>
               {feedOpen ? (
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />

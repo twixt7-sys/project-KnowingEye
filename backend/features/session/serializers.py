@@ -203,6 +203,13 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
             "deadline_at",
             "option_order",
             "accommodation_extra_minutes",
+            "ebi_average",
+            "ebi_face_presence_avg",
+            "ebi_face_identity_avg",
+            "ebi_upper_body_avg",
+            "ebi_looking_away_avg",
+            "ebi_sample_count",
+            "ebi_identity_sample_count",
         ]
         read_only_fields = [
             "id",

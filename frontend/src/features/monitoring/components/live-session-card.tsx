@@ -26,7 +26,10 @@ export function LiveSessionCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.id]);
 
-  const compliance = observer.analysis?.overall_compliance_pct;
+  const compliance =
+    observer.analysis?.exam_behavior_index_pct ??
+    observer.analysis?.metrics?.exam_behavior_index_pct ??
+    observer.analysis?.overall_compliance_pct;
   const metrics = observer.analysis?.metrics;
 
   const handleTerminate = async () => {
@@ -102,8 +105,11 @@ export function LiveSessionCard({
 
         <dl className="grid grid-cols-3 divide-x divide-border/60 rounded-lg border border-border/70 bg-muted/25">
           <div className="px-3 py-2">
-            <dt className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-muted-foreground">
-              Compliance
+            <dt
+              className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-muted-foreground"
+              title="Exam Behavior Index — equal-weight mean of face presence, identity, upper-body presence and looking-away compliance"
+            >
+              EBI
             </dt>
             <dd className="mt-0.5 font-mono text-sm font-medium tabular-nums">
               {compliance == null ? "—" : `${compliance.toFixed(0)}%`}

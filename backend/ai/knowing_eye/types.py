@@ -59,14 +59,42 @@ class Alert:
 
 @dataclass
 class MetricScores:
-    """0–100% compliance (higher = better). Alerts when any metric < alert_threshold_pct."""
+    """0–100% compliance (higher = better). Alerts when any metric < alert_threshold_pct.
+
+    ``exam_behavior_index_pct`` (EBI) is the equal-weight formative composite of
+    the four monitoring indicators - Face Presence (``Fp``), Face Identity
+    (``Fi``), Upper-Body Presence (``Up``) and Looking-Away Compliance (``Gc``):
+    ``EBI = (Fp + Fi + Up + Gc) / N``. ``ebi_indicator_count`` is ``N`` (3 when
+    identity was not evaluated, 4 otherwise). ``overall_compliance_pct`` equals
+    the EBI and is kept for backward compatibility.
+    """
 
     face_presence_pct: float
     gaze_focus_pct: float
     posture_compliance_pct: float
     identity_match_pct: float | None
     overall_compliance_pct: float
+    exam_behavior_index_pct: float | None = None
+    ebi_indicator_count: int = 0
     alert_threshold_pct: float = 80.0
+
+    def __post_init__(self) -> None:
+        # Keep EBI and the legacy overall score consistent even for callers
+        # that construct MetricScores without an explicit EBI (e.g. temporal
+        # reconstruction of a persisted payload).
+        if self.exam_behavior_index_pct is None:
+            self.exam_behavior_index_pct = self.overall_compliance_pct
+        if not self.ebi_indicator_count:
+            self.ebi_indicator_count = 4 if self.identity_match_pct is not None else 3
+
+    def ebi_components(self) -> dict[str, float | None]:
+        """Per-indicator EBI breakdown (``None`` for a not-evaluated indicator)."""
+        return {
+            "face_presence": self.face_presence_pct,
+            "face_identity": self.identity_match_pct,
+            "upper_body_presence": self.posture_compliance_pct,
+            "looking_away_compliance": self.gaze_focus_pct,
+        }
 
     def to_dict(self) -> dict[str, Any]:
         flags = self.flagged_metrics()
@@ -76,6 +104,9 @@ class MetricScores:
             "posture_compliance_pct": self.posture_compliance_pct,
             "identity_match_pct": self.identity_match_pct,
             "overall_compliance_pct": self.overall_compliance_pct,
+            "exam_behavior_index_pct": self.exam_behavior_index_pct,
+            "ebi_indicator_count": self.ebi_indicator_count,
+            "ebi_components": self.ebi_components(),
             "alert_threshold_pct": self.alert_threshold_pct,
             "flagged_metrics": flags,
             "all_compliant": len(flags) == 0,
@@ -163,6 +194,7 @@ class FrameAnalysisResult:
             "posture": self.posture.to_dict(self.metrics),
             "metrics": self.metrics.to_dict(),
             "overall_compliance_pct": self.metrics.overall_compliance_pct,
+            "exam_behavior_index_pct": self.metrics.exam_behavior_index_pct,
             "behavior_score": round(self.behavior_score, 4),
             "events": [e.to_dict() for e in self.events],
             "alerts": [a.to_dict() for a in self.alerts],
