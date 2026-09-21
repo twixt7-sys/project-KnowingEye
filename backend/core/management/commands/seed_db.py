@@ -456,6 +456,15 @@ class Command(BaseCommand):
             return []
         try:
             parsed = ast.literal_eval(value)
-            return parsed if isinstance(parsed, list) else []
         except (ValueError, SyntaxError):
             return []
+        if not isinstance(parsed, list):
+            return []
+        # Options are stored as {"text": str, "image": str|null} everywhere
+        # else (see Question.options / validate_options) - normalize here too
+        # so a freshly-seeded question isn't the one path that still writes
+        # plain strings, which older frontend code couldn't render.
+        return [
+            item if isinstance(item, dict) else {"text": str(item), "image": None}
+            for item in parsed
+        ]
