@@ -39,9 +39,19 @@ def _annotate_sessions(qs):
 
 
 def _department_analytics(sessions):
-    """Aggregate completed-session KPIs grouped by exam department."""
+    """Aggregate completed-session KPIs grouped by exam department.
+
+    Run as two separate GROUP BY queries rather than one combined
+    ``.annotate()``: mixing the plain per-session ``Count("id")``/``Avg(...)``
+    with a to-many join on ``alerts`` in a single query fans the join out
+    (a completed session with N alerts contributes N duplicate rows), which
+    silently inflates ``completed_sessions``/``passed_count`` and skews both
+    averages toward sessions with more alerts. Keeping the alert count in
+    its own query avoids that join entirely for the session-level query.
+    """
     completed = sessions.filter(status=ExamSession.Status.COMPLETED)
-    rows = (
+
+    stats_rows = (
         completed.values(
             "exam__department_id",
             "exam__department__name",
@@ -51,14 +61,20 @@ def _department_analytics(sessions):
             completed_sessions=Count("id"),
             average_score=Avg("percentage_score"),
             passed_count=Count("id", filter=Q(passed=True)),
-            alert_count=Count("alerts", distinct=True),
             average_ebi=Avg("ebi_average", filter=Q(ebi_average__isnull=False)),
         )
         .order_by("exam__department__name")
     )
 
+    alert_counts = {
+        row["exam__department_id"]: row["alert_count"]
+        for row in completed.values("exam__department_id").annotate(
+            alert_count=Count("alerts", distinct=True)
+        )
+    }
+
     result = []
-    for row in rows:
+    for row in stats_rows:
         completed_count = row["completed_sessions"] or 0
         dept_id = row["exam__department_id"]
         result.append(
@@ -73,7 +89,7 @@ def _department_analytics(sessions):
                 "pass_rate": (
                     row["passed_count"] / completed_count * 100.0 if completed_count else None
                 ),
-                "alert_count": row["alert_count"] or 0,
+                "alert_count": alert_counts.get(dept_id, 0),
                 "average_ebi": (
                     round(float(row["average_ebi"]), 2)
                     if row["average_ebi"] is not None

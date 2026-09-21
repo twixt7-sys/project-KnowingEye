@@ -24,9 +24,11 @@ COPY requirements-core.txt requirements-cv.txt requirements-prod.txt requirement
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-identity.txt
 
 COPY . .
+RUN chmod +x entrypoint.sh
 
 EXPOSE 8000
 
 # Render (and most PaaS) inject $PORT at runtime; fall back to 8000 for local
-# `docker run`. Shell form so the variable expands.
-CMD daphne -b 0.0.0.0 -p ${PORT:-8000} --proxy-headers core.config.asgi:application
+# `docker run`. entrypoint.sh migrates + collects static before starting
+# Daphne - needed on Railway, which has no separate release/pre-deploy phase.
+CMD ["./entrypoint.sh"]
