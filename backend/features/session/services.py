@@ -243,6 +243,16 @@ def begin_exam_session(
         raise ValidationError(
             {"status": f"Cannot begin exam with status '{session.status}'."}
         )
+
+    # Re-validate the scheduling window here, not just at session creation -
+    # a SETUP session's idle timer resets on every /begin poll (see
+    # touch_setup_activity), so it can be kept alive well past
+    # available_until without this check and still start a timed attempt on
+    # a closed exam.
+    from features.exams.services import assert_exam_available_for_user
+
+    assert_exam_available_for_user(session.exam, session.user)
+
     if session.exam.monitoring_enabled and not has_reference(session.id):
         if _identity_check_bypassable():
             logger.warning(

@@ -586,7 +586,12 @@ class ExamCreateUpdateSerializer(serializers.ModelSerializer):
             "max_tab_switches",
             "status",
         ]
-        read_only_fields = ["id", "exam_code"]
+        # "status" is included so it's readable in the response, but must
+        # stay read-only here: the lifecycle actions (publish/archive/
+        # submit/approve/reject) are the only path that's allowed to change
+        # it, since they enforce readiness checks and the program-head
+        # approval gate that a bare PATCH must not be able to bypass.
+        read_only_fields = ["id", "exam_code", "status"]
 
     def validate_duration_minutes(self, value):
         if value < 1:

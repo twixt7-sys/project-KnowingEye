@@ -23,7 +23,7 @@ services:
       - key: DB_PORT
         value: "5432"
       - key: DB_CONN_MAX_AGE
-        value: "60"
+        value: "0"
       - key: KE_ENABLE_PIPELINE
         value: "True"
       - key: KE_ALERT_THRESHOLD

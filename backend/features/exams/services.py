@@ -595,7 +595,7 @@ def reorder_questions(exam: Exam, user, ordered_ids: list[int]) -> list[Question
     assert_can_modify_exam(exam, user)
     assert_exam_editable(exam)
     questions = {q.id: q for q in exam.questions.all()}
-    if set(ordered_ids) != set(questions.keys()):
+    if len(ordered_ids) != len(questions) or set(ordered_ids) != set(questions.keys()):
         raise ValidationError({"order": "Must include every question id exactly once."})
 
     with transaction.atomic():

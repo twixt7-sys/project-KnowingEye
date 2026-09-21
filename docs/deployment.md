@@ -36,6 +36,15 @@ DB_PASSWORD=<strong-password>
 DB_HOST=postgres.internal
 DB_PORT=5432
 DB_CONN_MAX_AGE=60
+# ^ 60s is fine for a dedicated Postgres instance you control. If DB_HOST is
+# a shared connection pooler instead (e.g. Supabase's pgbouncer), use
+# DB_CONN_MAX_AGE=0 - a pooler caps concurrent client slots (Supabase's
+# session-mode pooler on port 5432 defaults to 15), and holding a Django
+# connection open per worker/WebSocket for 60 idle seconds exhausts that
+# cap under any real concurrency ("FATAL: max clients reached in session
+# mode"). Prefer the pooler's transaction-mode port (6543 on Supabase) for
+# an app server like this one; it tolerates far more concurrent short-lived
+# connections than session mode.
 
 # Redis (Channels + cache)
 REDIS_URL=redis://redis.internal:6379/0

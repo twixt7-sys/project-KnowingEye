@@ -163,4 +163,39 @@ def persist_analysis(session, analysis: dict[str, Any]) -> dict[str, int]:
         )
         alerts_created += 1
 
+    if logs_created:
+        alerts_created += _apply_escalation(session)
+
     return {"behavior_logs": logs_created, "alerts": alerts_created}
+
+
+def _apply_escalation(session) -> int:
+    """Roll the session-level escalation ladder into a Critical alert.
+
+    Per-event alerts above cover individual signals; ``escalation.py``
+    separately aggregates repeated/combined signals over a sliding window
+    (Directive Area 04) but was never wired to anything, so its Critical
+    tier - meant to "recommend intervention on the live monitoring
+    dashboard" - never reached a proctor. An ``Alert`` is the only channel
+    actually wired to the dashboard + WebSocket fan-out, so that's how it
+    surfaces here.
+    """
+    from features.behavior.escalation import EscalationTier, compute_escalation_for_session
+
+    result = compute_escalation_for_session(session)
+    if result.tier != EscalationTier.CRITICAL:
+        return 0
+    if _recent_alert_exists(session, "escalation_critical"):
+        return 0
+
+    Alert.objects.create(
+        session=session,
+        alert_type="escalation_critical",
+        severity=Alert.Severity.HIGH,
+        message=(
+            "Sustained or combined suspicious behavior detected ("
+            f"{', '.join(result.triggering_event_types)}) - intervention recommended."
+        ),
+        resolved=False,
+    )
+    return 1

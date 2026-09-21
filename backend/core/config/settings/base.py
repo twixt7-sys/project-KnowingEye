@@ -112,7 +112,18 @@ if DB_ENGINE == "django.db.backends.postgresql":
             "PASSWORD": decouple_config("DB_PASSWORD", default="postgres"),
             "HOST": decouple_config("DB_HOST", default="localhost"),
             "PORT": decouple_config("DB_PORT", default="5432"),
-            "CONN_MAX_AGE": int(decouple_config("DB_CONN_MAX_AGE", default="60")),
+            # Default to 0 (no persistent connections). A pooled host (e.g.
+            # Supabase's pgbouncer) has a small, fixed client slot count -
+            # holding a connection open per Daphne worker/WebSocket thread
+            # for CONN_MAX_AGE seconds exhausts that pool under any real
+            # concurrency ("FATAL: max clients reached in session mode").
+            # Only raise this if connecting directly to Postgres, uncooled.
+            "CONN_MAX_AGE": int(decouple_config("DB_CONN_MAX_AGE", default="0")),
+            # Required when the pooler runs in transaction-pooling mode
+            # (e.g. Supabase's port 6543) - server-side cursors can't span
+            # the pooler's per-transaction connection reassignment. Harmless
+            # to leave on for session-mode/direct connections too.
+            "DISABLE_SERVER_SIDE_CURSORS": True,
         }
     }
 else:
