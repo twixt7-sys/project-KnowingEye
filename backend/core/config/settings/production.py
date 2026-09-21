@@ -36,6 +36,10 @@ CORS_ALLOWED_ORIGINS = decouple_config(
 CORS_ALLOW_CREDENTIALS = True
 
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", default=True)
+# Railway's internal healthcheck prober hits the container directly over
+# plain HTTP (no X-Forwarded-Proto), so it gets redirected and never sees a
+# 200 - exempt just this path rather than disabling the redirect everywhere.
+SECURE_REDIRECT_EXEMPT = [r"^api/monitoring/health/?$"]
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
