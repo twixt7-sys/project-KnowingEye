@@ -9,11 +9,22 @@ const TRUE_FALSE_FALLBACK: QuestionOption[] = [
   { text: "False", image: null },
 ];
 
-function choiceOptions(question: Question): QuestionOption[] {
-  if (question.question_type === "true_false") {
-    return question.options?.length >= 2 ? question.options : TRUE_FALSE_FALLBACK;
+// Options are normalized to {text, image} everywhere they're written through
+// the builder API (see ExamCreateUpdateSerializer.validate_options on the
+// backend), but raw-seeded/imported data can still land in the DB as plain
+// strings - handle both so a malformed row doesn't render as a blank choice.
+function normalizeOption(option: QuestionOption | string): QuestionOption {
+  if (typeof option === "string") {
+    return { text: option, image: null };
   }
-  return question.options ?? [];
+  return option;
+}
+
+function choiceOptions(question: Question): QuestionOption[] {
+  const raw = question.question_type === "true_false" && (question.options?.length ?? 0) < 2
+    ? TRUE_FALSE_FALLBACK
+    : (question.options ?? []);
+  return raw.map(normalizeOption);
 }
 
 function QuestionAnswerFields({
