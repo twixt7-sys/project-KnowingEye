@@ -34,7 +34,11 @@ class PoseDetector:
     def __init__(self, shoulder_tilt_max: float = 0.12) -> None:
         self._shoulder_tilt_max = shoulder_tilt_max
         self._landmarker = None
-        self._body = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_upperbody.xml")
+        body = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_upperbody.xml")
+        # See face_detector.py's identical guard - CascadeClassifier() doesn't
+        # raise on a failed load, it just throws on first detectMultiScale()
+        # call, which crashed every monitoring frame in production.
+        self._body = body if not body.empty() else None
 
         if _MEDIAPIPE_OK:
             try:
@@ -68,6 +72,8 @@ class PoseDetector:
         return PoseResult(True, float(tilt), float(spine_lean), bad)
 
     def _detect_heuristic(self, frame_bgr: np.ndarray) -> PoseResult:
+        if self._body is None:
+            return PoseResult(False, None, None, False)
         gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
         bodies = self._body.detectMultiScale(gray, 1.1, 4, minSize=(80, 80))
         if len(bodies) == 0:
