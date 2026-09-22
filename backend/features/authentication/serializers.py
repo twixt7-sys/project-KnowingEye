@@ -32,9 +32,10 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "avatar_url", "email_verified"]
 
     def get_avatar_url(self, obj):
-        request = self.context.get("request")
-        if obj.avatar and request is not None:
-            return request.build_absolute_uri(obj.avatar.url)
+        # Root-relative on purpose: nginx (prod) and the Vite dev proxy both
+        # serve /media/ from the same origin as the SPA, and build_absolute_uri()
+        # would otherwise resolve the (also root-relative) storage URL against
+        # the current request path instead of the site root.
         if obj.avatar:
             return obj.avatar.url
         return None
