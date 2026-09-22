@@ -63,9 +63,15 @@ class FaceDetector:
     def __init__(self) -> None:
         self._backend = "opencv"
         self._landmarker = None
-        self._cascade = cv2.CascadeClassifier(
+        cascade = cv2.CascadeClassifier(
             cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         )
+        # cv2's own headless wheel doesn't always ship the data/ cascade XMLs
+        # (varies by build) - CascadeClassifier() doesn't raise on a failed
+        # load, it just returns a classifier whose detectMultiScale() throws
+        # an assertion error on first use. Detect that here so the opencv
+        # fallback degrades to "no detection" instead of 500ing every frame.
+        self._cascade = cascade if not cascade.empty() else None
 
         if _MEDIAPIPE_OK:
             try:
@@ -117,6 +123,8 @@ class FaceDetector:
         return faces
 
     def _detect_opencv(self, frame_bgr: np.ndarray) -> list[DetectedFace]:
+        if self._cascade is None:
+            return []
         gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
         rects = self._cascade.detectMultiScale(gray, 1.08, 6, minSize=(72, 72))
         faces: list[DetectedFace] = []
