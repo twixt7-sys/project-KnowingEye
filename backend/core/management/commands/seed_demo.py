@@ -316,6 +316,11 @@ class Command(BaseCommand):
         requires_assignment=False, max_attempts=1,
     ) -> Exam:
         """Create a draft exam with sectioned questions (and an optional pool)."""
+        # exam_publish_readiness() requires both dates before an exam can be
+        # submitted/published (see services.py), and begin_exam_session()
+        # re-checks the window at attempt start - so every exam this seeds
+        # needs a window that's already open, since _take_exam() below starts
+        # real sessions through the real service layer.
         exam = Exam.objects.create(
             title=title,
             description=f"Demo seed exam - {title}",
@@ -331,6 +336,8 @@ class Command(BaseCommand):
             requires_assignment=requires_assignment,
             max_attempts=max_attempts,
             created_by=creator,
+            available_from=timezone.now() - timezone.timedelta(days=7),
+            available_until=timezone.now() + timezone.timedelta(days=90),
         )
         exam.exam_code = exam_services.generate_exam_code(department)
         exam.save(update_fields=["exam_code"])

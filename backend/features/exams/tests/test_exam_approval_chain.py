@@ -8,7 +8,10 @@ a non-admin creator.
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -31,6 +34,7 @@ def make_user(role, username):
 
 def make_ready_exam(creator) -> Exam:
     """A draft exam with just enough content to pass publish-readiness."""
+    now = timezone.now()
     exam = Exam.objects.create(
         title="Approval Chain Exam",
         description="x",
@@ -38,6 +42,8 @@ def make_ready_exam(creator) -> Exam:
         passing_score=60,
         status=Exam.Status.DRAFT,
         created_by=creator,
+        available_from=now,
+        available_until=now + timedelta(days=7),
     )
     Question.objects.create(
         exam=exam,

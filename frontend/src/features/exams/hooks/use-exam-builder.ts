@@ -332,6 +332,18 @@ export function useExamBuilder(examId: number) {
 
   const saveSettings = () => {
     if (!form) return;
+    if (!form.available_from) {
+      setActionError("Set an opening date before saving.");
+      return;
+    }
+    if (!form.available_until) {
+      setActionError("Set a closing date before saving.");
+      return;
+    }
+    if (new Date(form.available_until) <= new Date(form.available_from)) {
+      setActionError("The closing date must be after the opening date.");
+      return;
+    }
     saveSettingsMutation.mutate(form);
   };
 
