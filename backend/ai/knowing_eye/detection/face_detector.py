@@ -88,6 +88,12 @@ class FaceDetector:
             except Exception:
                 self._landmarker = None
 
+    @property
+    def backend(self) -> str:
+        if self._backend == "mediapipe" and self._landmarker is not None:
+            return "mediapipe"
+        return "opencv" if self._cascade is not None else "opencv (cascade unavailable - no detection)"
+
     def detect(self, frame_bgr: np.ndarray) -> list[DetectedFace]:
         if self._backend == "mediapipe" and self._landmarker is not None:
             return self._detect_mediapipe(frame_bgr)

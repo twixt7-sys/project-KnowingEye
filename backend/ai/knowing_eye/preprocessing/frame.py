@@ -36,13 +36,21 @@ def resize_frame(frame: np.ndarray, max_width: int = 640) -> np.ndarray:
 
 
 def reduce_noise(frame_bgr: np.ndarray, strength: str = "light") -> np.ndarray:
-    """Apply fast non-local means denoising (preserves edges for CV models)."""
+    """Denoise while preserving edges for CV models.
+
+    Uses a bilateral filter rather than non-local means: NLM denoising
+    (``fastNlMeansDenoisingColored``) took 2-3s per 640x480 frame in
+    profiling, ~500x the per-frame budget implied by ``target_fps`` - it was
+    single-handedly why the monitoring feed lagged further behind live video
+    with every frame. Bilateral filtering gives comparable edge-preserving
+    smoothing in single-digit milliseconds.
+    """
     if strength == "off":
         return frame_bgr
     h = frame_bgr.shape[0]
     if strength == "light" or h <= 360:
-        return cv2.fastNlMeansDenoisingColored(frame_bgr, None, 4, 4, 7, 21)
-    return cv2.fastNlMeansDenoisingColored(frame_bgr, None, 6, 6, 7, 21)
+        return cv2.bilateralFilter(frame_bgr, 5, 35, 35)
+    return cv2.bilateralFilter(frame_bgr, 7, 50, 50)
 
 
 def normalize_frame(frame_bgr: np.ndarray) -> np.ndarray:

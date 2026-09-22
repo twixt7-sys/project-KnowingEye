@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,8 @@ from ai.knowing_eye.types import (
     PostureAnalysis,
     utc_now_iso,
 )
+
+logger = logging.getLogger("knowing_eye.ai.pipeline")
 
 
 class BehaviorPipeline:
@@ -54,6 +57,14 @@ class BehaviorPipeline:
         self._scorer = BehaviorScorer(self.config)
         self._temporal = BehaviorTemporalTracker(self.config)
         self._frame_index = 0
+
+        logger.info(
+            "BehaviorPipeline detectors ready: face_backend=%s pose_backend=%s "
+            "(non-mediapipe means the weaker OpenCV fallback is active - check "
+            "if mediapipe model downloads/imports are failing in this environment)",
+            self._face.backend,
+            self._pose.backend,
+        )
 
     @property
     def enrolled(self) -> bool:

@@ -34,6 +34,7 @@ class PoseDetector:
     def __init__(self, shoulder_tilt_max: float = 0.12) -> None:
         self._shoulder_tilt_max = shoulder_tilt_max
         self._landmarker = None
+        self._backend = "opencv"
         body = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_upperbody.xml")
         # See face_detector.py's identical guard - CascadeClassifier() doesn't
         # raise on a failed load, it just throws on first detectMultiScale()
@@ -49,8 +50,20 @@ class PoseDetector:
                     min_pose_detection_confidence=0.5,
                 )
                 self._landmarker = vision.PoseLandmarker.create_from_options(options)
+                self._backend = "mediapipe"
             except Exception:
                 self._landmarker = None
+
+    @property
+    def backend(self) -> str:
+        """``"mediapipe"``, or ``"opencv"`` (the Haar fallback - unusable if the
+
+        cascade XML failed to load, in which case pose is never detected and
+        posture_compliance_pct() is permanently stuck at its neutral 50%).
+        """
+        if self._landmarker is not None:
+            return "mediapipe"
+        return "opencv" if self._body is not None else "opencv (cascade unavailable - no detection)"
 
     def detect(self, frame_bgr: np.ndarray) -> PoseResult:
         if self._landmarker is not None:
