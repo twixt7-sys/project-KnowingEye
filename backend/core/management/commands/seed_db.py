@@ -1,6 +1,6 @@
 import ast
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
@@ -196,6 +196,14 @@ class Command(BaseCommand):
 
     def load_exams(self, data_dir):
         path = data_dir / 'exams.csv'
+        # exams.csv doesn't carry an availability window, and a freshly
+        # created exam needs one to be submittable/publishable/takeable, so
+        # newly-created rows get a default open window here. Computed fresh
+        # per run (not stored back into `defaults`), so it only applies at
+        # creation and doesn't cause already-seeded exams to be rewritten
+        # with a new "now" - and thus reported as "updated" - on every reseed.
+        default_available_from = timezone.now() - timedelta(days=7)
+        default_available_until = timezone.now() + timedelta(days=90)
         with path.open(newline='', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -215,11 +223,19 @@ class Command(BaseCommand):
                     defaults['exam_code'] = row['exam_code']
                 if row.get('monitoring_enabled') is not None:
                     defaults['monitoring_enabled'] = self.parse_bool(row['monitoring_enabled'])
+                if row.get('available_from'):
+                    defaults['available_from'] = self.parse_datetime(row['available_from'])
+                if row.get('available_until'):
+                    defaults['available_until'] = self.parse_datetime(row['available_until'])
                 exam, created = Exam.objects.get_or_create(
                     id=self.parse_int(row['id']),
                     defaults=defaults,
                 )
                 if created:
+                    if exam.available_from is None:
+                        exam.available_from = default_available_from
+                    if exam.available_until is None:
+                        exam.available_until = default_available_until
                     exam.save()
                     self.stdout.write(f'Created exam {exam.title}.')
                 else:
