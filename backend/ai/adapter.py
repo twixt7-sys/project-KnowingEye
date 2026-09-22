@@ -201,9 +201,15 @@ def _stub_detect_face_count(frame_bgr) -> int:
         import cv2
 
         if _STUB_CASCADE is None:
-            _STUB_CASCADE = cv2.CascadeClassifier(
-                cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+            from ai.knowing_eye.detection.mp_models import cascade_path
+
+            loaded = cv2.CascadeClassifier(
+                str(cascade_path("haarcascade_frontalface_default.xml"))
             )
+            if loaded.empty():
+                logger.error("Stub face cascade failed to load - face detection disabled.")
+                return 0
+            _STUB_CASCADE = loaded
         gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
         if float(gray.mean()) < 10:
             return 0
@@ -215,6 +221,7 @@ def _stub_detect_face_count(frame_bgr) -> int:
                 count += 1
         return count
     except Exception:  # noqa: BLE001
+        logger.exception("Stub face detection failed")
         return 0
 
 

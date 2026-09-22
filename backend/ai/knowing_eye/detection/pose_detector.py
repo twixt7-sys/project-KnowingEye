@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 import cv2
 import numpy as np
+
+from ai.knowing_eye.detection.mp_models import cascade_path
+
+logger = logging.getLogger("knowing_eye.ai.detection")
 
 _MEDIAPIPE_OK = False
 try:
@@ -17,7 +22,7 @@ try:
 
     _MEDIAPIPE_OK = True
 except Exception:
-    pass
+    logger.warning("MediaPipe unavailable, pose detection will use OpenCV Haar fallback", exc_info=True)
 
 _LEFT_SHOULDER, _RIGHT_SHOULDER, _NOSE, _LEFT_HIP = 11, 12, 0, 23
 
@@ -34,11 +39,13 @@ class PoseDetector:
     def __init__(self, shoulder_tilt_max: float = 0.12) -> None:
         self._shoulder_tilt_max = shoulder_tilt_max
         self._landmarker = None
-        body = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_upperbody.xml")
+        body = cv2.CascadeClassifier(str(cascade_path("haarcascade_upperbody.xml")))
         # See face_detector.py's identical guard - CascadeClassifier() doesn't
         # raise on a failed load, it just throws on first detectMultiScale()
         # call, which crashed every monitoring frame in production.
         self._body = body if not body.empty() else None
+        if self._body is None:
+            logger.error("Haar cascade failed to load from %s", cascade_path("haarcascade_upperbody.xml"))
 
         if _MEDIAPIPE_OK:
             try:
@@ -50,6 +57,7 @@ class PoseDetector:
                 )
                 self._landmarker = vision.PoseLandmarker.create_from_options(options)
             except Exception:
+                logger.warning("MediaPipe PoseLandmarker init failed, falling back to OpenCV Haar", exc_info=True)
                 self._landmarker = None
 
     def detect(self, frame_bgr: np.ndarray) -> PoseResult:
