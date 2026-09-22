@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -27,6 +30,7 @@ class ExamsAPITests(APITestCase):
             name="Institute of Information Technology",
             abbreviation="IIT",
         )
+        now = timezone.now()
         self.exam = Exam.objects.create(
             title="Sample Exam",
             description="Test",
@@ -34,6 +38,8 @@ class ExamsAPITests(APITestCase):
             passing_score=60,
             status=Exam.Status.DRAFT,
             created_by=self.admin,
+            available_from=now,
+            available_until=now + timedelta(days=7),
         )
         Question.objects.create(
             exam=self.exam,

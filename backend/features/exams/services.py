@@ -278,6 +278,10 @@ def exam_publish_readiness(exam: Exam) -> dict[str, Any]:
     if exam.duration_minutes < 1:
         issues.append("Set a valid exam duration.")
 
+    if not exam.available_from:
+        issues.append("Set an opening date before publishing.")
+    if not exam.available_until:
+        issues.append("Set a closing date before publishing.")
     if exam.available_from and exam.available_until:
         if exam.available_until <= exam.available_from:
             issues.append("Schedule end must be after the start time.")
