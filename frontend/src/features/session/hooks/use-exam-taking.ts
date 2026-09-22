@@ -11,7 +11,12 @@ import {
 import { useMonitoring } from "@/shared/hooks/use-monitoring";
 import { useExamAttempt } from "@/features/session/hooks/use-exam-attempt";
 
-export type MonitoringDockPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
+export type MonitoringDockPosition =
+  | "bottom-right"
+  | "bottom-left"
+  | "top-right"
+  | "top-left"
+  | "inline";
 
 export const DOCK_STORAGE_KEY = "knowing-eye-monitoring-dock-position";
 
@@ -36,7 +41,13 @@ export function useExamTaking() {
   const [enrollMessage, setEnrollMessage] = useState<string | null>(null);
   const [dockPosition, setDockPosition] = useState<MonitoringDockPosition>(() => {
     const saved = localStorage.getItem(DOCK_STORAGE_KEY);
-    if (saved === "bottom-left" || saved === "top-right" || saved === "top-left") return saved;
+    if (
+      saved === "bottom-left" ||
+      saved === "top-right" ||
+      saved === "top-left" ||
+      saved === "inline"
+    )
+      return saved;
     return "bottom-right";
   });
 
@@ -90,7 +101,10 @@ export function useExamTaking() {
             exam: eid,
             status: "in_progress",
           });
-          examSession = sessions[0];
+          // listSessions returns lightweight summaries without a nested
+          // exam.questions - fetch the full session so the fields below
+          // (and everything downstream) have real data to work with.
+          examSession = sessions[0] ? await apiClient.getSession(sessions[0].id) : undefined;
         }
         if (!examSession || examSession.status !== "in_progress") {
           navigate(`/examinee/exam/${eid}/setup`, { replace: true });

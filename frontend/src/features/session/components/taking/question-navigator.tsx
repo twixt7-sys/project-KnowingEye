@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { Flag } from "@/shared/icons";
 
 import type { ExamSection, Question } from "@/core/config/api";
@@ -13,6 +15,7 @@ interface QuestionNavigatorProps {
   flaggedCount: number;
   autosaveStatus: "idle" | "saving" | "saved" | "error";
   onSelectQuestion: (index: number) => void;
+  belowProgress?: ReactNode;
 }
 
 interface QuestionGroup {
@@ -59,6 +62,7 @@ export function QuestionNavigator({
   flaggedCount,
   autosaveStatus,
   onSelectQuestion,
+  belowProgress,
 }: QuestionNavigatorProps) {
   const groups = groupBySections(questions, sections);
   return (
@@ -90,6 +94,8 @@ export function QuestionNavigator({
           </p>
         )}
       </div>
+
+      {belowProgress}
 
       <div className="bg-card rounded-xl border border-border p-6 space-y-5">
         <h3 className="font-semibold">All Questions</h3>

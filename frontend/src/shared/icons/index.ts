@@ -87,6 +87,7 @@ export {
   Plus,
   Power,
   Prohibit as PowerOff,
+  PushPin as PinIcon,
   Radio,
   ArrowsClockwise as RefreshCw,
   FloppyDisk as Save,
