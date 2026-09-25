@@ -229,22 +229,25 @@ export function BuilderSettingsTab({
         </BuilderField>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
-        <BuilderField label="Opens at (optional)">
+        <BuilderField label="Opens at">
           <input
             type="datetime-local"
             value={form.available_from}
             onChange={(e) => update({ available_from: e.target.value })}
             className="field-input"
             disabled={!isDraft}
+            required
           />
         </BuilderField>
-        <BuilderField label="Closes at (optional)">
+        <BuilderField label="Closes at">
           <input
             type="datetime-local"
             value={form.available_until}
             onChange={(e) => update({ available_until: e.target.value })}
+            min={form.available_from || undefined}
             className="field-input"
             disabled={!isDraft}
+            required
           />
         </BuilderField>
       </div>

@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 import cv2
 import numpy as np
+
+from ai.knowing_eye.detection.mp_models import cascade_path
+
+logger = logging.getLogger("knowing_eye.ai.detection")
 
 _MEDIAPIPE_OK = False
 try:
@@ -17,7 +22,7 @@ try:
 
     _MEDIAPIPE_OK = True
 except Exception:
-    pass
+    logger.warning("MediaPipe unavailable, face detection will use OpenCV Haar fallback", exc_info=True)
 
 
 @dataclass
@@ -63,15 +68,14 @@ class FaceDetector:
     def __init__(self) -> None:
         self._backend = "opencv"
         self._landmarker = None
-        cascade = cv2.CascadeClassifier(
-            cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-        )
-        # cv2's own headless wheel doesn't always ship the data/ cascade XMLs
-        # (varies by build) - CascadeClassifier() doesn't raise on a failed
-        # load, it just returns a classifier whose detectMultiScale() throws
-        # an assertion error on first use. Detect that here so the opencv
-        # fallback degrades to "no detection" instead of 500ing every frame.
+        cascade = cv2.CascadeClassifier(str(cascade_path("haarcascade_frontalface_default.xml")))
+        # CascadeClassifier() doesn't raise on a failed load, it just returns
+        # a classifier whose detectMultiScale() throws an assertion error on
+        # first use. Detect that here so the opencv fallback degrades to "no
+        # detection" instead of 500ing every frame.
         self._cascade = cascade if not cascade.empty() else None
+        if self._cascade is None:
+            logger.error("Haar cascade failed to load from %s", cascade_path("haarcascade_frontalface_default.xml"))
 
         if _MEDIAPIPE_OK:
             try:
@@ -86,6 +90,7 @@ class FaceDetector:
                 self._landmarker = vision.FaceLandmarker.create_from_options(options)
                 self._backend = "mediapipe"
             except Exception:
+                logger.warning("MediaPipe FaceLandmarker init failed, falling back to OpenCV Haar", exc_info=True)
                 self._landmarker = None
 
     @property

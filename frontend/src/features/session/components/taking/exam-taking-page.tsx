@@ -119,12 +119,27 @@ export function ExamTakingPage() {
               flaggedCount={flaggedCount}
               autosaveStatus={attempt.autosaveStatus}
               onSelectQuestion={setCurrentQuestion}
+              belowProgress={
+                monitoringEnabled && dockPosition === "inline" ? (
+                  <ProctoringDock
+                    monitoring={monitoring}
+                    webcamActive={webcamActive}
+                    feedOpen={feedOpen}
+                    onFeedOpenChange={setFeedOpen}
+                    dockPosition={dockPosition}
+                    onDockPositionChange={setMonitoringDockPosition}
+                    enrolling={enrolling}
+                    enrollMessage={enrollMessage}
+                    onReEnroll={() => void handleReEnroll()}
+                  />
+                ) : null
+              }
             />
           </div>
         </div>
       </div>
 
-      {monitoringEnabled && (
+      {monitoringEnabled && dockPosition !== "inline" && (
         <ProctoringDock
           monitoring={monitoring}
           webcamActive={webcamActive}
