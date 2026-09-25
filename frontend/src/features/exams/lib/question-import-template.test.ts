@@ -17,7 +17,7 @@ describe("question-import-template", () => {
     const workbook = XLSX.utils.book_new();
     const sheet = XLSX.utils.aoa_to_sheet([
       [...QUESTION_IMPORT_HEADERS],
-      ["Sample question?", "short_answer", "", "Sample answer", "2"],
+      ["Sample question?", "short_answer", "", "", "Sample answer", "2"],
     ]);
     XLSX.utils.book_append_sheet(workbook, sheet, "Questions");
 
@@ -27,7 +27,7 @@ describe("question-import-template", () => {
     });
 
     const csv = await readImportFileAsCsv(file);
-    expect(csv).toContain("question_text,question_type,options,correct_answer,points");
+    expect(csv).toContain("question_text,question_type,options,option_images,correct_answer,points");
     expect(csv).toContain("Sample question?");
     expect(csv).toContain("Sample answer");
   });
