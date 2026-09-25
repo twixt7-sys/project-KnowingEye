@@ -20,8 +20,15 @@ services:
         value: "1"
       - key: DB_ENGINE
         value: django.db.backends.postgresql
+      # Supabase's session-mode pooler (5432) caps concurrent clients at the
+      # project's pool_size (15) - Daphne's async-to-sync thread pool can
+      # exceed that under a burst of requests (EMAXCONNSESSION). The
+      # transaction-mode pooler (6543) multiplexes many clients over a small
+      # number of backend connections instead, so use it here. It also
+      # doesn't support Django holding a connection open across requests, so
+      # CONN_MAX_AGE must stay 0 - see docs/deployment.md.
       - key: DB_PORT
-        value: "5432"
+        value: "6543"
       - key: DB_CONN_MAX_AGE
         value: "0"
       - key: KE_ENABLE_PIPELINE
