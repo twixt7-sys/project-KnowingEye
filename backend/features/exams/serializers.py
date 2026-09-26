@@ -94,9 +94,11 @@ class QuestionAttachmentSerializer(serializers.ModelSerializer):
     def get_url(self, obj) -> str | None:
         if not obj.file:
             return None
-        request = self.context.get("request")
-        if request:
-            return request.build_absolute_uri(obj.file.url)
+        # Root-relative on purpose: nginx (prod) and the Vite dev proxy both
+        # serve /media/ from the same origin as the SPA, and build_absolute_uri()
+        # would resolve the (also root-relative) storage URL against the
+        # current request path instead of the site root - see get_avatar_url()
+        # in features.authentication.serializers for the same fix.
         return obj.file.url
 
 

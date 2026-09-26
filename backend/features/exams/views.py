@@ -541,7 +541,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
             f"questions/{question.exam_id}/{question.id}/options/{uploaded.name}",
             uploaded,
         )
+        # Root-relative on purpose when the storage backend already returns one
+        # (e.g. FileSystemStorage/MEDIA_URL): nginx (prod) and the Vite dev proxy
+        # both serve /media/ from the same origin as the SPA, and
+        # build_absolute_uri() would resolve it against the current request path
+        # instead of the site root. A storage backend that already returns an
+        # absolute URL (e.g. S3) is left untouched.
         url = default_storage.url(path)
-        if not url.startswith(("http://", "https://")):
-            url = request.build_absolute_uri(url)
         return Response({"url": url}, status=status.HTTP_201_CREATED)
