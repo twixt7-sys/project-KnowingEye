@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -10,12 +10,13 @@ import {
 } from "@/shared/icons";
 
 import { formatApiError } from "@/core/config/api";
-import { resolveAlert, terminateSession } from "@/features/monitoring/api/monitoring-api";
+import { resolveAlertsBulk, terminateSession } from "@/features/monitoring/api/monitoring-api";
 import { useSessionObserver } from "@/features/monitoring/hooks/use-session-observer";
 import { monitoringQueries } from "@/features/monitoring/queries/queries";
 import { monitoringKeys } from "@/features/monitoring/queries/keys";
 import { useConfirm } from "@/shared/components/common/confirm-dialog";
 import { Button } from "@/shared/components/ui/button";
+import { groupAlerts } from "@/shared/lib/alert-grouping";
 
 const METRICS = [
   { key: "face_presence_pct", label: "Face" },
@@ -31,6 +32,7 @@ export function SessionMonitorPage() {
   const queryClient = useQueryClient();
   const [terminating, setTerminating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
 
   const reportQuery = useQuery(monitoringQueries.sessionReport(sessionId ?? ""));
 
@@ -61,12 +63,42 @@ export function SessionMonitorPage() {
     null;
   const ebiReport = reportQuery.data?.exam_behavior_index;
 
-  const handleResolve = async (alertId: string) => {
+  const historyAlertGroups = useMemo(
+    () =>
+      groupAlerts(history.alerts.slice(0, 20), {
+        keyOf: (a) => a.alert_type,
+        typeOf: (a) => a.alert_type,
+        severityOf: (a) => a.severity,
+        messageOf: (a) => a.message,
+        timeOf: (a) => a.created_at,
+        idOf: (a) => a.id,
+        resolvedOf: (a) => a.resolved,
+      }),
+    [history.alerts]
+  );
+
+  const liveAlertGroups = useMemo(
+    () =>
+      groupAlerts(observer.alerts.slice(0, 10), {
+        keyOf: (a) => a.type,
+        typeOf: (a) => a.type,
+        severityOf: (a) => a.severity,
+        messageOf: (a) => a.message,
+        timeOf: () => null,
+      }),
+    [observer.alerts]
+  );
+
+  const handleResolveGroup = async (alertType: string, groupKey: string) => {
+    if (!sessionId) return;
+    setResolvingGroup(groupKey);
     try {
-      await resolveAlert(alertId);
+      await resolveAlertsBulk({ session: sessionId, alert_type: alertType });
       refreshHistory();
     } catch (e) {
       setError(formatApiError(e));
+    } finally {
+      setResolvingGroup(null);
     }
   };
 
@@ -226,39 +258,53 @@ export function SessionMonitorPage() {
             )}
           </div>
 
-          <div className="space-y-4 rounded-xl border bg-card p-4">
-            <h2 className="flex items-center gap-2 font-semibold">
+          <div className="flex flex-col rounded-xl border bg-card p-4">
+            <h2 className="mb-4 flex items-center gap-2 font-semibold">
               <AlertTriangle className="h-4 w-4" />
               Alerts
             </h2>
-            <ul className="max-h-96 space-y-2 overflow-y-auto text-sm">
-              {history.alerts.slice(0, 20).map((a) => (
-                <li key={a.id} className="rounded border px-3 py-2">
-                  <p className="font-medium">{a.message}</p>
+            <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto text-sm">
+              {historyAlertGroups.map((g) => (
+                <li key={g.key} className="rounded border px-3 py-2">
+                  <p className="font-medium">
+                    {g.message}
+                    {g.count > 1 && (
+                      <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        ×{g.count}
+                      </span>
+                    )}
+                  </p>
                   <div className="mt-1 flex items-center justify-between">
-                    <p className="text-xs capitalize text-muted-foreground">{a.severity}</p>
-                    {!a.resolved && (
+                    <p className="text-xs capitalize text-muted-foreground">{g.severity}</p>
+                    {g.unresolvedIds.length > 0 && (
                       <button
                         type="button"
-                        onClick={() => void handleResolve(a.id)}
-                        className="text-xs text-status-safe hover:underline"
+                        disabled={resolvingGroup === g.key}
+                        onClick={() => void handleResolveGroup(g.alertType, g.key)}
+                        className="text-xs text-status-safe hover:underline disabled:opacity-50"
                       >
-                        Resolve
+                        {g.unresolvedIds.length > 1
+                          ? `Resolve all (${g.unresolvedIds.length})`
+                          : "Resolve"}
                       </button>
                     )}
                   </div>
                 </li>
               ))}
-              {observer.alerts.slice(0, 10).map((a, i) => (
-                <li
-                  key={`live-${a.type}-${i}`}
-                  className="rounded border border-status-watch/30 px-3 py-2"
-                >
-                  <p className="font-medium">{a.message}</p>
-                  <p className="text-xs capitalize text-muted-foreground">{a.severity} · live</p>
+              {liveAlertGroups.map((g) => (
+                <li key={`live-${g.key}`} className="rounded border border-status-watch/30 px-3 py-2">
+                  <p className="font-medium">
+                    {g.message}
+                    {g.count > 1 && (
+                      <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        ×{g.count}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs capitalize text-muted-foreground">{g.severity} · live</p>
                 </li>
               ))}
-              {!observer.alerts.length && !history.alerts.length && (
+              {!liveAlertGroups.length && !historyAlertGroups.length && (
                 <li className="text-muted-foreground">No alerts yet.</li>
               )}
             </ul>

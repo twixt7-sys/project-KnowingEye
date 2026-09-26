@@ -12,6 +12,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -380,3 +381,40 @@ class EssayGradingReleaseGateTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
         self.session.refresh_from_db()
         self.assertEqual(self.session.status, ExamSession.Status.COMPLETED)
+
+    def test_finalize_grading_emails_student_by_default(self):
+        self.response.points_awarded = 8
+        self.response.flagged_for_review = False
+        self.response.save(update_fields=["points_awarded", "flagged_for_review"])
+
+        finalize_grading_if_complete(self.session)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.student.email])
+
+    def test_finalize_grading_skips_email_when_declined(self):
+        self.response.points_awarded = 8
+        self.response.flagged_for_review = False
+        self.response.save(update_fields=["points_awarded", "flagged_for_review"])
+
+        finalize_grading_if_complete(self.session, send_email=False)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_grade_endpoint_sends_email_by_default(self):
+        self.client.force_authenticate(user=self.faculty)
+        res = self.client.patch(
+            f"/api/responses/{self.response.id}/grade/",
+            {"points_awarded": 10, "grader_comment": "Great answer"},
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_grade_endpoint_send_email_false_skips_email(self):
+        self.client.force_authenticate(user=self.faculty)
+        res = self.client.patch(
+            f"/api/responses/{self.response.id}/grade/",
+            {"points_awarded": 10, "grader_comment": "Great answer", "send_email": False},
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.status, ExamSession.Status.COMPLETED)
+        self.assertEqual(len(mail.outbox), 0)

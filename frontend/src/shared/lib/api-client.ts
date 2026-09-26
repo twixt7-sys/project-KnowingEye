@@ -608,6 +608,7 @@ class ApiClient {
       points_awarded?: number;
       grader_comment?: string;
       flagged_for_review?: boolean;
+      send_email?: boolean;
     },
   ) {
     return this.request(`/responses/${responseId}/grade/`, {
@@ -675,6 +676,13 @@ class ApiClient {
 
   async resolveAlert(alertId: string) {
     return this.request<AlertRow>(`/behavior/alerts/${alertId}/resolve/`, { method: "POST" });
+  }
+
+  async resolveAlertsBulk(params: { session?: string; alert_type?: string }) {
+    return this.request<{ updated: number }>(`/behavior/alerts/resolve_all/`, {
+      method: "POST",
+      body: JSON.stringify(params),
+    });
   }
 
   async getReportSummary() {

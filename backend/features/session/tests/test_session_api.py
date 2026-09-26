@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.test import override_settings
 from django.utils import timezone
 from datetime import timedelta
@@ -97,6 +98,12 @@ class SessionAPITests(APITestCase):
         session.refresh_from_db()
         self.assertEqual(session.status, ExamSession.Status.COMPLETED)
         self.assertTrue(session.passed)
+
+        # Fully auto-graded (no essay/short-answer review needed), so
+        # grading finished the instant it was submitted - the examinee
+        # should be emailed immediately, without waiting on a grader.
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.examinee.email])
 
     def test_expired_session_cannot_submit(self):
         from datetime import timedelta

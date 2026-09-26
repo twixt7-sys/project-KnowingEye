@@ -190,6 +190,7 @@ export interface SessionResponse {
   grader_comment?: string;
   question_text?: string;
   question_type?: string;
+  points?: number;
   correct_answer?: string;
 }
 

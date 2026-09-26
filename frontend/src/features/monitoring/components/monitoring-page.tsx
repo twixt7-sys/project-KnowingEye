@@ -10,7 +10,10 @@ import {
 import { Link } from "react-router";
 
 import { formatApiError, type AlertRow } from "@/core/config/api";
-import { buildAdminAlertsWsUrl, resolveAlert } from "@/features/monitoring/api/monitoring-api";
+import {
+  buildAdminAlertsWsUrl,
+  resolveAlertsBulk,
+} from "@/features/monitoring/api/monitoring-api";
 import { SessionGrid } from "@/features/monitoring/components/session-grid";
 import { monitoringQueries } from "@/features/monitoring/queries/queries";
 import { monitoringKeys } from "@/features/monitoring/queries/keys";
@@ -19,6 +22,7 @@ import { PageShell } from "@/shared/components/layout/page-shell";
 import { SectionPanel } from "@/shared/components/layout/section-panel";
 import { StatCard } from "@/shared/components/layout/stat-card";
 import { Button } from "@/shared/components/ui/button";
+import { groupAlerts } from "@/shared/lib/alert-grouping";
 
 type LiveAlert = {
   ts: number;
@@ -104,15 +108,34 @@ export function MonitoringPage() {
     };
   }, [queryClient]);
 
-  const handleResolveAlert = async (id: string) => {
+  const [resolvingGroup, setResolvingGroup] = useState<string | null>(null);
+
+  const alertGroups = useMemo(
+    () =>
+      groupAlerts(alerts, {
+        keyOf: (a) => `${a.session}:${a.alert_type}`,
+        typeOf: (a) => a.alert_type,
+        severityOf: (a) => a.severity,
+        messageOf: (a) => a.message,
+        timeOf: (a) => a.created_at,
+        idOf: (a) => a.id,
+        resolvedOf: (a) => a.resolved,
+      }),
+    [alerts]
+  );
+
+  const handleResolveGroup = async (session: string, alertType: string, groupKey: string) => {
+    setResolvingGroup(groupKey);
     try {
-      await resolveAlert(id);
+      await resolveAlertsBulk({ session, alert_type: alertType });
       queryClient.setQueryData<AlertRow[]>(
         monitoringKeys.alerts({ resolved: false }),
-        (prev) => prev?.filter((a) => a.id !== id) ?? []
+        (prev) => prev?.filter((a) => !(a.session === session && a.alert_type === alertType)) ?? []
       );
     } catch (e: unknown) {
-      setError(formatApiError(e, "Failed to resolve alert"));
+      setError(formatApiError(e, "Failed to resolve alerts"));
+    } finally {
+      setResolvingGroup(null);
     }
   };
 
@@ -223,7 +246,7 @@ export function MonitoringPage() {
         <SectionPanel
           className="xl:col-span-2"
           title="Active sessions"
-          description="Live snapshots via observer WebSocket; list refreshes every 15 seconds."
+          description="Live snapshots via observer WebSocket; list refreshes every 5 seconds."
         >
           {sessions.length === 0 && !loading ? (
             <div className="p-10 text-center text-sm text-muted-foreground">
@@ -234,41 +257,55 @@ export function MonitoringPage() {
           )}
         </SectionPanel>
 
-        <SectionPanel title="Unresolved alerts" description="Newest first; resolve once reviewed.">
+        <SectionPanel
+          title="Unresolved alerts"
+          description="Grouped by session and type; resolve a group once reviewed."
+        >
           <div className="max-h-[640px] divide-y divide-border overflow-y-auto">
-            {alerts.length === 0 && !loading && (
+            {alertGroups.length === 0 && !loading && (
               <div className="p-10 text-center text-sm text-muted-foreground">No active alerts.</div>
             )}
-            {alerts.map((a) => (
-              <div key={a.id} className="p-4">
-                <div className="mb-1 flex items-start justify-between gap-3">
-                  <span
-                    className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
-                      SEVERITY_COLORS[a.severity] ?? ""
-                    }`}
-                  >
-                    {a.severity}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {new Date(a.created_at).toLocaleTimeString()}
-                  </span>
+            {alertGroups.map((g) => {
+              const first = g.items[0];
+              return (
+                <div key={g.key} className="p-4">
+                  <div className="mb-1 flex items-start justify-between gap-3">
+                    <span
+                      className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
+                        SEVERITY_COLORS[g.severity] ?? ""
+                      }`}
+                    >
+                      {g.severity}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {g.latestAt ? new Date(g.latestAt).toLocaleTimeString() : ""}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium">
+                    {g.alertType}
+                    {g.count > 1 && (
+                      <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        ×{g.count}
+                      </span>
+                    )}
+                  </p>
+                  <p className="mb-2 text-xs text-muted-foreground">{g.message}</p>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="truncate text-muted-foreground">
+                      {first.session_user} · {first.exam_title}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={resolvingGroup === g.key}
+                      onClick={() => void handleResolveGroup(first.session, g.alertType, g.key)}
+                      className="rounded-md bg-status-safe/10 px-2 py-1 text-status-safe hover:bg-status-safe/20 disabled:opacity-50"
+                    >
+                      {g.count > 1 ? `Resolve all (${g.count})` : "Resolve"}
+                    </button>
+                  </div>
                 </div>
-                <p className="text-sm font-medium">{a.alert_type}</p>
-                <p className="mb-2 text-xs text-muted-foreground">{a.message}</p>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="truncate text-muted-foreground">
-                    {a.session_user} · {a.exam_title}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => void handleResolveAlert(a.id)}
-                    className="rounded-md bg-status-safe/10 px-2 py-1 text-status-safe hover:bg-status-safe/20"
-                  >
-                    Resolve
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </SectionPanel>
       </div>

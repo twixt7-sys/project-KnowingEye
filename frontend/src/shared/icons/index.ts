@@ -72,6 +72,7 @@ export {
   CircleNotch as Loader2,
   Lock,
   SignOut as LogOut,
+  Envelope as Mail,
   MapPin,
   List as Menu,
   Minus as MinusIcon,

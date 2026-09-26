@@ -90,6 +90,16 @@ def submit_session_with_responses(
     finalize_unanswered_responses(session)
     session.submit_session(time_remaining=time_remaining)
 
+    if session.status == ExamSession.Status.COMPLETED:
+        # No essay/short-answer responses needed manual review, so grading
+        # finished the instant the exam was submitted - notify now. When a
+        # session instead lands in PENDING_REVIEW, the email (and whether to
+        # send it) is decided later by finalize_grading_if_complete, once a
+        # grader actually finishes reviewing it.
+        from features.session.services import send_results_ready_email
+
+        send_results_ready_email(session)
+
     SessionLog.objects.create(
         session=session,
         event_type=SessionLog.EventType.SUBMITTED,
