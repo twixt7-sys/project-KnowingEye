@@ -195,9 +195,10 @@ class ApiClient {
   }
 
   async requestEmailVerification() {
-    return this.request<{ message: string }>("/auth/profile/verify-email/request/", {
-      method: "POST",
-    });
+    return this.request<{ message: string; debug_code?: string }>(
+      "/auth/profile/verify-email/request/",
+      { method: "POST" },
+    );
   }
 
   async confirmEmailVerification(code: string) {
