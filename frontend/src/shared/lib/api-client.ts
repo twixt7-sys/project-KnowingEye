@@ -32,7 +32,28 @@ import type { PaginatedResponse } from "@/shared/types/api";
 class ApiClient {
   constructor(public baseURL: string) {}
 
-  private async refresh(): Promise<boolean> {
+  // Access tokens are short-lived and several polling loops (autosave,
+  // heartbeat, monitoring frames) can all hit a 401 in the same tick. The
+  // backend rotates + blacklists refresh tokens on use (SIMPLE_JWT
+  // ROTATE_REFRESH_TOKENS/BLACKLIST_AFTER_ROTATION), so if each caller ran
+  // its own refresh() they'd race on the same stored refresh token: the
+  // first swap succeeds, every other concurrent call then sends the
+  // already-rotated token, gets rejected, and calls tokenStore.clear() -
+  // wiping out the valid tokens the first call just saved and logging the
+  // user out mid-exam. Sharing one in-flight promise means every concurrent
+  // 401 awaits the same single refresh instead.
+  private refreshPromise: Promise<boolean> | null = null;
+
+  private refresh(): Promise<boolean> {
+    if (!this.refreshPromise) {
+      this.refreshPromise = this.doRefresh().finally(() => {
+        this.refreshPromise = null;
+      });
+    }
+    return this.refreshPromise;
+  }
+
+  private async doRefresh(): Promise<boolean> {
     const refresh = tokenStore.refresh;
     if (!refresh) return false;
     const res = await fetch(`${this.baseURL}/auth/token/refresh/`, {
