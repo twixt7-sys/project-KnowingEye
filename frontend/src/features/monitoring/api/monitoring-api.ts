@@ -30,6 +30,10 @@ export function resolveAlert(alertId: string) {
   return apiClient.resolveAlert(alertId);
 }
 
+export function resolveAlertsBulk(params: { session?: string; alert_type?: string }) {
+  return apiClient.resolveAlertsBulk(params);
+}
+
 export function fetchSessionReport(sessionId: string) {
   return apiClient.getSessionReport(sessionId);
 }

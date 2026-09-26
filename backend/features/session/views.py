@@ -3,6 +3,7 @@ from django.shortcuts import render
 from rest_framework.exceptions import ValidationError
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.fields import BooleanField
 from rest_framework.response import Response as APIResponse
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
@@ -434,11 +435,20 @@ class ResponseViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=['patch'], url_path='grade')
     def grade(self, request, pk=None):
-        """Manually grade a response."""
+        """Manually grade a response.
+
+        Accepts an optional ``send_email`` flag (defaults to True) so the
+        grader can choose, at the moment their grading completes a
+        student's results, whether that student gets notified by email.
+        """
         if not security.can(request.user, "sessions.grade"):
             return APIResponse({'error': 'You do not have permission to grade responses.'}, status=status.HTTP_403_FORBIDDEN)
 
         response = self.get_object()
+        # BooleanField.to_internal_value (not bool()) because form/multipart
+        # requests - as sent by the API test client - arrive with this as
+        # the literal string "False", which bool() would treat as truthy.
+        send_email = BooleanField().to_internal_value(request.data.get('send_email', True))
         serializer = ResponseGradeSerializer(
             response,
             data=request.data,
@@ -453,7 +463,7 @@ class ResponseViewSet(viewsets.ReadOnlyModelViewSet):
             instance.is_correct = instance.points_awarded >= instance.question.points
             instance.flagged_for_review = False
             instance.save(update_fields=['is_correct', 'flagged_for_review'])
-            finalize_grading_if_complete(instance.session)
+            finalize_grading_if_complete(instance.session, send_email=send_email)
 
         return APIResponse(ResponseSerializer(instance).data, status=status.HTTP_200_OK)
 

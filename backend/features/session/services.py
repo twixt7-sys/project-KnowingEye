@@ -345,7 +345,23 @@ def _create_in_progress_session(
     return session
 
 
-def finalize_grading_if_complete(session: ExamSession) -> bool:
+def send_results_ready_email(session: ExamSession) -> None:
+    """Email the examinee that their results for ``session`` are available."""
+    if not session.user.email:
+        return
+    send_mail(
+        subject="Your exam results are ready",
+        message=(
+            f'Grading for "{session.exam.title}" is complete and your results '
+            "are now available in Knowing Eye."
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[session.user.email],
+        fail_silently=True,
+    )
+
+
+def finalize_grading_if_complete(session: ExamSession, *, send_email: bool = True) -> bool:
     """Recompute score and release results once every flagged response is graded.
 
     Directive Area 03 ("Results"): "hold essay results for manual grading
@@ -354,7 +370,12 @@ def finalize_grading_if_complete(session: ExamSession) -> bool:
     unmatched short-answer responses (see ExamSession.submit_session); this
     is the other half - called after each manual grade so the session
     flips to COMPLETED, with a fresh score, the moment the last flagged
-    response is graded, and the examinee is emailed that results are ready.
+    response is graded.
+
+    ``send_email`` lets the grader decide, at the moment grading completes,
+    whether the examinee should be emailed that results are ready - it
+    defaults to True so existing callers keep the prior always-notify
+    behavior.
 
     Returns:
         True if this call completed the session (grading just finished).
@@ -368,17 +389,8 @@ def finalize_grading_if_complete(session: ExamSession) -> bool:
     session.status = ExamSession.Status.COMPLETED
     session.save(update_fields=["status", "total_score", "percentage_score", "passed"])
 
-    if session.user.email:
-        send_mail(
-            subject="Your exam results are ready",
-            message=(
-                f'Grading for "{session.exam.title}" is complete and your results '
-                "are now available in Knowing Eye."
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[session.user.email],
-            fail_silently=True,
-        )
+    if send_email:
+        send_results_ready_email(session)
     return True
 
 

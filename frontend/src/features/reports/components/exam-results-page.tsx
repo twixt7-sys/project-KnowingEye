@@ -18,6 +18,7 @@ import { Link, useParams } from "react-router";
 import { formatApiError } from "@/core/config/api";
 import { reportsQueries } from "@/features/reports/queries/queries";
 import { IrisGauge } from "@/shared/components/patterns/iris-gauge";
+import { groupAlerts } from "@/shared/lib/alert-grouping";
 
 function formatEventLabel(eventType: string): string {
   return eventType.replace(/_/g, " ");
@@ -61,6 +62,18 @@ export function ExamResultsPage() {
         value: count,
       }));
   }, [alerts]);
+
+  const alertGroups = useMemo(
+    () =>
+      groupAlerts(alerts, {
+        keyOf: (a) => a.alert_type,
+        typeOf: (a) => a.alert_type,
+        severityOf: (a) => a.severity,
+        messageOf: (a) => a.message || a.alert_type,
+        timeOf: (a) => a.created_at,
+      }),
+    [alerts]
+  );
 
   const scoreComparisonData = useMemo(() => {
     if (!sessionRow || !departmentAnalytics) return [];
@@ -289,19 +302,23 @@ export function ExamResultsPage() {
               )}
             </div>
 
-            {alerts.length > 0 && (
+            {alertGroups.length > 0 && (
               <section className="mb-6 surface-panel p-6">
                 <h2 className="mb-4 font-semibold">Alerts ({alerts.length})</h2>
                 <ul className="space-y-2 text-sm">
-                  {alerts.slice(0, 10).map((a) => (
+                  {alertGroups.slice(0, 10).map((g) => (
                     <li
-                      key={a.id}
+                      key={g.key}
                       className="flex items-start gap-2 rounded-lg bg-muted/30 px-3 py-2"
                     >
                       <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                       <span>
-                        <span className="font-medium capitalize">[{a.severity}]</span>{" "}
-                        {a.message || a.alert_type}
+                        <span className="font-medium capitalize">[{g.severity}]</span> {g.message}
+                        {g.count > 1 && (
+                          <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                            ×{g.count}
+                          </span>
+                        )}
                       </span>
                     </li>
                   ))}

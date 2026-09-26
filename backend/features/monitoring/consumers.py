@@ -60,7 +60,6 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         self._session = session
         self._user = user
         self._group_name = f"monitoring.session.{self.session_id}"
-        self._frame_counter = 0
         await self.channel_layer.group_add(self._group_name, self.channel_name)
         await self.accept()
 
@@ -130,7 +129,6 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
             }
         )
 
-        self._frame_counter += 1
         await self.channel_layer.group_send(
             self._group_name,
             {
@@ -139,18 +137,20 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
                 "session_id": str(self.session_id),
             },
         )
-        if self._frame_counter % 3 == 0:
-            snapshot = await database_sync_to_async(self._encode_snapshot)(frame)
-            if snapshot:
-                await self.channel_layer.group_send(
-                    self._group_name,
-                    {
-                        "type": "snapshot.broadcast",
-                        "image": snapshot,
-                        "session_id": str(self.session_id),
-                        "analysis": analysis,
-                    },
-                )
+        # Broadcast a snapshot for every processed frame so observers see the
+        # live feed update in step with the examinee's capture rate (~1 fps)
+        # instead of lagging two frames behind a fixed skip.
+        snapshot = await database_sync_to_async(self._encode_snapshot)(frame)
+        if snapshot:
+            await self.channel_layer.group_send(
+                self._group_name,
+                {
+                    "type": "snapshot.broadcast",
+                    "image": snapshot,
+                    "session_id": str(self.session_id),
+                    "analysis": analysis,
+                },
+            )
 
         for alert in analysis.get("alerts", []):
             enriched = {

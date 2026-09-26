@@ -110,6 +110,7 @@ export function useExamTaking() {
           navigate(`/examinee/exam/${eid}/setup`, { replace: true });
           return;
         }
+        attempt.hydrateFromSession(examSession);
         setSessionId(examSession.id);
         const initialTimeSpent: Record<number, number> = {};
         examSession.exam.questions?.forEach((_q, index) => {
@@ -124,6 +125,7 @@ export function useExamTaking() {
     };
 
     if (examId) void loadExamSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [examId, location.state, navigate]);
 
   useEffect(() => {

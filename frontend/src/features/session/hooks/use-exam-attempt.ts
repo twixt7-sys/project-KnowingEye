@@ -168,6 +168,7 @@ export function useExamAttempt(sessionId: string | undefined) {
     timeRemaining,
     autosaveStatus,
     refresh,
+    hydrateFromSession,
     buildSubmitPayload,
     clearLocal,
   };

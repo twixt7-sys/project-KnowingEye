@@ -11,13 +11,10 @@ export function gradeExamResponse(
     is_correct: boolean;
     grader_comment: string;
     flagged_for_review: boolean;
+    send_email: boolean;
   }
 ) {
   return apiClient.gradeResponse(responseId, payload);
-}
-
-export function recalculateExamSession(sessionId: string) {
-  return apiClient.recalculateSession(sessionId);
 }
 
 export async function fetchPendingGradeRows(examId: number): Promise<PendingGradeRow[]> {
