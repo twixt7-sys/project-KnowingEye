@@ -16,6 +16,12 @@ pipeline:
                                     # deliberately stricter (fewer false accepts). See "Threshold
                                     # justification" in 03-system-design.html for the full citation.
   frame_buffer_depth: 3
+  identity_check_every_n_frames: 3 # ArcFace/InsightFace re-runs its own full-frame face detector on
+                                    # top of MediaPipe's, so it dominates per-frame latency once a
+                                    # reference is enrolled. Checking identity every Nth frame (and
+                                    # reusing the last match/distance in between) keeps the bounding
+                                    # box - which only ever comes from MediaPipe - rendering close to
+                                    # the client's capture rate instead of queueing behind ArcFace.
 
 preprocessing:
   max_width: 640
@@ -41,6 +47,14 @@ recognition:
                                      # frame - this is the literal answer to "why not flag every blink."
 
 behavior:
+  ebi_bands:                        # Ordinal classification of the composite Exam Behavior Index
+    good_min: 80                    # EBI >= 80 -> "good". Matches alert_threshold_pct (the per-metric
+                                     # compliance cutoff) and is stricter than the 75% "no-risk"
+                                     # boundary of the cited proctoring risk model - see "Threshold
+                                     # justification" in 03-system-design.html.
+    mid_min: 50                     # 50 <= EBI < 80 -> "mid" (review); EBI < 50 -> "bad" (high concern).
+                                     # 50 is where the same cited risk model assigns its maximum risk
+                                     # weight. Threshold-based behaviour classification per [14].
   leaving_seat_grace_seconds: 3.0   # Same grace-period principle as no_face_grace_seconds, applied to
                                      # upper-body-visibility (pose landmark presence).
   suspicious_pattern:

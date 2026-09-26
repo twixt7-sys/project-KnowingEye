@@ -2,6 +2,50 @@
 
 from __future__ import annotations
 
+# --- Exam Behavior Index (EBI) risk bands -----------------------------------
+# The EBI (0-100, higher = more compliant) is classified into three ordinal
+# behaviour bands so that a continuous monitoring score becomes an actionable
+# good / mid / bad label. The two cut-points are cited, not arbitrary:
+#
+#   EBI_GOOD_MIN = 80  -> "good": matches the system's per-metric compliance
+#       cutoff (pipeline.alert_threshold_pct, see 04-system-testing.html#ai-
+#       evaluation). It is deliberately stricter than the 75% "no-risk"
+#       boundary of the cited automated-proctoring risk model [20], so a
+#       "good" EBI is never more lenient than that reference.
+#   EBI_MID_MIN  = 50  -> boundary between "mid" and "bad": the same automated-
+#       proctoring risk model assigns its maximum risk weight once a visual
+#       compliance signal falls below 50% [20]. Below this, behaviour is
+#       treated as high-concern ("bad").
+#
+# Threshold-based ordinal classification of online-exam behaviour follows the
+# established practice in [14] (Ferdosi et al.), which classifies examinee
+# behavioural patterns against a fixed decision threshold. Boundaries are
+# configurable via behavior.ebi_bands in pipeline.yaml; these are the defaults.
+EBI_GOOD_MIN = 80.0
+EBI_MID_MIN = 50.0
+
+EBI_BAND_GOOD = "good"
+EBI_BAND_MID = "mid"
+EBI_BAND_BAD = "bad"
+
+
+def classify_ebi_band(
+    ebi_pct: float,
+    good_min: float = EBI_GOOD_MIN,
+    mid_min: float = EBI_MID_MIN,
+) -> str:
+    """Classify an EBI value (0-100) into ``good`` / ``mid`` / ``bad``.
+
+    ``good`` = EBI >= ``good_min`` (compliant, low concern).
+    ``mid``  = ``mid_min`` <= EBI < ``good_min`` (moderate concern, review).
+    ``bad``  = EBI < ``mid_min`` (high concern, priority review).
+    """
+    if ebi_pct >= good_min:
+        return EBI_BAND_GOOD
+    if ebi_pct >= mid_min:
+        return EBI_BAND_MID
+    return EBI_BAND_BAD
+
 
 def clamp_pct(value: float) -> float:
     return round(max(0.0, min(100.0, value)), 1)

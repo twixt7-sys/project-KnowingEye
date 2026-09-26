@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from ai.knowing_eye.behavior.normalize import (
+    classify_ebi_band,
     exam_behavior_index_pct,
     face_presence_pct,
     gaze_focus_pct,
@@ -41,6 +42,9 @@ class BehaviorScorer:
         self._severity_map = beh.get("alert_severity", {})
         self._alert_threshold_pct = float(pipe.get("alert_threshold_pct", 80))
         self._metric_weights = beh.get("metric_weights", {})
+        ebi_bands = beh.get("ebi_bands", {})
+        self._ebi_good_min = float(ebi_bands.get("good_min", 80))
+        self._ebi_mid_min = float(ebi_bands.get("mid_min", 50))
 
     def build_face_analysis(
         self,
@@ -87,6 +91,7 @@ class BehaviorScorer:
         )
         ip = identity_match_pct(identity_match, face.identity_distance, self._identity_threshold)
         ebi, ebi_count = exam_behavior_index_pct(fp, gp, pp, ip)
+        band = classify_ebi_band(ebi, self._ebi_good_min, self._ebi_mid_min)
         return MetricScores(
             face_presence_pct=fp,
             gaze_focus_pct=gp,
@@ -96,6 +101,7 @@ class BehaviorScorer:
             exam_behavior_index_pct=ebi,
             ebi_indicator_count=ebi_count,
             alert_threshold_pct=self._alert_threshold_pct,
+            ebi_band=band,
         )
 
     def score(
