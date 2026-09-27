@@ -32,13 +32,16 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "avatar_url", "email_verified"]
 
     def get_avatar_url(self, obj):
-        # Root-relative on purpose: nginx (prod) and the Vite dev proxy both
-        # serve /media/ from the same origin as the SPA, and build_absolute_uri()
-        # would otherwise resolve the (also root-relative) storage URL against
-        # the current request path instead of the site root.
-        if obj.avatar:
-            return obj.avatar.url
-        return None
+        if not obj.avatar:
+            return None
+        # Absolute, because the frontend and API are deployed as separate
+        # origins (see render.yaml) - a root-relative "/media/..." path
+        # would resolve against whatever origin the SPA happens to be on,
+        # not the API that actually serves the file.
+        request = self.context.get("request")
+        if request is not None:
+            return request.build_absolute_uri(obj.avatar.url)
+        return obj.avatar.url
 
 
 class UserDetailSerializer(UserSerializer):
