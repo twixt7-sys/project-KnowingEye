@@ -77,6 +77,7 @@ class MetricScores:
     exam_behavior_index_pct: float | None = None
     ebi_indicator_count: int = 0
     alert_threshold_pct: float = 80.0
+    ebi_band: str | None = None
 
     def __post_init__(self) -> None:
         # Keep EBI and the legacy overall score consistent even for callers
@@ -86,6 +87,12 @@ class MetricScores:
             self.exam_behavior_index_pct = self.overall_compliance_pct
         if not self.ebi_indicator_count:
             self.ebi_indicator_count = 4 if self.identity_match_pct is not None else 3
+        # Fall back to the default band cut-points when a caller (e.g. temporal
+        # reconstruction) did not classify the band with the configured bounds.
+        if self.ebi_band is None:
+            from ai.knowing_eye.behavior.normalize import classify_ebi_band
+
+            self.ebi_band = classify_ebi_band(self.exam_behavior_index_pct or 0.0)
 
     def ebi_components(self) -> dict[str, float | None]:
         """Per-indicator EBI breakdown (``None`` for a not-evaluated indicator)."""
@@ -107,6 +114,7 @@ class MetricScores:
             "exam_behavior_index_pct": self.exam_behavior_index_pct,
             "ebi_indicator_count": self.ebi_indicator_count,
             "ebi_components": self.ebi_components(),
+            "ebi_band": self.ebi_band,
             "alert_threshold_pct": self.alert_threshold_pct,
             "flagged_metrics": flags,
             "all_compliant": len(flags) == 0,

@@ -57,6 +57,8 @@ class BehaviorPipeline:
         self._scorer = BehaviorScorer(self.config)
         self._temporal = BehaviorTemporalTracker(self.config)
         self._frame_index = 0
+        self._identity_check_every = max(1, int(pipe.get("identity_check_every_n_frames", 3)))
+        self._identity_cache: dict[str, tuple[bool | None, float | None, int]] = {}
 
         logger.info(
             "BehaviorPipeline detectors ready: face_backend=%s pose_backend=%s "
@@ -105,9 +107,19 @@ class BehaviorPipeline:
         identity_match: bool | None = None
         identity_distance: float | None = None
         if faces and reference_embedding is not None:
-            identity_match, identity_distance = self._identity.verify_against(
-                frame, faces[0].bbox, reference_embedding
-            )
+            # ArcFace re-detects the face over the whole frame internally, so it is far
+            # heavier than the MediaPipe pass above - throttle it so a slow identity check
+            # doesn't delay every displayed bounding box (see identity_check_every_n_frames).
+            cache_key = session_id or "__anonymous__"
+            cached = self._identity_cache.get(cache_key)
+            due = cached is None or (self._frame_index - cached[2]) >= self._identity_check_every
+            if due:
+                identity_match, identity_distance = self._identity.verify_against(
+                    frame, faces[0].bbox, reference_embedding
+                )
+                self._identity_cache[cache_key] = (identity_match, identity_distance, self._frame_index)
+            else:
+                identity_match, identity_distance = cached[0], cached[1]
 
         primary = faces[0] if faces else None
         face_bbox_norm = None

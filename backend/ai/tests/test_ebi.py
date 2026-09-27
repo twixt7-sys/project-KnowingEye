@@ -14,6 +14,9 @@ from __future__ import annotations
 import pytest
 
 from ai.knowing_eye.behavior.normalize import (
+    EBI_GOOD_MIN,
+    EBI_MID_MIN,
+    classify_ebi_band,
     exam_behavior_index_pct,
     overall_compliance_pct,
 )
@@ -65,3 +68,36 @@ def test_overall_compliance_ignores_legacy_weights_argument():
     )
     ebi, _ = exam_behavior_index_pct(80.0, 60.0, 100.0, 40.0)
     assert weighted == pytest.approx(ebi)
+
+
+# --- EBI risk-band classification -------------------------------------------
+# Ordinal good/mid/bad bands with cited cut-points: good_min = 80 (the system's
+# per-metric compliance cutoff; stricter than the cited 75% no-risk boundary),
+# mid_min = 50 (the maximum-risk boundary of the cited proctoring risk model).
+
+
+def test_default_band_cut_points_match_cited_thresholds():
+    assert EBI_GOOD_MIN == 80.0
+    assert EBI_MID_MIN == 50.0
+
+
+@pytest.mark.parametrize(
+    "ebi, expected",
+    [
+        (100.0, "good"),
+        (80.0, "good"),   # boundary is inclusive
+        (79.9, "mid"),
+        (65.0, "mid"),
+        (50.0, "mid"),    # boundary is inclusive
+        (49.9, "bad"),
+        (0.0, "bad"),
+    ],
+)
+def test_classify_ebi_band_default_bounds(ebi, expected):
+    assert classify_ebi_band(ebi) == expected
+
+
+def test_classify_ebi_band_respects_configured_bounds():
+    # A stricter policy (good_min=90, mid_min=60) reclassifies a mid score.
+    assert classify_ebi_band(85.0, good_min=90.0, mid_min=60.0) == "mid"
+    assert classify_ebi_band(55.0, good_min=90.0, mid_min=60.0) == "bad"
