@@ -5,7 +5,7 @@ import { Save } from "@/shared/icons";
 import type { Exam } from "@/core/config/api";
 import { BuilderField } from "@/features/exams/components/builder/builder-primitives";
 import { dashboardQueries } from "@/features/dashboard/queries/queries";
-import type { ExamForm } from "@/features/exams/schemas/builder-schemas";
+import { toDatetimeLocal, type ExamForm } from "@/features/exams/schemas/builder-schemas";
 import { Checkbox } from "@/shared/components/ui/checkbox";
 
 interface BuilderSettingsTabProps {
@@ -234,6 +234,7 @@ export function BuilderSettingsTab({
             type="datetime-local"
             value={form.available_from}
             onChange={(e) => update({ available_from: e.target.value })}
+            min={toDatetimeLocal(new Date().toISOString())}
             className="field-input"
             disabled={!isDraft}
             required
