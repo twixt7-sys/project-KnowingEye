@@ -45,10 +45,11 @@ class IdentityVerifier:
         match_threshold: float | None = None,
         backend: str = "arcface",
         arcface_model: str = "buffalo_l",
+        arcface_det_size: int = 640,
     ) -> None:
         requested = (backend or "arcface").lower()
         self._requested_backend = requested
-        self._arcface = ArcFaceBackend(model_name=arcface_model)
+        self._arcface = ArcFaceBackend(model_name=arcface_model, det_size=arcface_det_size)
         self._face_recognition_ok = face_recognition is not None
         self._active_backend = self._resolve_backend(requested)
         self._threshold = (

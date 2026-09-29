@@ -81,6 +81,7 @@ export function useMonitoring({
   // reply paces sending to the server's real throughput instead.
   const pendingAckRef = useRef(false);
   const ackTimeoutRef = useRef<number | null>(null);
+  const lastSentAtRef = useRef(0);
   const closedRef = useRef(false);
   const enrollingRef = useRef(false);
   const onSessionInactiveRef = useRef(onSessionInactive);
@@ -155,6 +156,7 @@ export function useMonitoring({
       const image = captureFrame();
       if (image) {
         pendingAckRef.current = true;
+        lastSentAtRef.current = performance.now();
         // Safety valve: if a reply never arrives (dropped message, server hiccup) don't
         // stall the loop forever - resume sending after a few missed intervals.
         ackTimeoutRef.current = window.setTimeout(
@@ -216,14 +218,14 @@ export function useMonitoring({
   }, [captureFrame, handleSessionInactive, sessionId]);
 
   const scheduleNextFrame = useCallback(
-    (tick: () => void) => {
+    (tick: () => void, delayMs: number = intervalMs) => {
       clearFrameTimer();
       if (closedRef.current) return;
       frameTimerRef.current = window.setTimeout(() => {
         frameTimerRef.current = null;
         tick();
         scheduleNextFrame(tick);
-      }, intervalMs);
+      }, delayMs);
     },
     [clearFrameTimer, intervalMs]
   );
@@ -272,6 +274,11 @@ export function useMonitoring({
             const msg = JSON.parse(event.data);
             if (msg.type === "analysis" || msg.type === "error") {
               clearAck();
+              // Send the next frame as soon as the server is free (but no sooner than
+              // intervalMs after the last send). With a fixed timer, a reply landing just
+              // after a skipped tick left the loop idle for almost a whole extra interval.
+              const elapsed = performance.now() - lastSentAtRef.current;
+              scheduleNextFrame(sendFrameOverWs, Math.max(0, intervalMs - elapsed));
             }
             if (msg.type === "analysis") {
               setAnalysis(msg.payload as FrameAnalysis);
@@ -326,6 +333,7 @@ export function useMonitoring({
     sendFrameOverWs,
     sendViaRest,
     handleSessionInactive,
+    intervalMs,
     sessionId,
     videoConstraints,
     status,

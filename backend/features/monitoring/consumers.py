@@ -15,15 +15,34 @@ Server → client messages
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import time
 from typing import Any
 
+from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 logger = logging.getLogger("knowing_eye.monitoring.consumer")
 
 ADMIN_ALERTS_GROUP = "monitoring.admin.alerts"
+
+# Session expiry / setup-idle bookkeeping is a DB round trip (two during setup).
+# Doing it on every frame put that latency in front of every analysis reply;
+# timeouts are measured in minutes, so re-checking every few seconds is plenty.
+_ACTIVE_CHECK_INTERVAL_S = 5.0
+
+
+def _decode_and_analyze(image_data: str, session_id: str):
+    """CPU-bound decode + inference. Runs on a worker thread, not the shared DB thread."""
+    from ai.adapter import analyze_frame_bgr
+    from ai.frame_utils import decode_base64_image
+
+    frame = decode_base64_image(image_data)
+    if frame is None:
+        return None, None
+    return frame, analyze_frame_bgr(frame, session_id=session_id)
 
 
 class MonitoringConsumer(AsyncJsonWebsocketConsumer):
@@ -59,11 +78,18 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
 
         self._session = session
         self._user = user
+        self._last_active_check = float("-inf")
+        self._post_task: asyncio.Task | None = None
         self._group_name = f"monitoring.session.{self.session_id}"
         await self.channel_layer.group_add(self._group_name, self.channel_name)
         await self.accept()
 
         from ai.adapter import get_pipeline_mode
+        from ai.identity_store import get_reference_embedding
+
+        # Warm the in-process reference cache here (DB thread) so the per-frame
+        # inference, which runs on a worker thread, never has to touch the DB.
+        await database_sync_to_async(get_reference_embedding)(self.session_id)
 
         await self.send_json(
             {
@@ -74,6 +100,7 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def disconnect(self, close_code: int) -> None:
+        await self._await_post_work()
         group = getattr(self, "_group_name", None)
         if group:
             await self.channel_layer.group_discard(group, self.channel_name)
@@ -96,38 +123,53 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({"type": "error", "message": f"unknown message type '{msg_type}'"})
 
     async def _handle_frame(self, content: dict[str, Any]) -> None:
-        from ai.adapter import analyze_frame_bgr
-        from ai.frame_utils import decode_base64_image
         from features.session.models import ExamSession
         from features.session.services import ensure_active_session, touch_setup_activity
 
-        if self._session.status == ExamSession.Status.SETUP:
-            await database_sync_to_async(touch_setup_activity)(self._session)
+        now = time.monotonic()
+        if now - self._last_active_check >= _ACTIVE_CHECK_INTERVAL_S:
+            self._last_active_check = now
+            if self._session.status == ExamSession.Status.SETUP:
+                await database_sync_to_async(touch_setup_activity)(self._session)
 
-        still_active = await database_sync_to_async(ensure_active_session)(self._session)
-        if not still_active:
-            await self.send_json({"type": "error", "message": "session expired"})
-            await self.close(code=4408)
-            return
+            still_active = await database_sync_to_async(ensure_active_session)(self._session)
+            if not still_active:
+                await self.send_json({"type": "error", "message": "session expired"})
+                await self.close(code=4408)
+                return
 
-        image_data = content.get("image") or ""
-        frame = await database_sync_to_async(decode_base64_image)(image_data)
+        # database_sync_to_async is thread_sensitive: every call in the process
+        # shares ONE thread, so inference used to queue behind every other
+        # session's DB work (and block it in turn). Decode + inference touch no
+        # DB, so they run on the general worker pool instead.
+        frame, analysis = await sync_to_async(_decode_and_analyze, thread_sensitive=False)(
+            content.get("image") or "", str(self.session_id)
+        )
         if frame is None:
             await self.send_json({"type": "error", "message": "invalid image"})
             return
 
-        analysis = await database_sync_to_async(analyze_frame_bgr)(
-            frame, session_id=str(self.session_id)
-        )
-        persisted = await self._persist(analysis)
+        # Reply before persisting: the client paces its next frame on this
+        # message, and the bounding box shouldn't wait on DB writes.
+        await self.send_json({"type": "analysis", "payload": analysis})
 
-        await self.send_json(
-            {
-                "type": "analysis",
-                "payload": analysis,
-                "persisted": persisted,
-            }
-        )
+        # Persistence + fan-out overlap with the next frame's inference. Only
+        # one batch is in flight at a time, so DB writes can't pile up.
+        await self._await_post_work()
+        self._post_task = asyncio.create_task(self._after_frame(frame, analysis))
+
+    async def _await_post_work(self) -> None:
+        task = getattr(self, "_post_task", None)
+        if task is None:
+            return
+        self._post_task = None
+        try:
+            await task
+        except Exception:  # noqa: BLE001 - never let bookkeeping kill the stream
+            logger.exception("monitoring post-frame work failed session=%s", self.session_id)
+
+    async def _after_frame(self, frame, analysis: dict[str, Any]) -> None:
+        await self._persist(analysis)
 
         await self.channel_layer.group_send(
             self._group_name,
@@ -140,7 +182,7 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         # Broadcast a snapshot for every processed frame so observers see the
         # live feed update in step with the examinee's capture rate (~1 fps)
         # instead of lagging two frames behind a fixed skip.
-        snapshot = await database_sync_to_async(self._encode_snapshot)(frame)
+        snapshot = await sync_to_async(self._encode_snapshot, thread_sensitive=False)(frame)
         if snapshot:
             await self.channel_layer.group_send(
                 self._group_name,
