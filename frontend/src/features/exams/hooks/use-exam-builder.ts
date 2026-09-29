@@ -29,6 +29,7 @@ import {
   EMPTY_QUESTION,
   examFormToPayload,
   examToForm,
+  toDatetimeLocal,
   type BuilderTab,
   type ExamForm,
   type QuestionDraft,
@@ -338,6 +339,11 @@ export function useExamBuilder(examId: number) {
     }
     if (!form.available_until) {
       setActionError("Set a closing date before saving.");
+      return;
+    }
+    const openingChanged = !exam || toDatetimeLocal(exam.available_from) !== form.available_from;
+    if (openingChanged && new Date(form.available_from) < new Date()) {
+      setActionError("The opening date can't be in the past.");
       return;
     }
     if (new Date(form.available_until) <= new Date(form.available_from)) {
