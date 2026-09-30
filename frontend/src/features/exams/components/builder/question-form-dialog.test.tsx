@@ -26,6 +26,7 @@ function Harness({
   onAttachmentPick = vi.fn(),
   onRemoveAttachment = vi.fn(),
   onDraftChange,
+  onUploadOptionImage = vi.fn(async () => ""),
 }: {
   sections?: ExamSection[];
   attachments?: QuestionAttachment[];
@@ -36,6 +37,7 @@ function Harness({
   onAttachmentPick?: (files: FileList | null) => void;
   onRemoveAttachment?: (a: QuestionAttachment) => void;
   onDraftChange?: (draft: QuestionDraft) => void;
+  onUploadOptionImage?: (file: File) => Promise<string>;
 }) {
   const [draft, setDraft] = useState<QuestionDraft>(EMPTY_QUESTION);
   const [pending, setPending] = useState<File[]>(initialPending);
@@ -57,7 +59,7 @@ function Harness({
       onSave={vi.fn()}
       onAttachmentPick={onAttachmentPick}
       onRemoveAttachment={onRemoveAttachment}
-      onUploadOptionImage={vi.fn(async () => "")}
+      onUploadOptionImage={onUploadOptionImage}
       onCreateSection={onCreateSection}
     />
   );
@@ -170,5 +172,78 @@ describe("QuestionFormDialog - question picture", () => {
   it("surfaces errors inside the dialog", () => {
     render(<Harness error="Could not upload it." />);
     expect(screen.getByRole("alert")).toHaveTextContent("Could not upload it.");
+  });
+});
+
+describe("QuestionFormDialog - answer choices", () => {
+  const optionFileInputs = () =>
+    Array.from(document.querySelectorAll<HTMLInputElement>('input[type="file"]')).filter(
+      (i) => i.accept === "image/jpeg,image/png,image/gif,image/webp" && !i.multiple
+    );
+
+  it("attaches a picture to a choice before the question has been saved", async () => {
+    const onUploadOptionImage = vi.fn(async () => "https://api.example.com/media/a.png");
+    let latest: QuestionDraft = EMPTY_QUESTION;
+    render(
+      <Harness
+        onUploadOptionImage={onUploadOptionImage}
+        onDraftChange={(d) => {
+          latest = d;
+        }}
+      />
+    );
+
+    fireEvent.change(optionFileInputs()[0], {
+      target: { files: [new File(["x"], "a.png", { type: "image/png" })] },
+    });
+
+    await waitFor(() => expect(latest.options[0].image).toBe("https://api.example.com/media/a.png"));
+    expect(onUploadOptionImage).toHaveBeenCalledTimes(1);
+    expect(latest.options[0].text).toBe("");
+    expect(screen.queryByText(/Save this question first/)).not.toBeInTheDocument();
+  });
+
+  it("rejects a non-picture file without uploading", async () => {
+    const onUploadOptionImage = vi.fn(async () => "x");
+    render(<Harness onUploadOptionImage={onUploadOptionImage} />);
+    fireEvent.change(optionFileInputs()[0], {
+      target: { files: [new File(["x"], "notes.pdf", { type: "application/pdf" })] },
+    });
+    expect(await screen.findByText(/isn't a picture/)).toBeInTheDocument();
+    expect(onUploadOptionImage).not.toHaveBeenCalled();
+  });
+
+  it("lists a picture-only choice as a correct-answer candidate", async () => {
+    const onUploadOptionImage = vi.fn(async () => "https://api.example.com/media/a.png");
+    render(<Harness onUploadOptionImage={onUploadOptionImage} />);
+
+    fireEvent.change(optionFileInputs()[1], {
+      target: { files: [new File(["x"], "b.png", { type: "image/png" })] },
+    });
+
+    const correct = await screen.findByLabelText("Correct option");
+    await waitFor(() =>
+      expect(
+        Array.from((correct as HTMLSelectElement).options).map((o) => o.text)
+      ).toEqual(["Select…", "Option 2 (picture)"])
+    );
+  });
+
+  it("keeps the correct answer on its choice when the text is edited", () => {
+    let latest: QuestionDraft = EMPTY_QUESTION;
+    render(
+      <Harness
+        onDraftChange={(d) => {
+          latest = d;
+        }}
+      />
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Option 1"), { target: { value: "Circle" } });
+    fireEvent.change(screen.getByLabelText("Correct option"), { target: { value: "0" } });
+    expect(latest.correct_answer).toBe("Circle");
+
+    fireEvent.change(screen.getByPlaceholderText("Option 1"), { target: { value: "Round" } });
+    expect(latest.correct_answer).toBe("Round");
   });
 });

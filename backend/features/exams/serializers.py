@@ -224,7 +224,7 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
         if value and not isinstance(value, list):
             raise serializers.ValidationError("Options must be a list.")
         normalized = []
-        for item in value or []:
+        for index, item in enumerate(value or [], start=1):
             if isinstance(item, dict):
                 text = str(item.get("text", "") or "").strip()
                 image = item.get("image") or None
@@ -232,6 +232,10 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         "An option's image must be a URL string."
                     )
+                if not text and image:
+                    # A picture can stand in for the text, but answers are
+                    # recorded and graded by option text, so give it a label.
+                    text = f"Option {index}"
                 normalized.append({"text": text, "image": image})
             else:
                 normalized.append({"text": str(item or "").strip(), "image": None})

@@ -29,6 +29,7 @@ import {
   uploadQuestionAttachment,
 } from "@/features/exams/api/exam-api";
 import { validateAttachment } from "@/features/exams/lib/attachment-rules";
+import { optionsToDraft, optionsToPayload } from "@/features/exams/lib/question-options";
 import { examBuilderKeys } from "@/features/exams/queries/keys";
 import { examBuilderQueries } from "@/features/exams/queries/queries";
 import { CSV_TEMPLATE, readImportFileAsCsv } from "@/features/exams/lib/question-import-template";
@@ -145,10 +146,7 @@ export function useExamBuilder(examId: number) {
       const payload = {
         question_text: draft.question_text,
         question_type: draft.question_type,
-        options:
-          draft.question_type === "multiple_choice"
-            ? draft.options.filter((o) => o.text.trim())
-            : [],
+        options: draft.question_type === "multiple_choice" ? optionsToPayload(draft.options) : [],
         correct_answer: draft.correct_answer,
         points: draft.points,
         section: draft.section,
@@ -391,13 +389,14 @@ export function useExamBuilder(examId: number) {
   const openEditQuestion = (q: Question) => {
     setQuestionError(null);
     setEditingQuestion(q);
+    const saved = optionsToDraft(q.options ?? [], q.correct_answer ?? "");
     setQuestionDraft({
       question_text: q.question_text,
       question_type: q.question_type,
-      options: q.options?.length
-        ? q.options.map((o) => ({ ...o }))
+      options: saved.options.length
+        ? saved.options
         : [{ text: "", image: null }, { text: "", image: null }],
-      correct_answer: q.correct_answer ?? "",
+      correct_answer: saved.correct_answer,
       points: q.points,
       section: q.section ?? null,
     });
@@ -406,8 +405,8 @@ export function useExamBuilder(examId: number) {
     setShowQuestionForm(true);
   };
 
-  const uploadOptionImageForQuestion = async (questionId: number, file: File) => {
-    const { url } = await uploadOptionImage(examId, questionId, file);
+  const uploadOptionImageForQuestion = async (file: File) => {
+    const { url } = await uploadOptionImage(examId, file);
     return url;
   };
 

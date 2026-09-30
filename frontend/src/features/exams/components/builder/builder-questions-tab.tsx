@@ -46,7 +46,7 @@ interface BuilderQuestionsTabProps {
   onSaveQuestion: () => void;
   onAttachmentPick: (files: FileList | null) => void;
   onRemoveAttachment: (attachment: QuestionAttachment) => void;
-  onUploadOptionImage: (questionId: number, file: File) => Promise<string>;
+  onUploadOptionImage: (file: File) => Promise<string>;
   onCreateSection: (title: string) => Promise<ExamSection | null>;
   onImportFile: (file: File) => void;
   onRunImport: () => void;

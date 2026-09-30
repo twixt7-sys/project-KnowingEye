@@ -190,6 +190,75 @@ class ExamsAPITests(APITestCase):
             self.assertTrue(response.data["url"].startswith("http"))
             self.assertIn("/media/questions/", response.data["url"])
 
+    def test_upload_option_image_before_question_is_saved(self):
+        """Choices can get pictures while the question is still a draft."""
+        media_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media_root, ignore_errors=True)
+        with override_settings(MEDIA_ROOT=media_root):
+            png = SimpleUploadedFile("opt.png", b"\x89PNG\r\n\x1a\n", content_type="image/png")
+            response = self.client.post(
+                f"/api/exams/{self.exam.id}/option-image/",
+                {"file": png},
+                format="multipart",
+            )
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertTrue(response.data["url"].startswith("http"))
+            self.assertIn(f"/media/questions/{self.exam.id}/drafts/", response.data["url"])
+
+    def test_draft_option_image_rejects_non_images(self):
+        pdf = SimpleUploadedFile("doc.pdf", b"%PDF-1.4", content_type="application/pdf")
+        response = self.client.post(
+            f"/api/exams/{self.exam.id}/option-image/",
+            {"file": pdf},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_multiple_choice_options_may_be_pictures_only(self):
+        """A choice with a picture and no text is accepted and gets a stable label."""
+        response = self.client.post(
+            f"/api/exams/{self.exam.id}/questions/",
+            {
+                "question_text": "Which shape completes the pattern?",
+                "question_type": "multiple_choice",
+                "options": [
+                    {"text": "", "image": "http://testserver/media/a.png"},
+                    {"text": "", "image": "http://testserver/media/b.png"},
+                    {"text": "", "image": None},
+                ],
+                "correct_answer": "Option 2",
+                "points": 1,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        question = Question.objects.get(pk=response.data["id"])
+        self.assertEqual(
+            question.options,
+            [
+                {"text": "Option 1", "image": "http://testserver/media/a.png"},
+                {"text": "Option 2", "image": "http://testserver/media/b.png"},
+                {"text": "", "image": None},
+            ],
+        )
+
+    def test_blank_options_without_pictures_still_do_not_count(self):
+        response = self.client.post(
+            f"/api/exams/{self.exam.id}/questions/",
+            {
+                "question_text": "Pick one",
+                "question_type": "multiple_choice",
+                "options": [
+                    {"text": "", "image": None},
+                    {"text": "Only one", "image": None},
+                ],
+                "correct_answer": "Only one",
+                "points": 1,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_upload_rejects_unsupported_file_type(self):
         question = Question.objects.get(exam=self.exam)
         exe = SimpleUploadedFile("run.exe", b"MZ", content_type="application/x-msdownload")

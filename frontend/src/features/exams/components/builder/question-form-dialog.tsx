@@ -11,7 +11,9 @@ import {
   DOCUMENT_ACCEPT,
   PICTURE_ACCEPT,
   isPictureFile,
+  validateAttachment,
 } from "@/features/exams/lib/attachment-rules";
+import { optionLabel } from "@/features/exams/lib/question-options";
 import type { QuestionDraft } from "@/features/exams/schemas/builder-schemas";
 
 const NEW_SECTION_VALUE = "__new_section__";
@@ -175,7 +177,7 @@ interface QuestionFormDialogProps {
   onSave: () => void;
   onAttachmentPick: (files: FileList | null) => void;
   onRemoveAttachment: (attachment: QuestionAttachment) => void;
-  onUploadOptionImage: (questionId: number, file: File) => Promise<string>;
+  onUploadOptionImage: (file: File) => Promise<string>;
   onCreateSection: (title: string) => Promise<ExamSection | null>;
 }
 
@@ -209,21 +211,32 @@ export function QuestionFormDialog({
   const pendingPictures = pendingEntries.filter(({ file }) => isPictureFile(file));
   const pendingDocuments = pendingEntries.filter(({ file }) => !isPictureFile(file));
 
+  // Functional updates: an image upload resolves after the user may have kept
+  // typing, so it must merge into the latest draft rather than a stale copy.
   const updateOption = (index: number, patch: Partial<QuestionDraft["options"][number]>) => {
-    const options = [...questionDraft.options];
-    options[index] = { ...options[index], ...patch };
-    setQuestionDraft({ ...questionDraft, options });
+    setQuestionDraft((prev) => {
+      const options = [...prev.options];
+      const before = optionLabel(options[index], index);
+      options[index] = { ...options[index], ...patch };
+      const after = optionLabel(options[index], index);
+      // The correct answer is stored by label, so keep it attached to this
+      // choice when its text or picture changes.
+      const correct_answer =
+        before && prev.correct_answer === before ? after : prev.correct_answer;
+      return { ...prev, options, correct_answer };
+    });
   };
 
   const pickOptionImage = async (index: number, file: File) => {
-    if (!editingQuestion) {
-      setOptionImageError("Save this question first, then edit it to add option images.");
+    const problem = validateAttachment(file) ?? (isPictureFile(file) ? null : `"${file.name}" isn't a picture.`);
+    if (problem) {
+      setOptionImageError(problem);
       return;
     }
     setOptionImageError(null);
     setOptionImageBusy(index);
     try {
-      const url = await onUploadOptionImage(editingQuestion.id, file);
+      const url = await onUploadOptionImage(file);
       updateOption(index, { image: url });
     } catch {
       setOptionImageError("Could not upload that image. Try a JPEG, PNG, GIF, or WebP under 10 MB.");
@@ -231,6 +244,10 @@ export function QuestionFormDialog({
       setOptionImageBusy(null);
     }
   };
+
+  const correctIndex = questionDraft.options.findIndex(
+    (opt, i) => optionLabel(opt, i) !== "" && optionLabel(opt, i) === questionDraft.correct_answer
+  );
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -292,8 +309,8 @@ export function QuestionFormDialog({
             <div className="space-y-2">
               <p className="text-sm font-medium">Options</p>
               <p className="text-xs text-muted-foreground">
-                Add an image to an option for abstract/psychological items that need image-based
-                answer choices rather than plain text.
+                A choice can be text, a picture, or both. Leave the text empty if the picture says
+                it all.
               </p>
               {optionImageError && <p className="text-xs text-status-alert">{optionImageError}</p>}
               {questionDraft.options.map((opt, i) => (
@@ -301,7 +318,7 @@ export function QuestionFormDialog({
                   <input
                     value={opt.text}
                     onChange={(e) => updateOption(i, { text: e.target.value })}
-                    placeholder={`Option ${i + 1}`}
+                    placeholder={opt.image ? `Option ${i + 1} (picture only)` : `Option ${i + 1}`}
                     className="field-input flex-1"
                   />
                   {opt.image ? (
@@ -309,7 +326,7 @@ export function QuestionFormDialog({
                       <img
                         src={opt.image}
                         alt={`Option ${i + 1} illustration`}
-                        className="h-10 w-10 rounded-md border border-border object-cover"
+                        className="h-14 w-14 rounded-md border border-border object-cover"
                       />
                       <button
                         type="button"
@@ -321,7 +338,10 @@ export function QuestionFormDialog({
                       </button>
                     </div>
                   ) : (
-                    <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md border border-dashed border-border hover:bg-accent/50">
+                    <label
+                      title="Add a picture to this choice"
+                      className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-md border border-dashed border-border hover:bg-accent/50"
+                    >
                       {optionImageBusy === i ? (
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                       ) : (
@@ -329,7 +349,7 @@ export function QuestionFormDialog({
                       )}
                       <input
                         type="file"
-                        accept="image/*"
+                        accept={PICTURE_ACCEPT}
                         className="hidden"
                         disabled={optionImageBusy !== null}
                         onChange={(e) => {
@@ -342,14 +362,31 @@ export function QuestionFormDialog({
                   )}
                 </div>
               ))}
-              <BuilderField label="Correct option (must match text exactly)">
-                <input
-                  value={questionDraft.correct_answer}
+              <BuilderField label="Correct option">
+                <select
+                  value={correctIndex >= 0 ? String(correctIndex) : ""}
                   onChange={(e) =>
-                    setQuestionDraft({ ...questionDraft, correct_answer: e.target.value })
+                    setQuestionDraft((prev) => ({
+                      ...prev,
+                      correct_answer:
+                        e.target.value === ""
+                          ? ""
+                          : optionLabel(prev.options[Number(e.target.value)], Number(e.target.value)),
+                    }))
                   }
                   className="field-input"
-                />
+                >
+                  <option value="">Select…</option>
+                  {questionDraft.options.map((opt, i) => {
+                    const label = optionLabel(opt, i);
+                    if (!label) return null;
+                    return (
+                      <option key={i} value={i}>
+                        {opt.text.trim() ? label : `${label} (picture)`}
+                      </option>
+                    );
+                  })}
+                </select>
               </BuilderField>
             </div>
           )}
