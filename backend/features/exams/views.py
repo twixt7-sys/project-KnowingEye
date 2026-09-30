@@ -45,6 +45,40 @@ from .serializers import (
 User = get_user_model()
 
 
+def _store_option_image(request, exam: Exam, question_id: int | None = None) -> Response:
+    """Validate and store one option image, returning its absolute URL.
+
+    Shared by the exam-level endpoint (used while a question is still being
+    drafted and has no id yet) and the question-level one. The image is stored
+    under media/ like other question attachments but returned as a bare URL for
+    the client to place into that option's ``image`` field - options don't have
+    their own id to hang a QuestionAttachment row off of.
+    """
+    from django.core.files.storage import default_storage
+
+    services.assert_can_modify_exam(exam, request.user)
+    services.assert_exam_editable(exam)
+    uploaded = request.FILES.get("file")
+    if not uploaded:
+        return Response({"file": ["No file provided."]}, status=status.HTTP_400_BAD_REQUEST)
+    kind = validate_attachment_file(uploaded)
+    if kind != "image":
+        return Response(
+            {"file": ["Option images must be an image file (JPEG, PNG, GIF, or WebP)."]},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    folder = f"questions/{exam.id}/{question_id}" if question_id else f"questions/{exam.id}/drafts"
+    path = default_storage.save(f"{folder}/options/{uploaded.name}", uploaded)
+    # The SPA (Vercel) and API (Railway) are separate origins in production,
+    # so a root-relative /media/... URL would resolve against the SPA host
+    # and 404. Make it absolute against the API host; a storage backend that
+    # already returns an absolute URL (e.g. S3) is left untouched.
+    url = default_storage.url(path)
+    if url.startswith("/"):
+        url = request.build_absolute_uri(url)
+    return Response({"url": url}, status=status.HTTP_201_CREATED)
+
+
 class DepartmentViewSet(viewsets.ModelViewSet):
     """CRUD for institutional departments (admin write, authenticated read)."""
 
@@ -400,6 +434,15 @@ class ExamViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @action(detail=True, methods=["post"], url_path="option-image")
+    def upload_option_image(self, request, pk=None):
+        """Upload an answer-choice image before its question has been saved.
+
+        Lets the builder attach pictures to choices while a new question is
+        still a draft, instead of forcing a save-then-edit round trip.
+        """
+        return _store_option_image(request, self.get_object())
+
     @action(detail=True, methods=["post"], url_path="questions/reorder")
     def reorder_questions(self, request, pk=None):
         """Reorder an exam's questions to match the supplied id sequence."""
@@ -522,34 +565,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         Directive Area 03 ("Question management"): abstract/psychological
         items need image-based answer choices, not just image-based question
-        bodies. The image is stored under media/ like other question
-        attachments, but returned as a bare URL for the client to place into
-        that option's ``image`` field - options don't have their own id to
-        hang a QuestionAttachment row off of.
+        bodies.
         """
-        from django.core.files.storage import default_storage
-
         question = self.get_object()
-        services.assert_can_modify_exam(question.exam, request.user)
-        services.assert_exam_editable(question.exam)
-        uploaded = request.FILES.get("file")
-        if not uploaded:
-            return Response({"file": ["No file provided."]}, status=status.HTTP_400_BAD_REQUEST)
-        kind = validate_attachment_file(uploaded)
-        if kind != "image":
-            return Response(
-                {"file": ["Option images must be an image file (JPEG, PNG, GIF, or WebP)."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        path = default_storage.save(
-            f"questions/{question.exam_id}/{question.id}/options/{uploaded.name}",
-            uploaded,
-        )
-        # The SPA (Vercel) and API (Railway) are separate origins in production,
-        # so a root-relative /media/... URL would resolve against the SPA host
-        # and 404. Make it absolute against the API host; a storage backend that
-        # already returns an absolute URL (e.g. S3) is left untouched.
-        url = default_storage.url(path)
-        if url.startswith("/"):
-            url = request.build_absolute_uri(url)
-        return Response({"url": url}, status=status.HTTP_201_CREATED)
+        return _store_option_image(request, question.exam, question.id)
