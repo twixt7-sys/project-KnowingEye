@@ -1,13 +1,163 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { FileText, ImagePlus, Loader2, Trash2, Upload, X } from "@/shared/icons";
+import { FileText, ImagePlus, Loader2, Plus, Trash2, Upload, X } from "@/shared/icons";
 
 import type { ExamSection, Question, QuestionAttachment } from "@/core/config/api";
 import {
   AttachmentIcon,
   BuilderField,
 } from "@/features/exams/components/builder/builder-primitives";
+import {
+  DOCUMENT_ACCEPT,
+  PICTURE_ACCEPT,
+  isPictureFile,
+} from "@/features/exams/lib/attachment-rules";
 import type { QuestionDraft } from "@/features/exams/schemas/builder-schemas";
+
+const NEW_SECTION_VALUE = "__new_section__";
+
+function SectionSelect({
+  value,
+  sections,
+  onChange,
+  onCreateSection,
+}: {
+  value: number | null;
+  sections: ExamSection[];
+  onChange: (sectionId: number | null) => void;
+  onCreateSection: (title: string) => Promise<ExamSection | null>;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [title, setTitle] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const create = async () => {
+    if (!title.trim() || creating) return;
+    setCreating(true);
+    const section = await onCreateSection(title);
+    setCreating(false);
+    if (section) {
+      onChange(section.id);
+      setTitle("");
+      setAdding(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <BuilderField label="Section (for in-exam navigation)">
+        <select
+          value={adding ? NEW_SECTION_VALUE : (value ?? "")}
+          onChange={(e) => {
+            if (e.target.value === NEW_SECTION_VALUE) {
+              setAdding(true);
+              return;
+            }
+            setAdding(false);
+            onChange(e.target.value ? Number(e.target.value) : null);
+          }}
+          className="field-input"
+        >
+          <option value="">No section</option>
+          {sections.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.title}
+            </option>
+          ))}
+          <option value={NEW_SECTION_VALUE}>+ Add section…</option>
+        </select>
+      </BuilderField>
+      {adding && (
+        <div className="flex items-end gap-2 rounded-lg border border-dashed border-border p-3">
+          <div className="flex-1">
+            <BuilderField label="New section title">
+              <input
+                autoFocus
+                value={title}
+                maxLength={200}
+                onChange={(e) => setTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void create();
+                  }
+                }}
+                placeholder="e.g. Part A - Vocabulary"
+                className="field-input"
+              />
+            </BuilderField>
+          </div>
+          <button
+            type="button"
+            disabled={!title.trim() || creating}
+            onClick={() => void create()}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm text-primary-foreground disabled:opacity-50"
+          >
+            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+            Add
+          </button>
+          <button
+            type="button"
+            disabled={creating}
+            onClick={() => {
+              setAdding(false);
+              setTitle("");
+            }}
+            className="rounded-lg border border-border px-3 py-2 text-sm"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PictureTile({
+  src,
+  alt,
+  label,
+  onRemove,
+}: {
+  src: string | null;
+  alt: string;
+  label?: string;
+  onRemove: () => void;
+}) {
+  return (
+    <li className="relative overflow-hidden rounded-lg border border-border bg-muted/30">
+      {src ? (
+        <img src={src} alt={alt} className="h-28 w-full object-cover" />
+      ) : (
+        <div className="h-28 w-full" />
+      )}
+      {label && (
+        <span className="absolute bottom-1 left-1 rounded bg-background/90 px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          {label}
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="absolute right-1 top-1 rounded-full bg-destructive p-1 text-destructive-foreground"
+        aria-label="Remove picture"
+      >
+        <X className="h-3 w-3" />
+      </button>
+    </li>
+  );
+}
+
+function PendingPicture({ file, onRemove }: { file: File; onRemove: () => void }) {
+  const [src, setSrc] = useState<string | null>(null);
+  useEffect(() => {
+    const url = URL.createObjectURL(file);
+    setSrc(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  return <PictureTile src={src} alt={file.name} label="Pending save" onRemove={onRemove} />;
+}
 
 interface QuestionFormDialogProps {
   open: boolean;
@@ -19,12 +169,14 @@ interface QuestionFormDialogProps {
   pendingFiles: File[];
   setPendingFiles: React.Dispatch<React.SetStateAction<File[]>>;
   attachmentBusy: boolean;
+  error: string | null;
   saving: boolean;
   onClose: () => void;
   onSave: () => void;
   onAttachmentPick: (files: FileList | null) => void;
   onRemoveAttachment: (attachment: QuestionAttachment) => void;
   onUploadOptionImage: (questionId: number, file: File) => Promise<string>;
+  onCreateSection: (title: string) => Promise<ExamSection | null>;
 }
 
 export function QuestionFormDialog({
@@ -37,17 +189,25 @@ export function QuestionFormDialog({
   pendingFiles,
   setPendingFiles,
   attachmentBusy,
+  error,
   saving,
   onClose,
   onSave,
   onAttachmentPick,
   onRemoveAttachment,
   onUploadOptionImage,
+  onCreateSection,
 }: QuestionFormDialogProps) {
   const [optionImageBusy, setOptionImageBusy] = useState<number | null>(null);
   const [optionImageError, setOptionImageError] = useState<string | null>(null);
 
   if (!open) return null;
+
+  const savedPictures = questionAttachments.filter((a) => a.kind === "image");
+  const savedDocuments = questionAttachments.filter((a) => a.kind !== "image");
+  const pendingEntries = pendingFiles.map((file, index) => ({ file, index }));
+  const pendingPictures = pendingEntries.filter(({ file }) => isPictureFile(file));
+  const pendingDocuments = pendingEntries.filter(({ file }) => !isPictureFile(file));
 
   const updateOption = (index: number, patch: Partial<QuestionDraft["options"][number]>) => {
     const options = [...questionDraft.options];
@@ -121,25 +281,12 @@ export function QuestionFormDialog({
             </BuilderField>
           </div>
 
-          <BuilderField label="Section (for in-exam navigation)">
-            <select
-              value={questionDraft.section ?? ""}
-              onChange={(e) =>
-                setQuestionDraft({
-                  ...questionDraft,
-                  section: e.target.value ? Number(e.target.value) : null,
-                })
-              }
-              className="field-input"
-            >
-              <option value="">No section</option>
-              {sections.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title}
-                </option>
-              ))}
-            </select>
-          </BuilderField>
+          <SectionSelect
+            value={questionDraft.section ?? null}
+            sections={sections}
+            onChange={(section) => setQuestionDraft((prev) => ({ ...prev, section }))}
+            onCreateSection={onCreateSection}
+          />
 
           {questionDraft.question_type === "multiple_choice" && (
             <div className="space-y-2">
@@ -238,10 +385,62 @@ export function QuestionFormDialog({
           )}
 
           <div className="rounded-lg border border-border p-4 space-y-3">
-            <p className="text-sm font-medium">Attachments (image, PDF, audio)</p>
-            <p className="text-xs text-muted-foreground">
-              Max 10 MB each. Shown to examinees above the question text.
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">Question picture</p>
+                <p className="text-xs text-muted-foreground">
+                  JPEG, PNG, GIF or WebP, up to 10 MB each. Shown to examinees above the question
+                  text.
+                </p>
+              </div>
+              <label
+                className={`inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent/50 ${
+                  attachmentBusy ? "pointer-events-none opacity-60" : ""
+                }`}
+              >
+                {attachmentBusy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ImagePlus className="h-4 w-4" />
+                )}
+                {attachmentBusy ? "Uploading…" : "Add picture"}
+                <input
+                  type="file"
+                  accept={PICTURE_ACCEPT}
+                  multiple
+                  className="hidden"
+                  disabled={attachmentBusy}
+                  onChange={(e) => {
+                    void onAttachmentPick(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            {(savedPictures.length > 0 || pendingPictures.length > 0) && (
+              <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {savedPictures.map((a) => (
+                  <PictureTile
+                    key={a.id}
+                    src={a.url}
+                    alt={a.caption || "Question picture"}
+                    onRemove={() => void onRemoveAttachment(a)}
+                  />
+                ))}
+                {pendingPictures.map(({ file, index }) => (
+                  <PendingPicture
+                    key={`pending-picture-${index}`}
+                    file={file}
+                    onRemove={() => setPendingFiles((prev) => prev.filter((_, j) => j !== index))}
+                  />
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="rounded-lg border border-border p-4 space-y-3">
+            <p className="text-sm font-medium">Other attachments (PDF, audio)</p>
+            <p className="text-xs text-muted-foreground">Max 10 MB each. PDF, MP3 or WAV.</p>
             <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border p-4 hover:bg-accent/50">
               <Upload className="w-5 h-5 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">
@@ -249,7 +448,7 @@ export function QuestionFormDialog({
               </span>
               <input
                 type="file"
-                accept="image/*,application/pdf,audio/mpeg,audio/wav,audio/*"
+                accept={DOCUMENT_ACCEPT}
                 multiple
                 className="hidden"
                 disabled={attachmentBusy}
@@ -260,30 +459,31 @@ export function QuestionFormDialog({
               />
             </label>
             <ul className="space-y-2 text-sm">
-              {questionAttachments.map((a) => (
+              {savedDocuments.map((a) => (
                 <li key={a.id} className="flex items-center gap-2 rounded border px-3 py-2">
                   <AttachmentIcon kind={a.kind} />
                   <span className="flex-1 truncate">{a.caption || a.url.split("/").pop()}</span>
-                  {editingQuestion && (
-                    <button
-                      type="button"
-                      onClick={() => void onRemoveAttachment(a)}
-                      className="text-status-alert hover:opacity-80"
-                      aria-label="Remove attachment"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => void onRemoveAttachment(a)}
+                    className="text-status-alert hover:opacity-80"
+                    aria-label="Remove attachment"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </li>
               ))}
-              {pendingFiles.map((f, i) => (
-                <li key={`pending-${i}`} className="flex items-center gap-2 rounded border px-3 py-2">
+              {pendingDocuments.map(({ file, index }) => (
+                <li
+                  key={`pending-file-${index}`}
+                  className="flex items-center gap-2 rounded border px-3 py-2"
+                >
                   <FileText className="w-4 h-4 text-muted-foreground" />
-                  <span className="flex-1 truncate">{f.name}</span>
+                  <span className="flex-1 truncate">{file.name}</span>
                   <span className="text-xs text-muted-foreground">pending save</span>
                   <button
                     type="button"
-                    onClick={() => setPendingFiles((prev) => prev.filter((_, j) => j !== i))}
+                    onClick={() => setPendingFiles((prev) => prev.filter((_, j) => j !== index))}
                     className="text-status-alert"
                     aria-label="Remove pending file"
                   >
@@ -293,6 +493,15 @@ export function QuestionFormDialog({
               ))}
             </ul>
           </div>
+
+          {error && (
+            <p
+              role="alert"
+              className="rounded-lg border border-status-alert/40 bg-status-alert/10 px-3 py-2 text-sm text-status-alert"
+            >
+              {error}
+            </p>
+          )}
 
           <div className="flex gap-3 pt-2">
             <button

@@ -126,6 +126,7 @@ export function ExamBuilderPage() {
           pendingFiles={builder.pendingFiles}
           setPendingFiles={builder.setPendingFiles}
           attachmentBusy={builder.attachmentBusy}
+          questionError={builder.questionError}
           importCsv={builder.importCsv}
           setImportCsv={builder.setImportCsv}
           importErrors={builder.importErrors}
@@ -142,6 +143,7 @@ export function ExamBuilderPage() {
           onAttachmentPick={(files) => void builder.handleAttachmentPick(files)}
           onRemoveAttachment={(a) => void builder.removeAttachment(a)}
           onUploadOptionImage={builder.uploadOptionImageForQuestion}
+          onCreateSection={builder.createSectionForQuestion}
           onImportFile={(file) => void builder.handleImportFile(file)}
           onRunImport={builder.runImport}
         />
