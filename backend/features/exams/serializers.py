@@ -284,7 +284,7 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
 class ExamListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for exam lists."""
 
-    created_by_name = serializers.CharField(source="created_by.get_full_name", read_only=True)
+    created_by_name = serializers.SerializerMethodField()
     question_count = serializers.SerializerMethodField()
     is_open = serializers.SerializerMethodField()
     schedule_state = serializers.SerializerMethodField()
@@ -343,6 +343,10 @@ class ExamListSerializer(serializers.ModelSerializer):
             "rejection_note",
         ]
 
+    def get_created_by_name(self, obj):
+        creator = obj.created_by
+        return creator.get_full_name() or creator.username
+
     def get_question_count(self, obj):
         return obj.questions.count()
 
@@ -361,6 +365,9 @@ class ExamTakeSerializer(serializers.ModelSerializer):
     """Examinee-safe exam detail - questions without answer keys."""
 
     questions = QuestionTakeSerializer(many=True, read_only=True)
+    # Shown to examinees so they can see who authored the exam (name only -
+    # the email stays staff-side in ExamDetailSerializer).
+    created_by_name = serializers.SerializerMethodField()
     # Section grouping for in-exam navigation (Question.section). A plain
     # SerializerMethodField (rather than ExamSectionSerializer(many=True))
     # because ExamSectionSerializer is defined later in this module - a
@@ -405,10 +412,15 @@ class ExamTakeSerializer(serializers.ModelSerializer):
             "max_tab_switches",
             "is_open",
             "schedule_state",
+            "created_by_name",
             "sections",
             "questions",
         ]
         read_only_fields = fields
+
+    def get_created_by_name(self, obj):
+        creator = obj.created_by
+        return creator.get_full_name() or creator.username
 
     def get_sections(self, obj):
         return ExamSectionSerializer(obj.sections.order_by("order"), many=True).data
