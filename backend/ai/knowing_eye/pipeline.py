@@ -46,6 +46,7 @@ class BehaviorPipeline:
         self._face = FaceDetector()
         self._pose = PoseDetector(
             shoulder_tilt_max=rec.get("posture_shoulder_tilt_max", 0.12),
+            spine_lean_max=rec.get("posture_spine_lean_max", 0.55),
         )
         pipe = self.config.get("pipeline", {})
         identity_threshold = rec.get(

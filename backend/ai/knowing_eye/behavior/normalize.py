@@ -47,6 +47,13 @@ def classify_ebi_band(
     return EBI_BAND_BAD
 
 
+# Posture scoring: ratios are measured against the configured limit (tilt_max /
+# lean_max). Below _POSTURE_DEADBAND_RATIO the score is 100; it reaches 0 at
+# _POSTURE_ZERO_RATIO.
+_POSTURE_DEADBAND_RATIO = 0.5
+_POSTURE_ZERO_RATIO = 2.0
+
+
 def clamp_pct(value: float) -> float:
     return round(max(0.0, min(100.0, value)), 1)
 
@@ -100,7 +107,11 @@ def posture_quality_pct(
     tilt_ratio = (shoulder_tilt or 0.0) / max(tilt_max, 1e-6)
     lean_ratio = (spine_lean or 0.0) / max(lean_max, 1e-6)
     worst = max(tilt_ratio, lean_ratio)
-    return clamp_pct(100.0 * (1.0 - min(1.0, worst)))
+    # Gradual falloff: full marks inside the deadband, then a linear decline that
+    # only reaches 0 at twice the limit. A ratio right at the limit scores ~67%
+    # (below the 80% alert cutoff) instead of cliffing straight to 0%.
+    over = (worst - _POSTURE_DEADBAND_RATIO) / (_POSTURE_ZERO_RATIO - _POSTURE_DEADBAND_RATIO)
+    return clamp_pct(100.0 * (1.0 - max(0.0, min(1.0, over))))
 
 
 def identity_match_pct(

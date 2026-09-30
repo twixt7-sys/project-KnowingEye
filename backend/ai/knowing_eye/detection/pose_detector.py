@@ -24,7 +24,8 @@ try:
 except Exception:
     logger.warning("MediaPipe unavailable, pose detection will use OpenCV Haar fallback", exc_info=True)
 
-_LEFT_SHOULDER, _RIGHT_SHOULDER, _NOSE, _LEFT_HIP = 11, 12, 0, 23
+_LEFT_SHOULDER, _RIGHT_SHOULDER, _NOSE = 11, 12, 0
+_FALLBACK_OFFCENTER_MAX = 0.35
 
 # MediaPipe always returns all 33 landmarks, guessing positions for parts that
 # are out of frame. A landmark only counts as "seen" at or above this visibility.
@@ -42,8 +43,9 @@ class PoseResult:
 
 
 class PoseDetector:
-    def __init__(self, shoulder_tilt_max: float = 0.12) -> None:
+    def __init__(self, shoulder_tilt_max: float = 0.12, spine_lean_max: float = 0.55) -> None:
         self._shoulder_tilt_max = shoulder_tilt_max
+        self._spine_lean_max = spine_lean_max
         self._landmarker = None
         self._backend = "opencv"
         body = cv2.CascadeClassifier(str(cascade_path("haarcascade_upperbody.xml")))
@@ -90,23 +92,17 @@ class PoseDetector:
         if not result.pose_landmarks:
             return PoseResult(False, None, None, False, 0.0)
         lm = result.pose_landmarks[0]
-        ls, rs, nose, hip = lm[_LEFT_SHOULDER], lm[_RIGHT_SHOULDER], lm[_NOSE], lm[_LEFT_HIP]
 
-        # Upper body = both shoulders seen and inside the frame. A face-only
-        # close-up still yields landmarks, but the shoulders are guesses.
-        visibility = min(_visibility(ls), _visibility(rs))
-        if visibility < _MIN_VISIBILITY or not (_in_frame(ls) and _in_frame(rs)):
-            return PoseResult(False, None, None, False, visibility)
-
-        tilt = abs(ls.y - rs.y) / (abs(ls.x - rs.x) + 1e-6)
-        # Seated at a webcam the hips are almost never in frame; MediaPipe's
-        # guessed hip position made every normal posture read as a lean.
-        spine_lean = None
-        if _visibility(hip) >= _MIN_VISIBILITY and _in_frame(hip):
-            mid_y = (ls.y + rs.y) / 2
-            spine_lean = float(abs(nose.y - mid_y) / (abs(hip.y - mid_y) + 1e-6))
-        bad = tilt > self._shoulder_tilt_max or (spine_lean is not None and spine_lean > 0.55)
-        return PoseResult(True, float(tilt), spine_lean, bad, visibility)
+        ls, rs, nose = lm[_LEFT_SHOULDER], lm[_RIGHT_SHOULDER], lm[_NOSE]
+        shoulder_w = abs(ls.x - rs.x) + 1e-6
+        tilt = abs(ls.y - rs.y) / shoulder_w
+        # Sideways lean: head offset from the shoulder midpoint, in shoulder widths.
+        # Hips are deliberately not used - a desk webcam frames the upper body only,
+        # so hip landmarks are extrapolated guesses and made this ratio blow up.
+        mid_x = (ls.x + rs.x) / 2
+        spine_lean = abs(nose.x - mid_x) / shoulder_w
+        bad = tilt > self._shoulder_tilt_max or spine_lean > self._spine_lean_max
+        return PoseResult(True, float(tilt), float(spine_lean), bad)
 
     def _detect_heuristic(self, frame_bgr: np.ndarray) -> PoseResult:
         if self._body is None:
@@ -117,12 +113,13 @@ class PoseDetector:
             return PoseResult(False, None, None, False, 0.0)
         x, y, bw, bh = max(bodies, key=lambda r: r[2] * r[3])
         h, w = frame_bgr.shape[:2]
-        # Proxy: off-center upper body suggests lean
+        # Proxy: off-center upper body suggests lean. Scaled so an offset of
+        # _FALLBACK_OFFCENTER_MAX lands exactly on the configured lean limit.
         center_offset = abs((x + bw / 2) - w / 2) / (w / 2)
         tilt = center_offset * 0.15
-        spine_lean = min(1.0, (y + bh) / h)
-        bad = tilt > self._shoulder_tilt_max or center_offset > 0.35
-        return PoseResult(True, float(tilt), float(spine_lean), bad, 1.0)
+        spine_lean = center_offset * self._spine_lean_max / _FALLBACK_OFFCENTER_MAX
+        bad = tilt > self._shoulder_tilt_max or center_offset > _FALLBACK_OFFCENTER_MAX
+        return PoseResult(True, float(tilt), float(spine_lean), bad)
 
     def close(self) -> None:
         if self._landmarker is not None:
