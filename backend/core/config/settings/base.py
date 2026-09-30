@@ -165,7 +165,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 
 MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+# Point MEDIA_ROOT at a persistent volume in production (e.g. a Railway volume
+# mounted at /data -> DJANGO_MEDIA_ROOT=/data/media). The container filesystem
+# is wiped on every deploy, which would delete uploaded question pictures.
+MEDIA_ROOT = Path(decouple_config("DJANGO_MEDIA_ROOT", default=str(BASE_DIR / "media")))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

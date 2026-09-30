@@ -34,13 +34,13 @@ Project: `knowing_eye` (ref `zbrbavxikibhibttswof`), already linked via the Supa
    ```
 
    `OTP_FUNCTION_SECRET` must match `SUPABASE_OTP_FUNCTION_SECRET` in `backend/.env` (local) and
-   in Render's env vars (production) exactly - it's how the function authenticates the caller.
+   in Railway's env vars (production) exactly - it's how the function authenticates the caller.
 
 3. **Point Django at it.** `backend/.env` (gitignored) already has `SUPABASE_URL` and
    `SUPABASE_OTP_FUNCTION_SECRET` filled in. Once step 2 is done, `EMAIL_BACKEND` auto-selects
    `SupabaseEmailBackend` (see `development.py`/`production.py`) - no other Django-side change
-   needed. On Render, set the same two keys (`SUPABASE_URL`, `SUPABASE_OTP_FUNCTION_SECRET`) in
-   the dashboard; `render.yaml` already reserves them as `sync: false`.
+   needed. On Railway, set the same two keys (`SUPABASE_URL`, `SUPABASE_OTP_FUNCTION_SECRET`) in
+   the service's Variables tab.
 
 ## The sandbox-sender limitation
 

@@ -30,6 +30,7 @@ interface BuilderQuestionsTabProps {
   pendingFiles: File[];
   setPendingFiles: React.Dispatch<React.SetStateAction<File[]>>;
   attachmentBusy: boolean;
+  questionError: string | null;
   importCsv: string;
   setImportCsv: (value: string) => void;
   importErrors: string[];
@@ -45,7 +46,8 @@ interface BuilderQuestionsTabProps {
   onSaveQuestion: () => void;
   onAttachmentPick: (files: FileList | null) => void;
   onRemoveAttachment: (attachment: QuestionAttachment) => void;
-  onUploadOptionImage: (questionId: number, file: File) => Promise<string>;
+  onUploadOptionImage: (file: File) => Promise<string>;
+  onCreateSection: (title: string) => Promise<ExamSection | null>;
   onImportFile: (file: File) => void;
   onRunImport: () => void;
 }
@@ -153,6 +155,7 @@ export function BuilderQuestionsTab({
   pendingFiles,
   setPendingFiles,
   attachmentBusy,
+  questionError,
   importCsv,
   setImportCsv,
   importErrors,
@@ -169,6 +172,7 @@ export function BuilderQuestionsTab({
   onAttachmentPick,
   onRemoveAttachment,
   onUploadOptionImage,
+  onCreateSection,
   onImportFile,
   onRunImport,
 }: BuilderQuestionsTabProps) {
@@ -349,12 +353,14 @@ export function BuilderQuestionsTab({
         pendingFiles={pendingFiles}
         setPendingFiles={setPendingFiles}
         attachmentBusy={attachmentBusy}
+        error={questionError}
         saving={saving}
         onClose={onCloseQuestionForm}
         onSave={onSaveQuestion}
         onAttachmentPick={onAttachmentPick}
         onRemoveAttachment={onRemoveAttachment}
         onUploadOptionImage={onUploadOptionImage}
+        onCreateSection={onCreateSection}
       />
     </div>
   );

@@ -26,6 +26,7 @@ export function ExamTakingPage() {
     setShowSubmitModal,
     monitoring,
     monitoringEnabled,
+    disableCopyPaste,
     webcamActive,
     behaviorAlerts,
     tabSwitchWarning,
@@ -76,6 +77,7 @@ export function ExamTakingPage() {
   return (
     <FocusShell
       monitoringEnabled={monitoringEnabled}
+      disableCopyPaste={disableCopyPaste}
       webcamActive={webcamActive}
       behaviorAlerts={behaviorAlerts}
       tabSwitchWarning={tabSwitchWarning}

@@ -9,10 +9,10 @@ import {
 } from "./marketing-primitives";
 
 const team = [
-  { name: "Saturnino C. Ancog III", role: "Lead Developer" },
-  { name: "Khrisha Marie O. Cavan", role: "AI Specialist" },
-  { name: "Kervy N. Cadiente", role: "Full-Stack Developer" },
-  { name: "Twixt Jasley J. Tamera", role: "UI/UX Designer" },
+  { name: "Saturnino C. Ancog III" },
+  { name: "Khrisha Marie O. Cavan" },
+  { name: "Kervy N. Cadiente" },
+  { name: "Twixt Jasley J. Tamera" },
 ];
 
 const objectives = [
@@ -161,9 +161,6 @@ export function AboutPage() {
               <h3 className="mt-4 font-serif text-[0.9975rem] font-semibold leading-snug tracking-tight">
                 {member.name}
               </h3>
-              <p className="mt-1.5 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground">
-                {member.role}
-              </p>
             </div>
           ))}
         </div>

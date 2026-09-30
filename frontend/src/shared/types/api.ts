@@ -89,6 +89,7 @@ export interface Exam {
   monitoring_enabled?: boolean;
   shuffle_questions?: boolean;
   shuffle_options?: boolean;
+  disable_copy_paste?: boolean;
   unanswered_counts_as_wrong?: boolean;
   requires_assignment?: boolean;
   results_release_at?: string | null;

@@ -1,10 +1,11 @@
 import { AlertTriangle, Camera, Loader2 } from "@/shared/icons";
-import type { ClipboardEvent, MouseEvent, ReactNode } from "react";
+import type { ClipboardEvent, DragEvent, MouseEvent, ReactNode } from "react";
 
 import { ExamTimer } from "@/features/session/components/taking/exam-timer";
 
 interface FocusShellProps {
   monitoringEnabled: boolean;
+  disableCopyPaste: boolean;
   webcamActive: boolean;
   behaviorAlerts: string[];
   tabSwitchWarning?: string | null;
@@ -17,11 +18,14 @@ interface FocusShellProps {
 /** Directive Area 04 ("Browser-side deterrents", P2): right-click, selection,
  * and copy are disabled on the exam chrome (question text, navigator) to
  * deter casually copying exam content out - but never on an actual form
- * field, since a student must still be able to select/cut/copy/paste while
- * editing their own short-answer or essay response. These are deterrents,
- * not security: a determined user can still bypass them (browser devtools,
- * a second device) - see the disclaimer in docs/documentation/chapter2/
- * 03-system-design.html, "Browser-side deterrents." */
+ * field by default, since a student must still be able to select/cut/copy/
+ * paste while editing their own short-answer or essay response. Exams with
+ * `disable_copy_paste` set additionally block copy, cut, paste, and drag-drop
+ * inside form fields so answers must be typed, not pasted in; typing and
+ * selecting text in a field still work. These are
+ * deterrents, not security: a determined user can still bypass them (browser
+ * devtools, a second device) - see the disclaimer in docs/documentation/
+ * chapter2/03-system-design.html, "Browser-side deterrents." */
 function isEditableTarget(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
   if (!el) return false;
@@ -31,6 +35,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 export function FocusShell({
   monitoringEnabled,
+  disableCopyPaste,
   webcamActive,
   behaviorAlerts,
   tabSwitchWarning,
@@ -42,13 +47,23 @@ export function FocusShell({
   const guard = <T extends MouseEvent | ClipboardEvent>(e: T) => {
     if (!isEditableTarget(e.target)) e.preventDefault();
   };
+  // Copy/cut are always blocked outside fields; with disableCopyPaste they're
+  // blocked inside fields too, and paste/drop are blocked everywhere.
+  const guardCopyCut = (e: ClipboardEvent) => {
+    if (disableCopyPaste || !isEditableTarget(e.target)) e.preventDefault();
+  };
+  const blockPaste = (e: ClipboardEvent | DragEvent) => {
+    if (disableCopyPaste) e.preventDefault();
+  };
 
   return (
     <div
       className="min-h-screen bg-background select-none [&_input]:select-text [&_textarea]:select-text"
       onContextMenu={guard}
-      onCopy={guard}
-      onCut={guard}
+      onCopy={guardCopyCut}
+      onCut={guardCopyCut}
+      onPaste={blockPaste}
+      onDrop={blockPaste}
     >
       <div className="sticky top-0 z-50 bg-card border-b border-border">
         <div className="container mx-auto px-4 py-4">

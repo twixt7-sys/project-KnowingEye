@@ -35,7 +35,7 @@ class UserSerializer(serializers.ModelSerializer):
         if not obj.avatar:
             return None
         # Absolute, because the frontend and API are deployed as separate
-        # origins (see render.yaml) - a root-relative "/media/..." path
+        # origins (Vercel + Railway) - a root-relative "/media/..." path
         # would resolve against whatever origin the SPA happens to be on,
         # not the API that actually serves the file.
         request = self.context.get("request")

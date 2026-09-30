@@ -75,15 +75,35 @@ def gaze_focus_pct(yaw_deg: float | None, pitch_deg: float | None, yaw_max: floa
     return clamp_pct(100.0 * (1.0 - min(1.0, worst)))
 
 
-def posture_compliance_pct(
+def upper_body_presence_pct(detected: bool, visibility: float | None = None) -> float:
+    """Upper-Body Presence (``Up``): is the examinee's upper body in view?
+
+    Like face presence, "not seen" scores 0 - it used to return a "neutral"
+    50%, which pinned the indicator at 50% whenever the pose model missed.
+    ``visibility`` is the pose model's shoulder visibility (0-1); ``None``
+    means the backend gives no confidence, so a detection counts fully.
+    """
+    if not detected:
+        return 0.0
+    if visibility is None:
+        return 100.0
+    return clamp_pct(100.0 * visibility)
+
+
+def posture_quality_pct(
     detected: bool,
     shoulder_tilt: float | None,
     spine_lean: float | None,
     tilt_max: float,
     lean_max: float = 0.55,
-) -> float:
+) -> float | None:
+    """How upright a *detected* upper body is (drives the bad_posture event only).
+
+    ``None`` when no upper body was detected - absence is handled by
+    upper-body presence and the leaving_seat event, not scored as bad posture.
+    """
     if not detected:
-        return 50.0
+        return None
     tilt_ratio = (shoulder_tilt or 0.0) / max(tilt_max, 1e-6)
     lean_ratio = (spine_lean or 0.0) / max(lean_max, 1e-6)
     worst = max(tilt_ratio, lean_ratio)

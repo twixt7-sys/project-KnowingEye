@@ -22,6 +22,9 @@ pipeline:
                                     # reusing the last match/distance in between) keeps the bounding
                                     # box - which only ever comes from MediaPipe - rendering close to
                                     # the client's capture rate instead of queueing behind ArcFace.
+  identity_async: true             # Run those ArcFace checks on a background thread; each frame reuses
+                                    # the latest finished match/distance, so the analysis reply (and the
+                                    # bounding box) never waits on the embedding model at all.
 
 preprocessing:
   max_width: 640
@@ -35,6 +38,9 @@ detection:
 recognition:
   embedding_backend: arcface
   arcface_model: buffalo_l
+  arcface_det_size: 320             # RetinaFace input size. Client frames are <=480px wide with the face
+                                     # filling a large share of the frame, so 640x640 only upscaled them
+                                     # (~4x the detector compute) without finding anything 320 misses.
   gaze_yaw_threshold_deg: 40        # Head yaw used as the gaze proxy (no true pupil/eye tracking -
   gaze_pitch_threshold_deg: 35      # standard practice at webcam, non-IR resolution). Angle alone
                                      # never flags anything; it must also persist across the temporal

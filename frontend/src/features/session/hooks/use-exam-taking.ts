@@ -57,6 +57,7 @@ export function useExamTaking() {
   });
 
   const monitoringEnabled = session?.exam?.monitoring_enabled !== false;
+  const disableCopyPaste = session?.exam?.disable_copy_paste === true;
   const webcamActive =
     monitoringEnabled &&
     (monitoring.status === "live" || monitoring.status === "fallback-rest");
@@ -258,6 +259,7 @@ export function useExamTaking() {
     setShowSubmitModal,
     monitoring,
     monitoringEnabled,
+    disableCopyPaste,
     webcamActive,
     behaviorAlerts,
     tabSwitchCount,
