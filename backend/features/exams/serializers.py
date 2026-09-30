@@ -202,6 +202,9 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
+            # The client needs the new question's id to upload its attachments
+            # straight after creating it.
+            "id",
             "question_text",
             "question_type",
             "options",
@@ -215,6 +218,7 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
             "trim_whitespace",
             "shuffle_options_override",
         ]
+        read_only_fields = ["id"]
 
     def validate_options(self, value):
         if value and not isinstance(value, list):

@@ -1,7 +1,10 @@
+import shutil
+import tempfile
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -88,6 +91,34 @@ class ExamsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["question_text"], "Capital of France?")
 
+    def test_created_question_returns_id_so_a_picture_can_be_attached(self):
+        """The builder uploads a new question's pictures using the id from the create response."""
+        media_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media_root, ignore_errors=True)
+        with override_settings(MEDIA_ROOT=media_root):
+            created = self.client.post(
+                f"/api/exams/{self.exam.id}/questions/",
+                {
+                    "question_text": "Which shape is shown?",
+                    "question_type": "multiple_choice",
+                    "options": [{"text": "Circle", "image": None}, {"text": "Square", "image": None}],
+                    "correct_answer": "Circle",
+                    "points": 1,
+                },
+                format="json",
+            )
+            self.assertEqual(created.status_code, status.HTTP_201_CREATED)
+            self.assertIsInstance(created.data["id"], int)
+
+            png = SimpleUploadedFile("shape.png", b"\x89PNG\r\n\x1a\n", content_type="image/png")
+            upload = self.client.post(
+                f"/api/exams/{self.exam.id}/questions/{created.data['id']}/attachments/",
+                {"file": png},
+                format="multipart",
+            )
+            self.assertEqual(upload.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(upload.data["kind"], QuestionAttachment.Kind.IMAGE)
+
     def test_import_questions_from_csv_template(self):
         response = self.client.post(
             f"/api/exams/{self.exam.id}/questions/import/",
@@ -117,6 +148,57 @@ class ExamsAPITests(APITestCase):
 
         list_q = self.client.get(f"/api/exams/{self.exam.id}/questions/")
         self.assertEqual(len(list_q.data[0]["attachments"]), 1)
+
+    def test_attachment_urls_are_absolute_in_list_and_reorder(self):
+        """Frontend and API are separate origins in prod, so URLs must carry the host."""
+        media_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media_root, ignore_errors=True)
+        with override_settings(MEDIA_ROOT=media_root):
+            question = Question.objects.get(exam=self.exam)
+            png = SimpleUploadedFile("chart.png", b"\x89PNG\r\n\x1a\n", content_type="image/png")
+            upload = self.client.post(
+                f"/api/exams/{self.exam.id}/questions/{question.id}/attachments/",
+                {"file": png},
+                format="multipart",
+            )
+            self.assertEqual(upload.status_code, status.HTTP_201_CREATED)
+            self.assertTrue(upload.data["url"].startswith("http"))
+
+            listed = self.client.get(f"/api/exams/{self.exam.id}/questions/")
+            self.assertTrue(listed.data[0]["attachments"][0]["url"].startswith("http"))
+
+            reordered = self.client.post(
+                f"/api/exams/{self.exam.id}/questions/reorder/",
+                {"question_ids": [question.id]},
+                format="json",
+            )
+            self.assertEqual(reordered.status_code, status.HTTP_200_OK)
+            self.assertTrue(reordered.data[0]["attachments"][0]["url"].startswith("http"))
+
+    def test_upload_option_image_returns_absolute_url(self):
+        media_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media_root, ignore_errors=True)
+        with override_settings(MEDIA_ROOT=media_root):
+            question = Question.objects.get(exam=self.exam)
+            png = SimpleUploadedFile("opt.png", b"\x89PNG\r\n\x1a\n", content_type="image/png")
+            response = self.client.post(
+                f"/api/exams/{self.exam.id}/questions/{question.id}/option-image/",
+                {"file": png},
+                format="multipart",
+            )
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertTrue(response.data["url"].startswith("http"))
+            self.assertIn("/media/questions/", response.data["url"])
+
+    def test_upload_rejects_unsupported_file_type(self):
+        question = Question.objects.get(exam=self.exam)
+        exe = SimpleUploadedFile("run.exe", b"MZ", content_type="application/x-msdownload")
+        response = self.client.post(
+            f"/api/exams/{self.exam.id}/questions/{question.id}/attachments/",
+            {"file": exe},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_publish_exam(self):
         response = self.client.post(f"/api/exams/{self.exam.id}/publish/")

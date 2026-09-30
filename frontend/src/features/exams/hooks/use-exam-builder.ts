@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { ApiError, formatApiError, type Question, type QuestionAttachment } from "@/core/config/api";
+import {
+  ApiError,
+  formatApiError,
+  type ExamSection,
+  type Question,
+  type QuestionAttachment,
+} from "@/core/config/api";
 import {
   approveExam,
   createExamAssignment,
@@ -22,6 +28,7 @@ import {
   uploadOptionImage,
   uploadQuestionAttachment,
 } from "@/features/exams/api/exam-api";
+import { validateAttachment } from "@/features/exams/lib/attachment-rules";
 import { examBuilderKeys } from "@/features/exams/queries/keys";
 import { examBuilderQueries } from "@/features/exams/queries/queries";
 import { CSV_TEMPLATE, readImportFileAsCsv } from "@/features/exams/lib/question-import-template";
@@ -50,6 +57,9 @@ export function useExamBuilder(examId: number) {
   const [form, setForm] = useState<ExamForm | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  // Errors raised while the question dialog is open. The page-level banner sits
+  // underneath the modal overlay, so these are rendered inside the dialog.
+  const [questionError, setQuestionError] = useState<string | null>(null);
 
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
@@ -145,21 +155,39 @@ export function useExamBuilder(examId: number) {
       };
       if (editing) {
         await updateQuestion(examId, editing.id, payload);
-        return { created: false };
+        return { created: false, failedUploads: [] as string[] };
       }
       const created = await createQuestion(examId, payload);
+      // The question now exists, so an upload failure must not fail the whole
+      // save - a retry would create a duplicate question. Report it instead.
+      const failedUploads: string[] = [];
       for (const file of pending) {
-        await uploadQuestionAttachment(examId, created.id, file);
+        try {
+          await uploadQuestionAttachment(examId, created.id, file);
+        } catch {
+          failedUploads.push(file.name);
+        }
       }
-      return { created: true };
+      return { created: true, failedUploads };
     },
-    onMutate: () => setActionError(null),
-    onSuccess: async ({ created }) => {
+    onMutate: () => {
+      setActionError(null);
+      setQuestionError(null);
+    },
+    onSuccess: async ({ created, failedUploads }) => {
       setShowQuestionForm(false);
-      setMessage(created ? "Question added." : "Question updated.");
+      if (failedUploads.length) {
+        setMessage(null);
+        setActionError(
+          `Question added, but ${failedUploads.length} file(s) could not be uploaded ` +
+            `(${failedUploads.join(", ")}). Edit the question to attach them again.`
+        );
+      } else {
+        setMessage(created ? "Question added." : "Question updated.");
+      }
       await invalidateBuilder();
     },
-    onError: (e) => setActionError(formatApiError(e)),
+    onError: (e) => setQuestionError(formatApiError(e)),
   });
 
   const deleteQuestionMutation = useMutation({
@@ -277,10 +305,8 @@ export function useExamBuilder(examId: number) {
     mutationFn: (payload: { title: string; instructions?: string }) =>
       createExamSection(examId, payload),
     onSuccess: async () => {
-      setMessage("Section created. Assign questions to it from the question editor.");
       await invalidateBuilder();
     },
-    onError: (e) => setActionError(formatApiError(e)),
   });
 
   const updateSectionMutation = useMutation({
@@ -354,6 +380,7 @@ export function useExamBuilder(examId: number) {
   };
 
   const openNewQuestion = () => {
+    setQuestionError(null);
     setEditingQuestion(null);
     setQuestionDraft({ ...EMPTY_QUESTION, options: EMPTY_QUESTION.options.map((o) => ({ ...o })) });
     setQuestionAttachments([]);
@@ -362,6 +389,7 @@ export function useExamBuilder(examId: number) {
   };
 
   const openEditQuestion = (q: Question) => {
+    setQuestionError(null);
     setEditingQuestion(q);
     setQuestionDraft({
       question_text: q.question_text,
@@ -389,7 +417,7 @@ export function useExamBuilder(examId: number) {
       const attachment = await uploadQuestionAttachment(examId, questionId, file);
       setQuestionAttachments((prev) => [...prev, attachment]);
     } catch (e: unknown) {
-      setActionError(formatApiError(e));
+      setQuestionError(formatApiError(e, `Could not upload "${file.name}".`));
     } finally {
       setAttachmentBusy(false);
     }
@@ -409,7 +437,7 @@ export function useExamBuilder(examId: number) {
       await deleteQuestionAttachment(examId, editingQuestion.id, attachment.id);
       setQuestionAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
     } catch (e: unknown) {
-      setActionError(formatApiError(e));
+      setQuestionError(formatApiError(e));
     } finally {
       setAttachmentBusy(false);
     }
@@ -417,7 +445,14 @@ export function useExamBuilder(examId: number) {
 
   const handleAttachmentPick = async (files: FileList | null) => {
     if (!files?.length) return;
-    const picked = Array.from(files);
+    setQuestionError(null);
+    const problems: string[] = [];
+    const picked = Array.from(files).filter((file) => {
+      const problem = validateAttachment(file);
+      if (problem) problems.push(problem);
+      return !problem;
+    });
+    if (problems.length) setQuestionError(problems.join(" "));
     if (editingQuestion) {
       for (const file of picked) {
         await uploadAttachment(editingQuestion.id, file);
@@ -489,7 +524,27 @@ export function useExamBuilder(examId: number) {
 
   const addSection = (title: string, instructions?: string) => {
     if (!title.trim()) return;
-    createSectionMutation.mutate({ title: title.trim(), instructions: instructions?.trim() });
+    createSectionMutation.mutate(
+      { title: title.trim(), instructions: instructions?.trim() },
+      {
+        onSuccess: () =>
+          setMessage("Section created. Assign questions to it from the question editor."),
+        onError: (e) => setActionError(formatApiError(e)),
+      }
+    );
+  };
+
+  /** Creates a section from inside the question dialog; resolves to it (or null on failure). */
+  const createSectionForQuestion = async (title: string): Promise<ExamSection | null> => {
+    const trimmed = title.trim();
+    if (!trimmed) return null;
+    setQuestionError(null);
+    try {
+      return await createSectionMutation.mutateAsync({ title: trimmed });
+    } catch (e) {
+      setQuestionError(formatApiError(e, "Could not create the section."));
+      return null;
+    }
   };
 
   const renameSection = (sectionId: number, title: string) => {
@@ -533,6 +588,7 @@ export function useExamBuilder(examId: number) {
     questionDraft,
     setQuestionDraft,
     questionAttachments,
+    questionError,
     pendingFiles,
     setPendingFiles,
     attachmentBusy,
@@ -564,6 +620,7 @@ export function useExamBuilder(examId: number) {
     addCandidate,
     importCandidates,
     addSection,
+    createSectionForQuestion,
     renameSection,
     removeSection,
     createSectionPending: createSectionMutation.isPending,
