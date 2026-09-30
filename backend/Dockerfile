@@ -33,7 +33,7 @@ RUN chmod +x entrypoint.sh
 
 EXPOSE 8000
 
-# Render (and most PaaS) inject $PORT at runtime; fall back to 8000 for local
+# Railway injects $PORT at runtime; fall back to 8000 for local
 # `docker run`. entrypoint.sh migrates + collects static before starting
 # Daphne - needed on Railway, which has no separate release/pre-deploy phase.
 CMD ["./entrypoint.sh"]

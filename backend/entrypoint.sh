@@ -1,6 +1,6 @@
 #!/bin/sh
-# Railway (unlike Render's preDeployCommand) has no separate release phase,
-# so migrations/collectstatic must run as part of container startup.
+# Railway has no separate release phase, so migrations/collectstatic must
+# run as part of container startup.
 # Idempotent - safe to run on every boot/restart.
 set -e
 
