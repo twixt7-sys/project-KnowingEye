@@ -175,6 +175,7 @@ class BehaviorPipeline:
                 pose_detected=pose.detected,
                 face_count=len(faces),
             ),
+            upper_body_visibility=pose.upper_body_visibility,
         )
 
         with self._lock:
