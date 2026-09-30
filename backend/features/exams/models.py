@@ -171,6 +171,10 @@ class Exam(models.Model):
         default=False,
         help_text='When enabled, multiple-choice options are shuffled per attempt',
     )
+    disable_copy_paste = models.BooleanField(
+        default=False,
+        help_text='When enabled, copy, cut, and paste are blocked while examinees take the exam',
+    )
     unanswered_counts_as_wrong = models.BooleanField(
         default=True,
         help_text='When true, unanswered questions score zero toward the total',

@@ -181,6 +181,13 @@ export function BuilderSettingsTab({
           description="Randomize multiple-choice option order per attempt."
         />
         <CheckboxSetting
+          checked={form.disable_copy_paste}
+          onCheckedChange={(checked) => update({ disable_copy_paste: checked === true })}
+          disabled={!isDraft}
+          title="Disable copy and paste"
+          description="Block copy, cut, and paste while examinees take the exam, including inside answer fields, so answers must be typed."
+        />
+        <CheckboxSetting
           checked={form.requires_assignment}
           onCheckedChange={(checked) => update({ requires_assignment: checked === true })}
           disabled={!isDraft}
