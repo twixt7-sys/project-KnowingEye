@@ -274,12 +274,12 @@ class _StubPipeline:
             exam_behavior_index_pct,
             face_presence_pct,
             gaze_focus_pct,
-            posture_compliance_pct,
+            upper_body_presence_pct,
         )
 
         face_presence = face_presence_pct(face_count)
         gaze = gaze_focus_pct(0.0 if face_count else None, 0.0 if face_count else None, 40, 35)
-        posture = posture_compliance_pct(face_count > 0, None, None, 0.18)
+        posture = upper_body_presence_pct(face_count > 0)
 
         identity_pct, identity_distance = self._identity_score(frame_bgr, reference_embedding)
 

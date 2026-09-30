@@ -142,6 +142,7 @@ class BehaviorPipeline:
                 pose_detected=pose.detected,
                 face_count=len(faces),
             ),
+            upper_body_visibility=pose.upper_body_visibility,
         )
         metrics, events, alerts = self._scorer.score(
             face_analysis,
