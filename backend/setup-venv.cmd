@@ -31,7 +31,7 @@ echo [3/4] OpenCV + NumPy - LARGE download, often 5-15 minutes. Not frozen; wait
 if errorlevel 1 goto :fail
 
 echo.
-echo [4/4] Production extras (PostgreSQL driver, gunicorn)...
+echo [4/4] Production extras (PostgreSQL driver, whitenoise)...
 "%PY%" -m pip install -r requirements-prod.txt
 if errorlevel 1 goto :fail
 
