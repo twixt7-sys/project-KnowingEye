@@ -33,6 +33,7 @@ import { FilterBar } from "@/shared/components/patterns/filter-bar";
 import { IrisGauge } from "@/shared/components/patterns/iris-gauge";
 import { Button } from "@/shared/components/ui/button";
 import { Checkbox } from "@/shared/components/ui/checkbox";
+import { useDebounce } from "@/shared/hooks/use-debounce";
 
 interface CreateExamForm {
   title: string;
@@ -106,6 +107,7 @@ export function ExaminerDashboardPage() {
   const { user } = useAuth();
   const dashboardQuery = useQuery(dashboardQueries.examiner());
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, 300);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sort, setSort] = useState<string>("-created_at");
@@ -139,17 +141,18 @@ export function ExaminerDashboardPage() {
     : null;
 
   const filteredExams = useMemo(() => {
+    const needle = debouncedQuery.toLowerCase();
     const filtered = exams.filter((e) => {
       const matchesQuery =
-        e.title.toLowerCase().includes(query.toLowerCase()) ||
-        (e.exam_code ?? "").toLowerCase().includes(query.toLowerCase());
+        e.title.toLowerCase().includes(needle) ||
+        (e.exam_code ?? "").toLowerCase().includes(needle);
       const matchesStatus = statusFilter === "all" || e.status === statusFilter;
       const matchesCategory =
         categoryFilter === "all" || String(e.category?.id ?? "") === categoryFilter;
       return matchesQuery && matchesStatus && matchesCategory;
     });
     return sortExams(filtered, sort);
-  }, [exams, query, statusFilter, categoryFilter, sort]);
+  }, [exams, debouncedQuery, statusFilter, categoryFilter, sort]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
