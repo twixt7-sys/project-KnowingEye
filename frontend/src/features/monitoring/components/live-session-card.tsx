@@ -65,6 +65,8 @@ export function LiveSessionCard({
           <img
             src={observer.snapshot}
             alt={`${name} live`}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-contain"
           />
         ) : (

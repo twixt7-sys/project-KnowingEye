@@ -162,6 +162,8 @@ export function QuestionFormDialog({
                       <img
                         src={opt.image}
                         alt={`Option ${i + 1} illustration`}
+                        loading="lazy"
+                        decoding="async"
                         className="h-10 w-10 rounded-md border border-border object-cover"
                       />
                       <button

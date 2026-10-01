@@ -113,6 +113,8 @@ function QuestionAnswerFields({
               <img
                 src={option.image}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="h-14 w-14 shrink-0 rounded-md border border-border object-cover"
               />
             )}
@@ -131,7 +133,13 @@ function QuestionAttachments({ attachments }: { attachments?: QuestionAttachment
       {attachments.map((att) => (
         <div key={att.id} className="rounded-lg border bg-muted/30 p-3">
           {att.kind === "image" && (
-            <img src={att.url} alt={att.caption || "Question image"} className="max-h-64 rounded-md mx-auto" />
+            <img
+              src={att.url}
+              alt={att.caption || "Question image"}
+              loading="lazy"
+              decoding="async"
+              className="max-h-64 rounded-md mx-auto"
+            />
           )}
           {att.kind === "pdf" && (
             <a href={att.url} target="_blank" rel="noreferrer" className="text-sm text-primary underline">
