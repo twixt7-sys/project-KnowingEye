@@ -40,6 +40,33 @@ export default defineConfig({
       '/media': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Shared vendor libs get long-lived chunks that survive app deploys.
+        // Route-only libs (tremor, dnd-kit, exceljs) are intentionally left to
+        // Rollup so they stay attached to the lazy routes that import them.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          if (/node_modules\/(react|react-dom|scheduler|react-router)\//.test(id)) {
+            return 'vendor-react'
+          }
+          if (id.includes('@radix-ui') || id.includes('cmdk') || id.includes('sonner')) {
+            return 'vendor-ui'
+          }
+          if (id.includes('@tanstack')) return 'vendor-tanstack'
+          if (
+            id.includes('react-hook-form') ||
+            id.includes('@hookform') ||
+            /node_modules\/zod\//.test(id)
+          ) {
+            return 'vendor-forms'
+          }
+          return undefined
+        },
+      },
+    },
+  },
   // Reduce dev-server memory on constrained machines
   optimizeDeps: {
     holdUntilCrawlEnd: false,
