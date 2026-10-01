@@ -1,5 +1,11 @@
 import { API_BASE_URL } from "@/core/config/env";
 import { ApiError } from "@/shared/lib/api-error";
+import {
+  ATTACHMENT_IMAGE_COMPRESSION,
+  AVATAR_COMPRESSION,
+  OPTION_IMAGE_COMPRESSION,
+  compressImage,
+} from "@/shared/lib/image-compress";
 import { toQuery } from "@/shared/lib/query-params";
 import { tokenStore } from "@/shared/lib/token-store";
 import type {
@@ -143,7 +149,7 @@ class ApiClient {
     form.append("first_name", userData.first_name);
     form.append("last_name", userData.last_name);
     if (userData.avatar) {
-      form.append("avatar", userData.avatar);
+      form.append("avatar", await compressImage(userData.avatar, AVATAR_COMPRESSION));
     }
     if (userData.role) {
       form.append("role", userData.role);
@@ -187,7 +193,7 @@ class ApiClient {
 
   async uploadAvatar(file: File) {
     const form = new FormData();
-    form.append("avatar", file);
+    form.append("avatar", await compressImage(file, AVATAR_COMPRESSION));
     return this.request<ProfileUser>("/auth/profile/avatar/", {
       method: "POST",
       body: form,
@@ -513,7 +519,7 @@ class ApiClient {
 
   async uploadQuestionAttachment(examId: number, questionId: number, file: File, caption?: string) {
     const form = new FormData();
-    form.append("file", file);
+    form.append("file", await compressImage(file, ATTACHMENT_IMAGE_COMPRESSION));
     if (caption) form.append("caption", caption);
     return this.request<QuestionAttachment>(
       `/exams/${examId}/questions/${questionId}/attachments/`,
@@ -530,7 +536,7 @@ class ApiClient {
 
   async uploadOptionImage(examId: number, questionId: number, file: File) {
     const form = new FormData();
-    form.append("file", file);
+    form.append("file", await compressImage(file, OPTION_IMAGE_COMPRESSION));
     return this.request<{ url: string }>(
       `/exams/${examId}/questions/${questionId}/option-image/`,
       { method: "POST", body: form },

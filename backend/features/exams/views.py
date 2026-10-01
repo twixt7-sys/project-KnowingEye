@@ -14,7 +14,9 @@ from rest_framework.response import Response
 from core.security.drf import IsAdminOrReadOnly
 
 from . import services
-from .attachment_utils import validate_attachment_file
+from shared.utils.images import OPTION_IMAGE_MAX_DIMENSION
+
+from .attachment_utils import compress_attachment, validate_attachment_file
 from .models import (
     Department,
     Exam,
@@ -549,3 +551,4 @@ class QuestionViewSet(viewsets.ModelViewSet):
         # absolute URL (e.g. S3) is left untouched.
         url = default_storage.url(path)
         return Response({"url": url}, status=status.HTTP_201_CREATED)
+        uploaded = compress_attachment(uploaded, kind, OPTION_IMAGE_MAX_DIMENSION)

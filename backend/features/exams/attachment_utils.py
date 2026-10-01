@@ -7,6 +7,8 @@ import mimetypes
 from django.conf import settings
 from rest_framework.exceptions import ValidationError
 
+from shared.utils.images import ATTACHMENT_IMAGE_MAX_DIMENSION, compress_image
+
 ALLOWED_KINDS = {
     "image": {"image/jpeg", "image/png", "image/gif", "image/webp"},
     "pdf": {"application/pdf"},
@@ -24,6 +26,13 @@ def infer_kind(content_type: str, filename: str) -> str:
         if ct in mimes:
             return kind
     raise ValidationError({"file": f"Unsupported file type: {ct or 'unknown'}"})
+
+
+def compress_attachment(uploaded_file, kind: str, max_dimension: int = ATTACHMENT_IMAGE_MAX_DIMENSION):
+    """Compress image uploads; PDF and audio are stored as-is."""
+    if kind != "image":
+        return uploaded_file
+    return compress_image(uploaded_file, max_dimension=max_dimension)
 
 
 def validate_attachment_file(uploaded_file) -> str:
