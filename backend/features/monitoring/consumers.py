@@ -33,6 +33,13 @@ ADMIN_ALERTS_GROUP = "monitoring.admin.alerts"
 # timeouts are measured in minutes, so re-checking every few seconds is plenty.
 _ACTIVE_CHECK_INTERVAL_S = 5.0
 
+# The examinee streams ~5 frames/s, so per-frame side effects that don't feed
+# the examinee's own reply are rate limited: the session's EBI running means are
+# still folded every frame (so the averages stay exact) but written back at most
+# this often, and the proctor's live snapshot is pushed at most this often.
+_EBI_FLUSH_INTERVAL_S = 1.0
+_SNAPSHOT_INTERVAL_S = 1.0
+
 
 def _decode_and_analyze(image_data: str, session_id: str):
     """CPU-bound decode + inference. Runs on a worker thread, not the shared DB thread."""
@@ -80,6 +87,9 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         self._user = user
         self._last_active_check = float("-inf")
         self._post_task: asyncio.Task | None = None
+        self._ebi_dirty = False
+        self._last_ebi_flush = float("-inf")
+        self._last_snapshot = float("-inf")
         self._group_name = f"monitoring.session.{self.session_id}"
         await self.channel_layer.group_add(self._group_name, self.channel_name)
         await self.accept()
@@ -101,6 +111,8 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
 
     async def disconnect(self, close_code: int) -> None:
         await self._await_post_work()
+        if getattr(self, "_ebi_dirty", False):
+            await self._flush_ebi()
         group = getattr(self, "_group_name", None)
         if group:
             await self.channel_layer.group_discard(group, self.channel_name)
@@ -169,7 +181,12 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
             logger.exception("monitoring post-frame work failed session=%s", self.session_id)
 
     async def _after_frame(self, frame, analysis: dict[str, Any]) -> None:
-        await self._persist(analysis)
+        now = time.monotonic()
+        flush_ebi = now - self._last_ebi_flush >= _EBI_FLUSH_INTERVAL_S
+        await self._persist(analysis, save_metrics=flush_ebi)
+        if flush_ebi:
+            self._last_ebi_flush = now
+        self._ebi_dirty = not flush_ebi
 
         await self.channel_layer.group_send(
             self._group_name,
@@ -179,10 +196,12 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
                 "session_id": str(self.session_id),
             },
         )
-        # Broadcast a snapshot for every processed frame so observers see the
-        # live feed update in step with the examinee's capture rate (~1 fps)
-        # instead of lagging two frames behind a fixed skip.
-        snapshot = await sync_to_async(self._encode_snapshot, thread_sensitive=False)(frame)
+        # Observers get a fresh snapshot about once a second; the examinee's
+        # frame rate is much higher than a proctor's live tile needs.
+        snapshot = None
+        if now - self._last_snapshot >= _SNAPSHOT_INTERVAL_S:
+            self._last_snapshot = now
+            snapshot = await sync_to_async(self._encode_snapshot, thread_sensitive=False)(frame)
         if snapshot:
             await self.channel_layer.group_send(
                 self._group_name,
@@ -238,10 +257,20 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         """Snapshots are for observer consumers only."""
 
     @database_sync_to_async
-    def _persist(self, analysis: dict[str, Any]) -> dict[str, int]:
+    def _persist(self, analysis: dict[str, Any], *, save_metrics: bool) -> dict[str, int]:
         from features.behavior.services import persist_analysis
 
-        return persist_analysis(self._session, analysis)
+        return persist_analysis(self._session, analysis, save_metrics=save_metrics)
+
+    @database_sync_to_async
+    def _flush_ebi(self) -> None:
+        from features.behavior.services import EBI_UPDATE_FIELDS
+
+        try:
+            self._session.save(update_fields=EBI_UPDATE_FIELDS)
+            self._ebi_dirty = False
+        except Exception:  # noqa: BLE001 - never fail a disconnect over this
+            logger.exception("EBI flush failed for session %s", self.session_id)
 
     @staticmethod
     def _encode_snapshot(frame) -> str | None:
