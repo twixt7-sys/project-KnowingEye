@@ -20,6 +20,7 @@ from ai.adapter import (
 )
 from ai.frame_utils import decode_base64_image
 from features.behavior.services import persist_analysis
+from features.monitoring.broadcast import broadcast_frame_result
 from features.session.models import ExamSession
 
 logger = logging.getLogger("knowing_eye.monitoring.views")
@@ -97,6 +98,7 @@ def receive_frame(request):
         )
 
     persisted = persist_analysis(session, analysis)
+    broadcast_frame_result(session, request.user, frame, analysis)
 
     return Response(
         {
