@@ -15,7 +15,9 @@ from core.security.drf import IsAdminOrReadOnly
 from core.utils.api_cache import cache_get_response
 
 from . import services
-from .attachment_utils import validate_attachment_file
+from shared.utils.images import OPTION_IMAGE_MAX_DIMENSION
+
+from .attachment_utils import compress_attachment, validate_attachment_file
 from .models import (
     Department,
     Exam,
@@ -68,6 +70,7 @@ def _store_option_image(request, exam: Exam, question_id: int | None = None) -> 
             {"file": ["Option images must be an image file (JPEG, PNG, GIF, or WebP)."]},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    uploaded = compress_attachment(uploaded, kind, OPTION_IMAGE_MAX_DIMENSION)
     folder = f"questions/{exam.id}/{question_id}" if question_id else f"questions/{exam.id}/drafts"
     path = default_storage.save(f"{folder}/options/{uploaded.name}", uploaded)
     # The SPA (Vercel) and API (Railway) are separate origins in production,

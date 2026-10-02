@@ -231,7 +231,13 @@ export function UsersPage() {
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-primary/10 font-serif text-sm font-semibold text-primary ring-1 ring-border">
                         {u.avatar_url ? (
-                          <img src={u.avatar_url} alt="" className="h-full w-full object-cover" />
+                          <img
+                            src={u.avatar_url}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
                           (u.first_name?.[0] ?? u.username[0] ?? "?").toUpperCase()
                         )}

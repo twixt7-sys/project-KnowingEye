@@ -5,8 +5,10 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from shared.utils.images import AVATAR_MAX_DIMENSION, compress_image
 
-User = get_user_model()
+
+User =get_user_model()
 logger = logging.getLogger("knowing_eye")
 
 
@@ -96,7 +98,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         size = getattr(value, "size", 0) or 0
         if size > 5 * 1024 * 1024:
             raise serializers.ValidationError("Profile photo must be 5 MB or smaller.")
-        return value
+        return compress_image(value, max_dimension=AVATAR_MAX_DIMENSION)
 
     def validate(self, data):
         if data["password"] != data.pop("password2"):
@@ -163,6 +165,11 @@ class AvatarUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["avatar"]
+
+    def validate_avatar(self, value):
+        if value is None:
+            return value
+        return compress_image(value, max_dimension=AVATAR_MAX_DIMENSION)
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

@@ -326,6 +326,8 @@ export const QuestionFormDialog = memo(function QuestionFormDialog({
                       <img
                         src={opt.image}
                         alt={`Option ${i + 1} illustration`}
+                        loading="lazy"
+                        decoding="async"
                         className="h-14 w-14 rounded-md border border-border object-cover"
                       />
                       <button
