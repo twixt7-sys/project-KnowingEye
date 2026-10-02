@@ -35,7 +35,14 @@ class ArcFaceBackend:
         try:
             from insightface.app import FaceAnalysis
 
-            app = FaceAnalysis(name=self._model_name, providers=["CPUExecutionProvider"])
+            # Only detection + recognition are used. buffalo_l otherwise also runs
+            # 2D/3D landmark and gender/age models on every face, roughly
+            # tripling the cost of each identity check for no benefit.
+            app = FaceAnalysis(
+                name=self._model_name,
+                providers=["CPUExecutionProvider"],
+                allowed_modules=["detection", "recognition"],
+            )
             app.prepare(ctx_id=self._ctx_id, det_size=(640, 640))
             self._app = app
         except Exception as exc:  # noqa: BLE001 - degrade to next backend

@@ -16,24 +16,32 @@ set "PY=venv\Scripts\python.exe"
 set PIP_NO_CACHE_DIR=1
 
 echo.
-echo [1/4] Upgrading pip...
+echo [1/5] Upgrading pip...
 "%PY%" -m pip install --upgrade pip
 if errorlevel 1 goto :fail
 
 echo.
-echo [2/4] Core Django packages (fast)...
+echo [2/5] Core Django packages (fast)...
 "%PY%" -m pip install -r requirements-core.txt
 if errorlevel 1 goto :fail
 
 echo.
-echo [3/4] OpenCV + NumPy - LARGE download, often 5-15 minutes. Not frozen; wait for output...
+echo [3/5] OpenCV + NumPy - LARGE download, often 5-15 minutes. Not frozen; wait for output...
 "%PY%" -m pip install -r requirements-cv.txt
 if errorlevel 1 goto :fail
 
 echo.
-echo [4/4] Production extras (PostgreSQL driver, gunicorn)...
+echo [4/5] Production extras (PostgreSQL driver, whitenoise)...
 "%PY%" -m pip install -r requirements-prod.txt
 if errorlevel 1 goto :fail
+
+echo.
+echo [5/5] ArcFace identity matching (InsightFace + ONNX Runtime)...
+echo       Without this, identity checks fall back to a crude pixel signature.
+"%PY%" -m pip install -r requirements-identity.txt
+if errorlevel 1 (
+  echo WARNING: identity packages failed to install - identity matching will be inaccurate.
+)
 
 echo.
 echo Done. Activate with:  venv\Scripts\activate.bat

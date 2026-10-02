@@ -43,6 +43,8 @@ export interface UseMonitoringResult {
 const DEFAULT_INTERVAL = 1000; // ms - 1 fps is plenty for behaviour scoring
 const DEFAULT_QUALITY = 0.6;
 const DEFAULT_CAPTURE_MAX_WIDTH = 480;
+const ENROLL_EXTRA_FRAMES = 2; // + the first frame = 3 enrollment samples
+const ENROLL_FRAME_GAP_MS = 300;
 const DEFAULT_VIDEO: MediaStreamConstraints["video"] = {
   width: { ideal: 640 },
   height: { ideal: 480 },
@@ -351,8 +353,17 @@ export function useMonitoring({
         return { ok: false, message: "Camera is not ready - check that your webcam is on." };
       }
 
+      // A few extra frames a moment apart let the backend average them into a
+      // steadier identity template than a single snapshot.
+      const extra: string[] = [];
+      for (let i = 0; i < ENROLL_EXTRA_FRAMES; i += 1) {
+        await new Promise((r) => window.setTimeout(r, ENROLL_FRAME_GAP_MS));
+        const next = captureFrame();
+        if (next) extra.push(next);
+      }
+
       // REST enroll avoids WS timeout races with the frame loop (first ML inference can take 30s+).
-      const res = await apiClient.enrollReference({ image, session_id: sessionId });
+      const res = await apiClient.enrollReference({ image, images: extra, session_id: sessionId });
       return { ok: !!res.ok, message: res.message };
     } catch (e) {
       console.warn("enroll failed", e);

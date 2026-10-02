@@ -645,7 +645,7 @@ class ApiClient {
     }>("/monitoring/frame/", { method: "POST", body: JSON.stringify(body) });
   }
 
-  async enrollReference(body: { image: string; session_id: string }) {
+  async enrollReference(body: { image: string; images?: string[]; session_id: string }) {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 90_000);
     try {
