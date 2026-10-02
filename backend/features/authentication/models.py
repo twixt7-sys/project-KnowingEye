@@ -125,6 +125,9 @@ class PermissionChange(models.Model):
     class Meta:
         db_table = "authentication_permission_change"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["target", "permission", "-created_at"]),
+        ]
 
 
 class EmailVerification(models.Model):

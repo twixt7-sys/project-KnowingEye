@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 
 import { FileText, ImagePlus, Loader2, Plus, Trash2, Upload, X } from "@/shared/icons";
 
@@ -181,7 +181,7 @@ interface QuestionFormDialogProps {
   onCreateSection: (title: string) => Promise<ExamSection | null>;
 }
 
-export function QuestionFormDialog({
+export const QuestionFormDialog = memo(function QuestionFormDialog({
   open,
   editingQuestion,
   questionDraft,
@@ -326,6 +326,8 @@ export function QuestionFormDialog({
                       <img
                         src={opt.image}
                         alt={`Option ${i + 1} illustration`}
+                        loading="lazy"
+                        decoding="async"
                         className="h-14 w-14 rounded-md border border-border object-cover"
                       />
                       <button
@@ -561,4 +563,4 @@ export function QuestionFormDialog({
       </div>
     </div>
   );
-}
+});

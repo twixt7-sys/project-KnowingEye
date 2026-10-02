@@ -12,9 +12,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from core.security.drf import IsAdminOrReadOnly
+from core.utils.api_cache import cache_get_response
 
 from . import services
-from .attachment_utils import validate_attachment_file
+from shared.utils.images import OPTION_IMAGE_MAX_DIMENSION
+
+from .attachment_utils import compress_attachment, validate_attachment_file
 from .models import (
     Department,
     Exam,
@@ -67,6 +70,7 @@ def _store_option_image(request, exam: Exam, question_id: int | None = None) -> 
             {"file": ["Option images must be an image file (JPEG, PNG, GIF, or WebP)."]},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    uploaded = compress_attachment(uploaded, kind, OPTION_IMAGE_MAX_DIMENSION)
     folder = f"questions/{exam.id}/{question_id}" if question_id else f"questions/{exam.id}/drafts"
     path = default_storage.save(f"{folder}/options/{uploaded.name}", uploaded)
     # The SPA (Vercel) and API (Railway) are separate origins in production,
@@ -95,6 +99,10 @@ class DepartmentViewSet(viewsets.ModelViewSet):
             if active_only in {"1", "true", "True"}:
                 qs = qs.filter(is_active=True)
         return qs
+
+    @cache_get_response("reference-data", ttl_setting="API_REFERENCE_CACHE_TTL_SECONDS")
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         department = self.get_object()
@@ -129,6 +137,10 @@ class ExamCategoryViewSet(viewsets.ModelViewSet):
             if active_only in {"1", "true", "True"}:
                 qs = qs.filter(is_active=True)
         return qs
+
+    @cache_get_response("reference-data", ttl_setting="API_REFERENCE_CACHE_TTL_SECONDS")
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         category = self.get_object()

@@ -1,43 +1,87 @@
-import { Navigate, createBrowserRouter, useParams } from "react-router";
-import { About } from "../../pages/about";
-import { ExamBuilder } from "../../pages/exam-builder";
-import { ExamGrader } from "../../pages/exam-grader";
-import { ExamResults } from "../../pages/exam-results";
-import { ExamSetup } from "../../pages/exam-setup";
-import { ExamSubmitted } from "../../pages/exam-submitted";
-import { ExamSummary } from "../../pages/exam-summary";
-import { ExamTakingWithBackend } from "../../pages/exam-taking-backend";
-import { Examinee } from "../../pages/examinee";
-import { Examiner } from "../../pages/examiner";
-import { Features } from "../../pages/features";
-import { Home } from "../../pages/home";
-import { Login } from "../../pages/login";
-import { Monitoring } from "../../pages/monitoring";
+import type { ComponentType } from "react";
+import { Navigate, Outlet, createBrowserRouter, useParams } from "react-router";
+import type { RouteObject } from "react-router";
 import { NotFound } from "../../pages/not-found";
-import { Profile } from "../../pages/profile";
-import { Reports } from "../../pages/reports";
-import { SessionMonitor } from "../../pages/session-monitor";
-import { SettingsAdmin } from "../../pages/settings";
-import { UsersAdmin } from "../../pages/users";
 import { ProtectedRoute } from "../../shared/components/common/protected-route";
 import { Root } from "./root";
+import type { ProtectedRouteProps } from "./route-types";
+
+// Every page is its own chunk: the browser only downloads the code for the
+// route being visited. `page` adapts a named page export to React Router's
+// `lazy` contract.
+function page<K extends string>(
+  load: () => Promise<Record<K, ComponentType>>,
+  name: K,
+): () => Promise<{ Component: ComponentType }> {
+  return async () => ({ Component: (await load())[name] });
+}
+
+const About = page(() => import("../../pages/about"), "About");
+const ExamBuilder = page(() => import("../../pages/exam-builder"), "ExamBuilder");
+const ExamGrader = page(() => import("../../pages/exam-grader"), "ExamGrader");
+const ExamResults = page(() => import("../../pages/exam-results"), "ExamResults");
+const ExamSetup = page(() => import("../../pages/exam-setup"), "ExamSetup");
+const ExamSubmitted = page(() => import("../../pages/exam-submitted"), "ExamSubmitted");
+const ExamSummary = page(() => import("../../pages/exam-summary"), "ExamSummary");
+const ExamTakingWithBackend = page(
+  () => import("../../pages/exam-taking-backend"),
+  "ExamTakingWithBackend",
+);
+const Examinee = page(() => import("../../pages/examinee"), "Examinee");
+const Examiner = page(() => import("../../pages/examiner"), "Examiner");
+const Features = page(() => import("../../pages/features"), "Features");
+const Home = page(() => import("../../pages/home"), "Home");
+const Login = page(() => import("../../pages/login"), "Login");
+const Monitoring = page(() => import("../../pages/monitoring"), "Monitoring");
+const Profile = page(() => import("../../pages/profile"), "Profile");
+const Reports = page(() => import("../../pages/reports"), "Reports");
+const SessionMonitor = page(() => import("../../pages/session-monitor"), "SessionMonitor");
+const SettingsAdmin = page(() => import("../../pages/settings"), "SettingsAdmin");
+const UsersAdmin = page(() => import("../../pages/users"), "UsersAdmin");
+
+// Auth/role checks wrap the route as a layout so they run without waiting on
+// the page chunk; the chunk itself still loads lazily via the index child.
+function protectedRoute(
+  path: string,
+  guard: Omit<ProtectedRouteProps, "children">,
+  lazy: () => Promise<{ Component: ComponentType }>,
+): RouteObject {
+  return {
+    path,
+    element: (
+      <ProtectedRoute {...guard}>
+        <Outlet />
+      </ProtectedRoute>
+    ),
+    children: [{ index: true, lazy }],
+  };
+}
 
 function LegacyExamineeExamRedirect({ suffix = "" }: { suffix?: string }) {
   const { examId } = useParams();
   return <Navigate to={`/examinee/exam/${examId}${suffix}`} replace />;
 }
 
+function RouteFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+    </div>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: "/",
     Component: Root,
+    HydrateFallback: RouteFallback,
     children: [
-      { index: true, Component: Home },
-      { path: "examiner", Component: Examiner },
-      { path: "examinee", Component: Examinee },
-      { path: "features", Component: Features },
-      { path: "about", Component: About },
-      { path: "login", Component: Login },
+      { index: true, lazy: Home },
+      { path: "examiner", lazy: Examiner },
+      { path: "examinee", lazy: Examinee },
+      { path: "features", lazy: Features },
+      { path: "about", lazy: About },
+      { path: "login", lazy: Login },
 
       // Legacy redirects
       { path: "dashboard", element: <Navigate to="/examiner" replace /> },
@@ -45,90 +89,20 @@ export const router = createBrowserRouter([
 
       // Staff routes - module-gated so guidance_staff/program_head/faculty/
       // proctor see what their role grants by default, not just admin.
-      {
-        path: "monitoring",
-        element: (
-          <ProtectedRoute requiredModule="monitoring">
-            <Monitoring />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "monitoring/:sessionId",
-        element: (
-          <ProtectedRoute requiredModule="monitoring">
-            <SessionMonitor />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "reports",
-        element: (
-          <ProtectedRoute requiredModule="reports">
-            <Reports />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "users",
-        element: (
-          <ProtectedRoute requiredModule="user-mgmt">
-            <UsersAdmin />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "settings",
-        element: (
-          <ProtectedRoute requiredModule="settings">
-            <SettingsAdmin />
-          </ProtectedRoute>
-        ),
-      },
+      protectedRoute("monitoring", { requiredModule: "monitoring" }, Monitoring),
+      protectedRoute("monitoring/:sessionId", { requiredModule: "monitoring" }, SessionMonitor),
+      protectedRoute("reports", { requiredModule: "reports" }, Reports),
+      protectedRoute("users", { requiredModule: "user-mgmt" }, UsersAdmin),
+      protectedRoute("settings", { requiredModule: "settings" }, SettingsAdmin),
 
       // Profile (any authenticated user)
-      {
-        path: "profile",
-        element: (
-          <ProtectedRoute>
-            <Profile />
-          </ProtectedRoute>
-        ),
-      },
+      protectedRoute("profile", {}, Profile),
 
       // Examinee exam flow
-      {
-        path: "examinee/exam/:examId/setup",
-        element: (
-          <ProtectedRoute requiredRole="STUDENT">
-            <ExamSetup />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "examinee/exam/:examId",
-        element: (
-          <ProtectedRoute requiredRole="STUDENT">
-            <ExamTakingWithBackend />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "examinee/exam/:examId/submitted",
-        element: (
-          <ProtectedRoute requiredRole="STUDENT">
-            <ExamSubmitted />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "examinee/exam/:examId/results",
-        element: (
-          <ProtectedRoute requiredRole="STUDENT">
-            <ExamResults />
-          </ProtectedRoute>
-        ),
-      },
+      protectedRoute("examinee/exam/:examId/setup", { requiredRole: "STUDENT" }, ExamSetup),
+      protectedRoute("examinee/exam/:examId", { requiredRole: "STUDENT" }, ExamTakingWithBackend),
+      protectedRoute("examinee/exam/:examId/submitted", { requiredRole: "STUDENT" }, ExamSubmitted),
+      protectedRoute("examinee/exam/:examId/results", { requiredRole: "STUDENT" }, ExamResults),
 
       // Legacy examinee exam redirects
       {
@@ -144,32 +118,11 @@ export const router = createBrowserRouter([
         element: <LegacyExamineeExamRedirect suffix="/results" />,
       },
 
-      {
-        path: "examiner/exams/:examId/edit",
-        element: (
-          <ProtectedRoute requiredModule="exams">
-            <ExamBuilder />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "examiner/exams/:examId/grading",
-        element: (
-          <ProtectedRoute requiredModule="exams">
-            <ExamGrader />
-          </ProtectedRoute>
-        ),
-      },
+      protectedRoute("examiner/exams/:examId/edit", { requiredModule: "exams" }, ExamBuilder),
+      protectedRoute("examiner/exams/:examId/grading", { requiredModule: "exams" }, ExamGrader),
 
       // Shared
-      {
-        path: "exams/:examId",
-        element: (
-          <ProtectedRoute>
-            <ExamSummary />
-          </ProtectedRoute>
-        ),
-      },
+      protectedRoute("exams/:examId", {}, ExamSummary),
 
       { path: "*", Component: NotFound },
     ],

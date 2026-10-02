@@ -171,7 +171,7 @@ class SessionObserverWebsocketTests(TransactionTestCase):
                 await examinee.send_to(
                     text_data=json.dumps({"type": "frame", "image": _tiny_jpeg()})
                 )
-                await examinee.receive_from()  # direct analysis to examinee
+                await examinee.receive_from(timeout=30)  # direct analysis to examinee
 
                 msg = json.loads(await observer.receive_from(timeout=30))
                 self.assertEqual(msg["type"], "analysis")
@@ -179,6 +179,78 @@ class SessionObserverWebsocketTests(TransactionTestCase):
                 self.assertIn("metrics", msg["payload"])
             finally:
                 await examinee.disconnect()
+                await observer.disconnect()
+
+        async_to_sync(run)()
+
+    async def _receive_until(self, communicator, msg_type: str, timeout: float = 30):
+        """Drain observer messages until one of ``msg_type`` arrives."""
+        while True:
+            msg = json.loads(await communicator.receive_from(timeout=timeout))
+            if msg["type"] == msg_type:
+                return msg
+
+    def _observer(self) -> WebsocketCommunicator:
+        return WebsocketCommunicator(
+            application,
+            f"/ws/monitoring/observe/{self.session.id}/?token={self.admin_token}",
+            headers=[(b"origin", b"http://127.0.0.1")],
+        )
+
+    def test_observer_receives_snapshot_from_websocket_frame(self):
+        async def run():
+            observer = self._observer()
+            examinee = WebsocketCommunicator(
+                application,
+                f"/ws/monitoring/{self.session.id}/?token={self.user_token}",
+                headers=[(b"origin", b"http://127.0.0.1")],
+            )
+            try:
+                connected, _ = await observer.connect()
+                self.assertTrue(connected)
+                await observer.receive_from()  # welcome
+                connected, _ = await examinee.connect()
+                self.assertTrue(connected)
+                await examinee.receive_from()  # welcome
+
+                await examinee.send_to(
+                    text_data=json.dumps({"type": "frame", "image": _tiny_jpeg()})
+                )
+                msg = await self._receive_until(observer, "snapshot")
+                self.assertTrue(msg["image"].startswith("data:image/jpeg;base64,"))
+            finally:
+                await examinee.disconnect()
+                await observer.disconnect()
+
+        async_to_sync(run)()
+
+    def test_observer_receives_snapshot_from_rest_fallback_frame(self):
+        """Examinees on the REST fallback must still feed the proctor's live view."""
+        from asgiref.sync import sync_to_async
+        from rest_framework.test import APIClient
+
+        def post_frame():
+            client = APIClient()
+            client.force_authenticate(self.user)
+            return client.post(
+                "/api/monitoring/frame/",
+                {"image": _tiny_jpeg(), "session_id": str(self.session.id)},
+                format="json",
+            )
+
+        async def run():
+            observer = self._observer()
+            try:
+                connected, _ = await observer.connect()
+                self.assertTrue(connected)
+                await observer.receive_from()  # welcome
+
+                response = await sync_to_async(post_frame)()
+                self.assertEqual(response.status_code, 200, response.content)
+
+                msg = await self._receive_until(observer, "snapshot", timeout=5)
+                self.assertTrue(msg["image"].startswith("data:image/jpeg;base64,"))
+            finally:
                 await observer.disconnect()
 
         async_to_sync(run)()

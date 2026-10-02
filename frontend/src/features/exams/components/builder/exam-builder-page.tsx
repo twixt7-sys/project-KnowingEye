@@ -136,18 +136,18 @@ export function ExamBuilderPage() {
           onOpenNew={builder.openNewQuestion}
           onAddSection={builder.addSection}
           onRenameSection={builder.renameSection}
-          onRemoveSection={(sectionId, title) => void builder.removeSection(sectionId, title)}
+          onRemoveSection={builder.removeSection}
           onEdit={builder.openEditQuestion}
-          onDelete={(q) => void builder.removeQuestion(q)}
+          onDelete={builder.removeQuestion}
           onReorder={builder.reorderQuestionsByIds}
-          onCloseQuestionForm={() => builder.setShowQuestionForm(false)}
+          onCloseQuestionForm={builder.closeQuestionForm}
           onSaveQuestion={builder.saveQuestion}
-          onAttachmentPick={(files) => void builder.handleAttachmentPick(files)}
-          onRemoveAttachment={(a) => void builder.removeAttachment(a)}
+          onAttachmentPick={builder.handleAttachmentPick}
+          onRemoveAttachment={builder.removeAttachment}
           onUploadOptionImage={builder.uploadOptionImageForQuestion}
           onCreateSection={builder.createSectionForQuestion}
-          onDownloadImportForm={() => void builder.downloadImportForm()}
-          onImportFile={(file) => void builder.handleImportFile(file)}
+          onDownloadImportForm={builder.downloadImportForm}
+          onImportFile={builder.handleImportFile}
           onRecheckImport={builder.recheckImport}
           onClearImport={builder.clearImport}
           onRunImport={builder.runImport}

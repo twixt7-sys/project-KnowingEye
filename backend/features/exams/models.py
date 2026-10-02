@@ -541,6 +541,9 @@ class ExamApprovalEvent(models.Model):
     class Meta:
         db_table = "exams_approval_event"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["exam", "-created_at"]),
+        ]
 
     def __str__(self):
         return f"{self.exam_id} - {self.action} by {self.actor_id}"

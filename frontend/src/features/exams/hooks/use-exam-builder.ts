@@ -9,6 +9,7 @@ import {
   type QuestionAttachment,
 } from "@/core/config/api";
 import {
+  type ExamAssignment,
   approveExam,
   createExamAssignment,
   createExamSection,
@@ -59,6 +60,11 @@ export type ImportCheckStatus = "idle" | "checking" | "valid" | "invalid";
 
 const NO_PROBLEMS: ImportProblems = { issues: [], general: [] };
 
+// Module-level so `data ?? EMPTY` keeps a stable reference while a query has no data yet.
+const NO_QUESTIONS: Question[] = [];
+const NO_ASSIGNMENTS: ExamAssignment[] = [];
+const NO_SECTIONS: ExamSection[] = [];
+
 function formatQueryError(err: unknown, fallback: string): string {
   if (err instanceof ApiError) return err.detail();
   if (err) return formatApiError(err, fallback);
@@ -98,10 +104,10 @@ export function useExamBuilder(examId: number) {
   const sectionsQuery = useQuery(examBuilderQueries.sections(examId));
 
   const exam = examQuery.data ?? null;
-  const questions = questionsQuery.data ?? [];
+  const questions = questionsQuery.data ?? NO_QUESTIONS;
   const readiness = readinessQuery.data ?? null;
-  const assignments = assignmentsQuery.data ?? [];
-  const sections = sectionsQuery.data ?? [];
+  const assignments = assignmentsQuery.data ?? NO_ASSIGNMENTS;
+  const sections = sectionsQuery.data ?? NO_SECTIONS;
 
   const loading =
     examQuery.isLoading ||
@@ -385,7 +391,25 @@ export function useExamBuilder(examId: number) {
     saveQuestionMutation.isPending ||
     publishMutation.isPending;
 
-  const saveSettings = () => {
+  // `mutate` is referentially stable in react-query v5, unlike the mutation result object.
+  const saveSettingsMutate = saveSettingsMutation.mutate;
+  const saveQuestionMutate = saveQuestionMutation.mutate;
+  const deleteQuestionMutate = deleteQuestionMutation.mutate;
+  const reorderMutate = reorderMutation.mutate;
+  const checkImportMutate = checkImportMutation.mutate;
+  const importQuestionsMutate = importQuestionsMutation.mutate;
+  const publishMutate = publishMutation.mutate;
+  const submitMutate = submitMutation.mutate;
+  const approveMutate = approveMutation.mutate;
+  const rejectMutate = rejectMutation.mutate;
+  const createSectionMutateAsync = createSectionMutation.mutateAsync;
+  const createSectionMutate = createSectionMutation.mutate;
+  const updateSectionMutate = updateSectionMutation.mutate;
+  const deleteSectionMutate = deleteSectionMutation.mutate;
+  const addCandidateMutate = addCandidateMutation.mutate;
+  const importCandidatesMutate = importCandidatesMutation.mutate;
+
+  const saveSettings = useCallback(() => {
     if (!form) return;
     if (!form.available_from) {
       setActionError("Set an opening date before saving.");
@@ -404,19 +428,19 @@ export function useExamBuilder(examId: number) {
       setActionError("The closing date must be after the opening date.");
       return;
     }
-    saveSettingsMutation.mutate(form);
-  };
+    saveSettingsMutate(form);
+  }, [form, exam, saveSettingsMutate]);
 
-  const openNewQuestion = () => {
+  const openNewQuestion = useCallback(() => {
     setQuestionError(null);
     setEditingQuestion(null);
     setQuestionDraft({ ...EMPTY_QUESTION, options: EMPTY_QUESTION.options.map((o) => ({ ...o })) });
     setQuestionAttachments([]);
     setPendingFiles([]);
     setShowQuestionForm(true);
-  };
+  }, []);
 
-  const openEditQuestion = (q: Question) => {
+  const openEditQuestion = useCallback((q: Question) => {
     setQuestionError(null);
     setEditingQuestion(q);
     const saved = optionsToDraft(q.options ?? [], q.correct_answer ?? "");
@@ -433,14 +457,16 @@ export function useExamBuilder(examId: number) {
     setQuestionAttachments(q.attachments ?? []);
     setPendingFiles([]);
     setShowQuestionForm(true);
-  };
+  }, []);
 
-  const uploadOptionImageForQuestion = async (file: File) => {
+  const closeQuestionForm = useCallback(() => setShowQuestionForm(false), []);
+
+  const uploadOptionImageForQuestion = useCallback(async (file: File) => {
     const { url } = await uploadOptionImage(examId, file);
     return url;
-  };
+  }, [examId]);
 
-  const uploadAttachment = async (questionId: number, file: File) => {
+  const uploadAttachment = useCallback(async (questionId: number, file: File) => {
     setAttachmentBusy(true);
     try {
       const attachment = await uploadQuestionAttachment(examId, questionId, file);
@@ -450,9 +476,9 @@ export function useExamBuilder(examId: number) {
     } finally {
       setAttachmentBusy(false);
     }
-  };
+  }, [examId]);
 
-  const removeAttachment = async (attachment: QuestionAttachment) => {
+  const removeAttachment = useCallback(async (attachment: QuestionAttachment) => {
     if (!editingQuestion) return;
     const confirmed = await confirm({
       title: "Remove attachment?",
@@ -470,9 +496,9 @@ export function useExamBuilder(examId: number) {
     } finally {
       setAttachmentBusy(false);
     }
-  };
+  }, [confirm, editingQuestion, examId]);
 
-  const handleAttachmentPick = async (files: FileList | null) => {
+  const handleAttachmentPick = useCallback(async (files: FileList | null) => {
     if (!files?.length) return;
     setQuestionError(null);
     const problems: string[] = [];
@@ -489,17 +515,17 @@ export function useExamBuilder(examId: number) {
     } else {
       setPendingFiles((prev) => [...prev, ...picked]);
     }
-  };
+  }, [editingQuestion, uploadAttachment]);
 
-  const saveQuestion = () => {
-    saveQuestionMutation.mutate({
+  const saveQuestion = useCallback(() => {
+    saveQuestionMutate({
       draft: questionDraft,
       editing: editingQuestion,
       pending: pendingFiles,
     });
-  };
+  }, [saveQuestionMutate, questionDraft, editingQuestion, pendingFiles]);
 
-  const removeQuestion = async (q: Question) => {
+  const removeQuestion = useCallback(async (q: Question) => {
     const confirmed = await confirm({
       title: `Delete question ${q.order}?`,
       description: "This permanently removes the question and its attachments.",
@@ -507,14 +533,14 @@ export function useExamBuilder(examId: number) {
       destructive: true,
     });
     if (!confirmed) return;
-    deleteQuestionMutation.mutate(q.id);
-  };
+    deleteQuestionMutate(q.id);
+  }, [confirm, deleteQuestionMutate]);
 
-  const reorderQuestionsByIds = (questionIds: number[]) => {
-    reorderMutation.mutate(questionIds);
-  };
+  const reorderQuestionsByIds = useCallback((questionIds: number[]) => {
+    reorderMutate(questionIds);
+  }, [reorderMutate]);
 
-  const downloadImportForm = async () => {
+  const downloadImportForm = useCallback(async () => {
     if (!exam) return;
     setActionError(null);
     setFormDownloadBusy(true);
@@ -525,9 +551,9 @@ export function useExamBuilder(examId: number) {
     } finally {
       setFormDownloadBusy(false);
     }
-  };
+  }, [exam]);
 
-  const handleImportFile = async (file: File) => {
+  const handleImportFile = useCallback(async (file: File) => {
     setActionError(null);
     setMessage(null);
     setImportForm(null);
@@ -558,39 +584,45 @@ export function useExamBuilder(examId: number) {
       setImportStatus("invalid");
       return;
     }
-    checkImportMutation.mutate(parsed);
-  };
+    checkImportMutate(parsed);
+  }, [checkImportMutate]);
 
-  const recheckImport = () => {
-    if (importForm?.rows.length) checkImportMutation.mutate(importForm);
-  };
+  const recheckImport = useCallback(() => {
+    if (importForm?.rows.length) checkImportMutate(importForm);
+  }, [importForm, checkImportMutate]);
 
-  const clearImport = () => {
+  const clearImport = useCallback(() => {
     setImportForm(null);
     setImportStatus("idle");
     setImportProblems(NO_PROBLEMS);
-  };
+  }, []);
 
-  const runImport = () => {
+  const runImport = useCallback(() => {
     if (!importForm || importStatus !== "valid") return;
-    importQuestionsMutation.mutate(importForm);
-  };
+    importQuestionsMutate(importForm);
+  }, [importForm, importStatus, importQuestionsMutate]);
 
-  const publish = () => publishMutation.mutate();
-  const submitForReview = () => submitMutation.mutate();
-  const approveReview = () => approveMutation.mutate();
-  const rejectReview = (note: string) => rejectMutation.mutate(note);
+  const publish = useCallback(() => publishMutate(), [publishMutate]);
 
-  const addCandidate = () => {
+  const submitForReview = useCallback(() => submitMutate(), [submitMutate]);
+
+  const approveReview = useCallback(() => approveMutate(), [approveMutate]);
+
+  const rejectReview = useCallback((note: string) => rejectMutate(note), [rejectMutate]);
+
+  const addCandidate = useCallback(() => {
     if (!candidateEmail.trim()) return;
-    addCandidateMutation.mutate(candidateEmail.trim());
-  };
+    addCandidateMutate(candidateEmail.trim());
+  }, [candidateEmail, addCandidateMutate]);
 
-  const importCandidates = () => importCandidatesMutation.mutate(candidateCsv);
+  const importCandidates = useCallback(
+    () => importCandidatesMutate(candidateCsv),
+    [candidateCsv, importCandidatesMutate]
+  );
 
-  const addSection = (title: string, instructions?: string) => {
+  const addSection = useCallback((title: string, instructions?: string) => {
     if (!title.trim()) return;
-    createSectionMutation.mutate(
+    createSectionMutate(
       { title: title.trim(), instructions: instructions?.trim() },
       {
         onSuccess: () =>
@@ -598,27 +630,27 @@ export function useExamBuilder(examId: number) {
         onError: (e) => setActionError(formatApiError(e)),
       }
     );
-  };
+  }, [createSectionMutate]);
 
   /** Creates a section from inside the question dialog; resolves to it (or null on failure). */
-  const createSectionForQuestion = async (title: string): Promise<ExamSection | null> => {
+  const createSectionForQuestion = useCallback(async (title: string): Promise<ExamSection | null> => {
     const trimmed = title.trim();
     if (!trimmed) return null;
     setQuestionError(null);
     try {
-      return await createSectionMutation.mutateAsync({ title: trimmed });
+      return await createSectionMutateAsync({ title: trimmed });
     } catch (e) {
       setQuestionError(formatApiError(e, "Could not create the section."));
       return null;
     }
-  };
+  }, [createSectionMutateAsync]);
 
-  const renameSection = (sectionId: number, title: string) => {
+  const renameSection = useCallback((sectionId: number, title: string) => {
     if (!title.trim()) return;
-    updateSectionMutation.mutate({ sectionId, payload: { title: title.trim() } });
-  };
+    updateSectionMutate({ sectionId, payload: { title: title.trim() } });
+  }, [updateSectionMutate]);
 
-  const removeSection = async (sectionId: number, title: string) => {
+  const removeSection = useCallback(async (sectionId: number, title: string) => {
     const confirmed = await confirm({
       title: `Remove section "${title}"?`,
       description: "Questions in this section become unsectioned - they are not deleted.",
@@ -626,8 +658,8 @@ export function useExamBuilder(examId: number) {
       destructive: true,
     });
     if (!confirmed) return;
-    deleteSectionMutation.mutate(sectionId);
-  };
+    deleteSectionMutate(sectionId);
+  }, [confirm, deleteSectionMutate]);
 
   return {
     tab,
@@ -649,7 +681,7 @@ export function useExamBuilder(examId: number) {
     saving,
     saveSettings,
     showQuestionForm,
-    setShowQuestionForm,
+    closeQuestionForm,
     editingQuestion,
     questionDraft,
     setQuestionDraft,

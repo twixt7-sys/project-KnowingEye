@@ -143,10 +143,34 @@ if REDIS_URL:
             "CONFIG": {"hosts": [REDIS_URL]},
         }
     }
+    # Shared across workers, so cached responses and their invalidation hold
+    # for every process (LocMemCache below is per-process).
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+            "KEY_PREFIX": "knowing-eye",
+        }
+    }
 else:
     CHANNEL_LAYERS = {
         "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
     }
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "knowing-eye",
+        }
+    }
+
+# Seconds to cache expensive read-only aggregate endpoints (reports).
+# 0 disables response caching entirely.
+API_CACHE_TTL_SECONDS = int(decouple_config("API_CACHE_TTL_SECONDS", default="30"))
+# Seconds to cache rarely-changing reference lists (departments, categories).
+# Writes invalidate them immediately; this is only the upper bound.
+API_REFERENCE_CACHE_TTL_SECONDS = int(
+    decouple_config("API_REFERENCE_CACHE_TTL_SECONDS", default="300")
+)
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
