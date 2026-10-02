@@ -10,6 +10,7 @@ import {
   Inbox,
   Plus,
   Send,
+  Trash2,
   TrendingUp,
   Users,
   X,
@@ -22,7 +23,7 @@ import { type Exam, apiClient, formatApiError } from "@/core/config/api";
 import { brand } from "@/core/config/brand";
 import { useAuth } from "@/core/providers/auth-provider";
 import { dashboardQueries } from "@/features/dashboard/queries/queries";
-import { archiveExam, createExam, publishExam } from "@/features/exams/api/exam-api";
+import { archiveExam, createExam, deleteExam, publishExam } from "@/features/exams/api/exam-api";
 import { useConfirm } from "@/shared/components/common/confirm-dialog";
 import { IconAction } from "@/shared/components/common/icon-action";
 import { PageShell } from "@/shared/components/layout/page-shell";
@@ -212,6 +213,23 @@ export function ExaminerDashboardPage() {
     setActionError(null);
     try {
       await archiveExam(exam.id);
+      reload();
+    } catch (e) {
+      setActionError(formatApiError(e));
+    }
+  };
+
+  const remove = async (exam: Exam) => {
+    const confirmed = await confirm({
+      title: "Delete exam?",
+      description: `"${exam.title}" and its questions will be permanently deleted. This cannot be undone.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setActionError(null);
+    try {
+      await deleteExam(exam.id);
       reload();
     } catch (e) {
       setActionError(formatApiError(e));
@@ -408,6 +426,14 @@ export function ExaminerDashboardPage() {
                             icon={Archive}
                             tone="danger"
                             onClick={() => archive(exam)}
+                          />
+                        )}
+                        {exam.status === "archived" && (
+                          <IconAction
+                            label="Delete"
+                            icon={Trash2}
+                            tone="danger"
+                            onClick={() => remove(exam)}
                           />
                         )}
                         <IconAction label="Duplicate" icon={Copy} onClick={() => duplicate(exam)} />

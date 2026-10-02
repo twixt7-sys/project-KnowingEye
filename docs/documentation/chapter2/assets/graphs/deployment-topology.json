@@ -47,7 +47,6 @@
   ],
   "cloud_options_within_scope": [
     { "provider": "Railway", "fit": "Recommended for capstone demo", "services": ["Web", "PostgreSQL", "Redis"] },
-    { "provider": "Render", "fit": "Free tier friendly", "services": ["Web service", "Managed Postgres"] },
     { "provider": "DigitalOcean App Platform", "fit": "Simple VPS-style", "services": ["App", "Managed DB"] },
     { "provider": "AWS Lightsail / EC2", "fit": "Self-managed Nginx stack", "services": ["VM", "RDS optional"] },
     { "provider": "Azure App Service", "fit": "Institutional alignment", "services": ["App Service", "Azure Database"] },

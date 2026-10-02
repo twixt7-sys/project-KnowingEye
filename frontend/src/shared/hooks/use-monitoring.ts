@@ -43,8 +43,6 @@ export interface UseMonitoringResult {
 const DEFAULT_INTERVAL = 1000; // ms - 1 fps is plenty for behaviour scoring
 const DEFAULT_QUALITY = 0.6;
 const DEFAULT_CAPTURE_MAX_WIDTH = 480;
-const ENROLL_EXTRA_FRAMES = 2; // + the first frame = 3 enrollment samples
-const ENROLL_FRAME_GAP_MS = 300;
 const DEFAULT_VIDEO: MediaStreamConstraints["video"] = {
   width: { ideal: 640 },
   height: { ideal: 480 },
@@ -158,6 +156,7 @@ export function useMonitoring({
       const image = captureFrame();
       if (image) {
         pendingAckRef.current = true;
+        lastSentAtRef.current = performance.now();
         // Safety valve: if a reply never arrives (dropped message, server hiccup) don't
         // stall the loop forever - resume sending after a few missed intervals.
         ackTimeoutRef.current = window.setTimeout(
@@ -168,7 +167,6 @@ export function useMonitoring({
           Math.max(intervalMs * 4, 4000),
         );
         ws.send(JSON.stringify({ type: "frame", image }));
-        lastSentAtRef.current = performance.now();
       }
     } finally {
       frameBusyRef.current = false;
@@ -220,14 +218,14 @@ export function useMonitoring({
   }, [captureFrame, handleSessionInactive, sessionId]);
 
   const scheduleNextFrame = useCallback(
-    (tick: () => void) => {
+    (tick: () => void, delayMs: number = intervalMs) => {
       clearFrameTimer();
       if (closedRef.current) return;
       frameTimerRef.current = window.setTimeout(() => {
         frameTimerRef.current = null;
         tick();
         scheduleNextFrame(tick);
-      }, intervalMs);
+      }, delayMs);
     },
     [clearFrameTimer, intervalMs]
   );
@@ -276,11 +274,11 @@ export function useMonitoring({
             const msg = JSON.parse(event.data);
             if (msg.type === "analysis" || msg.type === "error") {
               clearAck();
-              // Don't idle until the next timer tick once the server is free -
-              // if a full interval has already passed, send the next frame now.
-              if (performance.now() - lastSentAtRef.current >= intervalMs) {
-                sendFrameOverWs();
-              }
+              // Send the next frame as soon as the server is free (but no sooner than
+              // intervalMs after the last send). With a fixed timer, a reply landing just
+              // after a skipped tick left the loop idle for almost a whole extra interval.
+              const elapsed = performance.now() - lastSentAtRef.current;
+              scheduleNextFrame(sendFrameOverWs, Math.max(0, intervalMs - elapsed));
             }
             if (msg.type === "analysis") {
               setAnalysis(msg.payload as FrameAnalysis);
@@ -331,11 +329,11 @@ export function useMonitoring({
     clearFrameTimer,
     clearAck,
     forceRest,
-    intervalMs,
     scheduleNextFrame,
     sendFrameOverWs,
     sendViaRest,
     handleSessionInactive,
+    intervalMs,
     sessionId,
     videoConstraints,
     status,
@@ -361,17 +359,8 @@ export function useMonitoring({
         return { ok: false, message: "Camera is not ready - check that your webcam is on." };
       }
 
-      // A few extra frames a moment apart let the backend average them into a
-      // steadier identity template than a single snapshot.
-      const extra: string[] = [];
-      for (let i = 0; i < ENROLL_EXTRA_FRAMES; i += 1) {
-        await new Promise((r) => window.setTimeout(r, ENROLL_FRAME_GAP_MS));
-        const next = captureFrame();
-        if (next) extra.push(next);
-      }
-
       // REST enroll avoids WS timeout races with the frame loop (first ML inference can take 30s+).
-      const res = await apiClient.enrollReference({ image, images: extra, session_id: sessionId });
+      const res = await apiClient.enrollReference({ image, session_id: sessionId });
       return { ok: !!res.ok, message: res.message };
     } catch (e) {
       console.warn("enroll failed", e);

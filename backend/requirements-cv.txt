@@ -1,12 +1,6 @@
 # Computer vision stack for production pipeline (backend/ai/knowing_eye)
 numpy>=1.26
-# OpenCV is pinned below 5: OpenCV 5 removed cv2.CascadeClassifier (the Haar
-# fallback). mediapipe pulls in opencv-contrib-python and insightface 2.x pulls
-# in opencv-python; all three must resolve to the same 4.x release or they
-# overwrite each other's cv2/ package with mismatched builds.
-opencv-python-headless>=4.9,<5
-opencv-contrib-python>=4.9,<5
-opencv-python>=4.9,<5
+opencv-python-headless>=4.9
 Pillow>=10.0
 PyYAML>=6.0
 mediapipe>=0.10.14

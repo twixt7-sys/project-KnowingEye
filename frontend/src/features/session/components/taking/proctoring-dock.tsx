@@ -223,7 +223,7 @@ export function ProctoringDock({
                         </div>
                         <div className="h-1 bg-muted rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-[width] duration-100 ease-out ${
+                            className={`h-full rounded-full transition-all duration-300 ${
                               flagged
                                 ? "bg-destructive"
                                 : "bg-primary"

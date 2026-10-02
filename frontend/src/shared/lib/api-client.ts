@@ -534,13 +534,14 @@ class ApiClient {
     );
   }
 
-  async uploadOptionImage(examId: number, questionId: number, file: File) {
+  /** Uploads an answer-choice picture; works before the question has been saved. */
+  async uploadOptionImage(examId: number, file: File) {
     const form = new FormData();
     form.append("file", await compressImage(file, OPTION_IMAGE_COMPRESSION));
-    return this.request<{ url: string }>(
-      `/exams/${examId}/questions/${questionId}/option-image/`,
-      { method: "POST", body: form },
-    );
+    return this.request<{ url: string }>(`/exams/${examId}/option-image/`, {
+      method: "POST",
+      body: form,
+    });
   }
 
   async startExamSession(examId: number) {

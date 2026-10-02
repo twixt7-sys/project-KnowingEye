@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
-from collections import deque
-from dataclasses import dataclass, field
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -15,10 +15,10 @@ from ai.knowing_eye.behavior.overlay import norm_bbox_xywh, posture_guide_status
 from ai.knowing_eye.behavior.scoring import BehaviorScorer
 from ai.knowing_eye.behavior.temporal import BehaviorTemporalTracker
 from ai.knowing_eye.config import load_config, resolve_path
-from ai.knowing_eye.detection.face_detector import DetectedFace, FaceDetector
+from ai.knowing_eye.detection.face_detector import FaceDetector
 from ai.knowing_eye.detection.pose_detector import PoseDetector
-from ai.knowing_eye.preprocessing.frame import prepare_frame_pair
-from ai.knowing_eye.recognition.identity import IdentityVerifier, fuse_embeddings
+from ai.knowing_eye.preprocessing.frame import prepare_frame
+from ai.knowing_eye.recognition.identity import IdentityVerifier
 from ai.knowing_eye.types import (
     FaceAnalysis,
     FrameAnalysisResult,
@@ -27,23 +27,6 @@ from ai.knowing_eye.types import (
 )
 
 logger = logging.getLogger("knowing_eye.ai.pipeline")
-
-
-@dataclass
-class _IdentityTrack:
-    """Per-session identity state: a rolling window of recent cosine distances."""
-
-    distances: deque = field(default_factory=deque)
-    frames_seen: int = 0
-    last_check_frame: int | None = None
-    absent_frames: int = 0
-    reference_key: tuple | None = None
-
-
-def _largest_face(faces: list[DetectedFace]) -> DetectedFace | None:
-    # MediaPipe returns faces in no particular order; the examinee is the one
-    # nearest the camera, i.e. the largest box.
-    return max(faces, key=lambda f: f.bbox[2] * f.bbox[3]) if faces else None
 
 
 class BehaviorPipeline:
@@ -61,12 +44,9 @@ class BehaviorPipeline:
         rec = self.config.get("recognition", {})
 
         self._face = FaceDetector()
-        det = self.config.get("detection", {})
         self._pose = PoseDetector(
-            shoulder_tilt_max=rec.get("posture_shoulder_tilt_max", 0.18),
-            spine_lean_max=rec.get("posture_spine_lean_max", 0.30),
-            model=str(det.get("pose_model", "full")),
-            min_visibility=float(det.get("pose_min_visibility", 0.5)),
+            shoulder_tilt_max=rec.get("posture_shoulder_tilt_max", 0.12),
+            spine_lean_max=rec.get("posture_spine_lean_max", 0.55),
         )
         pipe = self.config.get("pipeline", {})
         identity_threshold = rec.get(
@@ -76,16 +56,31 @@ class BehaviorPipeline:
             match_threshold=identity_threshold,
             backend=rec.get("embedding_backend", "arcface"),
             arcface_model=rec.get("arcface_model", "buffalo_l"),
+            arcface_det_size=int(rec.get("arcface_det_size", 640)),
         )
         self._scorer = BehaviorScorer(self.config)
         self._temporal = BehaviorTemporalTracker(self.config)
         self._frame_index = 0
         self._identity_check_every = max(1, int(pipe.get("identity_check_every_n_frames", 3)))
-        self._identity_window = max(1, int(rec.get("identity_smoothing_window", 5)))
-        self._identity_min_face_px = int(rec.get("identity_min_face_px", 64))
-        self._identity_max_yaw = float(rec.get("identity_max_yaw_deg", 30))
-        self._identity_max_pitch = float(rec.get("identity_max_pitch_deg", 30))
-        self._identity_tracks: dict[str, _IdentityTrack] = {}
+        self._identity_cache: dict[str, tuple[bool | None, float | None, int]] = {}
+        self._session_frames: dict[str, int] = {}
+
+        # MediaPipe landmarkers and the temporal tracker are shared by every
+        # session and aren't safe to call concurrently; frames now arrive from
+        # a worker pool rather than one serialized thread, so guard them here.
+        self._lock = threading.Lock()
+        # ArcFace (full-frame RetinaFace + ResNet embedding) costs several times
+        # the MediaPipe pass. When async, it runs on its own thread and each
+        # frame reuses the latest finished result, so the bounding-box reply
+        # never waits on it.
+        self._identity_async = bool(pipe.get("identity_async", False))
+        self._identity_lock = threading.Lock()
+        self._identity_inflight: set[str] = set()
+        self._identity_executor: ThreadPoolExecutor | None = (
+            ThreadPoolExecutor(max_workers=1, thread_name_prefix="ke-identity")
+            if self._identity_async
+            else None
+        )
 
         logger.info(
             "BehaviorPipeline detectors ready: face_backend=%s pose_backend=%s "
@@ -99,121 +94,27 @@ class BehaviorPipeline:
     def enrolled(self) -> bool:
         return bool(getattr(self._identity, "enrolled", False))
 
-    @property
-    def identity_threshold(self) -> float:
-        return self._identity.threshold
-
-    def _prepare(self, frame_bgr: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        return prepare_frame_pair(frame_bgr, self.config)
-
-    def _identity_quality_ok(self, face: DetectedFace) -> bool:
-        """Only compare faces the recognizer can judge reliably.
-
-        ArcFace distances rise sharply for small or strongly rotated faces, so a
-        genuine examinee looking down at notes would read as a "different
-        person". Such frames are skipped (identity carries over) rather than
-        scored.
-        """
-        _, _, w, h = face.bbox
-        if min(w, h) < self._identity_min_face_px:
-            return False
-        return (
-            abs(face.head_yaw_deg) <= self._identity_max_yaw
-            and abs(face.head_pitch_deg) <= self._identity_max_pitch
-        )
+    def _prepare(self, frame_bgr: np.ndarray) -> np.ndarray:
+        return prepare_frame(frame_bgr, self.config)
 
     def enroll_reference(self, frame_bgr: np.ndarray) -> bool:
-        raw, frame = self._prepare(frame_bgr)
-        face = _largest_face(self._face.detect(frame))
-        if face is None:
+        frame = self._prepare(frame_bgr)
+        with self._lock:
+            faces = self._face.detect(frame)
+        if not faces:
             return False
-        return self._identity.enroll_from_frame(raw, face.bbox)
+        return self._identity.enroll_from_frame(frame, faces[0].bbox)
 
     def enroll_reference_path(self, path: str | Path) -> bool:
         return self._identity.enroll_from_path(path)
 
     def compute_embedding(self, frame_bgr: np.ndarray) -> list[float] | None:
-        raw, frame = self._prepare(frame_bgr)
-        face = _largest_face(self._face.detect(frame))
-        if face is None:
+        frame = self._prepare(frame_bgr)
+        with self._lock:
+            faces = self._face.detect(frame)
+        if not faces:
             return None
-        return self._identity.embed(raw, face.bbox)
-
-    def compute_enrollment_embedding(self, frames_bgr: list[np.ndarray]) -> list[float] | None:
-        """Build one reference template from several enrollment frames.
-
-        Frames whose face passes the identity quality gate are preferred; if
-        none do, any detected face is used so enrollment never hard-fails on a
-        slightly off-angle capture.
-        """
-        good: list[list[float]] = []
-        fallback: list[list[float]] = []
-        for frame_bgr in frames_bgr:
-            raw, frame = self._prepare(frame_bgr)
-            face = _largest_face(self._face.detect(frame))
-            if face is None:
-                continue
-            emb = self._identity.embed(raw, face.bbox)
-            if emb is None:
-                continue
-            (good if self._identity_quality_ok(face) else fallback).append(emb)
-        samples = good or fallback
-        if not samples:
-            return None
-        return fuse_embeddings(samples, max_cosine_distance=self._identity.threshold)
-
-    def _verify_identity(
-        self,
-        session_id: str | None,
-        raw: np.ndarray,
-        face: DetectedFace | None,
-        reference_embedding: list[float] | None,
-    ) -> tuple[bool | None, float | None]:
-        """Rolling-median identity decision for one session.
-
-        * ArcFace runs every ``identity_check_every_n_frames`` frames (it is far
-          heavier than MediaPipe) and only on quality-gated faces.
-        * The reported distance is the median of the last
-          ``identity_smoothing_window`` checks, so one blurred or mid-blink frame
-          can't raise a mismatch, while a real swap flips the median within a
-          few checks.
-        * The window resets once the face has left the frame, so whoever sits
-          down afterwards is judged on their own frames only.
-        """
-        if reference_embedding is None:
-            return None, None
-        key = session_id or "__anonymous__"
-        ref_key = tuple(round(float(x), 6) for x in reference_embedding[:8])
-        track = self._identity_tracks.get(key)
-        if track is None or track.reference_key != ref_key:
-            track = _IdentityTrack(
-                distances=deque(maxlen=self._identity_window), reference_key=ref_key
-            )
-            self._identity_tracks[key] = track
-        track.frames_seen += 1
-
-        if face is None:
-            track.absent_frames += 1
-            if track.absent_frames >= 2:
-                track.distances.clear()
-                track.last_check_frame = None
-            return None, None
-        track.absent_frames = 0
-
-        due = (
-            track.last_check_frame is None
-            or (track.frames_seen - track.last_check_frame) >= self._identity_check_every
-        )
-        if due and self._identity_quality_ok(face):
-            track.last_check_frame = track.frames_seen
-            _, dist = self._identity.verify_against(raw, face.bbox, reference_embedding)
-            if dist is not None:
-                track.distances.append(float(dist))
-
-        if not track.distances:
-            return None, None
-        median = float(np.median(track.distances))
-        return median <= self._identity.threshold, median
+        return self._identity.embed(frame, faces[0].bbox)
 
     def analyze_frame(
         self,
@@ -221,17 +122,40 @@ class BehaviorPipeline:
         session_id: str | None = None,
         reference_embedding: list[float] | None = None,
     ) -> FrameAnalysisResult:
-        raw, frame = self._prepare(frame_bgr)
+        frame = self._prepare(frame_bgr)
         fh, fw = frame.shape[:2]
+        cache_key = session_id or "__anonymous__"
 
-        faces = self._face.detect(frame)
-        pose = self._pose.detect(frame)
-        primary = _largest_face(faces)
+        with self._lock:
+            faces = self._face.detect(frame)
+            pose = self._pose.detect(frame)
+            # Per-session counter: a single global one made the "every N frames"
+            # identity throttle shrink as more examinees streamed at once.
+            session_frame = self._session_frames.get(cache_key, 0) + 1
+            self._session_frames[cache_key] = session_frame
 
-        identity_match, identity_distance = self._verify_identity(
-            session_id, raw, primary, reference_embedding
-        )
+        identity_match: bool | None = None
+        identity_distance: float | None = None
+        if faces and reference_embedding is not None:
+            # ArcFace re-detects the face over the whole frame internally, so it is far
+            # heavier than the MediaPipe pass above - throttle it so a slow identity check
+            # doesn't delay every displayed bounding box (see identity_check_every_n_frames).
+            with self._identity_lock:
+                cached = self._identity_cache.get(cache_key)
+            due = cached is None or (session_frame - cached[2]) >= self._identity_check_every
+            if due and self._identity_async:
+                self._submit_identity(cache_key, frame, faces[0].bbox, reference_embedding, session_frame)
+            elif due:
+                cached = (
+                    *self._identity.verify_against(frame, faces[0].bbox, reference_embedding),
+                    session_frame,
+                )
+                with self._identity_lock:
+                    self._identity_cache[cache_key] = cached
+            if cached is not None:
+                identity_match, identity_distance = cached[0], cached[1]
 
+        primary = faces[0] if faces else None
         face_bbox_norm = None
         if primary and primary.bbox:
             face_bbox_norm = norm_bbox_xywh(primary.bbox, fw, fh)
@@ -252,29 +176,57 @@ class BehaviorPipeline:
                 pose_detected=pose.detected,
                 face_count=len(faces),
             ),
-        )
-        metrics, events, alerts = self._scorer.score(
-            face_analysis,
-            posture_analysis,
-            pose_detected=pose.detected,
-            identity_match=identity_match,
+            upper_body_visibility=pose.upper_body_visibility,
         )
 
-        self._frame_index += 1
-        result = FrameAnalysisResult(
-            session_id=session_id,
-            timestamp=utc_now_iso(),
-            face=face_analysis,
-            posture=posture_analysis,
-            metrics=metrics,
-            events=events,
-            alerts=alerts,
-            frame_index=self._frame_index,
-            frame_size=[fw, fh],
-        )
-        if session_id:
-            result = self._temporal.apply(str(session_id), result, pose_detected=pose.detected)
+        with self._lock:
+            metrics, events, alerts = self._scorer.score(
+                face_analysis,
+                posture_analysis,
+                pose_detected=pose.detected,
+                identity_match=identity_match,
+            )
+            self._frame_index += 1
+            result = FrameAnalysisResult(
+                session_id=session_id,
+                timestamp=utc_now_iso(),
+                face=face_analysis,
+                posture=posture_analysis,
+                metrics=metrics,
+                events=events,
+                alerts=alerts,
+                frame_index=self._frame_index,
+                frame_size=[fw, fh],
+            )
+            if session_id:
+                result = self._temporal.apply(str(session_id), result, pose_detected=pose.detected)
         return result
+
+    def _submit_identity(
+        self,
+        cache_key: str,
+        frame: np.ndarray,
+        bbox: tuple[int, int, int, int],
+        reference: list[float],
+        session_frame: int,
+    ) -> None:
+        with self._identity_lock:
+            if cache_key in self._identity_inflight or self._identity_executor is None:
+                return
+            self._identity_inflight.add(cache_key)
+
+        def _job() -> None:
+            try:
+                match, dist = self._identity.verify_against(frame, bbox, reference)
+                with self._identity_lock:
+                    self._identity_cache[cache_key] = (match, dist, session_frame)
+            except Exception:  # noqa: BLE001 - keep the last good result
+                logger.exception("background identity check failed for %s", cache_key)
+            finally:
+                with self._identity_lock:
+                    self._identity_inflight.discard(cache_key)
+
+        self._identity_executor.submit(_job)
 
     def analyze_and_save(
         self,
@@ -292,5 +244,7 @@ class BehaviorPipeline:
         return result
 
     def close(self) -> None:
+        if self._identity_executor is not None:
+            self._identity_executor.shutdown(wait=True)
         self._face.close()
         self._pose.close()

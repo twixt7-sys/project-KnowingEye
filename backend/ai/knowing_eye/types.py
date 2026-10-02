@@ -165,12 +165,14 @@ class PostureAnalysis:
     shoulder_tilt_ratio: float | None
     spine_lean_ratio: float | None
     guide_status: str = "no_pose"
+    upper_body_visibility: float | None = None
 
     def to_dict(self, metrics: MetricScores) -> dict[str, Any]:
         return {
             "detected": self.detected,
             "shoulder_tilt_ratio": self.shoulder_tilt_ratio,
             "spine_lean_ratio": self.spine_lean_ratio,
+            "upper_body_visibility": self.upper_body_visibility,
             "posture_compliance_pct": metrics.posture_compliance_pct,
             "guide_status": self.guide_status,
         }

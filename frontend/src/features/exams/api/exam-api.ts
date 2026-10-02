@@ -143,8 +143,8 @@ export function deleteQuestionAttachment(
   return apiClient.deleteQuestionAttachment(examId, questionId, attachmentId);
 }
 
-export function uploadOptionImage(examId: number, questionId: number, file: File) {
-  return apiClient.uploadOptionImage(examId, questionId, file);
+export function uploadOptionImage(examId: number, file: File) {
+  return apiClient.uploadOptionImage(examId, file);
 }
 
 export function fetchExamAssignments(examId: number) {

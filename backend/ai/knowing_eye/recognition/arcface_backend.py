@@ -13,9 +13,10 @@ EMBEDDING_DIM = 512
 class ArcFaceBackend:
     """Lazy-loaded InsightFace ``FaceAnalysis`` recognizer (ArcFace / ArcNN weights)."""
 
-    def __init__(self, model_name: str = "buffalo_l", ctx_id: int = -1) -> None:
+    def __init__(self, model_name: str = "buffalo_l", ctx_id: int = -1, det_size: int = 640) -> None:
         self._model_name = model_name
         self._ctx_id = ctx_id
+        self._det_size = det_size
         self._app = None
         self._load_error: str | None = None
 
@@ -35,15 +36,15 @@ class ArcFaceBackend:
         try:
             from insightface.app import FaceAnalysis
 
-            # Only detection + recognition are used. buffalo_l otherwise also runs
-            # 2D/3D landmark and gender/age models on every face, roughly
-            # tripling the cost of each identity check for no benefit.
+            # buffalo_l ships five models (detector, ArcFace, 2D/3D landmarks,
+            # gender/age) and FaceAnalysis.get() runs every one it loads - only
+            # the detector and the embedding are used here.
             app = FaceAnalysis(
                 name=self._model_name,
                 providers=["CPUExecutionProvider"],
                 allowed_modules=["detection", "recognition"],
             )
-            app.prepare(ctx_id=self._ctx_id, det_size=(640, 640))
+            app.prepare(ctx_id=self._ctx_id, det_size=(self._det_size, self._det_size))
             self._app = app
         except Exception as exc:  # noqa: BLE001 - degrade to next backend
             self._load_error = str(exc)

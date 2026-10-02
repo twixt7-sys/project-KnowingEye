@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -28,7 +29,7 @@ interface SortableQuestionRowProps {
   onDelete: (q: Question) => void;
 }
 
-function SortableQuestionRow({
+const SortableQuestionRow = memo(function SortableQuestionRow({
   question,
   sectionTitleById,
   isDraft,
@@ -89,7 +90,7 @@ function SortableQuestionRow({
       )}
     </div>
   );
-}
+});
 
 interface SortableQuestionListProps {
   questions: Question[];
@@ -100,7 +101,7 @@ interface SortableQuestionListProps {
   onReorder: (questionIds: number[]) => void;
 }
 
-export function SortableQuestionList({
+export const SortableQuestionList = memo(function SortableQuestionList({
   questions,
   sectionTitleById,
   isDraft,
@@ -112,6 +113,8 @@ export function SortableQuestionList({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  const questionIds = useMemo(() => questions.map((q) => q.id), [questions]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -150,7 +153,7 @@ export function SortableQuestionList({
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={questions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
+      <SortableContext items={questionIds} strategy={verticalListSortingStrategy}>
         <div className="bg-card border border-border rounded-xl divide-y divide-border">
           {questions.map((q) => (
             <SortableQuestionRow
@@ -166,4 +169,4 @@ export function SortableQuestionList({
       </SortableContext>
     </DndContext>
   );
-}
+});

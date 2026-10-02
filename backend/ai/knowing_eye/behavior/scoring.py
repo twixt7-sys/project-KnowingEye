@@ -10,7 +10,8 @@ from ai.knowing_eye.behavior.normalize import (
     face_presence_pct,
     gaze_focus_pct,
     identity_match_pct,
-    posture_compliance_pct,
+    posture_quality_pct,
+    upper_body_presence_pct,
 )
 from ai.knowing_eye.detection.face_detector import DetectedFace
 from ai.knowing_eye.detection.pose_detector import PoseResult
@@ -33,7 +34,7 @@ class BehaviorScorer:
         self._gaze_yaw = rec.get("gaze_yaw_threshold_deg", 25)
         self._gaze_pitch = rec.get("gaze_pitch_threshold_deg", 20)
         self._tilt_max = rec.get("posture_shoulder_tilt_max", 0.12)
-        self._lean_max = rec.get("posture_spine_lean_max", 0.30)
+        self._lean_max = rec.get("posture_spine_lean_max", 0.55)
         self._identity_threshold = rec.get(
             "identity_match_threshold",
             pipe.get("identity_match_threshold", 0.6),
@@ -66,6 +67,7 @@ class BehaviorScorer:
             detected=pose.detected,
             shoulder_tilt_ratio=pose.shoulder_tilt_ratio,
             spine_lean_ratio=pose.spine_lean_ratio,
+            upper_body_visibility=pose.upper_body_visibility,
         )
 
     def compute_metrics(
@@ -82,20 +84,8 @@ class BehaviorScorer:
             yaw = yaw if yaw is not None else 0.0
             pitch = pitch if pitch is not None else 0.0
         gp = gaze_focus_pct(yaw, pitch, self._gaze_yaw, self._gaze_pitch)
-        pp = posture_compliance_pct(
-            pose_detected,
-            posture.shoulder_tilt_ratio,
-            posture.spine_lean_ratio,
-            self._tilt_max,
-            self._lean_max,
-            knee_pct=self._alert_threshold_pct,
-        )
-        ip = identity_match_pct(
-            identity_match,
-            face.identity_distance,
-            self._identity_threshold,
-            knee_pct=self._alert_threshold_pct,
-        )
+        pp = upper_body_presence_pct(pose_detected, posture.upper_body_visibility)
+        ip = identity_match_pct(identity_match, face.identity_distance, self._identity_threshold)
         ebi, ebi_count = exam_behavior_index_pct(fp, gp, pp, ip)
         band = classify_ebi_band(ebi, self._ebi_good_min, self._ebi_mid_min)
         return MetricScores(
@@ -167,15 +157,30 @@ class BehaviorScorer:
             {"yaw": face.head_yaw_deg, "pitch": face.head_pitch_deg},
         )
 
-        maybe_flag(
-            BehaviorEventType.BAD_POSTURE,
-            metrics.posture_compliance_pct,
-            {
-                "shoulder_tilt": posture.shoulder_tilt_ratio,
-                "spine_lean": posture.spine_lean_ratio,
-                "pose_detected": pose_detected,
-            },
+        # Scored separately from upper-body presence: only a visible upper body
+        # can have bad posture (absence is the leaving_seat event's job). The
+        # tilt/lean maxima are the limits themselves, so flag only past them -
+        # the 80% cutoff would otherwise trip at a fifth of the allowed tilt.
+        posture_pct = posture_quality_pct(
+            pose_detected,
+            posture.shoulder_tilt_ratio,
+            posture.spine_lean_ratio,
+            self._tilt_max,
+            self._lean_max,
         )
+        over_limit = (posture.shoulder_tilt_ratio or 0.0) > self._tilt_max or (
+            posture.spine_lean_ratio or 0.0
+        ) > self._lean_max
+        if posture_pct is not None and over_limit:
+            maybe_flag(
+                BehaviorEventType.BAD_POSTURE,
+                posture_pct,
+                {
+                    "shoulder_tilt": posture.shoulder_tilt_ratio,
+                    "spine_lean": posture.spine_lean_ratio,
+                    "pose_detected": pose_detected,
+                },
+            )
 
         # Identity is only scored once a reference has been enrolled for the
         # session (otherwise identity_match_pct is None). A mismatch is a

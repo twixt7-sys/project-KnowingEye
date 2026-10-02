@@ -8,7 +8,7 @@ from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Max, ProtectedError
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
@@ -502,9 +502,15 @@ def delete_exam(exam: Exam, user) -> None:
 
     Raises:
         PermissionDenied: If the user cannot delete the exam.
+        ValidationError: If the exam has exam sessions (attempts) on record.
     """
     assert_can_delete_exam(exam, user)
-    exam.delete()
+    try:
+        exam.delete()
+    except ProtectedError:
+        raise ValidationError(
+            {"detail": "Cannot delete an exam that has recorded attempts. Keep it archived instead."}
+        )
 
 
 def _next_question_order(exam: Exam) -> int:
@@ -890,6 +896,7 @@ def duplicate_exam(exam: Exam, user) -> Exam:
             monitoring_enabled=exam.monitoring_enabled,
             shuffle_questions=exam.shuffle_questions,
             shuffle_options=exam.shuffle_options,
+            disable_copy_paste=exam.disable_copy_paste,
             unanswered_counts_as_wrong=exam.unanswered_counts_as_wrong,
             requires_assignment=exam.requires_assignment,
             results_release_at=exam.results_release_at,

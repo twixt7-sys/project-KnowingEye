@@ -201,10 +201,12 @@ def _stub_detect_face_count(frame_bgr) -> int:
         import cv2
 
         if _STUB_CASCADE is None:
-            from ai.knowing_eye.detection.mp_models import load_cascade
+            from ai.knowing_eye.detection.mp_models import cascade_path
 
-            loaded = load_cascade("haarcascade_frontalface_default.xml")
-            if loaded is None:
+            loaded = cv2.CascadeClassifier(
+                str(cascade_path("haarcascade_frontalface_default.xml"))
+            )
+            if loaded.empty():
                 logger.error("Stub face cascade failed to load - face detection disabled.")
                 return 0
             _STUB_CASCADE = loaded
@@ -272,12 +274,12 @@ class _StubPipeline:
             exam_behavior_index_pct,
             face_presence_pct,
             gaze_focus_pct,
-            posture_compliance_pct,
+            upper_body_presence_pct,
         )
 
         face_presence = face_presence_pct(face_count)
         gaze = gaze_focus_pct(0.0 if face_count else None, 0.0 if face_count else None, 40, 35)
-        posture = posture_compliance_pct(face_count > 0, None, None, 0.18)
+        posture = upper_body_presence_pct(face_count > 0)
 
         identity_pct, identity_distance = self._identity_score(frame_bgr, reference_embedding)
 
@@ -409,9 +411,8 @@ class _StubPipeline:
                 return None, None
             cosine = float(np.clip(np.dot(ref, cur), -1.0, 1.0))
             distance = max(0.0, 1.0 - cosine)
-            from ai.knowing_eye.behavior.normalize import threshold_compliance_pct
-
-            pct = threshold_compliance_pct(distance, _STUB_IDENTITY_THRESHOLD, _ALERT_THRESHOLD_PCT)
+            pct = 100.0 * (1.0 - distance / _STUB_IDENTITY_THRESHOLD)
+            pct = round(max(0.0, min(100.0, pct)), 1)
             return pct, round(distance, 6)
         except Exception:  # noqa: BLE001
             return None, None
@@ -485,46 +486,13 @@ def _guaranteed_setup_embedding(frame_bgr) -> list[float] | None:
         return None
 
 
-def _compute_enrollment_embedding(frames: list) -> list[float] | None:
-    """Fuse several enrollment frames into one template when the pipeline can."""
-    pipeline = _get_pipeline()
-    if len(frames) > 1 and hasattr(pipeline, "compute_enrollment_embedding"):
-        try:
-            emb = pipeline.compute_enrollment_embedding(frames)
-        except Exception as exc:  # noqa: BLE001
-            logger.exception("compute_enrollment_embedding failed: %s", exc)
-            emb = None
-        if emb:
-            return [float(x) for x in emb]
-    for frame in frames:
-        emb = compute_embedding(frame)
-        if emb:
-            return emb
-    return None
-
-
 def enroll_reference(frame_bgr, session=None) -> dict[str, Any]:
-    """Enroll a session's reference face from one frame or a list of frames.
-
-    Several frames captured a moment apart give a much steadier ArcFace
-    template than a single snapshot (see ``fuse_embeddings``).
-    """
     mode = get_pipeline_mode()
     embedding: list[float] | None = None
     embedding_backend = mode
 
-    frames = [f for f in (frame_bgr if isinstance(frame_bgr, (list, tuple)) else [frame_bgr]) if f is not None]
-    if not frames:
-        return {
-            "ok": False,
-            "enrolled": False,
-            "pipeline_mode": mode,
-            "message": "No face detected - please face the camera and try again.",
-        }
-    frame_bgr = frames[0]
-
     try:
-        embedding = _compute_enrollment_embedding(frames)
+        embedding = compute_embedding(frame_bgr)
     except Exception as exc:  # noqa: BLE001
         logger.warning("compute_embedding failed during enroll: %s", exc)
 

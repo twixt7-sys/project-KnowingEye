@@ -113,21 +113,11 @@ def receive_frame(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def enroll_reference_view(request):
-    """POST /api/monitoring/enroll/  - store a reference face for a session.
-
-    Accepts ``image`` (one frame) or ``images`` (up to 5 frames captured a
-    moment apart, fused into a single, steadier reference template).
-    """
-    images = request.data.get("images") or []
-    if not isinstance(images, list):
-        images = []
+    """POST /api/monitoring/enroll/  - store a reference face for a session."""
     image_data = request.data.get("image")
-    if image_data:
-        images = [image_data, *images]
-    images = images[:5]
     session_id = request.data.get("session_id")
 
-    if not images:
+    if not image_data:
         return Response({"error": "image is required"}, status=status.HTTP_400_BAD_REQUEST)
     if not session_id:
         return Response({"error": "session_id is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -142,8 +132,8 @@ def enroll_reference_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    frames = [f for f in (decode_base64_image(img) for img in images) if f is not None]
-    if not frames:
+    frame = decode_base64_image(image_data)
+    if frame is None:
         return Response({"error": "invalid image"}, status=status.HTTP_400_BAD_REQUEST)
 
     from features.session.services import ensure_active_session, touch_setup_activity
@@ -158,13 +148,12 @@ def enroll_reference_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    result = _enroll_reference(frames, session=session)
+    result = _enroll_reference(frame, session=session)
     logger.info(
-        "enroll session=%s ok=%s backend=%s frames=%d",
+        "enroll session=%s ok=%s backend=%s",
         session_id,
         result.get("ok"),
         result.get("backend"),
-        len(frames),
     )
     return Response({**result, "session_id": str(session_id)})
 

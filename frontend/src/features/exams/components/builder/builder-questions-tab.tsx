@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 
 import { AlertTriangle, Download, Plus, Trash2, Upload } from "@/shared/icons";
 
@@ -30,6 +30,7 @@ interface BuilderQuestionsTabProps {
   pendingFiles: File[];
   setPendingFiles: React.Dispatch<React.SetStateAction<File[]>>;
   attachmentBusy: boolean;
+  questionError: string | null;
   importCsv: string;
   setImportCsv: (value: string) => void;
   importErrors: string[];
@@ -45,12 +46,13 @@ interface BuilderQuestionsTabProps {
   onSaveQuestion: () => void;
   onAttachmentPick: (files: FileList | null) => void;
   onRemoveAttachment: (attachment: QuestionAttachment) => void;
-  onUploadOptionImage: (questionId: number, file: File) => Promise<string>;
+  onUploadOptionImage: (file: File) => Promise<string>;
+  onCreateSection: (title: string) => Promise<ExamSection | null>;
   onImportFile: (file: File) => void;
   onRunImport: () => void;
 }
 
-function SectionManager({
+const SectionManager = memo(function SectionManager({
   sections,
   isDraft,
   onAddSection,
@@ -138,7 +140,7 @@ function SectionManager({
       )}
     </div>
   );
-}
+});
 
 export function BuilderQuestionsTab({
   questions,
@@ -153,6 +155,7 @@ export function BuilderQuestionsTab({
   pendingFiles,
   setPendingFiles,
   attachmentBusy,
+  questionError,
   importCsv,
   setImportCsv,
   importErrors,
@@ -169,10 +172,14 @@ export function BuilderQuestionsTab({
   onAttachmentPick,
   onRemoveAttachment,
   onUploadOptionImage,
+  onCreateSection,
   onImportFile,
   onRunImport,
 }: BuilderQuestionsTabProps) {
-  const sectionTitleById = new Map(sections.map((s) => [s.id, s.title]));
+  const sectionTitleById = useMemo(
+    () => new Map(sections.map((s) => [s.id, s.title])),
+    [sections]
+  );
 
   return (
     <div className="space-y-6">
@@ -349,12 +356,14 @@ export function BuilderQuestionsTab({
         pendingFiles={pendingFiles}
         setPendingFiles={setPendingFiles}
         attachmentBusy={attachmentBusy}
+        error={questionError}
         saving={saving}
         onClose={onCloseQuestionForm}
         onSave={onSaveQuestion}
         onAttachmentPick={onAttachmentPick}
         onRemoveAttachment={onRemoveAttachment}
         onUploadOptionImage={onUploadOptionImage}
+        onCreateSection={onCreateSection}
       />
     </div>
   );

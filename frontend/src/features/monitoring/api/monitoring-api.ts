@@ -10,11 +10,7 @@ export function sendMonitoringFrame(body: { image: string; session_id: string })
   return apiClient.sendFrame(body);
 }
 
-export function enrollReferenceFace(body: {
-  image: string;
-  images?: string[];
-  session_id: string;
-}) {
+export function enrollReferenceFace(body: { image: string; session_id: string }) {
   return apiClient.enrollReference(body);
 }
 

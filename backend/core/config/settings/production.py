@@ -10,7 +10,7 @@ from .base import Csv, decouple_config, env_bool
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
 
 # Static files have no reverse proxy / CDN in front of them on a single-dyno
-# PaaS deploy (Render, etc.) - WhiteNoise serves them straight from Daphne.
+# PaaS deploy (Railway) - WhiteNoise serves them straight from Daphne.
 MIDDLEWARE = [  # noqa: F405
     *MIDDLEWARE[:2],  # noqa: F405
     "whitenoise.middleware.WhiteNoiseMiddleware",

@@ -47,6 +47,41 @@ from .serializers import (
 User = get_user_model()
 
 
+def _store_option_image(request, exam: Exam, question_id: int | None = None) -> Response:
+    """Validate and store one option image, returning its absolute URL.
+
+    Shared by the exam-level endpoint (used while a question is still being
+    drafted and has no id yet) and the question-level one. The image is stored
+    under media/ like other question attachments but returned as a bare URL for
+    the client to place into that option's ``image`` field - options don't have
+    their own id to hang a QuestionAttachment row off of.
+    """
+    from django.core.files.storage import default_storage
+
+    services.assert_can_modify_exam(exam, request.user)
+    services.assert_exam_editable(exam)
+    uploaded = request.FILES.get("file")
+    if not uploaded:
+        return Response({"file": ["No file provided."]}, status=status.HTTP_400_BAD_REQUEST)
+    kind = validate_attachment_file(uploaded)
+    if kind != "image":
+        return Response(
+            {"file": ["Option images must be an image file (JPEG, PNG, GIF, or WebP)."]},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    uploaded = compress_attachment(uploaded, kind, OPTION_IMAGE_MAX_DIMENSION)
+    folder = f"questions/{exam.id}/{question_id}" if question_id else f"questions/{exam.id}/drafts"
+    path = default_storage.save(f"{folder}/options/{uploaded.name}", uploaded)
+    # The SPA (Vercel) and API (Railway) are separate origins in production,
+    # so a root-relative /media/... URL would resolve against the SPA host
+    # and 404. Make it absolute against the API host; a storage backend that
+    # already returns an absolute URL (e.g. S3) is left untouched.
+    url = default_storage.url(path)
+    if url.startswith("/"):
+        url = request.build_absolute_uri(url)
+    return Response({"url": url}, status=status.HTTP_201_CREATED)
+
+
 class DepartmentViewSet(viewsets.ModelViewSet):
     """CRUD for institutional departments (admin write, authenticated read)."""
 
@@ -178,7 +213,7 @@ class ExamViewSet(viewsets.ModelViewSet):
         return Response(
             {
                 "message": result.message,
-                "exam": ExamDetailSerializer(result.exam).data,
+                "exam": ExamDetailSerializer(result.exam, context={"request": request}).data,
             },
             status=status.HTTP_200_OK,
         )
@@ -240,7 +275,7 @@ class ExamViewSet(viewsets.ModelViewSet):
         return Response(
             {
                 "message": result.message,
-                "exam": ExamDetailSerializer(result.exam).data,
+                "exam": ExamDetailSerializer(result.exam, context={"request": request}).data,
             },
             status=status.HTTP_200_OK,
         )
@@ -395,10 +430,21 @@ class ExamViewSet(viewsets.ModelViewSet):
         return Response(
             {
                 "imported": len(created),
-                "questions": QuestionDetailSerializer(created, many=True).data,
+                "questions": QuestionDetailSerializer(
+                    created, many=True, context={"request": request}
+                ).data,
             },
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=True, methods=["post"], url_path="option-image")
+    def upload_option_image(self, request, pk=None):
+        """Upload an answer-choice image before its question has been saved.
+
+        Lets the builder attach pictures to choices while a new question is
+        still a draft, instead of forcing a save-then-edit round trip.
+        """
+        return _store_option_image(request, self.get_object())
 
     @action(detail=True, methods=["post"], url_path="questions/reorder")
     def reorder_questions(self, request, pk=None):
@@ -409,7 +455,9 @@ class ExamViewSet(viewsets.ModelViewSet):
         ordered = services.reorder_questions(
             exam, request.user, ser.validated_data["question_ids"]
         )
-        return Response(QuestionDetailSerializer(ordered, many=True).data)
+        return Response(
+            QuestionDetailSerializer(ordered, many=True, context={"request": request}).data
+        )
 
 
 class QuestionViewSet(viewsets.ModelViewSet):
@@ -456,11 +504,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         qs = self.filter_queryset(self.get_queryset())
         if request.user.is_admin() or security.has_module(request.user, "exams"):
-            serializer = QuestionDetailSerializer(qs, many=True)
+            serializer = QuestionDetailSerializer(qs, many=True, context={"request": request})
         else:
             from .serializers import QuestionTakeSerializer
 
-            serializer = QuestionTakeSerializer(qs, many=True)
+            serializer = QuestionTakeSerializer(qs, many=True, context={"request": request})
         return Response(serializer.data)
 
     def perform_create(self, serializer):
@@ -520,35 +568,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         Directive Area 03 ("Question management"): abstract/psychological
         items need image-based answer choices, not just image-based question
-        bodies. The image is stored under media/ like other question
-        attachments, but returned as a bare URL for the client to place into
-        that option's ``image`` field - options don't have their own id to
-        hang a QuestionAttachment row off of.
+        bodies.
         """
-        from django.core.files.storage import default_storage
-
         question = self.get_object()
-        services.assert_can_modify_exam(question.exam, request.user)
-        services.assert_exam_editable(question.exam)
-        uploaded = request.FILES.get("file")
-        if not uploaded:
-            return Response({"file": ["No file provided."]}, status=status.HTTP_400_BAD_REQUEST)
-        kind = validate_attachment_file(uploaded)
-        if kind != "image":
-            return Response(
-                {"file": ["Option images must be an image file (JPEG, PNG, GIF, or WebP)."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        path = default_storage.save(
-            f"questions/{question.exam_id}/{question.id}/options/{uploaded.name}",
-            uploaded,
-        )
-        # Root-relative on purpose when the storage backend already returns one
-        # (e.g. FileSystemStorage/MEDIA_URL): nginx (prod) and the Vite dev proxy
-        # both serve /media/ from the same origin as the SPA, and
-        # build_absolute_uri() would resolve it against the current request path
-        # instead of the site root. A storage backend that already returns an
-        # absolute URL (e.g. S3) is left untouched.
-        url = default_storage.url(path)
-        return Response({"url": url}, status=status.HTTP_201_CREATED)
-        uploaded = compress_attachment(uploaded, kind, OPTION_IMAGE_MAX_DIMENSION)
+        return _store_option_image(request, question.exam, question.id)

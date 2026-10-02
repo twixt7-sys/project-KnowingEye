@@ -429,19 +429,19 @@ erDiagram
         </tr>
         <tr>
           <td>Posture</td>
-          <td>Shoulder-line tilt and head-over-shoulder lean ratios from body-pose landmarks</td>
+          <td>Shoulder-line tilt and spine lean ratios from body-pose landmarks</td>
           <td>Extreme lean/tilt is consistent with reaching for hidden material or a second person entering frame</td>
           <td>Normal: within threshold. Suspicious: exceeds it.</td>
-          <td>MediaPipe Pose Landmarker Full, shoulder (11/12) + ear (7/8, nose 0 as fallback) landmarks, visibility-gated (<code>pose_detector.py</code>). Hips are not used - they are below the frame edge at webcam framing.</td>
-          <td><code>posture_shoulder_tilt_max: 0.18</code>, <code>posture_spine_lean_max: 0.30</code></td>
+          <td>MediaPipe Pose Landmarker Lite, shoulder (11/12) + nose (0) + hip (23) landmarks (<code>pose_detector.py</code>)</td>
+          <td><code>posture_shoulder_tilt_max: 0.18</code>, <code>posture_spine_lean_max: 0.55</code></td>
           <td><code>bad_posture</code> event, weight <code>0.6</code>, severity <code>low</code></td>
         </tr>
         <tr>
           <td>Upper-body visibility</td>
-          <td>Whether both shoulder pose landmarks are visible (visibility &ge; 0.5)</td>
+          <td>Whether shoulder/hip pose landmarks are detected at all</td>
           <td>Absence of the upper body (not just the face) indicates the examinee has left the seat entirely</td>
           <td>Normal: landmarks present. Suspicious: absent beyond the grace period.</td>
-          <td>MediaPipe Pose Landmarker Full shoulder-visibility check</td>
+          <td>MediaPipe Pose Landmarker Lite landmark-presence check</td>
           <td><code>leaving_seat_grace_seconds: 3.0</code></td>
           <td><code>leaving_seat</code> event, weight <code>0.75</code>, severity <code>medium</code></td>
         </tr>
@@ -456,7 +456,7 @@ erDiagram
       <tbody>
         <tr><td><code>identity_match_threshold</code></td><td>0.42 cosine distance (≈0.58 similarity)</td><td>InsightFace's own model-selection guide gives a worked example verification threshold of <strong>0.40 cosine similarity</strong> for <code>buffalo_l</code>-family embeddings <a href="https://www.insightface.ai/guides/choose-face-recognition-model-and-evaluate">(InsightFace, "Choosing a Face Recognition Model")</a>. Knowing Eye's 0.42-distance / 0.58-similarity bar is <em>stricter</em> than that reference example - a deliberate choice, since a false accept (letting an impersonator through) is a worse failure mode for exam integrity than a false reject (prompting a legitimate examinee to re-center in frame).</td></tr>
         <tr><td><code>gaze_yaw_threshold_deg</code> / <code>gaze_pitch_threshold_deg</code></td><td>40° / 35°</td><td>Published proctoring-CV literature confirms gaze/head-pose deviation as the standard cheating-detection signal but does not converge on one universal degree threshold - published systems tune it per camera geometry and typically pair it with a duration requirement rather than a single angle <a href="https://arxiv.org/pdf/2409.16923">(Yassine et al., "AI-assisted Gaze Detection for Proctoring Online Exams")</a>. Knowing Eye follows that duration-pairing practice: 40°/35° alone does not flag anything - it must also persist across the temporal window (see Anomaly, above) before it becomes an event.</td></tr>
-        <tr><td><code>posture_shoulder_tilt_max</code> / <code>posture_spine_lean_max</code></td><td>0.18 / 0.30</td><td>These are geometric ratios (landmark-distance ratios, not literature-standardized units), so they are tuned against MediaPipe's own BlazePose landmark topology rather than an external paper - documented here as an internally-derived value, not misrepresented as externally cited. Tilt is tan(shoulder-line angle), so 0.18 &asymp; 10&deg;; lean is the ear-midpoint offset from the shoulder midpoint along the shoulder axis divided by shoulder width (0 = centred, 0.5 = head above one shoulder). Both are scale-invariant and re-derivable from labelled captures with <code>scripts/calibrate_monitoring.py posture</code>.</td></tr>
+        <tr><td><code>posture_shoulder_tilt_max</code> / <code>posture_spine_lean_max</code></td><td>0.18 / 0.55</td><td>These are geometric ratios (landmark-distance ratios, not literature-standardized units), so they are tuned against MediaPipe's own BlazePose landmark topology rather than an external paper - documented here as an internally-derived value, not misrepresented as externally cited.</td></tr>
         <tr><td><code>suspicious_pattern.window_seconds</code> / <code>min_flags</code></td><td>60s / 3 flags</td><td>Sliding-window temporal aggregation to suppress single-frame false positives is an established anomaly-detection technique in video surveillance literature <a href="https://www.nature.com/articles/s41598-025-12388-7">(Nature Sci. Rep., multi-camera spatiotemporal anomaly detection, 2025)</a>; the specific 60s/3-flag parameterization is a project-tuned instance of that general technique, consistent with the literature's finding that combining temporal reasoning with confidence-based filtering reduces false positives versus per-frame flagging.</td></tr>
         <tr><td>Appearance-fallback identity threshold</td><td>0.15 cosine distance</td><td><strong>Explicitly not research-derived</strong> - the code comment (<code>identity.py:18-20</code>) says so directly: tuned so a matching crop scores near-zero distance and a different face exceeds it. This only activates in the degraded "stub"/no-ML-dependencies fallback path, never in production with MediaPipe+InsightFace installed - documented honestly rather than dressed up with a citation it doesn't have.</td></tr>
       </tbody>

@@ -51,14 +51,13 @@ export function useExamTaking() {
     return "bottom-right";
   });
 
-  // 5 fps (pipeline.target_fps). Sending is gated on the previous reply, so on
-  // a slower server this just runs at whatever rate inference keeps up with.
   const monitoring = useMonitoring({
     sessionId: session?.id,
-    intervalMs: 200,
+    intervalMs: 1000,
   });
 
   const monitoringEnabled = session?.exam?.monitoring_enabled !== false;
+  const disableCopyPaste = session?.exam?.disable_copy_paste === true;
   const webcamActive =
     monitoringEnabled &&
     (monitoring.status === "live" || monitoring.status === "fallback-rest");
@@ -260,6 +259,7 @@ export function useExamTaking() {
     setShowSubmitModal,
     monitoring,
     monitoringEnabled,
+    disableCopyPaste,
     webcamActive,
     behaviorAlerts,
     tabSwitchCount,

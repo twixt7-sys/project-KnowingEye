@@ -47,6 +47,13 @@ def classify_ebi_band(
     return EBI_BAND_BAD
 
 
+# Posture scoring: ratios are measured against the configured limit (tilt_max /
+# lean_max). Below _POSTURE_DEADBAND_RATIO the score is 100; it reaches 0 at
+# _POSTURE_ZERO_RATIO.
+_POSTURE_DEADBAND_RATIO = 0.5
+_POSTURE_ZERO_RATIO = 2.0
+
+
 def clamp_pct(value: float) -> float:
     return round(max(0.0, min(100.0, value)), 1)
 
@@ -68,58 +75,54 @@ def gaze_focus_pct(yaw_deg: float | None, pitch_deg: float | None, yaw_max: floa
     return clamp_pct(100.0 * (1.0 - min(1.0, worst)))
 
 
-def threshold_compliance_pct(
-    value: float | None,
-    threshold: float,
-    knee_pct: float = 80.0,
-) -> float:
-    """Map a "lower is better" measurement onto 0-100% compliance so that the
-    configured threshold lands exactly on the alert cutoff.
+def upper_body_presence_pct(detected: bool, visibility: float | None = None) -> float:
+    """Upper-Body Presence (``Up``): is the examinee's upper body in view?
 
-        value = 0              -> 100%
-        value = threshold      -> ``knee_pct`` (the 80% alert cutoff)
-        value = 2 x threshold  -> 0%
-
-    A plain ``1 - value / threshold`` line puts the 80% cutoff at only 20% of
-    the threshold, so e.g. a 0.42 identity threshold actually alerted at a
-    cosine distance of 0.084 - inside the normal same-person range for ArcFace -
-    and a 0.18 shoulder-tilt "max" alerted at ~2 degrees of tilt. With this
-    piecewise mapping, "metric < alert cutoff" means exactly "value > threshold".
+    Like face presence, "not seen" scores 0 - it used to return a "neutral"
+    50%, which pinned the indicator at 50% whenever the pose model missed.
+    ``visibility`` is the pose model's shoulder visibility (0-1); ``None``
+    means the backend gives no confidence, so a detection counts fully.
     """
-    if value is None:
+    if not detected:
+        return 0.0
+    if visibility is None:
         return 100.0
-    ratio = max(0.0, float(value)) / max(threshold, 1e-6)
-    if ratio <= 1.0:
-        return clamp_pct(100.0 - (100.0 - knee_pct) * ratio)
-    return clamp_pct(knee_pct * (2.0 - ratio))
+    return clamp_pct(100.0 * visibility)
 
 
-def posture_compliance_pct(
+def posture_quality_pct(
     detected: bool,
     shoulder_tilt: float | None,
     spine_lean: float | None,
     tilt_max: float,
-    lean_max: float = 0.30,
-    knee_pct: float = 80.0,
-) -> float:
+    lean_max: float = 0.55,
+) -> float | None:
+    """How upright a *detected* upper body is (drives the bad_posture event only).
+
+    ``None`` when no upper body was detected - absence is handled by
+    upper-body presence and the leaving_seat event, not scored as bad posture.
+    """
     if not detected:
-        return 50.0
-    return min(
-        threshold_compliance_pct(shoulder_tilt, tilt_max, knee_pct),
-        threshold_compliance_pct(spine_lean, lean_max, knee_pct),
-    )
+        return None
+    tilt_ratio = (shoulder_tilt or 0.0) / max(tilt_max, 1e-6)
+    lean_ratio = (spine_lean or 0.0) / max(lean_max, 1e-6)
+    worst = max(tilt_ratio, lean_ratio)
+    # Gradual falloff: full marks inside the deadband, then a linear decline that
+    # only reaches 0 at twice the limit. A ratio right at the limit scores ~67%
+    # (below the 80% alert cutoff) instead of cliffing straight to 0%.
+    over = (worst - _POSTURE_DEADBAND_RATIO) / (_POSTURE_ZERO_RATIO - _POSTURE_DEADBAND_RATIO)
+    return clamp_pct(100.0 * (1.0 - max(0.0, min(1.0, over))))
 
 
 def identity_match_pct(
     match: bool | None,
     distance: float | None,
     match_threshold: float,
-    knee_pct: float = 80.0,
 ) -> float | None:
     if match is None and distance is None:
         return None
     if distance is not None:
-        return threshold_compliance_pct(distance, match_threshold, knee_pct)
+        return clamp_pct(100.0 * max(0.0, 1.0 - distance / max(match_threshold, 1e-6)))
     return 100.0 if match else 0.0
 
 

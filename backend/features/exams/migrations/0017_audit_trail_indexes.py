@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('exams', '0015_renormalize_question_options'),
+        ('exams', '0016_exam_disable_copy_paste'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

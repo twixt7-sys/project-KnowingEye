@@ -304,6 +304,11 @@ export function ExamSetupPage() {
               <h1 className="font-serif text-3xl font-semibold tracking-tight">
                 {exam?.title ?? "Exam setup"}
               </h1>
+              {exam?.created_by_name && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Created by {exam.created_by_name}
+                </p>
+              )}
               <p className="text-muted-foreground text-sm mt-1 max-w-xl">
                 {monitoringEnabled
                   ? "Secure your session with identity verification and environment checks before the timed exam begins."

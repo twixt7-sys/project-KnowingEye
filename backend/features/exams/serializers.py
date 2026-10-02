@@ -202,6 +202,9 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = [
+            # The client needs the new question's id to upload its attachments
+            # straight after creating it.
+            "id",
             "question_text",
             "question_type",
             "options",
@@ -215,12 +218,13 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
             "trim_whitespace",
             "shuffle_options_override",
         ]
+        read_only_fields = ["id"]
 
     def validate_options(self, value):
         if value and not isinstance(value, list):
             raise serializers.ValidationError("Options must be a list.")
         normalized = []
-        for item in value or []:
+        for index, item in enumerate(value or [], start=1):
             if isinstance(item, dict):
                 text = str(item.get("text", "") or "").strip()
                 image = item.get("image") or None
@@ -228,6 +232,10 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         "An option's image must be a URL string."
                     )
+                if not text and image:
+                    # A picture can stand in for the text, but answers are
+                    # recorded and graded by option text, so give it a label.
+                    text = f"Option {index}"
                 normalized.append({"text": text, "image": image})
             else:
                 normalized.append({"text": str(item or "").strip(), "image": None})
@@ -284,7 +292,7 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
 class ExamListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for exam lists."""
 
-    created_by_name = serializers.CharField(source="created_by.get_full_name", read_only=True)
+    created_by_name = serializers.SerializerMethodField()
     question_count = serializers.SerializerMethodField()
     is_open = serializers.SerializerMethodField()
     schedule_state = serializers.SerializerMethodField()
@@ -311,6 +319,7 @@ class ExamListSerializer(serializers.ModelSerializer):
             "monitoring_enabled",
             "shuffle_questions",
             "shuffle_options",
+            "disable_copy_paste",
             "unanswered_counts_as_wrong",
             "requires_assignment",
             "results_release_at",
@@ -342,6 +351,10 @@ class ExamListSerializer(serializers.ModelSerializer):
             "rejection_note",
         ]
 
+    def get_created_by_name(self, obj):
+        creator = obj.created_by
+        return creator.get_full_name() or creator.username
+
     def get_question_count(self, obj):
         return obj.questions.count()
 
@@ -360,6 +373,9 @@ class ExamTakeSerializer(serializers.ModelSerializer):
     """Examinee-safe exam detail - questions without answer keys."""
 
     questions = QuestionTakeSerializer(many=True, read_only=True)
+    # Shown to examinees so they can see who authored the exam (name only -
+    # the email stays staff-side in ExamDetailSerializer).
+    created_by_name = serializers.SerializerMethodField()
     # Section grouping for in-exam navigation (Question.section). A plain
     # SerializerMethodField (rather than ExamSectionSerializer(many=True))
     # because ExamSectionSerializer is defined later in this module - a
@@ -394,6 +410,7 @@ class ExamTakeSerializer(serializers.ModelSerializer):
             "monitoring_enabled",
             "shuffle_questions",
             "shuffle_options",
+            "disable_copy_paste",
             "unanswered_counts_as_wrong",
             "requires_assignment",
             "results_release_at",
@@ -403,10 +420,15 @@ class ExamTakeSerializer(serializers.ModelSerializer):
             "max_tab_switches",
             "is_open",
             "schedule_state",
+            "created_by_name",
             "sections",
             "questions",
         ]
         read_only_fields = fields
+
+    def get_created_by_name(self, obj):
+        creator = obj.created_by
+        return creator.get_full_name() or creator.username
 
     def get_sections(self, obj):
         return ExamSectionSerializer(obj.sections.order_by("order"), many=True).data
@@ -469,6 +491,7 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "monitoring_enabled",
             "shuffle_questions",
             "shuffle_options",
+            "disable_copy_paste",
             "unanswered_counts_as_wrong",
             "requires_assignment",
             "results_release_at",
@@ -580,6 +603,7 @@ class ExamCreateUpdateSerializer(serializers.ModelSerializer):
             "monitoring_enabled",
             "shuffle_questions",
             "shuffle_options",
+            "disable_copy_paste",
             "unanswered_counts_as_wrong",
             "requires_assignment",
             "results_release_at",

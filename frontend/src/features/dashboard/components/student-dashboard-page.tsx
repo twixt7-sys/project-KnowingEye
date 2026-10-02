@@ -33,6 +33,7 @@ type DashboardExam = {
   duration: string;
   type: "upcoming" | "completed";
   monitoringEnabled: boolean;
+  author?: string;
   score?: number;
   passed?: boolean | null;
   sessionId?: string;
@@ -51,6 +52,7 @@ function mapExamToCard(exam: Exam, type: "upcoming" | "completed"): DashboardExa
     duration: `${exam.duration_minutes} mins`,
     type,
     monitoringEnabled: exam.monitoring_enabled !== false,
+    author: exam.created_by_name || undefined,
   };
 }
 
@@ -216,6 +218,11 @@ export function StudentDashboardPage() {
                 <h3 className="mt-2.5 line-clamp-2 font-serif text-lg font-semibold leading-snug tracking-tight">
                   {exam.title}
                 </h3>
+                {exam.author && (
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                    Created by {exam.author}
+                  </p>
+                )}
 
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
