@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 
 import { AlertTriangle, Download, Plus, Trash2, Upload } from "@/shared/icons";
 
@@ -52,7 +52,7 @@ interface BuilderQuestionsTabProps {
   onRunImport: () => void;
 }
 
-function SectionManager({
+const SectionManager = memo(function SectionManager({
   sections,
   isDraft,
   onAddSection,
@@ -140,7 +140,7 @@ function SectionManager({
       )}
     </div>
   );
-}
+});
 
 export function BuilderQuestionsTab({
   questions,
@@ -176,7 +176,10 @@ export function BuilderQuestionsTab({
   onImportFile,
   onRunImport,
 }: BuilderQuestionsTabProps) {
-  const sectionTitleById = new Map(sections.map((s) => [s.id, s.title]));
+  const sectionTitleById = useMemo(
+    () => new Map(sections.map((s) => [s.id, s.title])),
+    [sections]
+  );
 
   return (
     <div className="space-y-6">

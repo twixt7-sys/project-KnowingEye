@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 
 import { FileText, ImagePlus, Loader2, Plus, Trash2, Upload, X } from "@/shared/icons";
 
@@ -181,7 +181,7 @@ interface QuestionFormDialogProps {
   onCreateSection: (title: string) => Promise<ExamSection | null>;
 }
 
-export function QuestionFormDialog({
+export const QuestionFormDialog = memo(function QuestionFormDialog({
   open,
   editingQuestion,
   questionDraft,
@@ -561,4 +561,4 @@ export function QuestionFormDialog({
       </div>
     </div>
   );
-}
+});
