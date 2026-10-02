@@ -33,7 +33,10 @@ def test_posture_quality_ignores_missing_body():
 def test_posture_quality_without_hips_uses_tilt_only():
     # Typical webcam framing: level shoulders, hips out of frame (lean=None).
     assert posture_quality_pct(True, 0.02, None, 0.18) >= 80.0
-    assert posture_quality_pct(True, 0.25, None, 0.18) == 0.0
+    # Past the limit is flagged (below the 80% cutoff) but falls off gradually,
+    # only reaching 0% at twice the limit.
+    assert posture_quality_pct(True, 0.25, None, 0.18) < 80.0
+    assert posture_quality_pct(True, 0.36, None, 0.18) == 0.0
 
 
 def test_offscreen_landmark_is_not_in_frame():

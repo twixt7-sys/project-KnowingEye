@@ -34,7 +34,7 @@ class BehaviorScorer:
         self._gaze_yaw = rec.get("gaze_yaw_threshold_deg", 25)
         self._gaze_pitch = rec.get("gaze_pitch_threshold_deg", 20)
         self._tilt_max = rec.get("posture_shoulder_tilt_max", 0.12)
-        self._lean_max = rec.get("posture_spine_lean_max", 0.55)
+        self._lean_max = rec.get("posture_spine_lean_max", 0.30)
         self._identity_threshold = rec.get(
             "identity_match_threshold",
             pipe.get("identity_match_threshold", 0.6),
@@ -85,7 +85,12 @@ class BehaviorScorer:
             pitch = pitch if pitch is not None else 0.0
         gp = gaze_focus_pct(yaw, pitch, self._gaze_yaw, self._gaze_pitch)
         pp = upper_body_presence_pct(pose_detected, posture.upper_body_visibility)
-        ip = identity_match_pct(identity_match, face.identity_distance, self._identity_threshold)
+        ip = identity_match_pct(
+            identity_match,
+            face.identity_distance,
+            self._identity_threshold,
+            knee_pct=self._alert_threshold_pct,
+        )
         ebi, ebi_count = exam_behavior_index_pct(fp, gp, pp, ip)
         band = classify_ebi_band(ebi, self._ebi_good_min, self._ebi_mid_min)
         return MetricScores(

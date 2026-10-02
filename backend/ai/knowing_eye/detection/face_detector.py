@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from ai.knowing_eye.detection.mp_models import cascade_path
+from ai.knowing_eye.detection.mp_models import cascade_path, load_cascade
 
 logger = logging.getLogger("knowing_eye.ai.detection")
 
@@ -68,14 +68,11 @@ class FaceDetector:
     def __init__(self) -> None:
         self._backend = "opencv"
         self._landmarker = None
-        cascade = cv2.CascadeClassifier(str(cascade_path("haarcascade_frontalface_default.xml")))
-        # CascadeClassifier() doesn't raise on a failed load, it just returns
-        # a classifier whose detectMultiScale() throws an assertion error on
-        # first use. Detect that here so the opencv fallback degrades to "no
-        # detection" instead of 500ing every frame.
-        self._cascade = cascade if not cascade.empty() else None
+        # Degrades to "no detection" (instead of 500ing every frame or crashing
+        # this constructor) when the cascade can't load - see load_cascade().
+        self._cascade = load_cascade("haarcascade_frontalface_default.xml")
         if self._cascade is None:
-            logger.error("Haar cascade failed to load from %s", cascade_path("haarcascade_frontalface_default.xml"))
+            logger.error("Haar cascade unavailable: %s", cascade_path("haarcascade_frontalface_default.xml"))
 
         if _MEDIAPIPE_OK:
             try:

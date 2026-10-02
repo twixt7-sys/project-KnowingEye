@@ -22,6 +22,39 @@ _FACE_RECOGNITION_DIM = 128
 _APPEARANCE_DIM = 256
 
 
+def fuse_embeddings(
+    embeddings: list[list[float]] | list[np.ndarray],
+    max_cosine_distance: float,
+) -> list[float] | None:
+    """Fuse several enrollment embeddings into one reference template.
+
+    A mean of L2-normalised embeddings is a more stable identity template than
+    any single frame (it averages out expression, lighting flicker and motion
+    blur). Samples further than ``max_cosine_distance`` from the medoid are
+    dropped first, so one bad capture can't drag the template off.
+    """
+    vecs = [np.asarray(e, dtype=np.float64).reshape(-1) for e in embeddings if e is not None]
+    if not vecs:
+        return None
+    dim = vecs[0].shape[0]
+    vecs = [v for v in vecs if v.shape[0] == dim]
+    arr = np.stack(vecs)
+    norms = np.linalg.norm(arr, axis=1, keepdims=True)
+    arr = arr[norms[:, 0] > 1e-9] / norms[norms[:, 0] > 1e-9]
+    if arr.shape[0] == 0:
+        return None
+    if arr.shape[0] > 1:
+        sims = arr @ arr.T
+        medoid = int(np.argmax(sims.sum(axis=1)))
+        keep = (1.0 - sims[medoid]) <= max_cosine_distance
+        arr = arr[keep]
+    mean = arr.mean(axis=0)
+    norm = float(np.linalg.norm(mean))
+    if norm < 1e-9:
+        return None
+    return [float(x) for x in mean / norm]
+
+
 def _default_threshold(backend: str) -> float:
     if backend == "arcface":
         return 0.42
@@ -62,6 +95,10 @@ class IdentityVerifier:
     @property
     def backend(self) -> str:
         return self._active_backend
+
+    @property
+    def threshold(self) -> float:
+        return self._threshold
 
     @property
     def requested_backend(self) -> str:
@@ -108,7 +145,11 @@ class IdentityVerifier:
             return None, None
         emb = self._encode_crop(frame_bgr, bbox)
         if emb is None:
-            return False, self._threshold * 2
+            # The recognizer couldn't produce an embedding (its own detector
+            # missed the face, crop too small, ...). That is "unknown", not
+            # evidence of a different person - reporting it as a mismatch was a
+            # major source of false identity_mismatch alerts.
+            return None, None
         match, dist = self._compare_vectors(self._reference, emb)
         return match, dist
 
@@ -130,7 +171,7 @@ class IdentityVerifier:
             return None, None
         cur = self.embed(frame_bgr, bbox)
         if cur is None:
-            return False, self._threshold * 2
+            return None, None
         ref = np.asarray(reference, dtype=float)
         vec = np.asarray(cur, dtype=float)
         if ref.shape != vec.shape:

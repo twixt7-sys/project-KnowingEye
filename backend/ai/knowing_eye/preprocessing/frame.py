@@ -75,3 +75,19 @@ def prepare_frame(frame_bgr: np.ndarray, config: dict[str, Any] | None = None) -
     if normalize:
         frame = normalize_frame(frame)
     return frame
+
+
+def prepare_frame_pair(
+    frame_bgr: np.ndarray, config: dict[str, Any] | None = None
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return ``(resized, prepared)`` at the same resolution.
+
+    Detection (MediaPipe) runs on ``prepared``; face *embeddings* run on
+    ``resized``. ArcFace was trained on natural photos - histogram equalisation
+    and bilateral smoothing shift skin texture and contrast enough to push
+    same-person cosine distances up, so the recognizer gets the untouched pixels.
+    Both share one size, so bounding boxes from one are valid in the other.
+    """
+    max_width = int((config or {}).get("preprocessing", {}).get("max_width", 640))
+    resized = resize_frame(frame_bgr, max_width=max_width)
+    return resized, prepare_frame(resized, config)

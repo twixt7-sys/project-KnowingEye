@@ -218,13 +218,20 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         from ai.frame_utils import decode_base64_image
 
         log = logging.getLogger("knowing_eye.monitoring.consumers")
-        frame = await database_sync_to_async(decode_base64_image)(content.get("image") or "")
-        if frame is None:
+        images = content.get("images") if isinstance(content.get("images"), list) else []
+        if content.get("image"):
+            images = [content["image"], *images]
+
+        def _decode_all() -> list:
+            return [f for f in (decode_base64_image(img or "") for img in images[:5]) if f is not None]
+
+        frames = await database_sync_to_async(_decode_all)()
+        if not frames:
             await self.send_json({"type": "enroll_result", "ok": False, "message": "invalid image"})
             return
 
-        log.info("ws enroll session=%s shape=%s", self._session.id, getattr(frame, "shape", None))
-        result = await database_sync_to_async(enroll_reference)(frame, self._session)
+        log.info("ws enroll session=%s frames=%d", self._session.id, len(frames))
+        result = await database_sync_to_async(enroll_reference)(frames, self._session)
         log.info("ws enroll session=%s ok=%s", self._session.id, result.get("ok"))
         await self.send_json({"type": "enroll_result", **result})
 
