@@ -60,7 +60,7 @@ def _running_mean(prev_avg: float | None, count: int, value: float) -> float:
     return prev_avg + (value - prev_avg) / (count + 1)
 
 
-def record_frame_metrics(session, analysis: dict[str, Any]) -> bool:
+def record_frame_metrics(session, analysis: dict[str, Any], *, save: bool = True) -> bool:
     """Fold one frame's Exam Behavior Index into the session running means.
 
     Keeps ``ExamSession.ebi_average`` and the four component means exact and
@@ -69,6 +69,10 @@ def record_frame_metrics(session, analysis: dict[str, Any]) -> bool:
     it was actually evaluated (its own sample counter), mirroring the EBI's
     "identity not evaluated rather than zero" rule so a face-absence frame is
     never counted against identity.
+
+    With ``save=False`` only the in-memory ``session`` is updated; the caller
+    owns writing it back with :data:`EBI_UPDATE_FIELDS` (the WebSocket
+    consumer batches these writes so a DB round trip isn't paid every frame).
 
     Returns ``True`` when the session row was updated.
     """
@@ -119,16 +123,30 @@ def record_frame_metrics(session, analysis: dict[str, Any]) -> bool:
         session.ebi_identity_sample_count = ni + 1
         update_fields += ["ebi_face_identity_avg", "ebi_identity_sample_count"]
 
-    session.save(update_fields=update_fields)
+    if save:
+        session.save(update_fields=update_fields)
     return True
 
 
-def persist_analysis(session, analysis: dict[str, Any]) -> dict[str, int]:
+EBI_UPDATE_FIELDS = [
+    "ebi_average",
+    "ebi_face_presence_avg",
+    "ebi_upper_body_avg",
+    "ebi_looking_away_avg",
+    "ebi_sample_count",
+    "ebi_face_identity_avg",
+    "ebi_identity_sample_count",
+]
+
+
+def persist_analysis(
+    session, analysis: dict[str, Any], *, save_metrics: bool = True
+) -> dict[str, int]:
     """Store events and alerts from a frame analysis payload."""
     logs_created = 0
     alerts_created = 0
 
-    record_frame_metrics(session, analysis)
+    record_frame_metrics(session, analysis, save=save_metrics)
 
     for event in analysis.get("events", []):
         raw_type = event.get("event_type", "")
