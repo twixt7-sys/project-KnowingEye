@@ -58,6 +58,7 @@ export {
   ClipboardText as FileCheck,
   FileImage,
   FileText,
+  FileXls as FileSpreadsheet,
   Flag,
   GraduationCap,
   DotsSixVertical as GripVertical,

@@ -418,12 +418,14 @@ class ExamViewSet(viewsets.ModelViewSet):
         exam = self.get_object()
         ser = QuestionImportSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        created = services.import_questions(
-            exam,
-            request.user,
-            csv_text=ser.validated_data.get("csv"),
-            items=ser.validated_data.get("questions"),
-        )
+        source = {
+            "csv_text": ser.validated_data.get("csv"),
+            "items": ser.validated_data.get("questions"),
+        }
+        if ser.validated_data["dry_run"]:
+            validated = services.validate_question_import(exam, request.user, **source)
+            return Response({"valid": True, "count": len(validated)})
+        created = services.import_questions(exam, request.user, **source)
         return Response(
             {
                 "imported": len(created),

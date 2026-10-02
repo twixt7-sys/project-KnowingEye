@@ -114,6 +114,7 @@ export function ExamBuilderPage() {
 
       {builder.tab === "questions" && (
         <BuilderQuestionsTab
+          examId={builder.exam.id}
           questions={builder.questions}
           sections={builder.sections}
           isDraft={builder.isDraft}
@@ -127,10 +128,11 @@ export function ExamBuilderPage() {
           setPendingFiles={builder.setPendingFiles}
           attachmentBusy={builder.attachmentBusy}
           questionError={builder.questionError}
-          importCsv={builder.importCsv}
-          setImportCsv={builder.setImportCsv}
-          importErrors={builder.importErrors}
+          importForm={builder.importForm}
+          importStatus={builder.importStatus}
+          importProblems={builder.importProblems}
           importBusy={builder.importBusy}
+          formDownloadBusy={builder.formDownloadBusy}
           onOpenNew={builder.openNewQuestion}
           onAddSection={builder.addSection}
           onRenameSection={builder.renameSection}
@@ -144,7 +146,10 @@ export function ExamBuilderPage() {
           onRemoveAttachment={(a) => void builder.removeAttachment(a)}
           onUploadOptionImage={builder.uploadOptionImageForQuestion}
           onCreateSection={builder.createSectionForQuestion}
+          onDownloadImportForm={() => void builder.downloadImportForm()}
           onImportFile={(file) => void builder.handleImportFile(file)}
+          onRecheckImport={builder.recheckImport}
+          onClearImport={builder.clearImport}
           onRunImport={builder.runImport}
         />
       )}
