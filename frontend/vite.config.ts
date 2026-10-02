@@ -41,6 +41,9 @@ export default defineConfig({
     },
   },
   build: {
+    // Explicit so production bundles stay minified even if Vite's defaults change.
+    minify: 'esbuild',
+    cssMinify: 'lightningcss',
     rollupOptions: {
       output: {
         // Shared vendor libs get long-lived chunks that survive app deploys.
