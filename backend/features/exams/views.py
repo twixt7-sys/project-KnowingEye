@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from core.security.drf import IsAdminOrReadOnly
+from core.utils.api_cache import cache_get_response
 
 from . import services
 from .attachment_utils import validate_attachment_file
@@ -96,6 +97,10 @@ class DepartmentViewSet(viewsets.ModelViewSet):
                 qs = qs.filter(is_active=True)
         return qs
 
+    @cache_get_response("reference-data", ttl_setting="API_REFERENCE_CACHE_TTL_SECONDS")
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     def destroy(self, request, *args, **kwargs):
         department = self.get_object()
         if department.exams.exists() or department.shared_exams.exists():
@@ -129,6 +134,10 @@ class ExamCategoryViewSet(viewsets.ModelViewSet):
             if active_only in {"1", "true", "True"}:
                 qs = qs.filter(is_active=True)
         return qs
+
+    @cache_get_response("reference-data", ttl_setting="API_REFERENCE_CACHE_TTL_SECONDS")
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         category = self.get_object()

@@ -12,6 +12,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from core.utils.api_cache import cache_get_response
 from core.utils.constants import MAX_REPORT_EXPORT_ROWS
 
 from core.pagination import StandardResultsPagination
@@ -28,6 +29,15 @@ def _session_queryset(user):
     if security.has_module(user, "reports"):
         return qs
     return qs.filter(user=user)
+
+
+def _report_cache_scope(request) -> str:
+    """Callers share a cache entry only if they see the same sessions."""
+    from core.security import service as security
+
+    if security.has_module(request.user, "reports"):
+        return "reports"
+    return f"user:{request.user.pk}"
 
 
 def _annotate_sessions(qs):
@@ -155,6 +165,7 @@ def _serialize_session_rows(sessions):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@cache_get_response("reports", scope=_report_cache_scope)
 def report_summary(request):
     """GET /api/reports/summary/ - dashboard KPIs for admins/examinees."""
     sessions = _session_queryset(request.user)
@@ -504,6 +515,7 @@ def export_sessions_pdf(request):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@cache_get_response("reports", scope=_report_cache_scope)
 def analytics_timeseries(request):
     """GET /api/reports/timeseries/ - behaviors and alerts per day (last 30 days)."""
     from django.db.models.functions import TruncDate

@@ -35,6 +35,10 @@ import sys  # noqa: E402
 
 if "test" in sys.argv:
     KNOWING_EYE["ENABLE_PIPELINE"] = False  # noqa: F405
+    # Keep tests isolated; cache tests opt in with override_settings.
+    CACHES = {  # noqa: F405
+        "default": {"BACKEND": "django.core.cache.backends.dummy.DummyCache"}
+    }
     DATABASES = {  # noqa: F405
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
