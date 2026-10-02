@@ -10,6 +10,7 @@ import {
   type Question,
   type QuestionAttachment,
 } from "@/core/config/api";
+import { type QuestionFormRow, toImportPayload } from "@/features/exams/lib/question-import-form";
 
 export interface ExamAssignment {
   id: number;
@@ -95,8 +96,12 @@ export function fetchExamReadiness(examId: number) {
   return apiClient.getExamReadiness(examId);
 }
 
-export function importQuestionsCsv(examId: number, csv: string) {
-  return apiClient.importQuestions(examId, csv);
+export function importQuestionRows(examId: number, rows: QuestionFormRow[]) {
+  return apiClient.importQuestions(examId, toImportPayload(rows));
+}
+
+export function checkQuestionRows(examId: number, rows: QuestionFormRow[]) {
+  return apiClient.checkQuestionImport(examId, toImportPayload(rows));
 }
 
 export function reorderQuestions(examId: number, questionIds: number[]) {

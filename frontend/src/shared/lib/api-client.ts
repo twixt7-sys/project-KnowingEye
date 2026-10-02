@@ -503,11 +503,19 @@ class ApiClient {
     return this.request<PublishReadiness>(`/exams/${examId}/readiness/`);
   }
 
-  async importQuestions(examId: number, csv: string) {
+  async importQuestions(examId: number, questions: Record<string, unknown>[]) {
     return this.request<{ imported: number; questions: Question[] }>(
       `/exams/${examId}/questions/import/`,
-      { method: "POST", body: JSON.stringify({ csv }) },
+      { method: "POST", body: JSON.stringify({ questions }) },
     );
+  }
+
+  /** Validate an import batch without saving; rejects with row issues when invalid. */
+  async checkQuestionImport(examId: number, questions: Record<string, unknown>[]) {
+    return this.request<{ valid: true; count: number }>(`/exams/${examId}/questions/import/`, {
+      method: "POST",
+      body: JSON.stringify({ questions, dry_run: true }),
+    });
   }
 
   async reorderQuestions(examId: number, questionIds: number[]) {

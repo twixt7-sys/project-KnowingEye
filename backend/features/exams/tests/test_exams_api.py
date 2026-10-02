@@ -128,6 +128,92 @@ class ExamsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["imported"], 3)
 
+    def _import_items(self, items, **extra):
+        return self.client.post(
+            f"/api/exams/{self.exam.id}/questions/import/",
+            {"questions": items, **extra},
+            format="json",
+        )
+
+    def test_import_form_items_resolve_letters_and_friendly_types(self):
+        response = self._import_items(
+            [
+                {
+                    "row": 14,
+                    "question_text": "Capital of France?",
+                    "question_type": "Multiple Choice",
+                    "options": ["London", "Paris", "Berlin", "", ""],
+                    "correct_answer": "b",
+                    "points": 2.0,
+                },
+                {
+                    "row": 15,
+                    "question_text": "The sun is a star.",
+                    "question_type": "True/False",
+                    "options": ["", "", "", "", ""],
+                    "correct_answer": True,
+                    "points": "",
+                },
+            ]
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        mc, tf = response.data["questions"]
+        self.assertEqual(mc["correct_answer"], "Paris")
+        self.assertEqual(mc["points"], 2)
+        self.assertEqual([o["text"] for o in mc["options"]], ["London", "Paris", "Berlin"])
+        self.assertEqual(tf["question_type"], "true_false")
+        self.assertEqual(tf["correct_answer"], "true")
+
+    def test_import_reports_issues_by_sheet_row_and_saves_nothing(self):
+        before = Question.objects.filter(exam=self.exam).count()
+        response = self._import_items(
+            [
+                {
+                    "row": 14,
+                    "question_text": "OK row",
+                    "question_type": "essay",
+                    "correct_answer": "Key points",
+                },
+                {
+                    "row": 15,
+                    "question_text": "Gap row",
+                    "question_type": "multiple_choice",
+                    "options": ["One", "", "Three"],
+                    "correct_answer": "A",
+                },
+                {
+                    "row": 16,
+                    "question_text": "Bad letter",
+                    "question_type": "mcq",
+                    "options": ["One", "Two"],
+                    "correct_answer": "D",
+                    "points": "two",
+                },
+                {"row": 17, "question_text": "", "question_type": "quiz", "correct_answer": ""},
+            ]
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        details = response.data["error"]["details"]
+        by_row = {}
+        for issue in details["issues"]:
+            by_row.setdefault(int(issue["row"]), set()).add(issue["field"])
+        self.assertNotIn(14, by_row)
+        self.assertEqual(by_row[15], {"options"})
+        self.assertEqual(by_row[16], {"correct_answer", "points"})
+        self.assertEqual(by_row[17], {"question_text", "question_type", "correct_answer"})
+        self.assertTrue(any(line.startswith("Row 16:") for line in details["errors"]))
+        self.assertEqual(Question.objects.filter(exam=self.exam).count(), before)
+
+    def test_import_dry_run_validates_without_saving(self):
+        before = Question.objects.filter(exam=self.exam).count()
+        response = self._import_items(
+            [{"row": 14, "question_text": "Q?", "question_type": "short_answer", "correct_answer": "A"}],
+            dry_run=True,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {"valid": True, "count": 1})
+        self.assertEqual(Question.objects.filter(exam=self.exam).count(), before)
+
     def test_list_questions_returns_admin_detail(self):
         response = self.client.get(f"/api/exams/{self.exam.id}/questions/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)

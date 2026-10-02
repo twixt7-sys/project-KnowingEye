@@ -674,10 +674,15 @@ class ExamCreateUpdateSerializer(serializers.ModelSerializer):
 
 
 class QuestionImportSerializer(serializers.Serializer):
-    """Bulk import questions from a CSV string or JSON list."""
+    """Bulk import questions from a CSV string or JSON list.
+
+    ``dry_run`` validates every row and reports problems without saving, so
+    the builder can check an uploaded form before the examiner commits it.
+    """
 
     csv = serializers.CharField(required=False, allow_blank=True)
     questions = serializers.ListField(child=serializers.DictField(), required=False)
+    dry_run = serializers.BooleanField(required=False, default=False)
 
     def validate(self, attrs):
         if not attrs.get("csv") and not attrs.get("questions"):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 from typing import Any
 
 from django.contrib.auth import get_user_model
@@ -620,10 +621,13 @@ def reorder_questions(exam: Exam, user, ordered_ids: list[int]) -> list[Question
     return list(exam.questions.order_by("order"))
 
 
-# Canonical import template - matches the spreadsheet template offered in the UI.
-# `option_images` is optional and, when present, must align 1:1 with `options`
-# (pipe-delimited, same order; leave a segment blank for a text-only option) -
-# Directive Area 03 ("Bulk import"): "validate ... media references."
+# Canonical import columns. The formal question-entry form offered in the UI
+# (Excel, with letterhead + choice columns A-F) is parsed client-side into
+# structured ``questions`` items; plain CSV with these headers is still
+# accepted for scripted imports. `option_images` is optional and, when
+# present, must align 1:1 with the choices (pipe-delimited, same order; leave
+# a segment blank for a text-only option) - Directive Area 03 ("Bulk
+# import"): "validate ... media references."
 CSV_TEMPLATE_HEADERS = [
     "question_text",
     "question_type",
@@ -634,6 +638,38 @@ CSV_TEMPLATE_HEADERS = [
 ]
 _REQUIRED_HEADERS = {"question_text", "question_type"}
 _VALID_QUESTION_TYPES = {t.value for t in Question.QuestionType}
+_CHOICE_LETTERS = "ABCDEFGHIJ"
+
+# Friendly spellings people type (or pick from the form's dropdown) mapped to
+# the stored question type. Keys are already passed through `_slug`.
+_QUESTION_TYPE_ALIASES = {
+    "mc": "multiple_choice",
+    "mcq": "multiple_choice",
+    "multiple_choices": "multiple_choice",
+    "tf": "true_false",
+    "t_f": "true_false",
+    "true_or_false": "true_false",
+    "sa": "short_answer",
+    "identification": "short_answer",
+    "long_answer": "essay",
+}
+_TRUE_FALSE_ALIASES = {"true": "true", "t": "true", "false": "false", "f": "false"}
+
+
+def _slug(value: str) -> str:
+    """Lower-case and collapse spaces, dashes, and slashes into underscores."""
+    return "_".join(re.split(r"[\s\-/]+", value.strip().lower())).strip("_")
+
+
+def _cell_text(value: Any) -> str:
+    """Render one imported cell as trimmed text (spreadsheets send numbers/bools)."""
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value).strip()
 
 
 def _is_plausible_media_reference(value: str) -> bool:
@@ -646,89 +682,202 @@ def _is_plausible_media_reference(value: str) -> bool:
     return value.startswith(("http://", "https://", "/media/"))
 
 
-def _row_from_mapping(
-    row: dict[str, str], line_no: int, errors: list[str]
-) -> dict[str, Any]:
-    """Build a question dict from one CSV row, appending friendly errors by row."""
-    question_text = (row.get("question_text") or "").strip()
-    qtype = (row.get("question_type") or "").strip().lower()
+class _RowIssues:
+    """Collects problems for one import row as ``{row, field, message}`` dicts."""
+
+    def __init__(self, line_no: Any, sink: list[dict[str, Any]]):
+        self.line_no = line_no
+        self.sink = sink
+        self.count = 0
+
+    def add(self, field: str, message: str) -> None:
+        self.sink.append({"row": self.line_no, "field": field, "message": message})
+        self.count += 1
+
+
+def _split_choices(raw: Any) -> list[str]:
+    """Choices arrive positionally (list, from the form) or pipe-delimited (CSV)."""
+    if isinstance(raw, (list, tuple)):
+        return [
+            _cell_text(item.get("text") if isinstance(item, dict) else item)
+            for item in raw
+        ]
+    text = _cell_text(raw)
+    return [seg.strip() for seg in text.split("|")] if text else []
+
+
+def _resolve_choice_answer(answer: str, labels: list[str], issues: _RowIssues) -> str:
+    """Map a multiple-choice answer given as a letter or loose text to the choice text."""
+    if answer in labels:
+        return answer
+    folded = [label.casefold() for label in labels]
+    if folded.count(answer.casefold()) == 1:
+        return labels[folded.index(answer.casefold())]
+
+    letter = re.fullmatch(r"\(?(?:choice\s+)?([a-j])[).]?", answer.strip(), re.IGNORECASE)
+    if letter:
+        index = _CHOICE_LETTERS.index(letter.group(1).upper())
+        if index < len(labels):
+            return labels[index]
+        last = _CHOICE_LETTERS[len(labels) - 1] if labels else "A"
+        issues.add(
+            "correct_answer",
+            f"Correct answer is {letter.group(1).upper()}, but only choices A-{last} are filled in.",
+        )
+        return answer
+
+    issues.add(
+        "correct_answer",
+        f"Correct answer '{answer}' doesn't match any choice. Enter the choice letter "
+        "(A, B, C...) or the exact text of one of the choices.",
+    )
+    return answer
+
+
+def _normalize_import_row(
+    raw: dict[str, Any], line_no: Any, sink: list[dict[str, Any]]
+) -> tuple[dict[str, Any], int]:
+    """Normalize one imported row into serializer input, recording issues.
+
+    Accepts both shapes the importer receives: structured items from the
+    question-entry form (choices as a positional list, answer as a letter or
+    text) and legacy CSV rows (pipe-delimited options). Returns the
+    normalized row and how many issues it produced.
+    """
+    issues = _RowIssues(line_no, sink)
+    question_text = _cell_text(raw.get("question_text"))
+    qtype_raw = _cell_text(raw.get("question_type"))
+    qtype = _QUESTION_TYPE_ALIASES.get(_slug(qtype_raw), _slug(qtype_raw))
 
     if not question_text:
-        errors.append(f"Row {line_no}: 'question_text' is required.")
-    if not qtype:
-        errors.append(f"Row {line_no}: 'question_type' is required.")
+        issues.add("question_text", "Question text is required.")
+    if not qtype_raw:
+        issues.add("question_type", "Question type is required.")
     elif qtype not in _VALID_QUESTION_TYPES:
-        valid = ", ".join(sorted(_VALID_QUESTION_TYPES))
-        errors.append(
-            f"Row {line_no}: '{qtype}' is not a valid question_type. Use one of: {valid}."
+        issues.add(
+            "question_type",
+            f"'{qtype_raw}' is not a question type. Use Multiple Choice, True/False, "
+            "Short Answer, or Essay.",
         )
 
-    options_raw = (row.get("options") or "").strip()
-    option_labels = [o.strip() for o in options_raw.split("|") if o.strip()] if options_raw else []
+    choices = _split_choices(raw.get("options"))
+    last_filled = max((i for i, c in enumerate(choices) if c), default=-1)
+    gaps = [i for i in range(last_filled) if not choices[i]]
+    if gaps:
+        missing = ", ".join(_CHOICE_LETTERS[i] for i in gaps if i < len(_CHOICE_LETTERS))
+        issues.add(
+            "options",
+            f"Choice {missing} is empty but a later choice is filled in. "
+            "Fill the choices in order (A, B, C...).",
+        )
+    labels = [c for c in choices[: last_filled + 1] if c]
 
-    images_raw = (row.get("option_images") or "").strip()
-    image_refs = [seg.strip() for seg in images_raw.split("|")] if images_raw else []
-    if image_refs and len(image_refs) != len(option_labels):
-        errors.append(
-            f"Row {line_no}: 'option_images' has {len(image_refs)} segment(s) but "
-            f"'options' has {len(option_labels)} - use one image segment per option "
-            "(leave a segment blank for a text-only option)."
+    images_raw = raw.get("option_images")
+    image_refs = (
+        [_cell_text(seg) for seg in images_raw]
+        if isinstance(images_raw, (list, tuple))
+        else [seg.strip() for seg in _cell_text(images_raw).split("|")]
+        if _cell_text(images_raw)
+        else []
+    )
+    while image_refs and not image_refs[-1]:
+        image_refs.pop()
+    if len(image_refs) > len(labels):
+        issues.add(
+            "option_images",
+            f"There are {len(image_refs)} choice image(s) but only {len(labels)} choice(s). "
+            "Use one image segment per choice, in the same order (leave a segment blank "
+            "for a text-only choice).",
         )
         image_refs = []
     for ref in image_refs:
         if ref and not _is_plausible_media_reference(ref):
-            errors.append(
-                f"Row {line_no}: 'option_images' reference '{ref}' doesn't look like a "
-                "URL - upload the image first and paste the returned media URL."
+            issues.add(
+                "option_images",
+                f"Choice image '{ref}' doesn't look like a URL. Upload the image in the "
+                "question editor first and paste the media URL it gives you.",
             )
 
-    options = [
-        {"text": label, "image": (image_refs[i] if i < len(image_refs) and image_refs[i] else None)}
-        for i, label in enumerate(option_labels)
-    ]
-    correct_answer = (row.get("correct_answer") or "").strip()
+    if labels and qtype in _VALID_QUESTION_TYPES and qtype != Question.QuestionType.MULTIPLE_CHOICE:
+        issues.add(
+            "options",
+            "Choices are only used for Multiple Choice questions. Clear them, or change "
+            "the question type to Multiple Choice.",
+        )
+        labels, image_refs = [], []
 
-    points_raw = (row.get("points") or "").strip()
+    answer = _cell_text(raw.get("correct_answer"))
+    if not answer:
+        issues.add(
+            "correct_answer",
+            "Correct answer is required"
+            + (
+                " (for essays, enter the grading guide or key points)."
+                if qtype == Question.QuestionType.ESSAY
+                else "."
+            ),
+        )
+    elif qtype == Question.QuestionType.MULTIPLE_CHOICE and labels and not gaps:
+        # With a gap the letters no longer line up; the gap issue says what to fix.
+        answer = _resolve_choice_answer(answer, labels, issues)
+    elif qtype == Question.QuestionType.TRUE_FALSE:
+        normalized = _TRUE_FALSE_ALIASES.get(answer.lower())
+        if normalized is None:
+            issues.add("correct_answer", f"Use True or False for a True/False question (got '{answer}').")
+        else:
+            answer = normalized
+
+    if qtype == Question.QuestionType.MULTIPLE_CHOICE and len(labels) < 2 and not gaps:
+        issues.add("options", "Multiple Choice needs at least two choices (A and B).")
+
+    points_raw = _cell_text(raw.get("points"))
     points = 1
     if points_raw:
         try:
-            points = int(points_raw)
+            points = int(float(points_raw)) if float(points_raw).is_integer() else None
         except ValueError:
-            errors.append(
-                f"Row {line_no}: points value '{points_raw}' must be a whole number."
-            )
+            points = None
+        if points is None or points < 0:
+            issues.add("points", f"Points must be a whole number of 0 or more (got '{points_raw}').")
+            points = 1
 
-    return {
-        "question_text": question_text,
-        "question_type": qtype,
-        "options": options,
-        "correct_answer": correct_answer,
-        "points": points,
-        "_line": line_no,
-    }
+    options = [
+        {"text": label, "image": (image_refs[i] if i < len(image_refs) and image_refs[i] else None)}
+        for i, label in enumerate(labels)
+    ]
+    return (
+        {
+            "question_text": question_text,
+            "question_type": qtype,
+            "options": options,
+            "correct_answer": answer,
+            "points": points,
+        },
+        issues.count,
+    )
 
 
 def _parse_csv_questions(csv_text: str) -> tuple[list[dict[str, Any]], list[str]]:
-    """Parse the spreadsheet template into rows, collecting all errors with row numbers.
+    """Parse CSV text with a header row into raw row dicts tagged with ``_line``.
 
     Returns ``(rows, errors)``. A header row naming the columns is required so the
     file is unambiguous and mistakes are easy to point at.
     """
     # Strip a leading UTF-8 BOM (Excel adds one when saving as CSV).
-    text = (csv_text or "").lstrip("\ufeff").strip()
+    text = (csv_text or "").lstrip("﻿").strip()
     errors: list[str] = []
     if not text:
         return [], errors
 
     first_line = text.splitlines()[0]
     first_row = next(csv.reader([first_line]), [])
-    header_keys = {cell.strip().lstrip("\ufeff").lower() for cell in first_row if cell.strip()}
+    header_keys = {cell.strip().lstrip("﻿").lower() for cell in first_row if cell.strip()}
     missing = _REQUIRED_HEADERS - header_keys
     if missing:
         expected = ", ".join(CSV_TEMPLATE_HEADERS)
         errors.append(
             "Missing or invalid header row. The first line must name the columns "
-            f"({expected}). Download the template to get the exact format."
+            f"({expected}). Download the question form to get the exact format."
         )
         return [], errors
 
@@ -737,31 +886,109 @@ def _parse_csv_questions(csv_text: str) -> tuple[list[dict[str, Any]], list[str]
     for line_no, row in enumerate(reader, start=2):
         if row is None:
             continue
-        if all(not (value or "").strip() for value in row.values()):
+        if all(not (value or "").strip() for value in row.values() if isinstance(value, str)):
             continue  # skip blank lines
         normalized = {
             (key or "").strip().lower(): (value or "").strip()
             for key, value in row.items()
-            if key is not None
+            if key is not None and isinstance(value, str)
         }
-        rows.append(_row_from_mapping(normalized, line_no, errors))
+        rows.append({**normalized, "_line": line_no})
     return rows, errors
 
 
-def _format_serializer_errors(serializer_errors: Any, line_no: Any) -> list[str]:
-    """Flatten DRF serializer errors for one row into friendly, row-tagged strings."""
-    out: list[str] = []
+def _format_serializer_issues(serializer_errors: Any, issues: _RowIssues) -> None:
+    """Flatten DRF serializer errors for one row into row-tagged issues."""
     if isinstance(serializer_errors, dict):
         for field, messages in serializer_errors.items():
             if isinstance(messages, (list, tuple)):
                 text = "; ".join(str(m) for m in messages)
             else:
                 text = str(messages)
-            label = "error" if field == "non_field_errors" else field
-            out.append(f"Row {line_no}: {label} - {text}")
+            issues.add("row" if field == "non_field_errors" else field, text)
     else:
-        out.append(f"Row {line_no}: {serializer_errors}")
-    return out
+        issues.add("row", str(serializer_errors))
+
+
+def _import_validation_error(general: list[str], issues: list[dict[str, Any]]) -> ValidationError:
+    """Build the import error payload.
+
+    ``errors`` keeps the flat, human-readable list (one line per problem,
+    prefixed with its row) for API clients; ``issues`` carries the same
+    problems as ``{row, field, message}`` so the UI can point at the cell.
+    """
+    lines = list(general) + [f"Row {i['row']}: {i['message']}" for i in issues]
+    return ValidationError({"errors": lines, "issues": issues})
+
+
+def validate_question_import(
+    exam: Exam,
+    user,
+    *,
+    csv_text: str | None = None,
+    items: list[dict[str, Any]] | None = None,
+) -> list[Any]:
+    """Validate a question import batch without saving anything.
+
+    Every row is checked so the caller receives all problems at once.
+
+    Args:
+        exam: The exam the questions are destined for.
+        user: The requesting user (must be able to modify the exam).
+        csv_text: Raw CSV content with a header row. Mutually exclusive with
+            ``items``.
+        items: Structured rows (what the question-entry form is parsed into).
+            Each may carry a ``row`` number - the spreadsheet row it came
+            from - which is echoed back in error messages.
+
+    Returns:
+        Validated ``QuestionCreateUpdateSerializer`` instances, in row order,
+        ready to ``save(exam=...)``.
+
+    Raises:
+        PermissionDenied: If the user cannot modify the exam.
+        ValidationError: If no rows are found or any row fails validation. The
+            payload carries ``errors`` (row-tagged strings) and ``issues``
+            (``{row, field, message}`` dicts).
+    """
+    assert_can_modify_exam(exam, user)
+    assert_exam_editable(exam)
+
+    general: list[str] = []
+    if csv_text:
+        raw_items, parse_errors = _parse_csv_questions(csv_text)
+        general.extend(parse_errors)
+    else:
+        raw_items = [
+            {**item, "_line": item.get("row") or index}
+            for index, item in enumerate(items or [], start=1)
+        ]
+
+    if not raw_items and not general:
+        raise _import_validation_error(
+            ["No questions found to import - fill in at least one row of the form."], []
+        )
+
+    from .serializers import QuestionCreateUpdateSerializer
+
+    issues: list[dict[str, Any]] = []
+    validated: list[QuestionCreateUpdateSerializer] = []
+    order = _next_question_order(exam)
+    for item in raw_items:
+        line_no = item.get("_line", "?")
+        row, problem_count = _normalize_import_row(item, line_no, issues)
+        if problem_count:
+            continue  # the friendlier row checks already explain what's wrong
+        serializer = QuestionCreateUpdateSerializer(data={**row, "order": order})
+        if serializer.is_valid():
+            validated.append(serializer)
+            order += 1
+        else:
+            _format_serializer_issues(serializer.errors, _RowIssues(line_no, issues))
+
+    if general or issues:
+        raise _import_validation_error(general, issues)
+    return validated
 
 
 def import_questions(
@@ -773,73 +1000,18 @@ def import_questions(
 ) -> list[Question]:
     """Bulk-import questions into an exam from CSV text or structured items.
 
-    All rows are validated up front so the caller receives every problem at
-    once; the questions are only persisted (atomically) when the entire batch
-    is valid.
-
-    Args:
-        exam: The exam to import questions into.
-        user: The requesting user (must be able to modify the exam).
-        csv_text: Raw CSV content following the import template. Mutually
-            exclusive with ``items``.
-        items: Pre-structured question dictionaries. Used when ``csv_text`` is
-            not provided.
+    All rows are validated up front (see :func:`validate_question_import`);
+    the questions are only persisted (atomically) when the entire batch is
+    valid, so a file with one bad row imports nothing.
 
     Returns:
         The list of created :class:`Question` instances.
 
     Raises:
         PermissionDenied: If the user cannot modify the exam.
-        ValidationError: If no rows are found or any row fails validation. The
-            error payload contains a ``errors`` list of row-tagged messages.
+        ValidationError: If no rows are found or any row fails validation.
     """
-    assert_can_modify_exam(exam, user)
-    assert_exam_editable(exam)
-
-    errors: list[str] = []
-    if csv_text:
-        raw_items, parse_errors = _parse_csv_questions(csv_text)
-        errors.extend(parse_errors)
-    else:
-        raw_items = [
-            {**item, "_line": index}
-            for index, item in enumerate(items or [], start=1)
-        ]
-
-    if not raw_items and not errors:
-        raise ValidationError(
-            {"errors": ["No questions found to import - the file appears to be empty."]}
-        )
-
-    from .serializers import QuestionCreateUpdateSerializer
-
-    # Validate every row first so the proctor sees all problems at once, then
-    # commit atomically (all-or-nothing) only if the whole file is clean.
-    validated: list[QuestionCreateUpdateSerializer] = []
-    order = _next_question_order(exam)
-    for item in raw_items:
-        line_no = item.get("_line", "?")
-        serializer = QuestionCreateUpdateSerializer(
-            data={
-                "question_text": item.get("question_text", ""),
-                "question_type": item.get(
-                    "question_type", Question.QuestionType.MULTIPLE_CHOICE
-                ),
-                "options": item.get("options") or [],
-                "correct_answer": item.get("correct_answer", ""),
-                "points": item.get("points", 1),
-                "order": order,
-            }
-        )
-        if serializer.is_valid():
-            validated.append(serializer)
-            order += 1
-        else:
-            errors.extend(_format_serializer_errors(serializer.errors, line_no))
-
-    if errors:
-        raise ValidationError({"errors": errors})
-
+    validated = validate_question_import(exam, user, csv_text=csv_text, items=items)
     created: list[Question] = []
     with transaction.atomic():
         for serializer in validated:

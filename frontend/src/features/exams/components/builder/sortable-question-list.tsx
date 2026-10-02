@@ -129,7 +129,7 @@ export const SortableQuestionList = memo(function SortableQuestionList({
   if (questions.length === 0) {
     return (
       <div className="bg-card border border-border rounded-xl p-10 text-center text-muted-foreground text-sm">
-        No questions yet. Add manually or import from CSV below.
+        No questions yet. Add them one by one, or import a filled-in question form below.
       </div>
     );
   }

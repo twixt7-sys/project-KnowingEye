@@ -17,8 +17,9 @@ import {
   deleteExamSection,
   deleteQuestion,
   deleteQuestionAttachment,
+  checkQuestionRows,
   importExamAssignments,
-  importQuestionsCsv,
+  importQuestionRows,
   publishExam,
   rejectExam,
   reorderQuestions,
@@ -33,7 +34,16 @@ import { validateAttachment } from "@/features/exams/lib/attachment-rules";
 import { optionsToDraft, optionsToPayload } from "@/features/exams/lib/question-options";
 import { examBuilderKeys } from "@/features/exams/queries/keys";
 import { examBuilderQueries } from "@/features/exams/queries/queries";
-import { CSV_TEMPLATE, readImportFileAsCsv } from "@/features/exams/lib/question-import-template";
+import {
+  downloadQuestionForm,
+  type ParsedQuestionForm,
+  parseQuestionImportFile,
+  QuestionFormError,
+} from "@/features/exams/lib/question-import-form";
+import {
+  extractImportProblems,
+  type ImportProblems,
+} from "@/features/exams/lib/question-import-issues";
 import {
   EMPTY_QUESTION,
   examFormToPayload,
@@ -44,6 +54,11 @@ import {
   type QuestionDraft,
 } from "@/features/exams/schemas/builder-schemas";
 import { useConfirm } from "@/shared/components/common/confirm-dialog";
+
+/** Where the uploaded question form is in the check → import flow. */
+export type ImportCheckStatus = "idle" | "checking" | "valid" | "invalid";
+
+const NO_PROBLEMS: ImportProblems = { issues: [], general: [] };
 
 // Module-level so `data ?? EMPTY` keeps a stable reference while a query has no data yet.
 const NO_QUESTIONS: Question[] = [];
@@ -75,8 +90,10 @@ export function useExamBuilder(examId: number) {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [attachmentBusy, setAttachmentBusy] = useState(false);
 
-  const [importCsv, setImportCsv] = useState(CSV_TEMPLATE);
-  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importForm, setImportForm] = useState<ParsedQuestionForm | null>(null);
+  const [importStatus, setImportStatus] = useState<ImportCheckStatus>("idle");
+  const [importProblems, setImportProblems] = useState<ImportProblems>(NO_PROBLEMS);
+  const [formDownloadBusy, setFormDownloadBusy] = useState(false);
   const [candidateEmail, setCandidateEmail] = useState("");
   const [candidateCsv, setCandidateCsv] = useState("email,extra_time_minutes,seat_label\n");
 
@@ -228,25 +245,38 @@ export function useExamBuilder(examId: number) {
     },
   });
 
+  const checkImportMutation = useMutation({
+    mutationFn: (form: ParsedQuestionForm) => checkQuestionRows(examId, form.rows),
+    onMutate: () => {
+      setImportStatus("checking");
+      setImportProblems(NO_PROBLEMS);
+    },
+    onSuccess: () => setImportStatus("valid"),
+    onError: (e) => {
+      setImportProblems(extractImportProblems(e));
+      setImportStatus("invalid");
+    },
+  });
+
   const importQuestionsMutation = useMutation({
-    mutationFn: (csv: string) => importQuestionsCsv(examId, csv),
+    mutationFn: (form: ParsedQuestionForm) => importQuestionRows(examId, form.rows),
     onMutate: () => {
       setActionError(null);
       setMessage(null);
-      setImportErrors([]);
     },
-    onSuccess: async (res) => {
-      setMessage(`Imported ${res.imported} question(s).`);
+    onSuccess: async (res, form) => {
+      setImportForm(null);
+      setImportStatus("idle");
+      setImportProblems(NO_PROBLEMS);
+      setMessage(
+        `Imported ${res.imported} question${res.imported === 1 ? "" : "s"} from "${form.fileName}".`
+      );
       await invalidateBuilder();
     },
     onError: (e) => {
-      const payload = (e as { payload?: { errors?: unknown } } | null)?.payload;
-      const rowErrors = payload?.errors;
-      if (Array.isArray(rowErrors) && rowErrors.length) {
-        setImportErrors(rowErrors.map((m) => String(m)));
-      } else {
-        setActionError(formatApiError(e, "Import failed"));
-      }
+      // The exam can change between the check and the import; show what's wrong now.
+      setImportProblems(extractImportProblems(e));
+      setImportStatus("invalid");
     },
   });
 
@@ -366,6 +396,7 @@ export function useExamBuilder(examId: number) {
   const saveQuestionMutate = saveQuestionMutation.mutate;
   const deleteQuestionMutate = deleteQuestionMutation.mutate;
   const reorderMutate = reorderMutation.mutate;
+  const checkImportMutate = checkImportMutation.mutate;
   const importQuestionsMutate = importQuestionsMutation.mutate;
   const publishMutate = publishMutation.mutate;
   const submitMutate = submitMutation.mutate;
@@ -509,30 +540,67 @@ export function useExamBuilder(examId: number) {
     reorderMutate(questionIds);
   }, [reorderMutate]);
 
+  const downloadImportForm = useCallback(async () => {
+    if (!exam) return;
+    setActionError(null);
+    setFormDownloadBusy(true);
+    try {
+      await downloadQuestionForm(exam);
+    } catch {
+      setActionError("Could not generate the question form. Please try again.");
+    } finally {
+      setFormDownloadBusy(false);
+    }
+  }, [exam]);
+
   const handleImportFile = useCallback(async (file: File) => {
     setActionError(null);
-    setImportErrors([]);
+    setMessage(null);
+    setImportForm(null);
+    setImportProblems(NO_PROBLEMS);
+    setImportStatus("checking");
+    let parsed: ParsedQuestionForm;
     try {
-      const text = await readImportFileAsCsv(file);
-      setImportCsv(text);
-      setMessage(`Loaded "${file.name}". Review the rows below, then import.`);
+      parsed = await parseQuestionImportFile(file);
     } catch (e: unknown) {
-      setActionError(
-        e instanceof Error
-          ? e.message
-          : "Could not read that file. Upload the worksheet (.xlsx) or a .csv file."
-      );
+      setImportForm({ fileName: file.name, rows: [], formExamId: null, formExamLabel: null });
+      setImportProblems({
+        issues: [],
+        general: [
+          e instanceof QuestionFormError
+            ? e.message
+            : "Could not read that file. Upload the completed question form (.xlsx).",
+        ],
+      });
+      setImportStatus("invalid");
+      return;
     }
+    setImportForm(parsed);
+    if (!parsed.rows.length) {
+      setImportProblems({
+        issues: [],
+        general: ["The form has no questions filled in. Add at least one row, then upload it again."],
+      });
+      setImportStatus("invalid");
+      return;
+    }
+    checkImportMutate(parsed);
+  }, [checkImportMutate]);
+
+  const recheckImport = useCallback(() => {
+    if (importForm?.rows.length) checkImportMutate(importForm);
+  }, [importForm, checkImportMutate]);
+
+  const clearImport = useCallback(() => {
+    setImportForm(null);
+    setImportStatus("idle");
+    setImportProblems(NO_PROBLEMS);
   }, []);
 
   const runImport = useCallback(() => {
-    setImportErrors([]);
-    if (!importCsv.trim()) {
-      setImportErrors(["Add at least one question row, or download the template to get started."]);
-      return;
-    }
-    importQuestionsMutate(importCsv);
-  }, [importCsv, importQuestionsMutate]);
+    if (!importForm || importStatus !== "valid") return;
+    importQuestionsMutate(importForm);
+  }, [importForm, importStatus, importQuestionsMutate]);
 
   const publish = useCallback(() => publishMutate(), [publishMutate]);
 
@@ -630,11 +698,15 @@ export function useExamBuilder(examId: number) {
     saveQuestion,
     removeQuestion,
     reorderQuestionsByIds,
-    importCsv,
-    setImportCsv,
-    importErrors,
+    importForm,
+    importStatus,
+    importProblems,
     importBusy: importQuestionsMutation.isPending,
+    formDownloadBusy,
+    downloadImportForm,
     handleImportFile,
+    recheckImport,
+    clearImport,
     runImport,
     publish,
     submitForReview,
