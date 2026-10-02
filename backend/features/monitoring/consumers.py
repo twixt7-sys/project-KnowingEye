@@ -16,6 +16,7 @@ Server → client messages
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 from channels.db import database_sync_to_async
@@ -24,6 +25,14 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 logger = logging.getLogger("knowing_eye.monitoring.consumer")
 
 ADMIN_ALERTS_GROUP = "monitoring.admin.alerts"
+
+# The examinee streams frames as fast as the pipeline can answer them, so the
+# per-frame side effects that don't affect the examinee's own reply are rate
+# limited: the session's EBI running means are written back at most this often
+# (still folded in memory every frame, so the averages stay exact), and the
+# proctor's live snapshot is pushed at most this often.
+_EBI_FLUSH_INTERVAL_SECONDS = 1.0
+_SNAPSHOT_INTERVAL_SECONDS = 1.0
 
 
 class MonitoringConsumer(AsyncJsonWebsocketConsumer):
@@ -59,6 +68,9 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
 
         self._session = session
         self._user = user
+        self._ebi_dirty = False
+        self._last_ebi_flush = 0.0
+        self._last_snapshot = 0.0
         self._group_name = f"monitoring.session.{self.session_id}"
         await self.channel_layer.group_add(self._group_name, self.channel_name)
         await self.accept()
@@ -74,6 +86,8 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def disconnect(self, close_code: int) -> None:
+        if getattr(self, "_ebi_dirty", False):
+            await self._flush_ebi()
         group = getattr(self, "_group_name", None)
         if group:
             await self.channel_layer.group_discard(group, self.channel_name)
@@ -119,15 +133,20 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         analysis = await database_sync_to_async(analyze_frame_bgr)(
             frame, session_id=str(self.session_id)
         )
-        persisted = await self._persist(analysis)
 
-        await self.send_json(
-            {
-                "type": "analysis",
-                "payload": analysis,
-                "persisted": persisted,
-            }
-        )
+        # Reply before persisting: the examinee's overlay and EBI readouts only
+        # need the analysis, and the client won't send its next frame until
+        # this arrives, so any DB work ahead of it directly slows the loop.
+        await self.send_json({"type": "analysis", "payload": analysis})
+
+        now = time.monotonic()
+        flush_ebi = now - self._last_ebi_flush >= _EBI_FLUSH_INTERVAL_SECONDS
+        await self._persist(analysis, save_metrics=flush_ebi)
+        if flush_ebi:
+            self._last_ebi_flush = now
+            self._ebi_dirty = False
+        else:
+            self._ebi_dirty = True
 
         await self.channel_layer.group_send(
             self._group_name,
@@ -137,10 +156,12 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
                 "session_id": str(self.session_id),
             },
         )
-        # Broadcast a snapshot for every processed frame so observers see the
-        # live feed update in step with the examinee's capture rate (~1 fps)
-        # instead of lagging two frames behind a fixed skip.
-        snapshot = await database_sync_to_async(self._encode_snapshot)(frame)
+        # Observers get a fresh snapshot about once a second; the examinee's
+        # frame rate is much higher than a proctor's live tile needs.
+        snapshot = None
+        if now - self._last_snapshot >= _SNAPSHOT_INTERVAL_SECONDS:
+            self._last_snapshot = now
+            snapshot = await database_sync_to_async(self._encode_snapshot)(frame)
         if snapshot:
             await self.channel_layer.group_send(
                 self._group_name,
@@ -203,10 +224,20 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         """Snapshots are for observer consumers only."""
 
     @database_sync_to_async
-    def _persist(self, analysis: dict[str, Any]) -> dict[str, int]:
+    def _persist(self, analysis: dict[str, Any], *, save_metrics: bool) -> dict[str, int]:
         from features.behavior.services import persist_analysis
 
-        return persist_analysis(self._session, analysis)
+        return persist_analysis(self._session, analysis, save_metrics=save_metrics)
+
+    @database_sync_to_async
+    def _flush_ebi(self) -> None:
+        from features.behavior.services import EBI_UPDATE_FIELDS
+
+        try:
+            self._session.save(update_fields=EBI_UPDATE_FIELDS)
+            self._ebi_dirty = False
+        except Exception:  # noqa: BLE001 - never fail a disconnect over this
+            logger.exception("EBI flush failed for session %s", self.session_id)
 
     @staticmethod
     def _encode_snapshot(frame) -> str | None:

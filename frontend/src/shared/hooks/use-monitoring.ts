@@ -83,6 +83,7 @@ export function useMonitoring({
   // reply paces sending to the server's real throughput instead.
   const pendingAckRef = useRef(false);
   const ackTimeoutRef = useRef<number | null>(null);
+  const lastSentAtRef = useRef(0);
   const closedRef = useRef(false);
   const enrollingRef = useRef(false);
   const onSessionInactiveRef = useRef(onSessionInactive);
@@ -167,6 +168,7 @@ export function useMonitoring({
           Math.max(intervalMs * 4, 4000),
         );
         ws.send(JSON.stringify({ type: "frame", image }));
+        lastSentAtRef.current = performance.now();
       }
     } finally {
       frameBusyRef.current = false;
@@ -274,6 +276,11 @@ export function useMonitoring({
             const msg = JSON.parse(event.data);
             if (msg.type === "analysis" || msg.type === "error") {
               clearAck();
+              // Don't idle until the next timer tick once the server is free -
+              // if a full interval has already passed, send the next frame now.
+              if (performance.now() - lastSentAtRef.current >= intervalMs) {
+                sendFrameOverWs();
+              }
             }
             if (msg.type === "analysis") {
               setAnalysis(msg.payload as FrameAnalysis);
@@ -324,6 +331,7 @@ export function useMonitoring({
     clearFrameTimer,
     clearAck,
     forceRest,
+    intervalMs,
     scheduleNextFrame,
     sendFrameOverWs,
     sendViaRest,
