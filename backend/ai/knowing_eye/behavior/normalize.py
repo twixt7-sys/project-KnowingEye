@@ -75,6 +75,32 @@ def gaze_focus_pct(yaw_deg: float | None, pitch_deg: float | None, yaw_max: floa
     return clamp_pct(100.0 * (1.0 - min(1.0, worst)))
 
 
+def threshold_compliance_pct(
+    value: float | None,
+    threshold: float,
+    knee_pct: float = 80.0,
+) -> float:
+    """Map a "lower is better" measurement onto 0-100% compliance so that the
+    configured threshold lands exactly on the alert cutoff.
+
+        value = 0              -> 100%
+        value = threshold      -> ``knee_pct`` (the 80% alert cutoff)
+        value = 2 x threshold  -> 0%
+
+    A plain ``1 - value / threshold`` line puts the 80% cutoff at only 20% of
+    the threshold, so e.g. a 0.42 identity threshold actually alerted at a
+    cosine distance of 0.084 - inside the normal same-person range for ArcFace.
+    With this piecewise mapping, "metric < alert cutoff" means exactly
+    "value > threshold".
+    """
+    if value is None:
+        return 100.0
+    ratio = max(0.0, float(value)) / max(threshold, 1e-6)
+    if ratio <= 1.0:
+        return clamp_pct(100.0 - (100.0 - knee_pct) * ratio)
+    return clamp_pct(knee_pct * (2.0 - ratio))
+
+
 def upper_body_presence_pct(detected: bool, visibility: float | None = None) -> float:
     """Upper-Body Presence (``Up``): is the examinee's upper body in view?
 
@@ -95,7 +121,7 @@ def posture_quality_pct(
     shoulder_tilt: float | None,
     spine_lean: float | None,
     tilt_max: float,
-    lean_max: float = 0.55,
+    lean_max: float = 0.30,
 ) -> float | None:
     """How upright a *detected* upper body is (drives the bad_posture event only).
 
@@ -118,11 +144,12 @@ def identity_match_pct(
     match: bool | None,
     distance: float | None,
     match_threshold: float,
+    knee_pct: float = 80.0,
 ) -> float | None:
     if match is None and distance is None:
         return None
     if distance is not None:
-        return clamp_pct(100.0 * max(0.0, 1.0 - distance / max(match_threshold, 1e-6)))
+        return threshold_compliance_pct(distance, match_threshold, knee_pct)
     return 100.0 if match else 0.0
 
 

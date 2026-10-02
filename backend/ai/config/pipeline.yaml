@@ -15,6 +15,8 @@ pipeline:
                                     # gives a 0.40-similarity worked example for buffalo_l; this is
                                     # deliberately stricter (fewer false accepts). See "Threshold
                                     # justification" in 03-system-design.html for the full citation.
+                                    # This distance maps exactly onto the 80% alert cutoff
+                                    # (normalize.threshold_compliance_pct).
   frame_buffer_depth: 3
   identity_check_every_n_frames: 3 # ArcFace/InsightFace re-runs its own full-frame face detector on
                                     # top of MediaPipe's, so it dominates per-frame latency once a
@@ -22,9 +24,9 @@ pipeline:
                                     # reusing the last match/distance in between) keeps the bounding
                                     # box - which only ever comes from MediaPipe - rendering close to
                                     # the client's capture rate instead of queueing behind ArcFace.
-  identity_async: true             # Run those ArcFace checks on a background thread; each frame reuses
-                                    # the latest finished match/distance, so the analysis reply (and the
-                                    # bounding box) never waits on the embedding model at all.
+  identity_async: true             # Run those ArcFace checks on a background thread; each frame reports
+                                    # the rolling median of the checks finished so far, so the analysis
+                                    # reply (and the bounding box) never waits on the embedding model.
 
 preprocessing:
   max_width: 640
@@ -34,6 +36,12 @@ preprocessing:
 detection:
   face_backend: mediapipe
   pose_backend: mediapipe
+  pose_model: full                  # lite | full | heavy. "full" is markedly more stable on shoulder/ear
+                                     # landmarks than "lite" at webcam range for a small CPU cost; "heavy"
+                                     # is rarely worth it at 1-5 fps. Falls back to lite if it can't load.
+  pose_min_visibility: 0.5          # Both shoulders must be at least this visible for the upper body to
+                                     # count as present - MediaPipe always emits all 33 points, including
+                                     # extrapolated off-frame ones.
 
 recognition:
   embedding_backend: arcface
@@ -46,9 +54,20 @@ recognition:
                                      # never flags anything; it must also persist across the temporal
                                      # window below (behavior.suspicious_pattern) - see "Threshold
                                      # justification" for the cited rationale on duration-pairing.
-  posture_shoulder_tilt_max: 0.18   # Landmark-geometry ratios tuned against MediaPipe's own BlazePose
-  posture_spine_lean_max: 0.55      # topology, not an external benchmark - documented as internally
-                                     # derived, not misattributed to a paper that doesn't set these units.
+  posture_shoulder_tilt_max: 0.18   # tan(shoulder-line angle); 0.18 ~= 10 deg of whole-torso side lean.
+  posture_spine_lean_max: 0.30      # Head (ear-midpoint) offset from the shoulder midpoint along the
+                                     # shoulder axis / shoulder width; 0 = centred, 0.5 = head over one
+                                     # shoulder. Hips are NOT used - they are off-frame on a webcam.
+                                     # Both are landmark-geometry ratios tuned against MediaPipe's own
+                                     # BlazePose topology, not an external benchmark - internally derived.
+                                     # Posture quality is 100% below half the limit and falls to 0% at
+                                     # twice it (normalize.posture_quality_pct). Re-derive with
+                                     # scripts/calibrate_monitoring.py on your own captures.
+  identity_smoothing_window: 5      # Identity distance reported = median of the last N ArcFace checks.
+  identity_min_face_px: 64          # Skip identity checks on faces smaller than this (px, short side)...
+  identity_max_yaw_deg: 30          # ...or turned further than this. ArcFace distances inflate on
+  identity_max_pitch_deg: 30        # off-angle/small faces; those frames carry the last decision over
+                                     # instead of raising false "different person" alerts.
   no_face_grace_seconds: 2.0        # Anomaly = absence beyond this grace period, not a single missed
                                      # frame - this is the literal answer to "why not flag every blink."
 
