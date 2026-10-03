@@ -97,6 +97,7 @@ export {
   ScanSmiley as ScanFace,
   MagnifyingGlass as Search,
   MagnifyingGlass as SearchIcon,
+  MagnifyingGlassMinus as SearchX,
   PaperPlaneTilt as Send,
   Gear as Settings,
   ShieldWarning as ShieldAlert,

@@ -17,6 +17,8 @@ type DataTablePaginationProps = {
   totalCount: number;
   onPageChange: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
+  /** Rows-per-page choices; must include `pageSize`. Defaults to 10 / 20 / 50. */
+  pageSizeOptions?: readonly number[];
   loading?: boolean;
   className?: string;
 };
@@ -47,6 +49,7 @@ export function DataTablePagination({
   totalCount,
   onPageChange,
   onPageSizeChange,
+  pageSizeOptions = PAGE_SIZE_OPTIONS,
   loading = false,
   className,
 }: DataTablePaginationProps) {
@@ -81,7 +84,7 @@ export function DataTablePagination({
               className="form-field w-auto px-2 py-1 text-sm"
               disabled={loading}
             >
-              {PAGE_SIZE_OPTIONS.map((size) => (
+              {pageSizeOptions.map((size) => (
                 <option key={size} value={size}>
                   {size}
                 </option>
