@@ -8,6 +8,7 @@ Client → server messages
 Server → client messages
     {"type": "analysis", "payload": {...}}
     {"type": "alert", "payload": {...}}
+    {"type": "session_state", "status": "paused" | "in_progress" | ..., ...}
     {"type": "enroll_result", "ok": true/false}
     {"type": "pong"}
     {"type": "error", "message": "..."}
@@ -39,6 +40,19 @@ _ACTIVE_CHECK_INTERVAL_S = 5.0
 # this often, and the proctor's live snapshot is pushed at most this often.
 _EBI_FLUSH_INTERVAL_S = 1.0
 _SNAPSHOT_INTERVAL_S = 1.0
+
+# The lifecycle columns a proctor can change while a socket is open (pause,
+# resume, terminate). The cached session row is refreshed from just these:
+# a full refresh would also reload the EBI running means, discarding frames
+# folded in memory but not yet flushed to the database.
+_SESSION_STATE_FIELDS = [
+    "status",
+    "paused_at",
+    "paused_total_seconds",
+    "pause_reason",
+    "deadline_at",
+    "submitted_at",
+]
 
 
 def _decode_and_analyze(image_data: str, session_id: str):
@@ -136,7 +150,7 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
 
     async def _handle_frame(self, content: dict[str, Any]) -> None:
         from features.session.models import ExamSession
-        from features.session.services import ensure_active_session, touch_setup_activity
+        from features.session.services import touch_setup_activity
 
         now = time.monotonic()
         if now - self._last_active_check >= _ACTIVE_CHECK_INTERVAL_S:
@@ -144,7 +158,7 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
             if self._session.status == ExamSession.Status.SETUP:
                 await database_sync_to_async(touch_setup_activity)(self._session)
 
-            still_active = await database_sync_to_async(ensure_active_session)(self._session)
+            still_active = await database_sync_to_async(self._refresh_and_check_active)()
             if not still_active:
                 await self.send_json({"type": "error", "message": "session expired"})
                 await self.close(code=4408)
@@ -160,6 +174,11 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         if frame is None:
             await self.send_json({"type": "error", "message": "invalid image"})
             return
+
+        if self._session.status == ExamSession.Status.PAUSED:
+            # Nothing is being examined while the exam is paused: keep the live
+            # picture flowing to the proctor, but raise no alerts.
+            analysis = {**analysis, "alerts": []}
 
         # Reply before persisting: the client paces its next frame on this
         # message, and the bounding box shouldn't wait on DB writes.
@@ -257,11 +276,28 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
     async def alert_broadcast(self, event: dict[str, Any]) -> None:
         await self.send_json({"type": "alert", "payload": event.get("payload", {})})
 
+    async def session_state(self, event: dict[str, Any]) -> None:
+        """A proctor paused/resumed this session: sync our copy, then tell the browser."""
+        await database_sync_to_async(self._refresh_session_state)()
+        await self.send_json(_session_state_message(event))
+
     async def analysis_broadcast(self, event: dict[str, Any]) -> None:
         """Ignore group fan-out; examinee already received the direct analysis reply."""
 
     async def snapshot_broadcast(self, event: dict[str, Any]) -> None:
         """Snapshots are for observer consumers only."""
+
+    def _refresh_session_state(self) -> None:
+        self._session.refresh_from_db(fields=_SESSION_STATE_FIELDS)
+
+    def _refresh_and_check_active(self) -> bool:
+        from features.session.services import ensure_active_session
+
+        # The row cached at connect time goes stale when a proctor pauses,
+        # resumes or terminates the session; without this, a resumed examinee
+        # (whose deadline moved out) would still be timed out by the old one.
+        self._refresh_session_state()
+        return ensure_active_session(self._session)
 
     @database_sync_to_async
     def _persist(self, analysis: dict[str, Any], *, save_metrics: bool) -> dict[str, int]:
@@ -309,6 +345,17 @@ def _has_monitoring_module(user) -> bool:
     from core.security import service as security
 
     return security.has_module(user, "monitoring")
+
+
+def _session_state_message(event: dict[str, Any]) -> dict[str, Any]:
+    """Client-facing form of a ``session.state`` group event."""
+    return {
+        "type": "session_state",
+        "session_id": event.get("session_id"),
+        "status": event.get("status"),
+        "time_remaining_seconds": event.get("time_remaining_seconds"),
+        "pause_reason": event.get("pause_reason", ""),
+    }
 
 
 class SessionObserverConsumer(AsyncJsonWebsocketConsumer):
@@ -380,6 +427,9 @@ class SessionObserverConsumer(AsyncJsonWebsocketConsumer):
     async def alert_broadcast(self, event: dict[str, Any]) -> None:
         await self.send_json({"type": "alert", "payload": event.get("payload", {})})
 
+    async def session_state(self, event: dict[str, Any]) -> None:
+        await self.send_json(_session_state_message(event))
+
 
 class AdminAlertsConsumer(AsyncJsonWebsocketConsumer):
     """Fan-in feed of every monitoring alert across all live sessions.
@@ -413,3 +463,6 @@ class AdminAlertsConsumer(AsyncJsonWebsocketConsumer):
 
     async def alert_broadcast(self, event: dict[str, Any]) -> None:
         await self.send_json({"type": "alert", "payload": event.get("payload", {})})
+
+    async def session_state(self, event: dict[str, Any]) -> None:
+        await self.send_json(_session_state_message(event))

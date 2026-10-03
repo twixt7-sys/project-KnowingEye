@@ -142,6 +142,14 @@ def persist_analysis(
     session, analysis: dict[str, Any], *, save_metrics: bool = True
 ) -> dict[str, int]:
     """Store events and alerts from a frame analysis payload."""
+    from features.session.models import ExamSession
+
+    # While a proctor has the exam paused nothing is being examined, so the
+    # examinee stepping away must not log events, raise alerts, or drag the
+    # session's EBI average down.
+    if session.status == ExamSession.Status.PAUSED:
+        return {"behavior_logs": 0, "alerts": 0}
+
     logs_created = 0
     alerts_created = 0
 
