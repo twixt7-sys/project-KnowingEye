@@ -77,7 +77,6 @@ set in `ROLE_DEFAULT_ACTIONS`).
       proctoring dock) rather than falling back to REST polling
 - [ ] Cover the camera / step out of frame → `no_face` event logged, alert
       raised after the grace period in `pipeline.yaml`
-- [ ] Have a second person enter frame → `multiple_faces` event
 - [ ] Look away past the yaw/pitch threshold → `looking_away` event (confirm
       this actually fires — finding A-4 notes a code path that can silently
       suppress it on error)

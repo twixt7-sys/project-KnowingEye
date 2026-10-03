@@ -67,7 +67,7 @@ export function ExamSubmittedPage() {
               <Button asChild className="flex-1">
                 <Link to={`/examinee/exam/${examId}/results`}>
                   <FileText className="h-5 w-5" />
-                  View Results
+                  View &amp; Print Report
                 </Link>
               </Button>
               <Button asChild variant="outline" className="flex-1">

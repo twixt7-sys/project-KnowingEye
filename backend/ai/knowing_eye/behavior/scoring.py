@@ -55,7 +55,7 @@ class BehaviorScorer:
     ) -> FaceAnalysis:
         primary = faces[0] if faces else None
         return FaceAnalysis(
-            count=len(faces),
+            count=1 if primary else 0,
             head_yaw_deg=primary.head_yaw_deg if primary else None,
             head_pitch_deg=primary.head_pitch_deg if primary else None,
             bbox=list(primary.bbox) if primary else None,
@@ -149,13 +149,6 @@ class BehaviorScorer:
 
         maybe_flag(BehaviorEventType.NO_FACE, metrics.face_presence_pct, {"face_count": face.count})
 
-        if face.count > 1:
-            maybe_flag(
-                BehaviorEventType.MULTIPLE_FACES,
-                metrics.face_presence_pct,
-                {"face_count": face.count},
-            )
-
         maybe_flag(
             BehaviorEventType.LOOKING_AWAY,
             metrics.gaze_focus_pct,
@@ -204,7 +197,6 @@ class BehaviorScorer:
 def _alert_message(etype: BehaviorEventType, pct: float) -> str:
     messages = {
         BehaviorEventType.NO_FACE: f"Face missing (presence {pct:.0f}%)",
-        BehaviorEventType.MULTIPLE_FACES: f"Multiple faces detected ({pct:.0f}% compliance)",
         BehaviorEventType.LOOKING_AWAY: f"Head/gaze angle exceeds threshold ({pct:.0f}%)",
         BehaviorEventType.BAD_POSTURE: f"Upper-body posture abnormal ({pct:.0f}%)",
         BehaviorEventType.LEAVING_SEAT: f"Upper body not visible ({pct:.0f}%)",

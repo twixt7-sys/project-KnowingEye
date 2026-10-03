@@ -88,6 +88,7 @@ export {
   PlayCircle,
   Plus,
   Power,
+  Printer,
   Prohibit as PowerOff,
   PushPin as PinIcon,
   Radio,

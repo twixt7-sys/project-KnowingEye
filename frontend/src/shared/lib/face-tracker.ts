@@ -49,19 +49,27 @@ export function loadFaceDetector(): Promise<FaceDetector | null> {
   return detectorPromise;
 }
 
-export function detectFaces(detector: FaceDetector, video: HTMLVideoElement): NormalizedBox[] {
+/**
+ * The examinee's face: the largest detection (nearest the camera), mirroring the
+ * server's primary-face choice. Other faces in frame are ignored.
+ */
+export function detectPrimaryFace(
+  detector: FaceDetector,
+  video: HTMLVideoElement,
+): NormalizedBox | null {
   const vw = video.videoWidth;
   const vh = video.videoHeight;
-  if (!vw || !vh) return [];
+  if (!vw || !vh) return null;
   // VIDEO mode requires strictly increasing timestamps, and the detector is
   // shared by every overlay on the page.
   lastTimestamp = Math.max(performance.now(), lastTimestamp + 1);
   const result = detector.detectForVideo(video, lastTimestamp);
-  const boxes: NormalizedBox[] = [];
+  let primary: NormalizedBox | null = null;
   for (const det of result.detections) {
     const b = det.boundingBox;
     if (!b) continue;
-    boxes.push([b.originX / vw, b.originY / vh, b.width / vw, b.height / vh]);
+    const box: NormalizedBox = [b.originX / vw, b.originY / vh, b.width / vw, b.height / vh];
+    if (!primary || box[2] * box[3] > primary[2] * primary[3]) primary = box;
   }
-  return boxes;
+  return primary;
 }

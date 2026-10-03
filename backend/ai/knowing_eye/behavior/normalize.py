@@ -59,11 +59,7 @@ def clamp_pct(value: float) -> float:
 
 
 def face_presence_pct(face_count: int) -> float:
-    if face_count == 0:
-        return 0.0
-    if face_count == 1:
-        return 100.0
-    return clamp_pct(100.0 - 25.0 * (face_count - 1))
+    return 100.0 if face_count > 0 else 0.0
 
 
 def gaze_focus_pct(yaw_deg: float | None, pitch_deg: float | None, yaw_max: float, pitch_max: float) -> float:

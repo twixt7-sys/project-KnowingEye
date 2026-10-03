@@ -94,7 +94,7 @@ behavior:
     identity: 0.15                  # Retained only for reference; no code reads these to weight EBI.
   weights:                          # Per-event-type weight - identity_mismatch and no_face are
     no_face: 1.0                    # weighted highest since they most directly threaten exam
-    multiple_faces: 0.9             # integrity; bad_posture lowest since it is the weakest signal
+                                     # integrity; bad_posture lowest since it is the weakest signal
     looking_away: 0.7                # on its own.
     bad_posture: 0.6
     leaving_seat: 0.75
@@ -102,7 +102,6 @@ behavior:
     suspicious_pattern: 0.9
   alert_severity:
     no_face: high
-    multiple_faces: high
     looking_away: medium
     bad_posture: low
     leaving_seat: medium

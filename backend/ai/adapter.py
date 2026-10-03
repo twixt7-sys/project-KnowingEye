@@ -213,11 +213,12 @@ def _stub_detect_face_count(frame_bgr) -> int:
             return 0
         h, w = gray.shape[:2]
         rects = _STUB_CASCADE.detectMultiScale(gray, 1.08, 6, minSize=(72, 72))
-        count = 0
-        for x, y, bw, bh in rects:
-            if _is_plausible_face_stub((int(x), int(y), int(bw), int(bh)), w, h):
-                count += 1
-        return count
+        return int(
+            any(
+                _is_plausible_face_stub((int(x), int(y), int(bw), int(bh)), w, h)
+                for x, y, bw, bh in rects
+            )
+        )
     except Exception:  # noqa: BLE001
         logger.exception("Stub face detection failed")
         return 0
