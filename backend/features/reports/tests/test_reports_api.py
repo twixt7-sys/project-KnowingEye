@@ -35,7 +35,7 @@ class ReportsAPITests(APITestCase):
         )
         Alert.objects.create(
             session=self.session,
-            alert_type="multiple_faces",
+            alert_type="looking_away",
             severity="high",
             message="x",
             resolved=False,

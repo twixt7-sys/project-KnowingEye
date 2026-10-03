@@ -46,8 +46,9 @@ class _IdentityTrack:
 
 
 def _largest_face(faces: list[DetectedFace]) -> DetectedFace | None:
-    # MediaPipe returns faces in no particular order; the examinee is the one
-    # nearest the camera, i.e. the largest box.
+    # The system monitors a single examinee. MediaPipe returns candidate faces
+    # in no particular order; the examinee is the one nearest the camera, i.e.
+    # the largest box. Any other candidates are ignored, never counted or flagged.
     return max(faces, key=lambda f: f.bbox[2] * f.bbox[3]) if faces else None
 
 
@@ -308,7 +309,7 @@ class BehaviorPipeline:
             face_bbox_norm = norm_bbox_xywh(primary.bbox, fw, fh)
 
         face_analysis = FaceAnalysis(
-            count=len(faces),
+            count=1 if primary else 0,
             head_yaw_deg=primary.head_yaw_deg if primary else None,
             head_pitch_deg=primary.head_pitch_deg if primary else None,
             bbox=list(primary.bbox) if primary and primary.bbox else None,
@@ -321,7 +322,7 @@ class BehaviorPipeline:
             spine_lean_ratio=pose.spine_lean_ratio,
             guide_status=posture_guide_status(
                 pose_detected=pose.detected,
-                face_count=len(faces),
+                face_count=face_analysis.count,
             ),
             upper_body_visibility=pose.upper_body_visibility,
         )

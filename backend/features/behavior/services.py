@@ -12,7 +12,6 @@ from features.behavior.models import Alert, BehaviorLog
 
 EVENT_TYPE_MAP = {
     "no_face": BehaviorLog.EventType.NO_FACE,
-    "multiple_faces": BehaviorLog.EventType.MULTIPLE_FACES,
     "looking_away": BehaviorLog.EventType.LOOKING_AWAY,
     "bad_posture": BehaviorLog.EventType.BAD_POSTURE,
     "leaving_seat": BehaviorLog.EventType.LEAVING_SEAT,
