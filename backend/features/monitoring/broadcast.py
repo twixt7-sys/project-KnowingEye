@@ -10,12 +10,18 @@ snapshot (or never gets one) as soon as the examinee falls back.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 logger = logging.getLogger("knowing_eye.monitoring.broadcast")
+
+# Same cadence as the websocket consumer's _SNAPSHOT_INTERVAL_S: the examinee
+# POSTs ~5 frames/s, but a proctor's tile only needs about one picture a second.
+_SNAPSHOT_INTERVAL_S = 1.0
+_last_snapshot_at: dict[str, float] = {}
 
 
 def broadcast_frame_result(session, user, frame, analysis: dict[str, Any]) -> None:
@@ -40,7 +46,11 @@ def broadcast_frame_result(session, user, frame, analysis: dict[str, Any]) -> No
             group,
             {"type": "analysis.broadcast", "payload": analysis, "session_id": session_id},
         )
-        snapshot = encode_jpeg_snapshot(frame)
+        snapshot = None
+        now = time.monotonic()
+        if now - _last_snapshot_at.get(session_id, float("-inf")) >= _SNAPSHOT_INTERVAL_S:
+            _last_snapshot_at[session_id] = now
+            snapshot = encode_jpeg_snapshot(frame)
         if snapshot:
             send(
                 group,

@@ -124,8 +124,13 @@ export function useSessionObserver(sessionId: string | undefined): UseSessionObs
           /* ignore parse errors */
         }
       };
-      ws.onerror = () => setError("Observer connection failed");
+      ws.onerror = () => {
+        if (wsRef.current === ws) setError("Observer connection failed");
+      };
       ws.onclose = () => {
+        // A socket replaced by a newer connect() still fires close later; it
+        // must not flag the live replacement as errored or drop its ref.
+        if (wsRef.current !== ws) return;
         clearHeartbeat();
         wsRef.current = null;
         if (!closedRef.current) {
