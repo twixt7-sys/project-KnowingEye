@@ -1,0 +1,58 @@
+/*
+ * Print layout for report pages (e.g. the examinee exam report).
+ * A page opts in by wrapping its printable content in `.print-root`;
+ * everything else in the app shell (header, sidebar, toasts) is hidden.
+ * Controls that only make sense on screen carry `.print-hidden`.
+ */
+@media print {
+  @page {
+    size: auto;
+    margin: 14mm 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body:has(.print-root) * {
+    visibility: hidden;
+  }
+
+  .print-root,
+  .print-root * {
+    visibility: visible;
+  }
+
+  .print-root {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    min-height: 0 !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-root section,
+  .print-root .surface-panel {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #d4d4d8 !important;
+    background: #fff !important;
+  }
+}
+
+.print-only {
+  display: none;
+}
