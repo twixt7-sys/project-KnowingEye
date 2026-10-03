@@ -61,6 +61,8 @@ export const reportsQueries = {
         alerts: report.alerts,
         logs: report.behavior_logs,
         departmentAnalytics: report.department_analytics,
+        responses: report.session.responses ?? [],
+        examineeName: report.session.user_name || latest.user_full_name || latest.user,
       };
     },
     enabled: Boolean(examId),

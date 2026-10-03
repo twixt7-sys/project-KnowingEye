@@ -7,6 +7,7 @@ from features.reports.views import (
     list_session_reports,
     report_summary,
     session_report,
+    session_report_pdf,
 )
 
 
@@ -14,6 +15,11 @@ urlpatterns = [
     path("summary/", report_summary, name="report-summary"),
     path("sessions/", list_session_reports, name="report-sessions-list"),
     path("sessions/<uuid:session_id>/", session_report, name="report-session-detail"),
+    path(
+        "sessions/<uuid:session_id>/pdf/",
+        session_report_pdf,
+        name="report-session-pdf",
+    ),
     path("export/csv/", export_sessions_csv, name="report-export-csv"),
     path("export/pdf/", export_sessions_pdf, name="report-export-pdf"),
     path("timeseries/", analytics_timeseries, name="report-timeseries"),

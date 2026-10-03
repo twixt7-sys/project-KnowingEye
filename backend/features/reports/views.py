@@ -19,7 +19,10 @@ from core.pagination import StandardResultsPagination
 from features.behavior.models import Alert, BehaviorLog
 from features.exams.models import ExamAssignment
 from features.session.models import ExamSession
-from features.session.serializers import ExamSessionDetailSerializer
+from features.session.serializers import (
+    ExamSessionDetailSerializer,
+    _requester_is_grader,
+)
 
 
 def _session_queryset(user):
@@ -211,22 +214,8 @@ def report_summary(request):
     )
 
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def session_report(request, session_id):
-    """GET /api/reports/sessions/<uuid>/ - exhaustive session report."""
-    try:
-        session = _session_queryset(request.user).get(pk=session_id)
-    except ExamSession.DoesNotExist:
-        return Response({"detail": "Session not found."}, status=404)
-
-    behavior_summary = (
-        BehaviorLog.objects.filter(session=session)
-        .values("event_type")
-        .annotate(count=Count("id"), avg_score=Avg("score"))
-        .order_by("-count")
-    )
-
+def _session_department_analytics(session):
+    """Exam/department comparison block shared by the JSON and PDF reports."""
     exam = session.exam
     department = exam.department
     exam_completed = ExamSession.objects.filter(
@@ -300,6 +289,27 @@ def session_report(request, session_id):
             ),
         }
 
+    return department_analytics
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def session_report(request, session_id):
+    """GET /api/reports/sessions/<uuid>/ - exhaustive session report."""
+    try:
+        session = _session_queryset(request.user).get(pk=session_id)
+    except ExamSession.DoesNotExist:
+        return Response({"detail": "Session not found."}, status=404)
+
+    behavior_summary = (
+        BehaviorLog.objects.filter(session=session)
+        .values("event_type")
+        .annotate(count=Count("id"), avg_score=Avg("score"))
+        .order_by("-count")
+    )
+
+    department_analytics = _session_department_analytics(session)
+
     exam_behavior_index = {
         "average": (
             round(float(session.ebi_average), 2) if session.ebi_average is not None else None
@@ -344,6 +354,46 @@ def session_report(request, session_id):
             "department_analytics": department_analytics,
         }
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def session_report_pdf(request, session_id):
+    """GET /api/reports/sessions/<uuid>/pdf/ - printable report for one attempt."""
+    from features.exams import services as exam_services
+    from features.reports.pdf import build_session_report_pdf
+
+    try:
+        session = _session_queryset(request.user).get(pk=session_id)
+    except ExamSession.DoesNotExist:
+        return Response({"detail": "Session not found."}, status=404)
+
+    if session.status in (ExamSession.Status.SETUP, ExamSession.Status.IN_PROGRESS):
+        return Response(
+            {"detail": "The report is available once the exam has been submitted."},
+            status=409,
+        )
+
+    is_grader = _requester_is_grader({"request": request})
+    show_correct = is_grader or exam_services.results_visible_to_user(
+        session.exam, request.user
+    )
+    # Same rule as the session serializers: scores stay hidden from the
+    # examinee while essay/short-answer grading is still pending.
+    hide_scores = (
+        session.status == ExamSession.Status.PENDING_REVIEW and not is_grader
+    )
+
+    pdf_bytes = build_session_report_pdf(
+        session,
+        show_correct_answers=show_correct and not hide_scores,
+        hide_scores=hide_scores,
+        department_analytics=_session_department_analytics(session),
+    )
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    filename = f"exam-report-{session.exam_id}-{str(session.id)[:8]}.pdf"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 @api_view(["GET"])

@@ -773,6 +773,14 @@ class ApiClient {
       "knowing-eye-sessions.pdf",
     );
   }
+
+  async downloadSessionReportPDF(sessionId: string, filename?: string): Promise<void> {
+    return this.downloadExport(
+      `/reports/sessions/${sessionId}/pdf/`,
+      "application/pdf",
+      filename ?? `exam-report-${sessionId.slice(0, 8)}.pdf`,
+    );
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

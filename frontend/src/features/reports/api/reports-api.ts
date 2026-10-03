@@ -38,6 +38,10 @@ export async function downloadSessionsPdf() {
   return apiClient.downloadSessionsPDF();
 }
 
+export async function downloadSessionReportPdf(sessionId: string, filename?: string) {
+  return apiClient.downloadSessionReportPDF(sessionId, filename);
+}
+
 export function fetchExamAnalytics(examId: number) {
   return apiClient.getExamAnalytics(examId);
 }

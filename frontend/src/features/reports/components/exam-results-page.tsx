@@ -5,19 +5,23 @@ import {
   Building2,
   CheckCircle,
   Clock,
+  Download,
   Loader2,
+  Printer,
   Target,
   TrendingUp,
   XCircle,
 } from "@/shared/icons";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart, DonutChart } from "@tremor/react";
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
 
 import { formatApiError } from "@/core/config/api";
+import { downloadSessionReportPdf } from "@/features/reports/api/reports-api";
 import { reportsQueries } from "@/features/reports/queries/queries";
 import { IrisGauge } from "@/shared/components/patterns/iris-gauge";
+import { Button } from "@/shared/components/ui/button";
 import { groupAlerts } from "@/shared/lib/alert-grouping";
 
 function formatEventLabel(eventType: string): string {
@@ -33,6 +37,56 @@ export function ExamResultsPage() {
   const alerts = resultsQuery.data?.alerts ?? [];
   const logs = resultsQuery.data?.logs ?? [];
   const departmentAnalytics = resultsQuery.data?.departmentAnalytics ?? null;
+  const responses = resultsQuery.data?.responses ?? [];
+  const examineeName = resultsQuery.data?.examineeName ?? "";
+  const pendingReview = sessionRow?.status === "pending_review";
+  const showCorrectColumn = responses.some((r) => r.correct_answer);
+
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  // The print stylesheet assumes the light palette; drop dark mode for the
+  // duration of the print job (covers both the button and Ctrl+P).
+  useEffect(() => {
+    const root = document.documentElement;
+    let wasDark = false;
+    const before = () => {
+      wasDark = root.classList.contains("dark");
+      if (wasDark) root.classList.remove("dark");
+    };
+    const after = () => {
+      if (wasDark) root.classList.add("dark");
+      wasDark = false;
+    };
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, []);
+
+  const handlePrint = useCallback(() => window.print(), []);
+
+  const handleDownload = useCallback(async () => {
+    if (!sessionRow) return;
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      const slug = sessionRow.exam_title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      await downloadSessionReportPdf(
+        sessionRow.id,
+        `exam-report-${slug || sessionRow.exam_id}.pdf`,
+      );
+    } catch (err) {
+      setDownloadError(formatApiError(err, "Could not generate the report PDF."));
+    } finally {
+      setDownloading(false);
+    }
+  }, [sessionRow]);
 
   const loading = resultsQuery.isLoading;
   const error =
@@ -100,11 +154,11 @@ export function ExamResultsPage() {
   const score = sessionRow?.percentage_score;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30 py-8">
+    <div className="print-root min-h-screen bg-gradient-to-b from-background via-background to-muted/30 py-8">
       <div className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <Link
           to="/examinee"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          className="print-hidden mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> Back to dashboard
         </Link>
@@ -115,8 +169,37 @@ export function ExamResultsPage() {
           </div>
         )}
 
+        {downloadError && (
+          <div className="print-hidden mb-6 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            {downloadError}
+          </div>
+        )}
+
         {sessionRow && (
           <>
+            <div className="print-only mb-6 border-b border-border pb-3 text-sm">
+              <p className="text-base font-semibold">Knowing Eye - Examinee Exam Report</p>
+              <p>
+                Examinee: <span className="font-medium">{examineeName}</span> ({sessionRow.user})
+              </p>
+              <p>Printed {new Date().toLocaleString()}</p>
+            </div>
+
+            <div className="print-hidden mb-6 flex flex-wrap justify-end gap-2">
+              <Button variant="outline" onClick={handlePrint}>
+                <Printer className="h-4 w-4" />
+                Print report
+              </Button>
+              <Button onClick={handleDownload} disabled={downloading}>
+                {downloading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                {downloading ? "Generating..." : "Download PDF"}
+              </Button>
+            </div>
+
             <header className="mb-8">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -339,6 +422,66 @@ export function ExamResultsPage() {
                     </li>
                   ))}
                 </ul>
+              </section>
+            )}
+
+            {responses.length > 0 && (
+              <section className="mb-6 mt-6 surface-panel p-6">
+                <h2 className="mb-1 font-semibold">Your answers</h2>
+                {pendingReview && (
+                  <p className="mb-3 text-sm text-muted-foreground">
+                    Some answers are awaiting manual grading; results will appear once grading is
+                    complete.
+                  </p>
+                )}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="text-xs uppercase tracking-wide text-muted-foreground">
+                      <tr className="border-b border-border">
+                        <th className="py-2 pr-3">#</th>
+                        <th className="py-2 pr-3">Question</th>
+                        <th className="py-2 pr-3">Your answer</th>
+                        {showCorrectColumn && <th className="py-2 pr-3">Correct answer</th>}
+                        <th className="py-2 pr-3">Result</th>
+                        <th className="py-2 text-right">Points</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {responses.map((r, i) => {
+                        const graded = !pendingReview && r.is_correct != null;
+                        return (
+                          <tr key={r.id} className="border-b border-border/60 align-top">
+                            <td className="py-2 pr-3 text-muted-foreground">{i + 1}</td>
+                            <td className="py-2 pr-3">{r.question_text ?? "—"}</td>
+                            <td className="whitespace-pre-wrap py-2 pr-3">
+                              {r.answer_text || (
+                                <span className="text-muted-foreground">(no answer)</span>
+                              )}
+                            </td>
+                            {showCorrectColumn && (
+                              <td className="py-2 pr-3">{r.correct_answer || "—"}</td>
+                            )}
+                            <td className="py-2 pr-3">
+                              {graded ? (
+                                r.is_correct ? (
+                                  <span className="text-status-safe">Correct</span>
+                                ) : (
+                                  <span className="text-status-alert">Incorrect</span>
+                                )
+                              ) : (
+                                <span className="text-muted-foreground">Pending</span>
+                              )}
+                            </td>
+                            <td className="py-2 text-right tabular-nums">
+                              {!pendingReview && r.points_awarded != null ? r.points_awarded : "—"}
+                              {r.points != null && ` / ${r.points}`}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </section>
             )}
 
