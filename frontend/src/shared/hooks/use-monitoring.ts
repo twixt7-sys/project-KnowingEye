@@ -6,6 +6,7 @@ import {
   type FrameAlert,
   type FrameAnalysis,
 } from "../../core/config/api";
+import { isSessionOver } from "../lib/api-error";
 
 export type MonitoringStatus =
   | "idle"
@@ -16,7 +17,14 @@ export type MonitoringStatus =
   | "error"
   | "closed";
 
-/** Pushed over the monitoring socket when a proctor pauses/resumes the session. */
+/**
+ * Close codes the server ends the monitoring socket with on purpose because the
+ * session is over for good: 4408 ran out of time, 4410 a proctor terminated it.
+ * (See CLOSE_SESSION_* in backend/features/monitoring/consumers.py.)
+ */
+const SESSION_OVER_CLOSE_CODES = [4408, 4410];
+
+/** Pushed over the monitoring socket when a proctor pauses, resumes or terminates the session. */
 export interface SessionStateMessage {
   status: string;
   time_remaining_seconds?: number | null;
@@ -32,9 +40,13 @@ export interface UseMonitoringOptions {
   videoConstraints?: MediaStreamConstraints["video"];
   /** Force REST POSTs even if a WebSocket would work. */
   forceRest?: boolean;
-  /** Called when the backend rejects frames because the session is no longer active. */
+  /**
+   * Called when the session is over - the server closed the socket on purpose
+   * or refused a frame because it was terminated or out of time. Streaming has
+   * already stopped; the camera is left for the caller to release.
+   */
   onSessionInactive?: () => void;
-  /** Called when the server pushes a session state change (pause / resume). */
+  /** Called when the server pushes a session state change (pause / resume / terminate). */
   onSessionState?: (state: SessionStateMessage) => void;
 }
 
@@ -220,7 +232,9 @@ export function useMonitoring({
     } catch (e) {
       if (e instanceof ApiError && e.status === 400) {
         const msg = e.detail().toLowerCase();
-        if (msg.includes("expired") || msg.includes("not active")) {
+        // The code is the contract; the text match covers a server that
+        // predates it.
+        if (isSessionOver(e) || msg.includes("expired") || msg.includes("not active")) {
           handleSessionInactive();
           return;
         }
@@ -317,16 +331,24 @@ export function useMonitoring({
         ws.onerror = () => {
           // Will likely be followed by close → fallback below.
         };
-        ws.onclose = () => {
+        ws.onclose = (event) => {
           clearFrameTimer();
           clearAck();
           wsRef.current = null;
-          if (!closedRef.current) {
-            setStatus("fallback-rest");
-            scheduleNextFrame(() => {
-              void sendViaRest();
-            });
+          if (closedRef.current) return;
+          if (SESSION_OVER_CLOSE_CODES.includes(event.code)) {
+            // The server hung up on purpose: the session is over. Falling back
+            // to REST frames would only be refused, and keep the camera
+            // streaming into a session that no longer exists.
+            closedRef.current = true;
+            setStatus("closed");
+            handleSessionInactive();
+            return;
           }
+          setStatus("fallback-rest");
+          scheduleNextFrame(() => {
+            void sendViaRest();
+          });
         };
 
         scheduleNextFrame(sendFrameOverWs);

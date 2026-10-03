@@ -68,15 +68,21 @@ def receive_frame(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    from features.session.services import ensure_active_session, touch_setup_activity
+    from features.session.services import (
+        ensure_active_session,
+        refusal_body,
+        touch_setup_activity,
+    )
 
     if session.status == ExamSession.Status.SETUP:
         touch_setup_activity(session)
 
     if not ensure_active_session(session):
         session.refresh_from_db()
+        # The code tells an examinee who fell back to REST frames whether the
+        # session was terminated or ran out of time - it picks the screen.
         return Response(
-            {"error": "Session has expired due to time limit"},
+            refusal_body(session, "Session has expired due to time limit"),
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -86,7 +92,7 @@ def receive_frame(request):
         ExamSession.Status.PAUSED,
     ):
         return Response(
-            {"error": "Session is not active"}, status=status.HTTP_400_BAD_REQUEST
+            refusal_body(session, "Session is not active"), status=status.HTTP_400_BAD_REQUEST
         )
 
     try:

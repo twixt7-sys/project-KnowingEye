@@ -31,7 +31,9 @@ from .services import (
     finalize_grading_if_complete,
     get_or_create_setup_session,
     pause_session,
+    refusal_body,
     resume_session,
+    terminate_session,
 )
 
 
@@ -189,23 +191,16 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         # Check if session can be submitted
         if not session.can_submit():
             if session.status == ExamSession.Status.PAUSED:
-                return APIResponse(
-                    {'error': 'This exam is paused. Wait for your proctor to resume it before submitting.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            if session.status in (
+                message = 'This exam is paused. Wait for your proctor to resume it before submitting.'
+            elif session.status in (
                 ExamSession.Status.EXPIRED,
                 ExamSession.Status.COMPLETED,
                 ExamSession.Status.PENDING_REVIEW,
             ):
-                return APIResponse(
-                    {'error': 'Session has expired due to time limit'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            return APIResponse(
-                {'error': f'Session cannot be submitted (status: {session.get_status_display()})'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+                message = 'Session has expired due to time limit'
+            else:
+                message = f'Session cannot be submitted (status: {session.get_status_display()})'
+            return APIResponse(refusal_body(session, message), status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=request.data)
         serializer.context['session'] = session
@@ -247,16 +242,13 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
         ensure_active_session(session, ip_address=self._get_client_ip(request))
         session.refresh_from_db()
-        if session.status == ExamSession.Status.PAUSED:
-            return APIResponse(
-                {'error': 'This exam is paused. Wait for your proctor to resume it.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         if session.status != ExamSession.Status.IN_PROGRESS:
-            return APIResponse(
-                {'error': 'Session is not in progress.'},
-                status=status.HTTP_400_BAD_REQUEST,
+            message = (
+                'This exam is paused. Wait for your proctor to resume it.'
+                if session.status == ExamSession.Status.PAUSED
+                else 'Session is not in progress.'
             )
+            return APIResponse(refusal_body(session, message), status=status.HTTP_400_BAD_REQUEST)
 
         serializer = ResponseUpsertSerializer(
             data=request.data,
@@ -296,13 +288,15 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         session.refresh_from_db()
 
         paused = session.status == ExamSession.Status.PAUSED
+        running = session.status == ExamSession.Status.IN_PROGRESS
         return APIResponse(
             {
                 'server_now': timezone.now().isoformat(),
-                # No running deadline while the clock is stopped.
+                # No running deadline unless the clock is running: not while
+                # paused, and not once the attempt is over.
                 'deadline_at': (
                     session.timed_end_at.isoformat()
-                    if session.timed_end_at and not paused
+                    if session.timed_end_at and running
                     else None
                 ),
                 'time_remaining_seconds': session.time_remaining_seconds,
@@ -455,6 +449,10 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         """
         Terminate an active session.
         POST /api/sessions/{id}/terminate/
+
+        Ends the attempt for good and pushes the new state to the examinee's
+        open sockets, so their exam is replaced by a "terminated" screen
+        immediately rather than at their next request.
         """
         if not security.can(request.user, "sessions.terminate"):
             return APIResponse(
@@ -464,30 +462,17 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
         session = self.get_object()
 
-        if session.status not in (
-            ExamSession.Status.IN_PROGRESS,
-            ExamSession.Status.SETUP,
-            ExamSession.Status.PAUSED,
-        ):
+        try:
+            terminate_session(
+                session,
+                terminated_by=request.user,
+                ip_address=self._get_client_ip(request),
+            )
+        except ValidationError as exc:
             return APIResponse(
-                {'error': f'Cannot terminate session with status: {session.get_status_display()}'},
+                {'error': str(exc.detail[0])},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        now = timezone.now()
-        # A pause still running when the attempt is terminated ends with it.
-        session.fold_pause(now)
-        session.status = ExamSession.Status.TERMINATED
-        session.submitted_at = now
-        session.save()
-
-        # Log termination
-        SessionLog.objects.create(
-            session=session,
-            event_type=SessionLog.EventType.TERMINATED,
-            ip_address=self._get_client_ip(request),
-            details={'terminated_by': request.user.username}
-        )
 
         return APIResponse(
             {'message': 'Session terminated successfully'},

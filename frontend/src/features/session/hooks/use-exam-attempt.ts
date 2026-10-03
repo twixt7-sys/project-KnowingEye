@@ -2,7 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { apiClient, type ExamSession, type ResponseData } from "../../../core/config/api";
 
 const AUTOSAVE_MS = 1500;
-const HEARTBEAT_MS = 30_000;
+// How often the server's state is re-read when nothing has pushed a change. The
+// monitoring socket normally delivers a pause or termination instantly, but an
+// exam with monitoring off has no socket, and a dropped one only reconnects
+// later - so this is the worst-case delay before the examinee is told.
+const HEARTBEAT_MS = 10_000;
 // While a proctor has the exam paused the examinee is just waiting, so look for
 // the resume far more often than the usual timer sync.
 const PAUSED_HEARTBEAT_MS = 3_000;
@@ -24,6 +28,7 @@ export function useExamAttempt(sessionId: string | undefined) {
 
   const localKey = sessionId ? `${LOCAL_KEY_PREFIX}${sessionId}` : null;
   const paused = session?.status === "paused";
+  const terminated = session?.status === "terminated";
   const pauseReason = session?.pause_reason ?? "";
 
   const hydrateFromSession = useCallback((data: ExamSession) => {
@@ -71,29 +76,48 @@ export function useExamAttempt(sessionId: string | undefined) {
   );
 
   /**
+   * Take on a status (and its pause note / frozen time) the server just
+   * reported. Used for a state pushed over the monitoring socket - the server
+   * speaking, so the screen changes at once, ahead of re-reading it with
+   * `syncNow()` - and for the heartbeat's answer.
+   */
+  const applySessionState = useCallback(
+    (state: { status: string; pause_reason?: string; time_remaining_seconds?: number | null }) => {
+      if (typeof state.time_remaining_seconds === "number") {
+        setTimeRemaining(state.time_remaining_seconds);
+      }
+      setSession((s) => {
+        if (!s) return s;
+        // A termination can't be undone, so nothing may bring the exam back:
+        // not a heartbeat that was already in flight when the proctor acted.
+        if (s.status === "terminated") return s;
+        if (s.status === state.status && (s.pause_reason ?? "") === (state.pause_reason ?? "")) {
+          return s;
+        }
+        return {
+          ...s,
+          status: state.status as ExamSession["status"],
+          pause_reason: state.pause_reason ?? "",
+        };
+      });
+    },
+    []
+  );
+
+  /**
    * Re-read the authoritative timer and status from the server. Runs on a
-   * timer, when the monitoring socket pushes a pause/resume, and when an
-   * autosave is rejected (which is how an exam without a monitoring socket
-   * notices it was paused before the next timer sync).
+   * timer, after the monitoring socket pushes a pause/resume/terminate, and
+   * when an autosave is rejected (which is how an exam without a monitoring
+   * socket notices it was paused before the next timer sync).
    */
   const syncNow = useCallback(async () => {
     if (!sessionId) return;
     try {
-      const hb = await apiClient.sessionHeartbeat(sessionId);
-      setTimeRemaining(hb.time_remaining_seconds);
-      setSession((s) =>
-        s && (s.status !== hb.status || (s.pause_reason ?? "") !== (hb.pause_reason ?? ""))
-          ? {
-              ...s,
-              status: hb.status as ExamSession["status"],
-              pause_reason: hb.pause_reason ?? "",
-            }
-          : s
-      );
+      applySessionState(await apiClient.sessionHeartbeat(sessionId));
     } catch {
       /* network blip */
     }
-  }, [sessionId]);
+  }, [sessionId, applySessionState]);
 
   const flushSave = useCallback(
     async (questionId: number, data: SavedAnswer) => {
@@ -167,17 +191,34 @@ export function useExamAttempt(sessionId: string | undefined) {
   }, [sessionId, refresh]);
 
   useEffect(() => {
-    // The exam clock is stopped while paused; the server holds the time.
-    if (!sessionId || paused) return;
+    // The exam clock is stopped while paused (the server holds the time) and
+    // for good once terminated.
+    if (!sessionId || paused || terminated) return;
     const tick = setInterval(() => setTimeRemaining((t) => (t > 0 ? t - 1 : 0)), 1000);
     return () => clearInterval(tick);
-  }, [sessionId, paused]);
+  }, [sessionId, paused, terminated]);
 
   useEffect(() => {
-    if (!sessionId) return;
+    // Nothing left to learn from a terminated session.
+    if (!sessionId || terminated) return;
     const sync = setInterval(() => void syncNow(), paused ? PAUSED_HEARTBEAT_MS : HEARTBEAT_MS);
     return () => clearInterval(sync);
-  }, [sessionId, paused, syncNow]);
+  }, [sessionId, paused, terminated, syncNow]);
+
+  useEffect(() => {
+    // A terminated attempt is gone: its pending autosave would only be refused,
+    // and the cached answers belong to an exam that can't be resumed.
+    if (!terminated) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    pendingSave.current = null;
+    if (localKey) {
+      try {
+        localStorage.removeItem(localKey);
+      } catch {
+        /* storage unavailable */
+      }
+    }
+  }, [terminated, localKey]);
 
   const clearLocal = useCallback(() => {
     if (localKey) localStorage.removeItem(localKey);
@@ -190,8 +231,10 @@ export function useExamAttempt(sessionId: string | undefined) {
     setAnswer,
     timeRemaining,
     paused,
+    terminated,
     pauseReason,
     syncNow,
+    applySessionState,
     autosaveStatus,
     refresh,
     hydrateFromSession,

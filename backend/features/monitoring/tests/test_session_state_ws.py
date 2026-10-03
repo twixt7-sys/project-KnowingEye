@@ -1,8 +1,8 @@
-"""A proctor's pause/resume reaching the sockets that are already open.
+"""A proctor's pause/resume/terminate reaching the sockets that are already open.
 
-The examinee's browser must stop at once when the exam is paused, the proctor's
-views must follow, and the examinee's cached session row must never be used to
-time out an attempt whose deadline moved when it was resumed.
+The examinee's browser must stop at once when the exam is paused or terminated,
+the proctor's views must follow, and the examinee's cached session row must
+never be used to time out an attempt whose deadline moved when it was resumed.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from channels.testing import WebsocketCommunicator
 from django.contrib.auth import get_user_model
 from django.test import TransactionTestCase
 from django.utils import timezone
+from rest_framework.test import APIClient
 
 from core.config.asgi import application
 from features.behavior.models import Alert, BehaviorLog
@@ -216,3 +217,97 @@ class SessionStateWebsocketTests(TransactionTestCase):
         self.session.refresh_from_db()
         self.assertEqual(self.session.status, ExamSession.Status.IN_PROGRESS)
         self.assertEqual(self.session.paused_total_seconds, 5 * 60)
+
+    # --- terminate ---------------------------------------------------------
+
+    def _terminate(self):
+        client = APIClient()
+        client.force_authenticate(self.admin)
+        response = client.post(f"/api/sessions/{self.session.id}/terminate/")
+        self.assertEqual(response.status_code, 200, response.data)
+
+    def test_terminate_reaches_every_socket_and_ends_the_examinees(self):
+        async def run():
+            examinee, observer, admin_feed = self._examinee(), self._observer(), self._admin_feed()
+            sockets = {"examinee": examinee, "observer": observer, "admin feed": admin_feed}
+            try:
+                for socket in sockets.values():
+                    await self._connect(socket)
+
+                await sync_to_async(self._terminate)()
+                for name, socket in sockets.items():
+                    msg = await self._next(socket)
+                    self.assertEqual(msg["type"], "session_state", name)
+                    self.assertEqual(msg["status"], ExamSession.Status.TERMINATED, name)
+                    self.assertEqual(msg["session_id"], str(self.session.id), name)
+
+                # Nothing more is coming for the examinee: their socket is closed
+                # with a code that says why, so the browser doesn't fall back to
+                # streaming frames over REST.
+                closing = await examinee.receive_output(timeout=5)
+                self.assertEqual(closing["type"], "websocket.close")
+                self.assertEqual(closing["code"], 4410)
+                # Proctor views stay open to keep showing the session.
+                await observer.receive_nothing(timeout=0.3)
+                await admin_feed.receive_nothing(timeout=0.3)
+            finally:
+                for socket in sockets.values():
+                    await socket.disconnect()
+
+        async_to_sync(run)()
+
+    def test_a_missed_terminate_push_is_caught_by_the_next_frame(self):
+        async def run():
+            examinee = self._examinee()
+            try:
+                await self._connect(examinee)
+                with mock.patch("features.session.services.broadcast_session_state"):
+                    await sync_to_async(self._terminate)()
+
+                with mock.patch(
+                    "features.monitoring.consumers._decode_and_analyze",
+                    side_effect=_fake_decode_and_analyze,
+                ):
+                    await examinee.send_to(text_data=json.dumps({"type": "frame", "image": "x"}))
+                    msg = await self._next(examinee)
+                    # The real status, not "expired": the screen shown depends on it.
+                    self.assertEqual(msg["type"], "session_state", msg)
+                    self.assertEqual(msg["status"], ExamSession.Status.TERMINATED)
+                    closing = await examinee.receive_output(timeout=5)
+                    self.assertEqual(closing["type"], "websocket.close")
+                    self.assertEqual(closing["code"], 4410)
+            finally:
+                await examinee.disconnect()
+
+        async_to_sync(run)()
+
+        # The refused frame was never analysed or recorded against the examinee.
+        self.assertFalse(BehaviorLog.objects.filter(session=self.session).exists())
+
+    def test_a_timed_out_examinee_still_gets_the_expired_close(self):
+        async def run():
+            examinee = self._examinee()
+            try:
+                await self._connect(examinee)
+                with (
+                    mock.patch(
+                        "django.utils.timezone.now",
+                        return_value=self.t0 + timedelta(minutes=11),
+                    ),
+                    mock.patch(
+                        "features.monitoring.consumers._decode_and_analyze",
+                        side_effect=_fake_decode_and_analyze,
+                    ),
+                ):
+                    await examinee.send_to(text_data=json.dumps({"type": "frame", "image": "x"}))
+                    state = await self._next(examinee)
+                    self.assertEqual(state["type"], "session_state", state)
+                    self.assertNotEqual(state["status"], ExamSession.Status.IN_PROGRESS)
+                    error = await self._next(examinee)
+                    self.assertEqual(error, {"type": "error", "message": "session expired"})
+                    closing = await examinee.receive_output(timeout=5)
+                    self.assertEqual(closing["code"], 4408)
+            finally:
+                await examinee.disconnect()
+
+        async_to_sync(run)()

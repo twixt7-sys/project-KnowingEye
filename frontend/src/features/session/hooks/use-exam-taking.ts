@@ -9,6 +9,7 @@ import {
   type Question,
 } from "@/core/config/api";
 import { useMonitoring } from "@/shared/hooks/use-monitoring";
+import { isProctorHalt } from "@/shared/lib/api-error";
 import { useExamAttempt } from "@/features/session/hooks/use-exam-attempt";
 
 export type MonitoringDockPosition =
@@ -60,10 +61,23 @@ export function useExamTaking() {
   const monitoring = useMonitoring({
     sessionId: session?.id,
     intervalMs: 200,
-    // A proctor paused/resumed the exam: re-read the server's state right away
-    // instead of waiting for the next timer sync.
-    onSessionState: () => void attempt.syncNow(),
+    // A proctor paused, resumed or terminated the exam: show it at once, then
+    // re-read the server's state in case something newer happened.
+    onSessionState: (state) => {
+      attempt.applySessionState(state);
+      void attempt.syncNow();
+    },
+    // The socket was closed or a frame refused because the session is over:
+    // find out how (terminated, timed out) so the right screen is shown.
+    onSessionInactive: () => void attempt.syncNow(),
   });
+
+  // A terminated attempt is over for good: release the camera.
+  const terminated = attempt.terminated;
+  const stopMonitoring = monitoring.stop;
+  useEffect(() => {
+    if (terminated) stopMonitoring();
+  }, [terminated, stopMonitoring]);
 
   const monitoringEnabled = session?.exam?.monitoring_enabled !== false;
   const disableCopyPaste = session?.exam?.disable_copy_paste === true;
@@ -92,6 +106,12 @@ export function useExamTaking() {
         state: { autoSubmitted: true },
       });
     } catch (err) {
+      if (isProctorHalt(err)) {
+        // A proctor paused or terminated the exam as the clock ran out. That is
+        // not a failed submission: show the matching screen instead.
+        await attempt.syncNow();
+        return;
+      }
       console.error("Auto-submit failed:", err);
       navigate(`/examinee/exam/${examId}/submitted`, {
         state: { autoSubmitted: true, error: true },
@@ -153,12 +173,13 @@ export function useExamTaking() {
 
   // An open submit confirmation must not outlive the pause and reappear on resume.
   useEffect(() => {
-    if (attempt.paused) setShowSubmitModal(false);
-  }, [attempt.paused]);
+    if (attempt.paused || terminated) setShowSubmitModal(false);
+  }, [attempt.paused, terminated]);
 
   useEffect(() => {
-    // Leaving the tab during a proctor pause isn't leaving the exam.
-    if (!sessionId || attempt.paused) return;
+    // Leaving the tab during a proctor pause isn't leaving the exam, and a
+    // terminated attempt has nothing left to record against.
+    if (!sessionId || attempt.paused || terminated) return;
     const onVisibility = () => {
       const hidden = document.hidden;
       const event = hidden ? "tab_hidden" : "tab_visible";
@@ -177,10 +198,10 @@ export function useExamTaking() {
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [sessionId, maxTabSwitches, attempt.paused]);
+  }, [sessionId, maxTabSwitches, attempt.paused, terminated]);
 
   useEffect(() => {
-    if (attempt.paused) return;
+    if (attempt.paused || terminated) return;
     const questionTimer = setInterval(() => {
       setTimeSpent((prev) => ({
         ...prev,
@@ -188,7 +209,7 @@ export function useExamTaking() {
       }));
     }, 1000);
     return () => clearInterval(questionTimer);
-  }, [currentQuestion, attempt.paused]);
+  }, [currentQuestion, attempt.paused, terminated]);
 
   useEffect(() => {
     if (!session?.id || !monitoringEnabled) return;
@@ -246,7 +267,13 @@ export function useExamTaking() {
         state: { session: result.session, results: result.results },
       });
     } catch (err) {
-      setError(formatApiError(err, "Failed to submit exam"));
+      if (isProctorHalt(err)) {
+        // Paused or terminated while the submit was in flight. Say so with the
+        // matching screen rather than a raw "failed to submit" error.
+        await attempt.syncNow();
+      } else {
+        setError(formatApiError(err, "Failed to submit exam"));
+      }
     } finally {
       setSubmitting(false);
       setShowSubmitModal(false);
@@ -267,6 +294,7 @@ export function useExamTaking() {
     session,
     attempt,
     paused: attempt.paused,
+    terminated,
     pauseReason: attempt.pauseReason,
     questions,
     sections,

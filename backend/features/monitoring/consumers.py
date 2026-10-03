@@ -12,6 +12,12 @@ Server → client messages
     {"type": "enroll_result", "ok": true/false}
     {"type": "pong"}
     {"type": "error", "message": "..."}
+
+Close codes (examinee socket). Each means "the exam is over for this session":
+the browser must stop streaming, not fall back to REST frames.
+    4408  the session ran out of time (or otherwise ended on its own)
+    4410  a proctor terminated the session
+A ``session_state`` message with the final status always precedes the close.
 """
 
 from __future__ import annotations
@@ -28,6 +34,9 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 logger = logging.getLogger("knowing_eye.monitoring.consumer")
 
 ADMIN_ALERTS_GROUP = "monitoring.admin.alerts"
+
+CLOSE_SESSION_EXPIRED = 4408
+CLOSE_SESSION_TERMINATED = 4410
 
 # Session expiry / setup-idle bookkeeping is a DB round trip (two during setup).
 # Doing it on every frame put that latency in front of every analysis reply;
@@ -160,8 +169,7 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
 
             still_active = await database_sync_to_async(self._refresh_and_check_active)()
             if not still_active:
-                await self.send_json({"type": "error", "message": "session expired"})
-                await self.close(code=4408)
+                await self._close_inactive()
                 return
 
         # database_sync_to_async is thread_sensitive: every call in the process
@@ -277,9 +285,33 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({"type": "alert", "payload": event.get("payload", {})})
 
     async def session_state(self, event: dict[str, Any]) -> None:
-        """A proctor paused/resumed this session: sync our copy, then tell the browser."""
+        """A proctor paused/resumed/terminated this session: sync our copy, then tell the browser."""
+        from features.session.models import ExamSession
+
         await database_sync_to_async(self._refresh_session_state)()
         await self.send_json(_session_state_message(event))
+        # Judge by the refreshed row, not the event: a terminate is final, and
+        # nothing more is coming for this socket.
+        if self._session.status == ExamSession.Status.TERMINATED:
+            await self.close(code=CLOSE_SESSION_TERMINATED)
+
+    async def _close_inactive(self) -> None:
+        """The session is over without a push having told us: say how, then end the socket.
+
+        The state message comes first so the browser can pick the right screen
+        (terminated vs. out of time); the close code keeps it from falling back
+        to streaming frames over REST for a session that no longer exists.
+        """
+        from features.monitoring.broadcast import session_state_event
+        from features.session.models import ExamSession
+
+        event = await database_sync_to_async(session_state_event)(self._session)
+        await self.send_json(_session_state_message(event))
+        if self._session.status == ExamSession.Status.TERMINATED:
+            await self.close(code=CLOSE_SESSION_TERMINATED)
+            return
+        await self.send_json({"type": "error", "message": "session expired"})
+        await self.close(code=CLOSE_SESSION_EXPIRED)
 
     async def analysis_broadcast(self, event: dict[str, Any]) -> None:
         """Ignore group fan-out; examinee already received the direct analysis reply."""

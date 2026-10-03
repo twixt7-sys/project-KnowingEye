@@ -74,30 +74,39 @@ def broadcast_frame_result(session, user, frame, analysis: dict[str, Any]) -> No
         logger.exception("observer broadcast failed for session %s", session_id)
 
 
-def broadcast_session_state(session) -> None:
-    """Tell the examinee's browser and any observers a session's state changed.
+def session_state_event(session) -> dict[str, Any]:
+    """The ``session.state`` group event describing a session's current state.
 
-    Sent when a proctor pauses or resumes an attempt, so the examinee's screen
-    reacts at once instead of waiting for its next heartbeat. The payload is
-    only a nudge plus the fields the UI shows; the examinee's client re-reads
-    the authoritative state from the server. Never raises: a broadcast failure
-    must not fail the proctor's request.
+    One builder for every sender (the proctor actions here and the examinee's
+    own socket when it finds the session over) so the payload can't drift.
     """
-    from features.monitoring.consumers import ADMIN_ALERTS_GROUP
-
-    channel_layer = get_channel_layer()
-    if channel_layer is None:
-        return
-
-    event = {
+    return {
         "type": "session.state",
         "session_id": str(session.id),
         "status": session.status,
         "time_remaining_seconds": session.time_remaining_seconds,
         "pause_reason": session.pause_reason,
     }
-    send = async_to_sync(channel_layer.group_send)
+
+
+def broadcast_session_state(session) -> None:
+    """Tell the examinee's browser and any observers a session's state changed.
+
+    Sent when a proctor pauses, resumes or terminates an attempt, so the
+    examinee's screen reacts at once instead of waiting for its next heartbeat.
+    The payload is only a nudge plus the fields the UI shows; the examinee's
+    client re-reads the authoritative state from the server. Never raises: a
+    broadcast failure must not fail the proctor's request.
+    """
     try:
+        from features.monitoring.consumers import ADMIN_ALERTS_GROUP
+
+        channel_layer = get_channel_layer()
+        if channel_layer is None:
+            return
+
+        event = session_state_event(session)
+        send = async_to_sync(channel_layer.group_send)
         send(f"monitoring.session.{session.id}", event)
         send(ADMIN_ALERTS_GROUP, event)
     except Exception:  # noqa: BLE001

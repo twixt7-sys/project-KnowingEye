@@ -1,6 +1,7 @@
 import { AlertTriangle, Loader2 } from "@/shared/icons";
 
 import { ExamPausedOverlay } from "@/features/session/components/taking/exam-paused-overlay";
+import { ExamTerminatedScreen } from "@/features/session/components/taking/exam-terminated-screen";
 import { FocusShell } from "@/features/session/components/taking/focus-shell";
 import { ProctoringDock } from "@/features/session/components/taking/proctoring-dock";
 import { QuestionNavigator } from "@/features/session/components/taking/question-navigator";
@@ -16,6 +17,7 @@ export function ExamTakingPage() {
     session,
     attempt,
     paused,
+    terminated,
     pauseReason,
     questions,
     sections,
@@ -53,6 +55,18 @@ export function ExamTakingPage() {
           <p className="text-lg">Starting your exam session...</p>
         </div>
       </div>
+    );
+  }
+
+  // Checked before the error screen: a submit that raced the termination fails
+  // too, and "Error Loading Exam" is the wrong thing to tell someone whose exam
+  // was ended on purpose.
+  if (terminated) {
+    return (
+      <ExamTerminatedScreen
+        examTitle={session?.exam?.title}
+        onExit={() => navigate("/examinee")}
+      />
     );
   }
 
