@@ -58,8 +58,14 @@ def clamp_pct(value: float) -> float:
     return round(max(0.0, min(100.0, value)), 1)
 
 
-def face_presence_pct(face_count: int) -> float:
-    return 100.0 if face_count > 0 else 0.0
+def face_presence_pct(face_count: int, identity_detected: bool = False) -> float:
+    """Face Presence (``Fp``): strictly binary - 0% or 100%, nothing in between.
+
+    100% when a face is in view, or whenever the examinee's identity was
+    detected (recognising the enrolled face proves a face is there, even if the
+    face detector missed it this frame); 0% otherwise.
+    """
+    return 100.0 if face_count > 0 or identity_detected else 0.0
 
 
 def gaze_focus_pct(yaw_deg: float | None, pitch_deg: float | None, yaw_max: float, pitch_max: float) -> float:
