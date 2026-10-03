@@ -43,7 +43,6 @@ def test_scorer_presence_is_hundred_with_a_face():
     metrics, events, _ = _scorer().score(_face(1), _POSTURE, True, None)
     assert metrics.face_presence_pct == 100.0
     assert BehaviorEventType.NO_FACE not in {e.event_type for e in events}
-    assert BehaviorEventType.NO_FACE not in {e.event_type for e in events}
 
 
 def test_scorer_no_face_is_zero():

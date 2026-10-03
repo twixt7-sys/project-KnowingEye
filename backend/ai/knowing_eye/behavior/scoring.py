@@ -10,7 +10,6 @@ from ai.knowing_eye.behavior.normalize import (
     face_presence_pct,
     gaze_focus_pct,
     identity_match_pct,
-    multiple_faces_compliance_pct,
     posture_quality_pct,
     upper_body_presence_pct,
 )
