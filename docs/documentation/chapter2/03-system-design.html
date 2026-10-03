@@ -430,7 +430,7 @@ erDiagram
         <tr>
           <td>Posture</td>
           <td>Shoulder-line tilt and head-over-shoulder lean ratios from body-pose landmarks</td>
-          <td>Extreme lean/tilt is consistent with reaching for hidden material or a second person entering frame</td>
+          <td>Extreme lean/tilt is consistent with reaching for hidden material</td>
           <td>Normal: within threshold. Suspicious: exceeds it.</td>
           <td>MediaPipe Pose Landmarker Full, shoulder (11/12) + ear (7/8, nose 0 as fallback) landmarks, visibility-gated (<code>pose_detector.py</code>). Hips are not used - they are below the frame edge at webcam framing.</td>
           <td><code>posture_shoulder_tilt_max: 0.18</code>, <code>posture_spine_lean_max: 0.30</code></td>
@@ -491,7 +491,7 @@ erDiagram
           <td>Person/object detection (why not YOLO)</td>
           <td><em>Not used - landmark models cover the requirement</em></td>
           <td>YOLOv8 (object detection)</td>
-          <td colspan="2">YOLO is an <strong>object detector</strong> (bounding boxes + class labels) - it does not natively produce the face-landmark, head-pose, or body-keypoint outputs Knowing Eye's behavior scoring is built on. It is the right tool for a different sub-problem (e.g., detecting a phone or a second person as a discrete object in frame), which is real future scope, not a substitute for MediaPipe's landmark output.</td>
+          <td colspan="2">YOLO is an <strong>object detector</strong> (bounding boxes + class labels) - it does not natively produce the face-landmark, head-pose, or body-keypoint outputs Knowing Eye's behavior scoring is built on. It is the right tool for a different sub-problem (e.g., detecting a phone as a discrete object in frame), which is real future scope, not a substitute for MediaPipe's landmark output.</td>
           <td>Adding a GPU-oriented detector for a CPU-first deployment target would work against the stack's own design constraint above.</td>
           <td>Several RRL sources reviewed for Chapter 1 use YOLO for prohibited-object detection specifically (phones, notes) rather than identity/gaze/posture - a legitimate <em>future</em> addition (see docs/todo Sprint scope), not a replacement for the landmark pipeline that already exists.</td>
         </tr>

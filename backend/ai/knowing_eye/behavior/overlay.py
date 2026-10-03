@@ -26,6 +26,6 @@ def norm_bbox_xyxy(bbox: list[int] | tuple[int, ...], width: int, height: int) -
 def posture_guide_status(*, pose_detected: bool, face_count: int) -> str:
     if not pose_detected:
         return "no_pose"
-    if face_count != 1:
+    if face_count < 1:
         return "off_center"
     return "ok"

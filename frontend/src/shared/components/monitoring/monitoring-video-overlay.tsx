@@ -2,7 +2,7 @@ import type { FaceDetector } from "@mediapipe/tasks-vision";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { FrameAnalysis } from "../../../core/config/api";
-import { detectFaces, loadFaceDetector, type NormalizedBox } from "../../lib/face-tracker";
+import { type NormalizedBox, detectPrimaryFace, loadFaceDetector } from "../../lib/face-tracker";
 import { PostureSilhouette } from "./posture-silhouette";
 
 interface MonitoringVideoOverlayProps {
@@ -69,7 +69,7 @@ export function MonitoringVideoOverlay({
 
   const faceCount = analysis?.face?.count ?? 0;
   const guideOk =
-    faceCount === 1 &&
+    faceCount > 0 &&
     (analysis?.posture?.guide_status === "ok" ||
       analysis?.posture?.detected ||
       (analysis?.metrics?.face_presence_pct ?? 0) >= 80);
@@ -85,7 +85,7 @@ export function MonitoringVideoOverlay({
   }, []);
 
   const draw = useCallback(
-    (boxes: NormalizedBox[]) => {
+    (box: NormalizedBox | null) => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       if (!video || !canvas) return;
@@ -100,13 +100,11 @@ export function MonitoringVideoOverlay({
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
       ctx.clearRect(0, 0, w, h);
-      if (boxes.length === 0) return;
+      if (!box) return;
 
-      ctx.strokeStyle = boxes.length > 1 ? "rgba(245,158,11,0.8)" : "rgba(34,197,94,0.65)";
+      ctx.strokeStyle = "rgba(34,197,94,0.65)";
       ctx.lineWidth = 1.25;
-      for (const box of boxes) {
-        ctx.strokeRect(...toDisplayRect(box, video, coverRef.current, mirrored));
-      }
+      ctx.strokeRect(...toDisplayRect(box, video, coverRef.current, mirrored));
     },
     [mirrored, videoRef],
   );
@@ -135,7 +133,7 @@ export function MonitoringVideoOverlay({
       ) {
         lastRun = now;
         try {
-          draw(detectFaces(detector, video));
+          draw(detectPrimaryFace(detector, video));
         } catch (e) {
           console.warn("local face detection failed", e);
         }
@@ -159,7 +157,7 @@ export function MonitoringVideoOverlay({
   const drawServerBox = useCallback(() => {
     if (detector) return;
     const faceNorm = analysis?.face?.bbox_norm;
-    draw(faceCount > 0 && faceNorm && faceNorm.length >= 4 ? [faceNorm as NormalizedBox] : []);
+    draw(faceCount > 0 && faceNorm && faceNorm.length >= 4 ? (faceNorm as NormalizedBox) : null);
   }, [analysis, detector, draw, faceCount]);
 
   useEffect(() => {

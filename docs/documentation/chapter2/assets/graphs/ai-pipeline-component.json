@@ -45,7 +45,7 @@
     "alerts": ["array of { type, severity, message, metric_pct }"]
   },
   "event_types": [
-    "no_face", "multiple_faces", "looking_away", "bad_posture",
+    "no_face", "looking_away", "bad_posture",
     "leaving_seat", "identity_mismatch", "suspicious_pattern"
   ],
   "pipeline_modes": [

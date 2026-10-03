@@ -107,7 +107,7 @@
       "fields": {
         "id": "uuid (pk)",
         "session_id": "fk -> sessions.id",
-        "event_type": "enum [no_face, multiple_faces, looking_away, bad_posture, leaving_seat, identity_mismatch, suspicious_pattern]",
+        "event_type": "enum [no_face, looking_away, bad_posture, leaving_seat, identity_mismatch, suspicious_pattern]",
         "score": "float",
         "confidence": "float",
         "metadata": "jsonb",
