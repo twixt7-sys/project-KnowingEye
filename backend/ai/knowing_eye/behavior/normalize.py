@@ -58,10 +58,20 @@ def clamp_pct(value: float) -> float:
     return round(max(0.0, min(100.0, value)), 1)
 
 
-def face_presence_pct(face_count: int) -> float:
-    if face_count == 0:
-        return 0.0
-    if face_count == 1:
+def face_presence_pct(face_count: int, identity_detected: bool = False) -> float:
+    """Face Presence (``Fp``): strictly binary - 0% or 100%, nothing in between.
+
+    100% when a face is in view, or whenever the examinee's identity was
+    detected (recognising the enrolled face proves a face is there, even if the
+    face detector missed it this frame); 0% otherwise. Extra faces no longer
+    reduce this score - they are judged by :func:`multiple_faces_compliance_pct`.
+    """
+    return 100.0 if face_count > 0 or identity_detected else 0.0
+
+
+def multiple_faces_compliance_pct(face_count: int) -> float:
+    """Compliance for the multiple-faces check (100% for one face or none)."""
+    if face_count <= 1:
         return 100.0
     return clamp_pct(100.0 - 25.0 * (face_count - 1))
 

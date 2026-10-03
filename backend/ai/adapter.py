@@ -275,11 +275,13 @@ class _StubPipeline:
             upper_body_presence_pct,
         )
 
-        face_presence = face_presence_pct(face_count)
+        identity_pct, identity_distance = self._identity_score(frame_bgr, reference_embedding)
+        # Identity detected (matches the enrolled face) => face present, always 100%.
+        identity_detected = identity_pct is not None and identity_pct >= _ALERT_THRESHOLD_PCT
+
+        face_presence = face_presence_pct(face_count, identity_detected=identity_detected)
         gaze = gaze_focus_pct(0.0 if face_count else None, 0.0 if face_count else None, 40, 35)
         posture = upper_body_presence_pct(face_count > 0)
-
-        identity_pct, identity_distance = self._identity_score(frame_bgr, reference_embedding)
 
         overall, ebi_count = exam_behavior_index_pct(face_presence, gaze, posture, identity_pct)
 
@@ -318,7 +320,7 @@ class _StubPipeline:
 
         events: list[dict[str, Any]] = []
         alerts: list[dict[str, Any]] = []
-        if face_count == 0:
+        if face_presence < t:
             events.append(
                 {
                     "event_type": "no_face",
