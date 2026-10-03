@@ -62,6 +62,9 @@ export function MonitoringPage() {
   useEffect(() => {
     let cancelled = false;
     let retry: number | undefined;
+    // Alerts repeat on every analyzed frame (~5/s per flagged examinee), so
+    // coalesce them into one refetch instead of one per alert.
+    let pendingRefresh: number | undefined;
     const connect = () => {
       if (cancelled) return;
       try {
@@ -91,7 +94,12 @@ export function MonitoringPage() {
                 ...prev,
               ].slice(0, 25)
             );
-            window.setTimeout(refresh, 1500);
+            if (pendingRefresh === undefined) {
+              pendingRefresh = window.setTimeout(() => {
+                pendingRefresh = undefined;
+                refresh();
+              }, 1500);
+            }
           } catch {
             /* ignore */
           }
@@ -104,6 +112,7 @@ export function MonitoringPage() {
     return () => {
       cancelled = true;
       if (retry) window.clearTimeout(retry);
+      if (pendingRefresh !== undefined) window.clearTimeout(pendingRefresh);
       wsRef.current?.close();
     };
   }, [queryClient]);

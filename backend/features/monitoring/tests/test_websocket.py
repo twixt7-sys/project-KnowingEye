@@ -14,7 +14,7 @@ import numpy as np
 from asgiref.sync import async_to_sync
 from channels.testing import WebsocketCommunicator
 from django.contrib.auth import get_user_model
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 
 from core.config.asgi import application
 from features.exams.models import Exam
@@ -302,3 +302,58 @@ class AdminAlertsWebsocketTests(TransactionTestCase):
                 await communicator.disconnect()
 
         async_to_sync(run)()
+
+
+class WebsocketOriginTests(TransactionTestCase):
+    """Production serves the SPA and the API from different domains."""
+
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="ws_origin_admin",
+            email="ws_origin_admin@test.local",
+            password="TestPass123!",
+            role=User.Role.ADMIN,
+        )
+        self.admin_token = _issue_token(self.admin)
+
+    def _connects_from(self, origin: bytes) -> bool:
+        from channels.routing import URLRouter
+
+        from features.monitoring.middleware import (
+            JWTAuthMiddlewareStack,
+            WebsocketOriginValidator,
+        )
+        from features.monitoring.routing import websocket_urlpatterns
+
+        app = WebsocketOriginValidator(JWTAuthMiddlewareStack(URLRouter(websocket_urlpatterns)))
+
+        async def run():
+            communicator = WebsocketCommunicator(
+                app,
+                f"/ws/monitoring/alerts/?token={self.admin_token}",
+                headers=[(b"origin", origin)],
+            )
+            connected, _ = await communicator.connect()
+            await communicator.disconnect()
+            return connected
+
+        return async_to_sync(run)()
+
+    @override_settings(
+        DEBUG=False,
+        ALLOWED_HOSTS=["api.example.com"],
+        CORS_ALLOW_ALL_ORIGINS=False,
+        CORS_ALLOWED_ORIGINS=["https://app.example.com"],
+    )
+    def test_cors_frontend_origin_accepted(self):
+        self.assertTrue(self._connects_from(b"https://app.example.com"))
+        self.assertTrue(self._connects_from(b"https://api.example.com"))
+
+    @override_settings(
+        DEBUG=False,
+        ALLOWED_HOSTS=["api.example.com"],
+        CORS_ALLOW_ALL_ORIGINS=False,
+        CORS_ALLOWED_ORIGINS=["https://app.example.com"],
+    )
+    def test_unlisted_origin_rejected(self):
+        self.assertFalse(self._connects_from(b"https://evil.example.com"))
