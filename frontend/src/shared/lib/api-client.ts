@@ -598,6 +598,7 @@ class ApiClient {
       deadline_at: string | null;
       time_remaining_seconds: number;
       status: string;
+      pause_reason?: string;
     }>(`/sessions/${sessionId}/heartbeat/`, { method: "POST" });
   }
 
@@ -636,6 +637,21 @@ class ApiClient {
     const qs = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : "";
     const data = await this.request<{ results?: ExamSession[] } | ExamSession[]>(`/sessions/${qs}`);
     return Array.isArray(data) ? data : (data.results ?? []);
+  }
+
+  /** Stop an in-progress exam's clock until it is resumed (needs `sessions.pause`). */
+  async pauseSession(sessionId: string, reason?: string) {
+    return this.request<{ message: string; status: string; time_remaining_seconds: number }>(
+      `/sessions/${sessionId}/pause/`,
+      { method: "POST", body: JSON.stringify(reason?.trim() ? { reason: reason.trim() } : {}) },
+    );
+  }
+
+  async resumeSession(sessionId: string) {
+    return this.request<{ message: string; status: string; time_remaining_seconds: number }>(
+      `/sessions/${sessionId}/resume/`,
+      { method: "POST" },
+    );
   }
 
   async terminateSession(sessionId: string) {

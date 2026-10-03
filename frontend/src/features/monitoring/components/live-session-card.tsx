@@ -1,4 +1,4 @@
-import { Eye, Loader2, Power } from "@/shared/icons";
+import { Eye, Loader2, Pause, Play, Power } from "@/shared/icons";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -8,17 +8,24 @@ import { useConfirm } from "../../../shared/components/common/confirm-dialog";
 import { IconAction } from "../../../shared/components/common/icon-action";
 import { Button } from "../../../shared/components/ui/button";
 import { useSessionObserver } from "../hooks/use-session-observer";
+import { useSessionPause } from "../hooks/use-session-pause";
+import { PauseSessionDialog } from "./pause-session-dialog";
 
 export function LiveSessionCard({
   session,
-  onTerminated,
+  onChanged,
 }: {
   session: SessionReportRow;
-  onTerminated: () => void;
+  /** A pause, resume or termination succeeded - refetch the session list. */
+  onChanged: () => void;
 }) {
   const observer = useSessionObserver(session.id);
   const confirm = useConfirm();
   const [terminating, setTerminating] = useState(false);
+  // A pushed state is fresher than the polled row.
+  const status = observer.sessionState?.status ?? session.status;
+  const pauseControls = useSessionPause({ sessionId: session.id, status, onChanged });
+  const paused = pauseControls.paused;
 
   useEffect(() => {
     observer.connect();
@@ -46,7 +53,7 @@ export function LiveSessionCard({
     try {
       await apiClient.terminateSession(session.id);
       toast.success("Session terminated.");
-      onTerminated();
+      onChanged();
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -73,6 +80,13 @@ export function LiveSessionCard({
           <div className="flex h-full items-center justify-center font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground">
             {isLive ? "Waiting for frames…" : "Connecting…"}
           </div>
+        )}
+
+        {paused && (
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-[0.3125rem] bg-status-watch/90 px-2 py-0.5 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-black">
+            <Pause className="h-3 w-3" weight="fill" aria-hidden />
+            Paused
+          </span>
         )}
 
         {/* Monitor chrome: name plate + status */}
@@ -148,6 +162,25 @@ export function LiveSessionCard({
               Inspect
             </Link>
           </Button>
+          {pauseControls.visible &&
+            (paused ? (
+              <IconAction
+                label="Resume exam"
+                icon={Play}
+                tone="primary"
+                disabled={pauseControls.busy}
+                onClick={() => void pauseControls.resume()}
+              >
+                {pauseControls.busy ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+              </IconAction>
+            ) : (
+              <IconAction
+                label="Pause exam"
+                icon={Pause}
+                disabled={pauseControls.busy}
+                onClick={() => pauseControls.setDialogOpen(true)}
+              />
+            ))}
           <IconAction
             label="Terminate session"
             icon={Power}
@@ -159,6 +192,14 @@ export function LiveSessionCard({
           </IconAction>
         </div>
       </div>
+
+      <PauseSessionDialog
+        open={pauseControls.dialogOpen}
+        studentName={name}
+        busy={pauseControls.busy}
+        onOpenChange={pauseControls.setDialogOpen}
+        onConfirm={(reason) => void pauseControls.pause(reason)}
+      />
     </div>
   );
 }

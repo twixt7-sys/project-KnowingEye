@@ -3,6 +3,9 @@ import { apiClient, type ExamSession, type ResponseData } from "../../../core/co
 
 const AUTOSAVE_MS = 1500;
 const HEARTBEAT_MS = 30_000;
+// While a proctor has the exam paused the examinee is just waiting, so look for
+// the resume far more often than the usual timer sync.
+const PAUSED_HEARTBEAT_MS = 3_000;
 const LOCAL_KEY_PREFIX = "knowing-eye-attempt-";
 
 export interface SavedAnswer {
@@ -20,6 +23,8 @@ export function useExamAttempt(sessionId: string | undefined) {
   const pendingSave = useRef<{ questionId: number; data: SavedAnswer } | null>(null);
 
   const localKey = sessionId ? `${LOCAL_KEY_PREFIX}${sessionId}` : null;
+  const paused = session?.status === "paused";
+  const pauseReason = session?.pause_reason ?? "";
 
   const hydrateFromSession = useCallback((data: ExamSession) => {
     const next: Record<number, SavedAnswer> = {};
@@ -65,6 +70,31 @@ export function useExamAttempt(sessionId: string | undefined) {
     [localKey]
   );
 
+  /**
+   * Re-read the authoritative timer and status from the server. Runs on a
+   * timer, when the monitoring socket pushes a pause/resume, and when an
+   * autosave is rejected (which is how an exam without a monitoring socket
+   * notices it was paused before the next timer sync).
+   */
+  const syncNow = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      const hb = await apiClient.sessionHeartbeat(sessionId);
+      setTimeRemaining(hb.time_remaining_seconds);
+      setSession((s) =>
+        s && (s.status !== hb.status || (s.pause_reason ?? "") !== (hb.pause_reason ?? ""))
+          ? {
+              ...s,
+              status: hb.status as ExamSession["status"],
+              pause_reason: hb.pause_reason ?? "",
+            }
+          : s
+      );
+    } catch {
+      /* network blip */
+    }
+  }, [sessionId]);
+
   const flushSave = useCallback(
     async (questionId: number, data: SavedAnswer) => {
       if (!sessionId) return;
@@ -81,9 +111,11 @@ export function useExamAttempt(sessionId: string | undefined) {
         setAutosaveStatus("saved");
       } catch {
         setAutosaveStatus("error");
+        // The server may have rejected the save because the exam was paused.
+        void syncNow();
       }
     },
-    [sessionId]
+    [sessionId, syncNow]
   );
 
   const scheduleSave = useCallback(
@@ -135,26 +167,17 @@ export function useExamAttempt(sessionId: string | undefined) {
   }, [sessionId, refresh]);
 
   useEffect(() => {
-    if (!sessionId) return;
+    // The exam clock is stopped while paused; the server holds the time.
+    if (!sessionId || paused) return;
     const tick = setInterval(() => setTimeRemaining((t) => (t > 0 ? t - 1 : 0)), 1000);
     return () => clearInterval(tick);
-  }, [sessionId]);
+  }, [sessionId, paused]);
 
   useEffect(() => {
     if (!sessionId) return;
-    const sync = setInterval(async () => {
-      try {
-        const hb = await apiClient.sessionHeartbeat(sessionId);
-        setTimeRemaining(hb.time_remaining_seconds);
-        if (hb.status !== "in_progress") {
-          setSession((s) => (s ? { ...s, status: hb.status as ExamSession["status"] } : s));
-        }
-      } catch {
-        /* network blip */
-      }
-    }, HEARTBEAT_MS);
+    const sync = setInterval(() => void syncNow(), paused ? PAUSED_HEARTBEAT_MS : HEARTBEAT_MS);
     return () => clearInterval(sync);
-  }, [sessionId]);
+  }, [sessionId, paused, syncNow]);
 
   const clearLocal = useCallback(() => {
     if (localKey) localStorage.removeItem(localKey);
@@ -166,6 +189,9 @@ export function useExamAttempt(sessionId: string | undefined) {
     answers,
     setAnswer,
     timeRemaining,
+    paused,
+    pauseReason,
+    syncNow,
     autosaveStatus,
     refresh,
     hydrateFromSession,

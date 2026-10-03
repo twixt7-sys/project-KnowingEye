@@ -5,13 +5,17 @@ import {
   AlertTriangle,
   ArrowLeft,
   Loader2,
+  Pause,
+  Play,
   Power,
   RefreshCw,
 } from "@/shared/icons";
 
 import { formatApiError } from "@/core/config/api";
 import { resolveAlertsBulk, terminateSession } from "@/features/monitoring/api/monitoring-api";
+import { PauseSessionDialog } from "@/features/monitoring/components/pause-session-dialog";
 import { useSessionObserver } from "@/features/monitoring/hooks/use-session-observer";
+import { useSessionPause } from "@/features/monitoring/hooks/use-session-pause";
 import { monitoringQueries } from "@/features/monitoring/queries/queries";
 import { monitoringKeys } from "@/features/monitoring/queries/keys";
 import { useConfirm } from "@/shared/components/common/confirm-dialog";
@@ -54,6 +58,14 @@ export function SessionMonitorPage() {
       queryKey: monitoringKeys.sessionReport(sessionId),
     });
   };
+
+  // A pushed state is fresher than the fetched report.
+  const sessionStatus = observer.sessionState?.status ?? reportQuery.data?.session?.status;
+  const pauseControls = useSessionPause({
+    sessionId: sessionId ?? "",
+    status: sessionStatus,
+    onChanged: refreshHistory,
+  });
 
   const metrics = observer.analysis?.metrics;
   const liveEbi =
@@ -138,6 +150,11 @@ export function SessionMonitorPage() {
             <h1 className="text-3xl font-bold">Session inspector</h1>
             <p className="text-sm text-muted-foreground">
               Live observe · <code className="text-xs">{sessionId}</code> · {observer.status}
+              {pauseControls.paused && (
+                <span className="status-pill ml-2 bg-status-watch/15 text-status-watch">
+                  Exam paused
+                </span>
+              )}
             </p>
           </div>
           <div className="flex gap-2">
@@ -145,6 +162,32 @@ export function SessionMonitorPage() {
               <RefreshCw className="h-4 w-4" />
               Refresh log
             </Button>
+            {pauseControls.visible &&
+              (pauseControls.paused ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pauseControls.busy}
+                  onClick={() => void pauseControls.resume()}
+                >
+                  {pauseControls.busy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                  Resume
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pauseControls.busy}
+                  onClick={() => pauseControls.setDialogOpen(true)}
+                >
+                  <Pause className="h-4 w-4" />
+                  Pause
+                </Button>
+              ))}
             <Button
               variant="destructive"
               size="sm"
@@ -160,6 +203,13 @@ export function SessionMonitorPage() {
             </Button>
           </div>
         </header>
+
+        <PauseSessionDialog
+          open={pauseControls.dialogOpen}
+          busy={pauseControls.busy}
+          onOpenChange={pauseControls.setDialogOpen}
+          onConfirm={(reason) => void pauseControls.pause(reason)}
+        />
 
         {error && (
           <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">

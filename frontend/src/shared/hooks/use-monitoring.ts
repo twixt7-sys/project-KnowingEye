@@ -16,6 +16,13 @@ export type MonitoringStatus =
   | "error"
   | "closed";
 
+/** Pushed over the monitoring socket when a proctor pauses/resumes the session. */
+export interface SessionStateMessage {
+  status: string;
+  time_remaining_seconds?: number | null;
+  pause_reason?: string;
+}
+
 export interface UseMonitoringOptions {
   sessionId: string | undefined;
   intervalMs?: number;
@@ -27,6 +34,8 @@ export interface UseMonitoringOptions {
   forceRest?: boolean;
   /** Called when the backend rejects frames because the session is no longer active. */
   onSessionInactive?: () => void;
+  /** Called when the server pushes a session state change (pause / resume). */
+  onSessionState?: (state: SessionStateMessage) => void;
 }
 
 export interface UseMonitoringResult {
@@ -63,6 +72,7 @@ export function useMonitoring({
   videoConstraints = DEFAULT_VIDEO,
   forceRest = false,
   onSessionInactive,
+  onSessionState,
 }: UseMonitoringOptions): UseMonitoringResult {
   const [status, setStatus] = useState<MonitoringStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +98,8 @@ export function useMonitoring({
   const enrollingRef = useRef(false);
   const onSessionInactiveRef = useRef(onSessionInactive);
   onSessionInactiveRef.current = onSessionInactive;
+  const onSessionStateRef = useRef(onSessionState);
+  onSessionStateRef.current = onSessionState;
 
   const clearFrameTimer = useCallback(() => {
     if (frameTimerRef.current !== null) {
@@ -295,6 +307,8 @@ export function useMonitoring({
               }
             } else if (msg.type === "alert") {
               setAlerts((prev) => [msg.payload as FrameAlert, ...prev].slice(0, 50));
+            } else if (msg.type === "session_state") {
+              onSessionStateRef.current?.(msg as SessionStateMessage);
             }
           } catch (e) {
             console.warn("ws message parse failed", e);

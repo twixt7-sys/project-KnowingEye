@@ -199,7 +199,14 @@ export interface ExamSession {
   id: string;
   user: number;
   exam: Exam;
-  status: "setup" | "in_progress" | "pending_review" | "completed" | "terminated" | "expired";
+  status:
+    | "setup"
+    | "in_progress"
+    | "paused"
+    | "pending_review"
+    | "completed"
+    | "terminated"
+    | "expired";
   started_at?: string;
   exam_started_at?: string | null;
   submitted_at?: string;
@@ -211,6 +218,10 @@ export interface ExamSession {
   deadline_at?: string | null;
   option_order?: Record<string, string[]>;
   accommodation_extra_minutes?: number;
+  /** When the current proctor pause began; null/absent unless status is "paused". */
+  paused_at?: string | null;
+  /** Optional note from the proctor, shown to the examinee while paused. */
+  pause_reason?: string;
   responses?: SessionResponse[];
 }
 

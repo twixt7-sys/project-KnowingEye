@@ -8,9 +8,16 @@ import {
 
 export type ObserverStatus = "idle" | "connecting" | "live" | "error" | "closed";
 
+/** Latest session state pushed by the server (pause / resume); null until one arrives. */
+export interface ObservedSessionState {
+  status: string;
+  pauseReason: string;
+}
+
 export interface UseSessionObserverResult {
   status: ObserverStatus;
   error: string | null;
+  sessionState: ObservedSessionState | null;
   analysis: FrameAnalysis | null;
   snapshot: string | null;
   alerts: FrameAlert[];
@@ -28,6 +35,7 @@ export function useSessionObserver(sessionId: string | undefined): UseSessionObs
   const [analysis, setAnalysis] = useState<FrameAnalysis | null>(null);
   const [snapshot, setSnapshot] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<FrameAlert[]>([]);
+  const [sessionState, setSessionState] = useState<ObservedSessionState | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const closedRef = useRef(false);
   const heartbeatRef = useRef<number | null>(null);
@@ -96,6 +104,9 @@ export function useSessionObserver(sessionId: string | undefined): UseSessionObs
     }
     closedRef.current = false;
     setError(null);
+    // Updates pushed while we were disconnected are lost, so don't trust the
+    // last one: callers fall back to the polled session until a new push.
+    setSessionState(null);
     setStatus("connecting");
     try {
       const ws = new WebSocket(buildSessionObserverWsUrl(sessionId));
@@ -119,6 +130,8 @@ export function useSessionObserver(sessionId: string | undefined): UseSessionObs
             if (msg.analysis) setAnalysis(msg.analysis as FrameAnalysis);
           } else if (msg.type === "alert" && msg.payload) {
             setAlerts((prev) => [msg.payload as FrameAlert, ...prev].slice(0, 50));
+          } else if (msg.type === "session_state" && typeof msg.status === "string") {
+            setSessionState({ status: msg.status, pauseReason: msg.pause_reason ?? "" });
           }
         } catch {
           /* ignore parse errors */
@@ -149,5 +162,5 @@ export function useSessionObserver(sessionId: string | undefined): UseSessionObs
 
   useEffect(() => () => disconnect(), [disconnect]);
 
-  return { status, error, analysis, snapshot, alerts, connect, disconnect };
+  return { status, error, sessionState, analysis, snapshot, alerts, connect, disconnect };
 }

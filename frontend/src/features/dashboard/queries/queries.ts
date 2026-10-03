@@ -18,7 +18,7 @@ export const dashboardQueries = {
         apiClient.getReportSummary(),
         apiClient.getExams(),
         apiClient.listAlerts({ resolved: false }),
-        apiClient.listSessionReports({ status: "in_progress", page_size: 50 }),
+        apiClient.listSessionReports({ status: "in_progress,paused", page_size: 50 }),
       ]);
       return {
         summary,

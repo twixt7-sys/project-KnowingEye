@@ -79,6 +79,11 @@ export function MonitoringPage() {
         ws.onmessage = (ev) => {
           try {
             const msg = JSON.parse(ev.data);
+            if (msg?.type === "session_state") {
+              // Another proctor paused/resumed a session: update the grid.
+              refresh();
+              return;
+            }
             if (msg?.type !== "alert" || !msg.payload) return;
             const p = msg.payload;
             setLiveAlerts((prev) =>
@@ -262,7 +267,7 @@ export function MonitoringPage() {
               No active sessions right now.
             </div>
           ) : (
-            <SessionGrid sessions={sessions} onTerminated={refresh} />
+            <SessionGrid sessions={sessions} onChanged={refresh} />
           )}
         </SectionPanel>
 

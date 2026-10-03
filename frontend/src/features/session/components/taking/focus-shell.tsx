@@ -10,6 +10,8 @@ interface FocusShellProps {
   behaviorAlerts: string[];
   tabSwitchWarning?: string | null;
   timeRemaining: number;
+  /** A proctor has paused the exam: the clock is stopped and submitting is disabled. */
+  paused?: boolean;
   submitting: boolean;
   onSubmitClick: () => void;
   children: ReactNode;
@@ -40,6 +42,7 @@ export function FocusShell({
   behaviorAlerts,
   tabSwitchWarning,
   timeRemaining,
+  paused = false,
   submitting,
   onSubmitClick,
   children,
@@ -100,11 +103,11 @@ export function FocusShell({
             </div>
 
             <div className="flex items-center gap-4">
-              <ExamTimer seconds={timeRemaining} />
+              <ExamTimer seconds={timeRemaining} paused={paused} />
               <button
                 type="button"
                 onClick={onSubmitClick}
-                disabled={submitting}
+                disabled={submitting || paused}
                 className="px-6 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
               >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Exam"}
