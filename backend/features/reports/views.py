@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 from io import BytesIO, StringIO
 
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, F, Q
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
@@ -346,15 +346,45 @@ def session_report(request, session_id):
     )
 
 
+# ``?ordering=`` values accepted by list_session_reports -> model lookup.
+_SESSION_ORDERING = {
+    "started_at": "started_at",
+    "submitted_at": "submitted_at",
+    "percentage_score": "percentage_score",
+    "exam_title": "exam__title",
+}
+
+
+def _order_sessions(qs, ordering: str):
+    """Apply a whitelisted ``?ordering=`` (``-`` prefix = descending).
+
+    Unknown or missing values keep the default newest-first order. Nullable
+    columns sort nulls last either way, and ``-started_at, id`` always breaks
+    ties so paging over equal scores never skips or repeats a row.
+    """
+    field = _SESSION_ORDERING.get(ordering.lstrip("-"))
+    if field is None:
+        return qs.order_by("-started_at", "id")
+    expr = F(field).desc(nulls_last=True) if ordering.startswith("-") else F(field).asc(nulls_last=True)
+    return qs.order_by(expr, "-started_at", "id")
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_session_reports(request):
     """GET /api/reports/sessions/ - paginated list with KPI per session."""
-    qs = _session_queryset(request.user).order_by("-started_at")
+    qs = _order_sessions(
+        _session_queryset(request.user),
+        (request.query_params.get("ordering") or "").strip(),
+    )
 
     status_filter = request.query_params.get("status")
     if status_filter:
         qs = qs.filter(status=status_filter)
+
+    passed = request.query_params.get("passed")
+    if passed in ("true", "false"):
+        qs = qs.filter(passed=(passed == "true"))
 
     exam_id = request.query_params.get("exam")
     if exam_id:

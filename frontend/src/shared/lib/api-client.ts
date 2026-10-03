@@ -709,6 +709,10 @@ class ApiClient {
     exam?: number;
     department?: number;
     search?: string;
+    /** Only sessions with a recorded pass (true) or fail (false) result. */
+    passed?: boolean;
+    /** started_at | submitted_at | percentage_score | exam_title, `-` prefix = descending. */
+    ordering?: string;
     page?: number;
     page_size?: number;
   }) {
