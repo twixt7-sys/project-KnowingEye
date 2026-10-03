@@ -41,7 +41,10 @@ detection:
                                      # is rarely worth it at 1-5 fps. Falls back to lite if it can't load.
   pose_min_visibility: 0.5          # Both shoulders must be at least this visible for the upper body to
                                      # count as present - MediaPipe always emits all 33 points, including
-                                     # extrapolated off-frame ones.
+                                     # extrapolated off-frame ones. Exception: while the examinee's identity
+                                     # is detected and their face box is in view, Up stays within 50-100%
+                                     # by shoulder visibility (normalize.upper_body_presence_pct), so close
+                                     # framing that cuts the shoulders off no longer reads as 0%.
 
 recognition:
   embedding_backend: arcface
@@ -81,7 +84,8 @@ behavior:
                                      # 50 is where the same cited risk model assigns its maximum risk
                                      # weight. Threshold-based behaviour classification per [14].
   leaving_seat_grace_seconds: 3.0   # Same grace-period principle as no_face_grace_seconds, applied to
-                                     # upper-body-visibility (pose landmark presence).
+                                     # upper-body-visibility (pose landmark presence). Not raised while the
+                                     # identity-verified examinee's face box is in view.
   suspicious_pattern:
     window_seconds: 60              # Sliding-window temporal aggregation to suppress single-frame
     min_flags: 3                    # false positives - an established anomaly-detection technique

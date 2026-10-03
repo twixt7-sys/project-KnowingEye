@@ -86,14 +86,23 @@ class BehaviorScorer:
         )
         # Identity detected (the enrolled face was recognised) always means a
         # face is present, so presence is 100% regardless of the face count.
-        fp = face_presence_pct(face.count, identity_detected=identity_match is True)
+        identity_detected = identity_match is True
+        fp = face_presence_pct(face.count, identity_detected=identity_detected)
         yaw = face.head_yaw_deg
         pitch = face.head_pitch_deg
         if face.count > 0 and (yaw is None or pitch is None):
             yaw = yaw if yaw is not None else 0.0
             pitch = pitch if pitch is not None else 0.0
         gp = gaze_focus_pct(yaw, pitch, self._gaze_yaw, self._gaze_pitch)
-        pp = upper_body_presence_pct(pose_detected, posture.upper_body_visibility)
+        # A recognised examinee whose face box is in view is seated in front of
+        # the camera even when close framing hides the shoulders, so Up stays
+        # within 50-100% instead of dropping to 0%.
+        pp = upper_body_presence_pct(
+            pose_detected,
+            posture.upper_body_visibility,
+            identity_detected=identity_detected,
+            face_box_present=face.count > 0,
+        )
         ebi, ebi_count = exam_behavior_index_pct(fp, gp, pp, ip)
         band = classify_ebi_band(ebi, self._ebi_good_min, self._ebi_mid_min)
         return MetricScores(
