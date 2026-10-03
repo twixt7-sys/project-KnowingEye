@@ -80,6 +80,8 @@ class FaceDetector:
                 options = vision.FaceLandmarkerOptions(
                     base_options=mp_python.BaseOptions(model_asset_path=str(model_path)),
                     running_mode=vision.RunningMode.IMAGE,
+                    # Candidate pool only: the pipeline keeps the largest face as
+                    # the examinee. Extra faces are never counted or flagged.
                     num_faces=3,
                     min_face_detection_confidence=0.62,
                     output_facial_transformation_matrixes=True,

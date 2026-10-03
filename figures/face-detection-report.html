@@ -750,8 +750,8 @@
     </p>
     <p>
       For the Knowing Eye face-presence stage, <b>YOLOv8n is selected</b>. It offers the best Precision and the strongest
-      F1 among the real-time-capable models, which matters because a false face detection would otherwise raise spurious
-      "multiple faces" alerts and corrupt the behavior index, while its 233&nbsp;FPS throughput comfortably sustains the
+      F1 among the real-time-capable models, which matters because a false face detection would otherwise mask a genuine
+      face-absence event and corrupt the behavior index, while its 233&nbsp;FPS throughput comfortably sustains the
       live stream. YOLOv11n remains an equally defensible choice where model size or raw speed is the priority, as it is
       the smallest and fastest network with near-identical accuracy. RT-DETR-l, despite leading the accuracy table, is
       not adopted because it cannot meet the pipeline's real-time constraint on the target hardware.

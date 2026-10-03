@@ -10,7 +10,6 @@ from typing import Any
 
 class BehaviorEventType(str, Enum):
     NO_FACE = "no_face"
-    MULTIPLE_FACES = "multiple_faces"
     LOOKING_AWAY = "looking_away"
     BAD_POSTURE = "bad_posture"
     LEAVING_SEAT = "leaving_seat"
