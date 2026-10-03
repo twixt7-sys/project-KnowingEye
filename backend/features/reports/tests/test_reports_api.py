@@ -338,3 +338,31 @@ class SessionReportPdfTests(APITestCase):
             self.assertTrue(build.call_args.kwargs["hide_scores"])
             self._get(self.teacher)
             self.assertFalse(build.call_args.kwargs["hide_scores"])
+
+    def test_pdf_download_accepts_pdf_accept_header(self):
+        """The frontend sends Accept: application/pdf; DRF must not 406 it."""
+        self.client.force_authenticate(user=self.student)
+        response = self.client.get(
+            f"/api/reports/sessions/{self.session.id}/pdf/",
+            HTTP_ACCEPT="application/pdf",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.content.startswith(b"%PDF"))
+
+    def test_pdf_download_errors_stay_json_with_pdf_accept(self):
+        self.client.force_authenticate(user=self.other_student)
+        response = self.client.get(
+            f"/api/reports/sessions/{self.session.id}/pdf/",
+            HTTP_ACCEPT="application/pdf",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class ExportAcceptHeaderTests(ReportsAPITests):
+    def test_csv_and_pdf_exports_accept_their_own_media_type(self):
+        for path, accept in (
+            ("/api/reports/export/csv/", "text/csv"),
+            ("/api/reports/export/pdf/", "application/pdf"),
+        ):
+            response = self.client.get(path, HTTP_ACCEPT=accept)
+            self.assertEqual(response.status_code, status.HTTP_200_OK, path)
