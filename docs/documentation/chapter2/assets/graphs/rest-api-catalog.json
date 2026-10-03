@@ -47,7 +47,7 @@
         { "method": "POST", "path": "/{uuid}/submit/", "auth": true, "description": "Submit answers + score" },
         { "method": "POST", "path": "/{uuid}/pause/", "auth": "sessions.pause", "description": "Pause an in-progress session (exam clock stops)" },
         { "method": "POST", "path": "/{uuid}/resume/", "auth": "sessions.pause", "description": "Resume a paused session" },
-        { "method": "POST", "path": "/{uuid}/terminate/", "auth": "ADMIN", "description": "Force terminate" },
+        { "method": "POST", "path": "/{uuid}/terminate/", "auth": "ADMIN", "description": "Force terminate; examinee is notified over the monitoring socket and refused with code session_terminated afterwards" },
         { "method": "GET", "path": "/{uuid}/logs/", "auth": true, "description": "Session audit logs" }
       ]
     },

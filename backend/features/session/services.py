@@ -100,6 +100,9 @@ ACTIVE_STATUSES = (
     ExamSession.Status.PAUSED,
 )
 
+# Everything that is still open can be terminated, including a paused attempt.
+TERMINABLE_STATUSES = ACTIVE_STATUSES
+
 
 def touch_setup_activity(session: ExamSession) -> None:
     """Reset the setup idle timer while the examinee is actively configuring proctoring."""
@@ -393,6 +396,71 @@ def resume_session(
     )
     broadcast_session_state(session)
     return session
+
+
+def terminate_session(
+    session: ExamSession,
+    *,
+    terminated_by=None,
+    ip_address: str | None = None,
+) -> ExamSession:
+    """End an attempt for good on a proctor's say-so, and tell the examinee at once.
+
+    The examinee's socket gets a ``session_state`` push (and is then closed);
+    anything that misses it learns from its next heartbeat, or from the
+    ``session_terminated`` refusal on its next save, submit or frame.
+    """
+    with transaction.atomic():
+        locked = ExamSession.objects.select_for_update().get(pk=session.pk)
+        if locked.status not in TERMINABLE_STATUSES:
+            raise ValidationError(f"Cannot terminate session with status: {locked.get_status_display()}")
+        now = timezone.now()
+        # A pause still running when the attempt is terminated ends with it.
+        locked.fold_pause(now)
+        locked.status = ExamSession.Status.TERMINATED
+        locked.submitted_at = now
+        locked.save(
+            update_fields=[
+                "status",
+                "submitted_at",
+                "paused_at",
+                "paused_total_seconds",
+                "pause_reason",
+            ]
+        )
+
+    session.refresh_from_db()
+    SessionLog.objects.create(
+        session=session,
+        event_type=SessionLog.EventType.TERMINATED,
+        ip_address=ip_address,
+        details={"terminated_by": getattr(terminated_by, "username", None)},
+    )
+    broadcast_session_state(session)
+    return session
+
+
+# Why a request was refused, as the examinee's browser reads it: it switches
+# screens on the ``code`` and only displays the ``error`` text, so the prose
+# can be reworded without breaking anything.
+_REFUSAL_CODES = {
+    ExamSession.Status.PAUSED: "session_paused",
+    ExamSession.Status.TERMINATED: "session_terminated",
+    ExamSession.Status.EXPIRED: "session_expired",
+    ExamSession.Status.COMPLETED: "session_submitted",
+    ExamSession.Status.PENDING_REVIEW: "session_submitted",
+}
+_TERMINATED_MESSAGE = "This exam was terminated by your proctor."
+
+
+def refusal_body(session: ExamSession, message: str) -> dict[str, str]:
+    """400 body for a request the session's current state no longer allows."""
+    if session.status == ExamSession.Status.TERMINATED:
+        message = _TERMINATED_MESSAGE
+    return {
+        "error": message,
+        "code": _REFUSAL_CODES.get(session.status, "session_not_in_progress"),
+    }
 
 
 def _create_in_progress_session(
