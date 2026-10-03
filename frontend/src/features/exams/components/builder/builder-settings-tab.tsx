@@ -3,10 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Save } from "@/shared/icons";
 
 import type { Exam } from "@/core/config/api";
-import { BuilderField } from "@/features/exams/components/builder/builder-primitives";
+import {
+  BuilderField,
+  CheckboxSetting,
+  DepartmentChecklist,
+} from "@/features/exams/components/builder/builder-primitives";
 import { dashboardQueries } from "@/features/dashboard/queries/queries";
 import { toDatetimeLocal, type ExamForm } from "@/features/exams/schemas/builder-schemas";
-import { Checkbox } from "@/shared/components/ui/checkbox";
 
 interface BuilderSettingsTabProps {
   exam: Exam;
@@ -37,13 +40,6 @@ export function BuilderSettingsTab({
   const departmentsQuery = useQuery(dashboardQueries.departments(true));
   const categories = categoriesQuery.data ?? [];
   const departments = departmentsQuery.data ?? [];
-
-  const toggleDepartment = (id: number) => {
-    const set = new Set(form.department_ids);
-    if (set.has(id)) set.delete(id);
-    else set.add(id);
-    update({ department_ids: Array.from(set) });
-  };
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 space-y-4">
@@ -109,27 +105,13 @@ export function BuilderSettingsTab({
         </BuilderField>
       </div>
       <BuilderField label="Also visible to (shared/general-ed departments)">
-        <div className="flex flex-wrap gap-2">
-          {departments.map((d) => {
-            const checked = form.department_ids.includes(d.id);
-            return (
-              <label
-                key={d.id}
-                className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${
-                  checked ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
-                }`}
-              >
-                <Checkbox
-                  checked={checked}
-                  onCheckedChange={() => toggleDepartment(d.id)}
-                  disabled={!isDraft}
-                  className="h-3.5 w-3.5"
-                />
-                {d.abbreviation}
-              </label>
-            );
-          })}
-        </div>
+        <DepartmentChecklist
+          departments={departments}
+          value={form.department_ids}
+          onChange={(department_ids) => update({ department_ids })}
+          lockedId={exam.department?.id ?? null}
+          disabled={!isDraft}
+        />
         <p className="mt-1 text-xs text-muted-foreground">
           The home department above is always included. Add more for shared or general-education
           exams discoverable from other departments too.
@@ -299,37 +281,6 @@ export function BuilderSettingsTab({
           Published exams cannot be edited here. Archive and duplicate to create a new cycle.
         </p>
       )}
-    </div>
-  );
-}
-
-function CheckboxSetting({
-  checked,
-  onCheckedChange,
-  disabled,
-  title,
-  description,
-}: {
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-  disabled: boolean;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border/70 bg-muted/20 p-4">
-      <label className="flex items-start gap-3 cursor-pointer">
-        <Checkbox
-          checked={checked}
-          onCheckedChange={(v) => onCheckedChange(v === true)}
-          disabled={disabled}
-          className="mt-0.5"
-        />
-        <span>
-          <span className="block text-sm font-medium">{title}</span>
-          <span className="block text-xs text-muted-foreground mt-1">{description}</span>
-        </span>
-      </label>
     </div>
   );
 }
