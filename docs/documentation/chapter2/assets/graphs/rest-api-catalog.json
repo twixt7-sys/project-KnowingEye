@@ -45,6 +45,8 @@
         { "method": "GET", "path": "/{uuid}/", "auth": true, "description": "Session detail" },
         { "method": "POST", "path": "/start/", "auth": true, "description": "Start exam session" },
         { "method": "POST", "path": "/{uuid}/submit/", "auth": true, "description": "Submit answers + score" },
+        { "method": "POST", "path": "/{uuid}/pause/", "auth": "sessions.pause", "description": "Pause an in-progress session (exam clock stops)" },
+        { "method": "POST", "path": "/{uuid}/resume/", "auth": "sessions.pause", "description": "Resume a paused session" },
         { "method": "POST", "path": "/{uuid}/terminate/", "auth": "ADMIN", "description": "Force terminate" },
         { "method": "GET", "path": "/{uuid}/logs/", "auth": true, "description": "Session audit logs" }
       ]

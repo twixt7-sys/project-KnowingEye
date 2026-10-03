@@ -165,6 +165,16 @@
           "description": "Session logs"
         },
         {
+          "path": "/{id}/pause/",
+          "method": "POST",
+          "description": "Pause an in-progress session (stops the exam clock); optional reason"
+        },
+        {
+          "path": "/{id}/resume/",
+          "method": "POST",
+          "description": "Resume a paused session (paused time is added back to the deadline)"
+        },
+        {
           "path": "/{id}/terminate/",
           "method": "POST",
           "description": "Terminate session"

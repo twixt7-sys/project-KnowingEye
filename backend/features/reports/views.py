@@ -173,7 +173,9 @@ def report_summary(request):
     """GET /api/reports/summary/ - dashboard KPIs for admins/examinees."""
     sessions = _session_queryset(request.user)
     completed = sessions.filter(status=ExamSession.Status.COMPLETED)
-    active = sessions.filter(status=ExamSession.Status.IN_PROGRESS)
+    active = sessions.filter(
+        status__in=(ExamSession.Status.IN_PROGRESS, ExamSession.Status.PAUSED)
+    )
     terminated = sessions.filter(status=ExamSession.Status.TERMINATED)
 
     alert_qs = Alert.objects.filter(session__in=sessions)
@@ -391,7 +393,11 @@ def session_report_pdf(request, session_id):
     except ExamSession.DoesNotExist:
         return Response({"detail": "Session not found."}, status=404)
 
-    if session.status in (ExamSession.Status.SETUP, ExamSession.Status.IN_PROGRESS):
+    if session.status in (
+        ExamSession.Status.SETUP,
+        ExamSession.Status.IN_PROGRESS,
+        ExamSession.Status.PAUSED,
+    ):
         return Response(
             {"detail": "The report is available once the exam has been submitted."},
             status=409,
@@ -428,9 +434,15 @@ def list_session_reports(request):
         (request.query_params.get("ordering") or "").strip(),
     )
 
-    status_filter = request.query_params.get("status")
-    if status_filter:
-        qs = qs.filter(status=status_filter)
+    # One status, or a comma-separated list (e.g. "in_progress,paused" for
+    # everything still live).
+    statuses = [
+        part.strip()
+        for part in (request.query_params.get("status") or "").split(",")
+        if part.strip()
+    ]
+    if statuses:
+        qs = qs.filter(status__in=statuses)
 
     passed = request.query_params.get("passed")
     if passed in ("true", "false"):

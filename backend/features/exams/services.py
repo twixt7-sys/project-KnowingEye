@@ -92,11 +92,16 @@ def exam_has_active_session(exam: Exam) -> bool:
     an exam is in progress - students may already be answering." Checked
     against the live session state rather than only exam.status, so the
     reason an edit is blocked is always the literal one the Directive names.
+    A paused attempt counts: the examinee resumes it where they left off.
     """
     from features.session.models import ExamSession
 
     return exam.sessions.filter(
-        status__in=(ExamSession.Status.SETUP, ExamSession.Status.IN_PROGRESS)
+        status__in=(
+            ExamSession.Status.SETUP,
+            ExamSession.Status.IN_PROGRESS,
+            ExamSession.Status.PAUSED,
+        )
     ).exists()
 
 

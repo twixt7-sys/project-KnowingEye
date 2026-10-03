@@ -22,8 +22,9 @@ export function fetchMonitoringHealth() {
   return apiClient.getMonitoringHealth();
 }
 
+/** Every session still live: running or paused by a proctor. */
 export function fetchActiveSessions(pageSize = 50) {
-  return apiClient.listSessionReports({ status: "in_progress", page_size: pageSize });
+  return apiClient.listSessionReports({ status: "in_progress,paused", page_size: pageSize });
 }
 
 export function fetchAlerts(params?: { resolved?: boolean }) {
@@ -40,6 +41,14 @@ export function resolveAlertsBulk(params: { session?: string; alert_type?: strin
 
 export function fetchSessionReport(sessionId: string) {
   return apiClient.getSessionReport(sessionId);
+}
+
+export function pauseSession(sessionId: string, reason?: string) {
+  return apiClient.pauseSession(sessionId, reason);
+}
+
+export function resumeSession(sessionId: string) {
+  return apiClient.resumeSession(sessionId);
 }
 
 export function terminateSession(sessionId: string) {

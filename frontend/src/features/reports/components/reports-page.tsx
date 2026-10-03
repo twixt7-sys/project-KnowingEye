@@ -344,6 +344,7 @@ export function ReportsPage() {
             >
               <option value="">All statuses</option>
               <option value="in_progress">In progress</option>
+              <option value="paused">Paused</option>
               <option value="completed">Completed</option>
               <option value="terminated">Terminated</option>
             </select>

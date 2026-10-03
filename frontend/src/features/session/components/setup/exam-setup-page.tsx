@@ -114,14 +114,17 @@ export function ExamSetupPage() {
         setExam(examData);
 
         if (examData.monitoring_enabled === false) {
-          const inProgress = await apiClient.listSessions({
-            exam: id,
-            status: "in_progress",
-          });
-          if (inProgress[0]) {
+          // A paused attempt is still the examinee's current one: re-enter it
+          // (the exam page shows the paused screen) rather than starting over.
+          const [inProgress, paused] = await Promise.all([
+            apiClient.listSessions({ exam: id, status: "in_progress" }),
+            apiClient.listSessions({ exam: id, status: "paused" }),
+          ]);
+          const live = inProgress[0] ?? paused[0];
+          if (live) {
             navigate(`/examinee/exam/${id}`, {
               replace: true,
-              state: { session: inProgress[0] },
+              state: { session: live },
             });
             return;
           }

@@ -14,6 +14,7 @@ from rest_framework.exceptions import ValidationError
 
 from ai.identity_store import has_reference
 from features.exams.models import ExamAssignment
+from features.monitoring.broadcast import broadcast_session_state
 from features.session.models import ExamSession, SessionLog
 from features.session.submission import auto_submit_expired_session
 
@@ -85,13 +86,18 @@ def get_assignment_accommodation(exam, user) -> tuple[int, int]:
 
 def compute_deadline(session: ExamSession) -> timezone.datetime:
     anchor = session.exam_started_at or timezone.now()
-    return anchor + timedelta(seconds=session.duration_seconds)
+    return anchor + timedelta(
+        seconds=session.duration_seconds + session.paused_total_seconds
+    )
 
 SETUP_MAX_MINUTES = 30
 
+# A paused attempt is still open - the examinee resumes it - so it counts as
+# active everywhere an in-progress one does (e.g. blocking a second exam).
 ACTIVE_STATUSES = (
     ExamSession.Status.SETUP,
     ExamSession.Status.IN_PROGRESS,
+    ExamSession.Status.PAUSED,
 )
 
 
@@ -172,10 +178,7 @@ def ensure_active_session(session: ExamSession, *, ip_address: str | None = None
     """Expire if timed out; return True if proctoring/exam is still active."""
     expire_setup_session_if_idle(session, ip_address=ip_address)
     expire_session_if_timed_out(session, ip_address=ip_address)
-    return session.status in (
-        ExamSession.Status.SETUP,
-        ExamSession.Status.IN_PROGRESS,
-    )
+    return session.status in ACTIVE_STATUSES
 
 
 def assert_no_other_active_exam(user, exam, *, ip_address: str | None = None) -> None:
@@ -189,11 +192,10 @@ def assert_no_other_active_exam(user, exam, *, ip_address: str | None = None) ->
     for other in others:
         if not ensure_active_session(other, ip_address=ip_address):
             continue
-        phase = (
-            "being set up"
-            if other.status == ExamSession.Status.SETUP
-            else "in progress"
-        )
+        phase = {
+            ExamSession.Status.SETUP: "being set up",
+            ExamSession.Status.PAUSED: "paused",
+        }.get(other.status, "in progress")
         raise ValidationError(
             {
                 "exam": (
@@ -297,6 +299,99 @@ def begin_exam_session(
             "shuffle_questions": session.exam.shuffle_questions,
         },
     )
+    return session
+
+
+def pause_session(
+    session: ExamSession,
+    *,
+    paused_by=None,
+    reason: str = "",
+    ip_address: str | None = None,
+) -> ExamSession:
+    """Stop an in-progress attempt's exam clock until a proctor resumes it.
+
+    The examinee cannot answer or submit while paused (those endpoints only
+    accept IN_PROGRESS), and the time spent paused is added back to their
+    deadline on resume.
+    """
+    # An attempt whose time already ran out must be closed out (auto-submitted
+    # or expired), not frozen with nothing left on the clock.
+    ensure_active_session(session, ip_address=ip_address)
+    session.refresh_from_db()
+    if session.status != ExamSession.Status.IN_PROGRESS:
+        raise ValidationError(
+            {"status": f"Cannot pause session with status: {session.get_status_display()}"}
+        )
+
+    reason = (reason or "").strip()
+    # Compare-and-set on the status so a pause that races a submit/terminate
+    # can never drag a finished session back to PAUSED.
+    updated = ExamSession.objects.filter(
+        pk=session.pk, status=ExamSession.Status.IN_PROGRESS
+    ).update(
+        status=ExamSession.Status.PAUSED,
+        paused_at=timezone.now(),
+        pause_reason=reason,
+    )
+    session.refresh_from_db()
+    if not updated:
+        raise ValidationError(
+            {"status": f"Cannot pause session with status: {session.get_status_display()}"}
+        )
+
+    SessionLog.objects.create(
+        session=session,
+        event_type=SessionLog.EventType.PAUSED,
+        ip_address=ip_address,
+        details={
+            "paused_by": getattr(paused_by, "username", None),
+            "reason": reason,
+            "time_remaining_seconds": session.time_remaining_seconds,
+        },
+    )
+    broadcast_session_state(session)
+    return session
+
+
+def resume_session(
+    session: ExamSession,
+    *,
+    resumed_by=None,
+    ip_address: str | None = None,
+) -> ExamSession:
+    """Restart a paused attempt, giving back the time it spent paused."""
+    with transaction.atomic():
+        locked = ExamSession.objects.select_for_update().get(pk=session.pk)
+        if locked.status != ExamSession.Status.PAUSED:
+            raise ValidationError(
+                {"status": f"Cannot resume session with status: {locked.get_status_display()}"}
+            )
+        paused_for = locked.fold_pause()
+        locked.status = ExamSession.Status.IN_PROGRESS
+        locked.deadline_at = compute_deadline(locked)
+        locked.save(
+            update_fields=[
+                "status",
+                "paused_at",
+                "paused_total_seconds",
+                "pause_reason",
+                "deadline_at",
+            ]
+        )
+
+    session.refresh_from_db()
+    SessionLog.objects.create(
+        session=session,
+        event_type=SessionLog.EventType.RESUMED,
+        ip_address=ip_address,
+        details={
+            "resumed_by": getattr(resumed_by, "username", None),
+            "paused_seconds": paused_for,
+            "time_remaining_seconds": session.time_remaining_seconds,
+        },
+    )
+    broadcast_session_state(session)
     return session
 
 
@@ -416,7 +511,7 @@ def get_or_create_setup_session(user, exam, *, ip_address: str | None, user_agen
     active = ExamSession.objects.filter(
         exam=exam,
         user=user,
-        status=ExamSession.Status.IN_PROGRESS,
+        status__in=(ExamSession.Status.IN_PROGRESS, ExamSession.Status.PAUSED),
     ).first()
     if active:
         raise ValidationError(
@@ -458,7 +553,7 @@ def _get_or_create_unmonitored_session(
     existing = ExamSession.objects.filter(
         exam=exam,
         user=user,
-        status=ExamSession.Status.IN_PROGRESS,
+        status__in=(ExamSession.Status.IN_PROGRESS, ExamSession.Status.PAUSED),
     ).first()
     if existing:
         return existing, False

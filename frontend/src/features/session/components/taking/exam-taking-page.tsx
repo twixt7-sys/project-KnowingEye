@@ -1,5 +1,6 @@
 import { AlertTriangle, Loader2 } from "@/shared/icons";
 
+import { ExamPausedOverlay } from "@/features/session/components/taking/exam-paused-overlay";
 import { FocusShell } from "@/features/session/components/taking/focus-shell";
 import { ProctoringDock } from "@/features/session/components/taking/proctoring-dock";
 import { QuestionNavigator } from "@/features/session/components/taking/question-navigator";
@@ -14,6 +15,8 @@ export function ExamTakingPage() {
     submitting,
     session,
     attempt,
+    paused,
+    pauseReason,
     questions,
     sections,
     activeQuestion,
@@ -74,6 +77,11 @@ export function ExamTakingPage() {
 
   const activeAnswer = attempt.answers[activeQuestion.id]?.answer_text ?? "";
 
+  // While a proctor has the exam paused the exam stays mounted (the camera feed
+  // lives in it) but is inert - not focusable or editable - behind the overlay.
+  // React 18 has no boolean `inert` prop, so it goes in as a plain attribute.
+  const inertProps = paused ? ({ inert: "" } as Record<string, string>) : {};
+
   return (
     <FocusShell
       monitoringEnabled={monitoringEnabled}
@@ -82,10 +90,15 @@ export function ExamTakingPage() {
       behaviorAlerts={behaviorAlerts}
       tabSwitchWarning={tabSwitchWarning}
       timeRemaining={attempt.timeRemaining}
+      paused={paused}
       submitting={submitting}
       onSubmitClick={() => setShowSubmitModal(true)}
     >
-      <div className="container mx-auto px-4 py-8">
+      {paused && (
+        <ExamPausedOverlay reason={pauseReason} secondsRemaining={attempt.timeRemaining} />
+      )}
+
+      <div className="container mx-auto px-4 py-8" aria-hidden={paused || undefined} {...inertProps}>
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3">
             <QuestionPanel
@@ -155,7 +168,7 @@ export function ExamTakingPage() {
         />
       )}
 
-      {showSubmitModal && (
+      {showSubmitModal && !paused && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
           onClick={() => setShowSubmitModal(false)}

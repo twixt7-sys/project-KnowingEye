@@ -20,6 +20,10 @@ export type MonitoringDockPosition =
 
 export const DOCK_STORAGE_KEY = "knowing-eye-monitoring-dock-position";
 
+/** A session the examinee can still be in: running, or paused by a proctor. */
+const isLiveStatus = (status: ExamSession["status"] | undefined) =>
+  status === "in_progress" || status === "paused";
+
 export function useExamTaking() {
   const { examId } = useParams();
   const navigate = useNavigate();
@@ -56,6 +60,9 @@ export function useExamTaking() {
   const monitoring = useMonitoring({
     sessionId: session?.id,
     intervalMs: 200,
+    // A proctor paused/resumed the exam: re-read the server's state right away
+    // instead of waiting for the next timer sync.
+    onSessionState: () => void attempt.syncNow(),
   });
 
   const monitoringEnabled = session?.exam?.monitoring_enabled !== false;
@@ -99,17 +106,20 @@ export function useExamTaking() {
         setLoading(true);
         const fromState = (location.state as { session?: ExamSession } | null)?.session;
         let examSession = fromState;
-        if (!examSession || examSession.status !== "in_progress") {
-          const sessions = await apiClient.listSessions({
-            exam: eid,
-            status: "in_progress",
-          });
+        if (!examSession || !isLiveStatus(examSession.status)) {
+          // A reload while a proctor has the exam paused must land back on
+          // the paused screen, not bounce to setup.
+          const [running, paused] = await Promise.all([
+            apiClient.listSessions({ exam: eid, status: "in_progress" }),
+            apiClient.listSessions({ exam: eid, status: "paused" }),
+          ]);
+          const found = running[0] ?? paused[0];
           // listSessions returns lightweight summaries without a nested
           // exam.questions - fetch the full session so the fields below
           // (and everything downstream) have real data to work with.
-          examSession = sessions[0] ? await apiClient.getSession(sessions[0].id) : undefined;
+          examSession = found ? await apiClient.getSession(found.id) : undefined;
         }
-        if (!examSession || examSession.status !== "in_progress") {
+        if (!examSession || !isLiveStatus(examSession.status)) {
           navigate(`/examinee/exam/${eid}/setup`, { replace: true });
           return;
         }
@@ -141,8 +151,14 @@ export function useExamTaking() {
   const maxTabSwitches = session?.exam?.max_tab_switches ?? null;
   const [tabSwitchWarning, setTabSwitchWarning] = useState<string | null>(null);
 
+  // An open submit confirmation must not outlive the pause and reappear on resume.
   useEffect(() => {
-    if (!sessionId) return;
+    if (attempt.paused) setShowSubmitModal(false);
+  }, [attempt.paused]);
+
+  useEffect(() => {
+    // Leaving the tab during a proctor pause isn't leaving the exam.
+    if (!sessionId || attempt.paused) return;
     const onVisibility = () => {
       const hidden = document.hidden;
       const event = hidden ? "tab_hidden" : "tab_visible";
@@ -161,9 +177,10 @@ export function useExamTaking() {
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [sessionId, maxTabSwitches]);
+  }, [sessionId, maxTabSwitches, attempt.paused]);
 
   useEffect(() => {
+    if (attempt.paused) return;
     const questionTimer = setInterval(() => {
       setTimeSpent((prev) => ({
         ...prev,
@@ -171,7 +188,7 @@ export function useExamTaking() {
       }));
     }, 1000);
     return () => clearInterval(questionTimer);
-  }, [currentQuestion]);
+  }, [currentQuestion, attempt.paused]);
 
   useEffect(() => {
     if (!session?.id || !monitoringEnabled) return;
@@ -249,6 +266,8 @@ export function useExamTaking() {
     submitting,
     session,
     attempt,
+    paused: attempt.paused,
+    pauseReason: attempt.pauseReason,
     questions,
     sections,
     activeQuestion,

@@ -83,6 +83,7 @@ def receive_frame(request):
     if session.status not in (
         ExamSession.Status.SETUP,
         ExamSession.Status.IN_PROGRESS,
+        ExamSession.Status.PAUSED,
     ):
         return Response(
             {"error": "Session is not active"}, status=status.HTTP_400_BAD_REQUEST
@@ -96,6 +97,11 @@ def receive_frame(request):
             {"error": "Frame analysis failed", "detail": str(exc)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+    if session.status == ExamSession.Status.PAUSED:
+        # Keep the live picture flowing to the proctor, but raise no alerts
+        # while the exam is paused (persist_analysis also records nothing).
+        analysis = {**analysis, "alerts": []}
 
     persisted = persist_analysis(session, analysis)
     broadcast_frame_result(session, request.user, frame, analysis)

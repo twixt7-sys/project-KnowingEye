@@ -22,6 +22,7 @@ from .serializers import (
     ResponseUpsertSerializer,
     ResponseGradeSerializer,
     SessionLogSerializer,
+    SessionPauseSerializer,
 )
 from .submission import submit_session_with_responses, upsert_response
 from .services import (
@@ -29,6 +30,8 @@ from .services import (
     ensure_active_session,
     finalize_grading_if_complete,
     get_or_create_setup_session,
+    pause_session,
+    resume_session,
 )
 
 
@@ -40,6 +43,8 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
     Start session: POST /api/sessions/start/
     Get session: GET /api/sessions/{id}/
     Submit session: POST /api/sessions/{id}/submit/
+    Pause session: POST /api/sessions/{id}/pause/
+    Resume session: POST /api/sessions/{id}/resume/
     """
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
@@ -183,6 +188,11 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
         # Check if session can be submitted
         if not session.can_submit():
+            if session.status == ExamSession.Status.PAUSED:
+                return APIResponse(
+                    {'error': 'This exam is paused. Wait for your proctor to resume it before submitting.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             if session.status in (
                 ExamSession.Status.EXPIRED,
                 ExamSession.Status.COMPLETED,
@@ -237,6 +247,11 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
         ensure_active_session(session, ip_address=self._get_client_ip(request))
         session.refresh_from_db()
+        if session.status == ExamSession.Status.PAUSED:
+            return APIResponse(
+                {'error': 'This exam is paused. Wait for your proctor to resume it.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if session.status != ExamSession.Status.IN_PROGRESS:
             return APIResponse(
                 {'error': 'Session is not in progress.'},
@@ -280,14 +295,19 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         ensure_active_session(session, ip_address=self._get_client_ip(request))
         session.refresh_from_db()
 
+        paused = session.status == ExamSession.Status.PAUSED
         return APIResponse(
             {
                 'server_now': timezone.now().isoformat(),
+                # No running deadline while the clock is stopped.
                 'deadline_at': (
-                    session.timed_end_at.isoformat() if session.timed_end_at else None
+                    session.timed_end_at.isoformat()
+                    if session.timed_end_at and not paused
+                    else None
                 ),
                 'time_remaining_seconds': session.time_remaining_seconds,
                 'status': session.status,
+                'pause_reason': session.pause_reason if paused else '',
             },
             status=status.HTTP_200_OK,
         )
@@ -369,6 +389,68 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         return APIResponse(serializer.data)
 
     @action(detail=True, methods=['post'])
+    def pause(self, request, pk=None):
+        """
+        Pause an in-progress session without ending it.
+        POST /api/sessions/{id}/pause/
+        Body: { "reason": "optional note shown to the examinee" }
+
+        The exam clock stops, the examinee can't answer or submit, and the
+        time spent paused is added back to their deadline on resume.
+        """
+        if not security.can(request.user, "sessions.pause"):
+            return APIResponse(
+                {'error': 'You do not have permission to pause sessions.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        session = self.get_object()
+        serializer = SessionPauseSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        pause_session(
+            session,
+            paused_by=request.user,
+            reason=serializer.validated_data.get('reason', ''),
+            ip_address=self._get_client_ip(request),
+        )
+        return APIResponse(
+            {
+                'message': 'Session paused.',
+                'status': session.status,
+                'time_remaining_seconds': session.time_remaining_seconds,
+            },
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=['post'])
+    def resume(self, request, pk=None):
+        """
+        Resume a paused session.
+        POST /api/sessions/{id}/resume/
+        """
+        if not security.can(request.user, "sessions.pause"):
+            return APIResponse(
+                {'error': 'You do not have permission to resume sessions.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        session = self.get_object()
+        resume_session(
+            session,
+            resumed_by=request.user,
+            ip_address=self._get_client_ip(request),
+        )
+        return APIResponse(
+            {
+                'message': 'Session resumed.',
+                'status': session.status,
+                'time_remaining_seconds': session.time_remaining_seconds,
+            },
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=['post'])
     def terminate(self, request, pk=None):
         """
         Terminate an active session.
@@ -385,14 +467,18 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         if session.status not in (
             ExamSession.Status.IN_PROGRESS,
             ExamSession.Status.SETUP,
+            ExamSession.Status.PAUSED,
         ):
             return APIResponse(
                 {'error': f'Cannot terminate session with status: {session.get_status_display()}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        now = timezone.now()
+        # A pause still running when the attempt is terminated ends with it.
+        session.fold_pause(now)
         session.status = ExamSession.Status.TERMINATED
-        session.submitted_at = timezone.now()
+        session.submitted_at = now
         session.save()
 
         # Log termination
