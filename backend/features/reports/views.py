@@ -18,6 +18,7 @@ from core.utils.constants import MAX_REPORT_EXPORT_ROWS
 from core.pagination import StandardResultsPagination
 from features.behavior.models import Alert, BehaviorLog
 from features.exams.models import ExamAssignment
+from features.reports.negotiation import IgnoreClientContentNegotiation
 from features.session.models import ExamSession
 from features.session.serializers import (
     ExamSessionDetailSerializer,
@@ -644,3 +645,8 @@ def analytics_timeseries(request):
             "behaviors": list(behaviors_per_day),
         }
     )
+
+
+# Download endpoints return raw HttpResponses; see IgnoreClientContentNegotiation.
+for _download_view in (export_sessions_csv, export_sessions_pdf, session_report_pdf):
+    _download_view.cls.content_negotiation_class = IgnoreClientContentNegotiation
