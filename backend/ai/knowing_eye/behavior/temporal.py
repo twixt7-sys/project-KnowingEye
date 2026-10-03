@@ -30,6 +30,7 @@ class BehaviorTemporalTracker:
 
     * **no_face** - only after face missing for ``no_face_grace_seconds``
     * **leaving_seat** - face visible but upper-body keypoints missing for grace period
+      (not raised while the face is that of the recognised examinee)
     * **suspicious_pattern** - repeated flags within a sliding time window
     """
 
@@ -80,7 +81,11 @@ class BehaviorTemporalTracker:
             no_face_elapsed = 0.0
 
         # --- leaving seat: face present but upper body not detected ---
-        leaving_active = face_present and not pose_detected
+        # Not while the recognised examinee's face box is in view: they are
+        # evidently still seated and close framing just hides the shoulders
+        # (the same rule keeps Up within 50-100%, see upper_body_presence_pct).
+        verified_in_seat = identity_detected and face_count > 0
+        leaving_active = face_present and not pose_detected and not verified_in_seat
         if leaving_active:
             if state.leaving_seat_since is None:
                 state.leaving_seat_since = now

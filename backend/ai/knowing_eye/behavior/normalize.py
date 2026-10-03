@@ -53,6 +53,10 @@ def classify_ebi_band(
 _POSTURE_DEADBAND_RATIO = 0.5
 _POSTURE_ZERO_RATIO = 2.0
 
+# Lowest Upper-Body Presence while the examinee is verified in front of the
+# camera (identity detected + face box present) - see upper_body_presence_pct.
+_UPPER_BODY_VERIFIED_MIN_PCT = 50.0
+
 
 def clamp_pct(value: float) -> float:
     return round(max(0.0, min(100.0, value)), 1)
@@ -103,14 +107,34 @@ def threshold_compliance_pct(
     return clamp_pct(knee_pct * (2.0 - ratio))
 
 
-def upper_body_presence_pct(detected: bool, visibility: float | None = None) -> float:
+def upper_body_presence_pct(
+    detected: bool,
+    visibility: float | None = None,
+    *,
+    identity_detected: bool = False,
+    face_box_present: bool = False,
+) -> float:
     """Upper-Body Presence (``Up``): is the examinee's upper body in view?
 
     Like face presence, "not seen" scores 0 - it used to return a "neutral"
     50%, which pinned the indicator at 50% whenever the pose model missed.
     ``visibility`` is the pose model's shoulder visibility (0-1); ``None``
     means the backend gives no confidence, so a detection counts fully.
+
+    While the examinee's identity is detected *and* their face bounding box is
+    present, they are evidently seated in front of the camera - a close webcam
+    framing that shows only the head and upper torso cuts the shoulders off at
+    the frame edge, which the pose model reports as "not detected". ``Up`` then
+    stays within 50-100%: the shoulder visibility is rescaled onto that band
+    (50% = no shoulder evidence, 100% = shoulders fully visible), which is
+    never lower than the plain score.
     """
+    if identity_detected and face_box_present:
+        if visibility is None:
+            visibility = 1.0 if detected else 0.0
+        vis = max(0.0, min(1.0, visibility))
+        floor = _UPPER_BODY_VERIFIED_MIN_PCT
+        return clamp_pct(floor + (100.0 - floor) * vis)
     if not detected:
         return 0.0
     if visibility is None:
