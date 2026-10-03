@@ -24,6 +24,15 @@ import { brand } from "@/core/config/brand";
 import { useAuth } from "@/core/providers/auth-provider";
 import { dashboardQueries } from "@/features/dashboard/queries/queries";
 import { archiveExam, createExam, deleteExam, publishExam } from "@/features/exams/api/exam-api";
+import {
+  CheckboxSetting,
+  DepartmentChecklist,
+} from "@/features/exams/components/builder/builder-primitives";
+import {
+  type ExamForm,
+  toDatetimeLocal,
+  toIsoOrNull,
+} from "@/features/exams/schemas/builder-schemas";
 import { useConfirm } from "@/shared/components/common/confirm-dialog";
 import { IconAction } from "@/shared/components/common/icon-action";
 import { PageShell } from "@/shared/components/layout/page-shell";
@@ -33,20 +42,32 @@ import { EmptyState } from "@/shared/components/patterns/empty-state";
 import { FilterBar } from "@/shared/components/patterns/filter-bar";
 import { IrisGauge } from "@/shared/components/patterns/iris-gauge";
 import { Button } from "@/shared/components/ui/button";
-import { Checkbox } from "@/shared/components/ui/checkbox";
 import { useDebounce } from "@/shared/hooks/use-debounce";
 
-interface CreateExamForm {
-  title: string;
-  description: string;
-  duration_minutes: number;
-  passing_score: number;
-  instructions?: string;
+/** Same settings as the exam builder's "Exam settings" tab, plus the locked-in home department. */
+interface CreateExamForm
+  extends Pick<
+    ExamForm,
+    | "title"
+    | "description"
+    | "instructions"
+    | "duration_minutes"
+    | "passing_score"
+    | "max_attempts"
+    | "monitoring_enabled"
+    | "shuffle_questions"
+    | "shuffle_options"
+    | "disable_copy_paste"
+    | "requires_assignment"
+    | "is_practice"
+    | "presentation_mode"
+    | "available_from"
+    | "available_until"
+    | "results_release_at"
+    | "department_ids"
+  > {
   department_id: number | "";
   category_id: number | "";
-  max_attempts: number;
-  monitoring_enabled: boolean;
-  shuffle_questions: boolean;
 }
 
 const EMPTY_FORM: CreateExamForm = {
@@ -56,10 +77,19 @@ const EMPTY_FORM: CreateExamForm = {
   passing_score: 50,
   instructions: "",
   department_id: "",
+  department_ids: [],
   category_id: "",
   max_attempts: 1,
   monitoring_enabled: true,
   shuffle_questions: false,
+  shuffle_options: false,
+  disable_copy_paste: false,
+  requires_assignment: false,
+  is_practice: false,
+  presentation_mode: "one_per_page",
+  available_from: "",
+  available_until: "",
+  results_release_at: "",
 };
 
 const SORT_OPTIONS = [
@@ -161,6 +191,18 @@ export function ExaminerDashboardPage() {
       setCreateError("Select a department.");
       return;
     }
+    if (form.available_from && new Date(form.available_from) < new Date()) {
+      setCreateError("The opening date can't be in the past.");
+      return;
+    }
+    if (
+      form.available_from &&
+      form.available_until &&
+      new Date(form.available_until) <= new Date(form.available_from)
+    ) {
+      setCreateError("The closing date must be after the opening date.");
+      return;
+    }
     setCreateError(null);
     setCreateBusy(true);
     try {
@@ -169,12 +211,22 @@ export function ExaminerDashboardPage() {
         description: form.description,
         instructions: form.instructions,
         department_id: form.department_id,
+        // The home department is always part of the visible-to set.
+        department_ids: Array.from(new Set([form.department_id, ...form.department_ids])),
         category_id: form.category_id || null,
         duration_minutes: form.duration_minutes,
         passing_score: form.passing_score,
         max_attempts: form.max_attempts,
         monitoring_enabled: form.monitoring_enabled,
         shuffle_questions: form.shuffle_questions,
+        shuffle_options: form.shuffle_options,
+        disable_copy_paste: form.disable_copy_paste,
+        requires_assignment: form.requires_assignment,
+        is_practice: form.is_practice,
+        presentation_mode: form.presentation_mode,
+        available_from: toIsoOrNull(form.available_from),
+        available_until: toIsoOrNull(form.available_until),
+        results_release_at: toIsoOrNull(form.results_release_at),
       });
       setForm(EMPTY_FORM);
       setShowCreate(false);
@@ -610,6 +662,22 @@ export function ExaminerDashboardPage() {
               </div>
 
               <div>
+                <span className="mb-1 block text-sm">
+                  Also visible to (shared/general-ed departments)
+                </span>
+                <DepartmentChecklist
+                  departments={departments}
+                  value={form.department_ids}
+                  onChange={(department_ids) => setForm({ ...form, department_ids })}
+                  lockedId={form.department_id || null}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  The home department above is always included. Add more for shared or
+                  general-education exams discoverable from other departments too.
+                </p>
+              </div>
+
+              <div>
                 <label className="mb-1 block text-sm">Description</label>
                 <textarea
                   rows={3}
@@ -666,38 +734,98 @@ export function ExaminerDashboardPage() {
                 />
               </div>
 
-              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 bg-muted/20 p-4">
-                <Checkbox
-                  checked={form.monitoring_enabled}
-                  onCheckedChange={(checked) =>
-                    setForm({ ...form, monitoring_enabled: checked === true })
-                  }
-                  className="mt-0.5"
-                />
-                <span>
-                  <span className="block text-sm font-medium">Camera monitoring</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    Require webcam proctoring during the exam. Turn off for unmonitored practice or
-                    low-stakes assessments.
-                  </span>
-                </span>
-              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1 block text-sm">Opens at (optional)</label>
+                  <input
+                    type="datetime-local"
+                    value={form.available_from}
+                    onChange={(e) => setForm({ ...form, available_from: e.target.value })}
+                    min={toDatetimeLocal(new Date().toISOString())}
+                    className="form-field"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm">Closes at (optional)</label>
+                  <input
+                    type="datetime-local"
+                    value={form.available_until}
+                    onChange={(e) => setForm({ ...form, available_until: e.target.value })}
+                    min={form.available_from || undefined}
+                    className="form-field"
+                  />
+                </div>
+              </div>
 
-              <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 bg-muted/20 p-4">
-                <Checkbox
-                  checked={form.shuffle_questions}
-                  onCheckedChange={(checked) =>
-                    setForm({ ...form, shuffle_questions: checked === true })
-                  }
-                  className="mt-0.5"
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1 block text-sm">Presentation mode</label>
+                  <select
+                    value={form.presentation_mode}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        presentation_mode: e.target.value as CreateExamForm["presentation_mode"],
+                      })
+                    }
+                    className="form-field"
+                  >
+                    <option value="one_per_page">One question per page</option>
+                    <option value="section_per_page">One section per page</option>
+                    <option value="scroll_all">All questions (scroll)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm">Results release at (optional)</label>
+                  <input
+                    type="datetime-local"
+                    value={form.results_release_at}
+                    onChange={(e) => setForm({ ...form, results_release_at: e.target.value })}
+                    className="form-field"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <CheckboxSetting
+                  checked={form.monitoring_enabled}
+                  onCheckedChange={(monitoring_enabled) => setForm({ ...form, monitoring_enabled })}
+                  title="Camera monitoring"
+                  description="When enabled, examinees complete proctoring setup and their webcam stays active during the exam. Disable for practice quizzes or environments where monitoring is not required."
                 />
-                <span>
-                  <span className="block text-sm font-medium">Shuffle questions</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    Randomize question order for each examinee to reduce answer sharing.
-                  </span>
-                </span>
-              </label>
+                <CheckboxSetting
+                  checked={form.shuffle_questions}
+                  onCheckedChange={(shuffle_questions) => setForm({ ...form, shuffle_questions })}
+                  title="Shuffle questions"
+                  description="Present questions in a random order for each examinee. The order stays fixed for the duration of their attempt."
+                />
+                <CheckboxSetting
+                  checked={form.shuffle_options}
+                  onCheckedChange={(shuffle_options) => setForm({ ...form, shuffle_options })}
+                  title="Shuffle answer options"
+                  description="Randomize multiple-choice option order per attempt."
+                />
+                <CheckboxSetting
+                  checked={form.disable_copy_paste}
+                  onCheckedChange={(disable_copy_paste) => setForm({ ...form, disable_copy_paste })}
+                  title="Disable copy and paste"
+                  description="Block copy, cut, and paste while examinees take the exam, including inside answer fields, so answers must be typed."
+                />
+                <CheckboxSetting
+                  checked={form.requires_assignment}
+                  onCheckedChange={(requires_assignment) =>
+                    setForm({ ...form, requires_assignment })
+                  }
+                  title="Assigned candidates only"
+                  description="Only rostered examinees can see and start this exam."
+                />
+                <CheckboxSetting
+                  checked={form.is_practice}
+                  onCheckedChange={(is_practice) => setForm({ ...form, is_practice })}
+                  title="Practice exam"
+                  description="Unlimited attempts; use for dry runs before the real admission exam."
+                />
+              </div>
 
               {createError && <p className="text-sm text-destructive">{createError}</p>}
 
