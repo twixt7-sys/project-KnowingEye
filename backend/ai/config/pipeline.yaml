@@ -42,9 +42,10 @@ detection:
   pose_min_visibility: 0.5          # Both shoulders must be at least this visible for the upper body to
                                      # count as present - MediaPipe always emits all 33 points, including
                                      # extrapolated off-frame ones. Exception: while the examinee's identity
-                                     # is detected and their face box is in view, Up stays within 50-100%
+                                     # is detected and their face box is in view, Up is 100%; with any other
+                                     # signal detected (face box, identity or pose) it stays within 50-100%
                                      # by shoulder visibility (normalize.upper_body_presence_pct), so close
-                                     # framing that cuts the shoulders off no longer reads as 0%.
+                                     # framing that cuts the shoulders off never reads as 0%.
 
 recognition:
   embedding_backend: arcface

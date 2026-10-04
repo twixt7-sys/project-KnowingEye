@@ -282,7 +282,11 @@ class _StubPipeline:
 
         face_presence = face_presence_pct(face_count, identity_detected=identity_detected)
         gaze = gaze_focus_pct(0.0 if face_count else None, 0.0 if face_count else None, 40, 35)
-        posture = upper_body_presence_pct(face_count > 0)
+        posture = upper_body_presence_pct(
+            face_count > 0,
+            identity_detected=identity_detected,
+            face_box_present=face_count > 0,
+        )
 
         overall, ebi_count = exam_behavior_index_pct(face_presence, gaze, posture, identity_pct)
 

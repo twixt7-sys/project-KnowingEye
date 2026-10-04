@@ -83,7 +83,7 @@ class BehaviorTemporalTracker:
         # --- leaving seat: face present but upper body not detected ---
         # Not while the recognised examinee's face box is in view: they are
         # evidently still seated and close framing just hides the shoulders
-        # (the same rule keeps Up within 50-100%, see upper_body_presence_pct).
+        # (the same rule keeps Up at 100%, see upper_body_presence_pct).
         verified_in_seat = identity_detected and face_count > 0
         leaving_active = face_present and not pose_detected and not verified_in_seat
         if leaving_active:

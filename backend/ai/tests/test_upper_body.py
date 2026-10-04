@@ -8,7 +8,11 @@ below it) no matter how the examinee was seated.
 Regression: a close webcam framing that shows only the head and upper torso
 puts the shoulders below the frame edge, so the pose model reported "not
 detected" and ``Up`` read 0% for an examinee sitting right there. With the
-identity detected and the face box present, ``Up`` now stays within 50-100%.
+identity detected and the face box present, ``Up`` is now 100%.
+
+Regression: ``Up`` still dropped to 0% whenever identity read 0% (mismatch or
+not yet recognised) even with the face box in view. ``Up`` is now only 0% when
+nothing at all is detected; any other signal keeps it within 50-100%.
 """
 
 from __future__ import annotations
@@ -35,13 +39,14 @@ _CONFIG = {
 }
 
 
-def test_presence_is_zero_when_not_detected():
+def test_presence_is_zero_only_when_nothing_is_detected():
     assert upper_body_presence_pct(False) == 0.0
     assert upper_body_presence_pct(False, 0.9) == 0.0
 
 
 def test_presence_follows_shoulder_visibility():
-    assert upper_body_presence_pct(True, 0.99) == pytest.approx(99.0)
+    assert upper_body_presence_pct(True, 0.6) == pytest.approx(80.0)
+    assert upper_body_presence_pct(True, 0.99) == pytest.approx(99.5)
     assert upper_body_presence_pct(True, None) == 100.0
 
 
@@ -70,43 +75,46 @@ def test_offscreen_landmark_is_not_in_frame():
 # --- identity detected + face box present -------------------------------------
 
 
+@pytest.mark.parametrize("detected", [False, True])
+@pytest.mark.parametrize("visibility", [None, 0.0, 0.3, 0.6, 0.99])
+def test_verified_examinee_is_always_100(detected, visibility):
+    pct = upper_body_presence_pct(
+        detected, visibility, identity_detected=True, face_box_present=True
+    )
+    assert pct == 100.0
+
+
+# --- any other signal detected ----------------------------------------------
+
+
 @pytest.mark.parametrize(
-    "detected,visibility,expected",
+    "detected,identity_detected,face_box_present",
     [
-        (False, 0.0, 50.0),  # pose model found no shoulders at all
-        (False, 0.3, 65.0),  # shoulders cut off at the bottom of the frame
-        (False, None, 50.0),
-        (True, 0.6, 80.0),
-        (True, 0.99, 99.5),
-        (True, None, 100.0),
+        (False, False, True),  # face in view, identity 0 (mismatch / unrecognised)
+        (False, True, False),  # identity recognised, face detector missed this frame
+        (True, False, False),  # pose only
+        (True, False, True),
     ],
 )
-def test_verified_examinee_scores_within_50_to_100(detected, visibility, expected):
+@pytest.mark.parametrize("visibility", [None, 0.0, 0.3, 1.0])
+def test_other_signals_keep_presence_within_50_to_100(
+    detected, identity_detected, face_box_present, visibility
+):
     pct = upper_body_presence_pct(
-        detected, visibility, identity_detected=True, face_box_present=True
+        detected,
+        visibility,
+        identity_detected=identity_detected,
+        face_box_present=face_box_present,
     )
-    assert pct == pytest.approx(expected)
-
-
-@pytest.mark.parametrize("detected", [False, True])
-@pytest.mark.parametrize("visibility", [None, 0.0, 0.2, 0.5, 0.8, 1.0])
-def test_verification_never_lowers_presence(detected, visibility):
-    plain = upper_body_presence_pct(detected, visibility)
-    verified = upper_body_presence_pct(
-        detected, visibility, identity_detected=True, face_box_present=True
-    )
-    assert 50.0 <= verified <= 100.0
-    assert verified >= plain
+    assert 50.0 <= pct <= 100.0
 
 
 @pytest.mark.parametrize(
-    "identity_detected,face_box_present", [(True, False), (False, True), (False, False)]
+    "visibility,expected", [(None, 50.0), (0.0, 50.0), (0.3, 65.0), (1.0, 100.0)]
 )
-def test_needs_both_identity_and_face_box(identity_detected, face_box_present):
-    pct = upper_body_presence_pct(
-        False, 0.3, identity_detected=identity_detected, face_box_present=face_box_present
-    )
-    assert pct == 0.0
+def test_face_box_without_identity_rescales_visibility(visibility, expected):
+    pct = upper_body_presence_pct(False, visibility, face_box_present=True)
+    assert pct == pytest.approx(expected)
 
 
 def _torso_only_frame(identity_match: bool | None, distance: float | None) -> FrameAnalysisResult:
@@ -131,13 +139,15 @@ def _torso_only_frame(identity_match: bool | None, distance: float | None) -> Fr
 _UNVERIFIED = [(None, None), (False, 0.90)]  # not evaluated yet / different person
 
 
-def test_scorer_keeps_verified_torso_only_examinee_above_zero():
-    assert _torso_only_frame(True, 0.20).metrics.posture_compliance_pct == pytest.approx(65.0)
+def test_scorer_verified_torso_only_examinee_is_100():
+    assert _torso_only_frame(True, 0.20).metrics.posture_compliance_pct == 100.0
 
 
 @pytest.mark.parametrize("identity_match,distance", _UNVERIFIED)
-def test_scorer_unverified_torso_only_examinee_is_zero(identity_match, distance):
-    assert _torso_only_frame(identity_match, distance).metrics.posture_compliance_pct == 0.0
+def test_scorer_unverified_torso_only_examinee_is_not_zero(identity_match, distance):
+    # The face box is in view, so Up never drops to 0% even when identity does.
+    result = _torso_only_frame(identity_match, distance)
+    assert result.metrics.posture_compliance_pct == pytest.approx(65.0)
 
 
 @pytest.fixture
@@ -162,7 +172,7 @@ def _hold_torso_only(clock, identity_match, distance, seconds=5.0, fps=5):
 def test_verified_examinee_is_not_flagged_as_leaving_seat(clock):
     out, seen = _hold_torso_only(clock, True, 0.20)
     assert BehaviorEventType.LEAVING_SEAT not in seen
-    assert out.metrics.posture_compliance_pct == pytest.approx(65.0)
+    assert out.metrics.posture_compliance_pct == 100.0
 
 
 @pytest.mark.parametrize("identity_match,distance", _UNVERIFIED)

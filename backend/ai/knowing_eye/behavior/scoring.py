@@ -94,8 +94,8 @@ class BehaviorScorer:
             pitch = pitch if pitch is not None else 0.0
         gp = gaze_focus_pct(yaw, pitch, self._gaze_yaw, self._gaze_pitch)
         # A recognised examinee whose face box is in view is seated in front of
-        # the camera even when close framing hides the shoulders, so Up stays
-        # within 50-100% instead of dropping to 0%.
+        # the camera even when close framing hides the shoulders, so Up is 100%;
+        # with any other signal detected it stays within 50-100%, never 0%.
         pp = upper_body_presence_pct(
             pose_detected,
             posture.upper_body_visibility,
