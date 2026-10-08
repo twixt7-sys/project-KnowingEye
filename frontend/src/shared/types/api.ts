@@ -117,6 +117,8 @@ export interface Exam {
   questions?: Question[];
   sections?: ExamSection[];
   publish_readiness?: PublishReadiness;
+  /** Questions can still change: a draft, or published but not yet attempted. */
+  questions_editable?: boolean;
 }
 
 /** An in-exam question grouping - separate from the exam-level ExamCategory. */

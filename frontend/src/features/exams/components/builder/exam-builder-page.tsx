@@ -117,7 +117,8 @@ export function ExamBuilderPage() {
           examId={builder.exam.id}
           questions={builder.questions}
           sections={builder.sections}
-          isDraft={builder.isDraft}
+          status={builder.exam.status}
+          editable={builder.questionsEditable}
           saving={builder.saving}
           showQuestionForm={builder.showQuestionForm}
           editingQuestion={builder.editingQuestion}

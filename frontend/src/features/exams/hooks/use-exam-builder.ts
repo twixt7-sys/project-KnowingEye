@@ -138,6 +138,8 @@ export function useExamBuilder(examId: number) {
   }, [examId, queryClient]);
 
   const isDraft = exam?.status === "draft";
+  // Wider than isDraft: a published exam's questions stay editable until its first attempt.
+  const questionsEditable = exam?.questions_editable ?? isDraft;
   const totalPoints = useMemo(
     () => questions.reduce((sum, q) => sum + (q.points || 0), 0),
     [questions]
@@ -677,6 +679,7 @@ export function useExamBuilder(examId: number) {
     message,
     setMessage,
     isDraft,
+    questionsEditable,
     totalPoints,
     saving,
     saveSettings,

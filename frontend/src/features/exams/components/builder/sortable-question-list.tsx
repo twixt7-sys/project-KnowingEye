@@ -24,7 +24,7 @@ import { BuilderIconBtn } from "@/features/exams/components/builder/builder-prim
 interface SortableQuestionRowProps {
   question: Question;
   sectionTitleById: Map<number, string>;
-  isDraft: boolean;
+  editable: boolean;
   onEdit: (q: Question) => void;
   onDelete: (q: Question) => void;
 }
@@ -32,13 +32,13 @@ interface SortableQuestionRowProps {
 const SortableQuestionRow = memo(function SortableQuestionRow({
   question,
   sectionTitleById,
-  isDraft,
+  editable,
   onEdit,
   onDelete,
 }: SortableQuestionRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: question.id,
-    disabled: !isDraft,
+    disabled: !editable,
   });
 
   const style = {
@@ -49,7 +49,7 @@ const SortableQuestionRow = memo(function SortableQuestionRow({
 
   return (
     <div ref={setNodeRef} style={style} className="p-4 flex gap-4 items-start">
-      {isDraft && (
+      {editable && (
         <button
           type="button"
           className="mt-0.5 cursor-grab touch-none text-muted-foreground hover:text-foreground"
@@ -74,7 +74,7 @@ const SortableQuestionRow = memo(function SortableQuestionRow({
             : ""}
         </p>
       </div>
-      {isDraft && (
+      {editable && (
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -95,7 +95,7 @@ const SortableQuestionRow = memo(function SortableQuestionRow({
 interface SortableQuestionListProps {
   questions: Question[];
   sectionTitleById: Map<number, string>;
-  isDraft: boolean;
+  editable: boolean;
   onEdit: (q: Question) => void;
   onDelete: (q: Question) => void;
   onReorder: (questionIds: number[]) => void;
@@ -104,7 +104,7 @@ interface SortableQuestionListProps {
 export const SortableQuestionList = memo(function SortableQuestionList({
   questions,
   sectionTitleById,
-  isDraft,
+  editable,
   onEdit,
   onDelete,
   onReorder,
@@ -134,7 +134,7 @@ export const SortableQuestionList = memo(function SortableQuestionList({
     );
   }
 
-  if (!isDraft) {
+  if (!editable) {
     return (
       <div className="bg-card border border-border rounded-xl divide-y divide-border">
         {questions.map((q) => (
@@ -142,7 +142,7 @@ export const SortableQuestionList = memo(function SortableQuestionList({
             key={q.id}
             question={q}
             sectionTitleById={sectionTitleById}
-            isDraft={false}
+            editable={false}
             onEdit={onEdit}
             onDelete={onDelete}
           />
@@ -160,7 +160,7 @@ export const SortableQuestionList = memo(function SortableQuestionList({
               key={q.id}
               question={q}
               sectionTitleById={sectionTitleById}
-              isDraft={isDraft}
+              editable={editable}
               onEdit={onEdit}
               onDelete={onDelete}
             />

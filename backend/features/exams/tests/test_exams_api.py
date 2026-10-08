@@ -10,6 +10,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from features.exams.models import Department, Exam, Question, QuestionAttachment
+from features.session.models import ExamSession
 
 User = get_user_model()
 
@@ -379,9 +380,16 @@ class ExamsAPITests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_cannot_add_question_to_active_exam(self):
+    def test_cannot_add_question_to_attempted_active_exam(self):
         self.exam.status = Exam.Status.ACTIVE
         self.exam.save(update_fields=["status"])
+        student = User.objects.create_user(
+            username="attempted", email="attempted@test.local", password="TestPass123!",
+            role=User.Role.STUDENT,
+        )
+        ExamSession.objects.create(
+            exam=self.exam, user=student, status=ExamSession.Status.COMPLETED,
+        )
         response = self.client.post(
             f"/api/exams/{self.exam.id}/questions/",
             {
