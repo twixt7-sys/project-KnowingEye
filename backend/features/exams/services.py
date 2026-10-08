@@ -132,6 +132,40 @@ def assert_exam_editable(exam: Exam) -> None:
         )
 
 
+def assert_questions_editable(exam: Exam) -> None:
+    """Ensure question content (questions, sections, pools, attachments) can be edited.
+
+    Drafts follow :func:`assert_exam_editable`. A published exam stays open
+    for question fixes until the first examinee starts it: from then on
+    responses (and their scores) point at those questions, so they're frozen.
+
+    Raises:
+        ValidationError: If the exam is archived, a draft with a live session,
+            or published and already attempted by an examinee.
+    """
+    if exam.status != Exam.Status.ACTIVE:
+        assert_exam_editable(exam)
+        return
+    if exam.sessions.exists():
+        raise ValidationError(
+            {
+                "status": (
+                    "Questions are locked - examinees have already started this "
+                    "exam. Archive and duplicate it to make changes."
+                )
+            }
+        )
+
+
+def questions_editable(exam: Exam) -> bool:
+    """Non-raising form of :func:`assert_questions_editable`, for the builder UI."""
+    try:
+        assert_questions_editable(exam)
+    except ValidationError:
+        return False
+    return True
+
+
 def exam_schedule_state(exam: Exam) -> str | None:
     """Derived Upcoming / Active / Closed / Expired state for the scheduling window.
 
@@ -547,7 +581,7 @@ def create_question_for_exam(*, exam: Exam, user, serializer) -> Question:
         PermissionDenied: If the user cannot modify the exam.
     """
     assert_can_modify_exam(exam, user)
-    assert_exam_editable(exam)
+    assert_questions_editable(exam)
     order = serializer.validated_data.get("order")
     if not order:
         serializer.validated_data["order"] = _next_question_order(exam)
@@ -569,7 +603,7 @@ def update_question(question: Question, user, serializer) -> Question:
         PermissionDenied: If the user cannot modify the parent exam.
     """
     assert_can_modify_exam(question.exam, user)
-    assert_exam_editable(question.exam)
+    assert_questions_editable(question.exam)
     return serializer.save()
 
 
@@ -582,10 +616,16 @@ def delete_question(question: Question, user) -> None:
 
     Raises:
         PermissionDenied: If the user cannot modify the parent exam.
+        ValidationError: If questions are locked, or this is the last
+            question of a published exam.
     """
     assert_can_modify_exam(question.exam, user)
-    assert_exam_editable(question.exam)
+    assert_questions_editable(question.exam)
     exam = question.exam
+    if exam.status == Exam.Status.ACTIVE and exam.questions.count() <= 1:
+        raise ValidationError(
+            {"detail": "A published exam needs at least one question. Add another before deleting this one."}
+        )
     question.delete()
     exam.update_question_count()
 
@@ -609,7 +649,7 @@ def reorder_questions(exam: Exam, user, ordered_ids: list[int]) -> list[Question
         ValidationError: If ``ordered_ids`` does not match the exam's questions.
     """
     assert_can_modify_exam(exam, user)
-    assert_exam_editable(exam)
+    assert_questions_editable(exam)
     questions = {q.id: q for q in exam.questions.all()}
     if len(ordered_ids) != len(questions) or set(ordered_ids) != set(questions.keys()):
         raise ValidationError({"order": "Must include every question id exactly once."})
@@ -957,7 +997,7 @@ def validate_question_import(
             (``{row, field, message}`` dicts).
     """
     assert_can_modify_exam(exam, user)
-    assert_exam_editable(exam)
+    assert_questions_editable(exam)
 
     general: list[str] = []
     if csv_text:

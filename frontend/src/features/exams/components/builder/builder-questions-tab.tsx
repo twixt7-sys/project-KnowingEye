@@ -2,7 +2,7 @@ import { memo, useMemo, useState } from "react";
 
 import { Plus, Trash2 } from "@/shared/icons";
 
-import type { ExamSection, Question, QuestionAttachment } from "@/core/config/api";
+import type { Exam, ExamSection, Question, QuestionAttachment } from "@/core/config/api";
 import { BuilderField } from "@/features/exams/components/builder/builder-primitives";
 import { QuestionFormDialog } from "@/features/exams/components/builder/question-form-dialog";
 import { QuestionImportPanel } from "@/features/exams/components/builder/question-import-panel";
@@ -16,7 +16,8 @@ interface BuilderQuestionsTabProps {
   examId: number;
   questions: Question[];
   sections: ExamSection[];
-  isDraft: boolean;
+  status: Exam["status"];
+  editable: boolean;
   saving: boolean;
   showQuestionForm: boolean;
   editingQuestion: Question | null;
@@ -54,13 +55,13 @@ interface BuilderQuestionsTabProps {
 
 const SectionManager = memo(function SectionManager({
   sections,
-  isDraft,
+  editable,
   onAddSection,
   onRenameSection,
   onRemoveSection,
 }: {
   sections: ExamSection[];
-  isDraft: boolean;
+  editable: boolean;
   onAddSection: (title: string, instructions?: string) => void;
   onRenameSection: (sectionId: number, title: string) => void;
   onRemoveSection: (sectionId: number, title: string) => void;
@@ -74,7 +75,7 @@ const SectionManager = memo(function SectionManager({
         <h3 className="font-semibold text-sm">Sections</h3>
         <button
           type="button"
-          disabled={!isDraft}
+          disabled={!editable}
           onClick={() => setOpen((v) => !v)}
           className="text-xs px-3 py-1.5 rounded-lg border border-border hover:bg-accent disabled:opacity-50"
         >
@@ -88,14 +89,14 @@ const SectionManager = memo(function SectionManager({
             <li key={s.id} className="flex items-center gap-2 text-sm">
               <input
                 defaultValue={s.title}
-                disabled={!isDraft}
+                disabled={!editable}
                 onBlur={(e) => {
                   const value = e.target.value.trim();
                   if (value && value !== s.title) onRenameSection(s.id, value);
                 }}
                 className="field-input flex-1 py-1"
               />
-              {isDraft && (
+              {editable && (
                 <button
                   type="button"
                   onClick={() => onRemoveSection(s.id, s.title)}
@@ -142,11 +143,37 @@ const SectionManager = memo(function SectionManager({
   );
 });
 
+/** Explains why questions are (or aren't) editable whenever it isn't the plain draft case. */
+function QuestionLockNotice({ status, editable }: { status: Exam["status"]; editable: boolean }) {
+  let text: string | null = null;
+  if (status === "active" && editable) {
+    text =
+      "This exam is published - question changes reach examinees right away. " +
+      "Questions lock once the first examinee starts the exam.";
+  } else if (status === "active") {
+    text =
+      "Questions are locked because examinees have already started this exam. " +
+      "Archive and duplicate it to make changes.";
+  } else if (status === "archived") {
+    text = "This exam is archived, so its questions can't be changed.";
+  } else if (!editable) {
+    text = "An examinee is taking this exam right now. Questions unlock when active sessions finish.";
+  }
+  if (!text) return null;
+
+  return (
+    <div className="px-4 py-3 rounded-lg border border-border bg-muted/40 text-sm text-muted-foreground">
+      {text}
+    </div>
+  );
+}
+
 export function BuilderQuestionsTab({
   examId,
   questions,
   sections,
-  isDraft,
+  status,
+  editable,
   saving,
   showQuestionForm,
   editingQuestion,
@@ -188,11 +215,13 @@ export function BuilderQuestionsTab({
 
   return (
     <div className="space-y-6">
+      <QuestionLockNotice status={status} editable={editable} />
+
       <div className="flex flex-wrap gap-3">
         <button
           type="button"
           onClick={onOpenNew}
-          disabled={!isDraft}
+          disabled={!editable}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground disabled:opacity-50"
         >
           <Plus className="w-4 h-4" /> Add question
@@ -201,7 +230,7 @@ export function BuilderQuestionsTab({
 
       <SectionManager
         sections={sections}
-        isDraft={isDraft}
+        editable={editable}
         onAddSection={onAddSection}
         onRenameSection={onRenameSection}
         onRemoveSection={onRemoveSection}
@@ -210,13 +239,13 @@ export function BuilderQuestionsTab({
       <SortableQuestionList
         questions={questions}
         sectionTitleById={sectionTitleById}
-        isDraft={isDraft}
+        editable={editable}
         onEdit={onEdit}
         onDelete={onDelete}
         onReorder={onReorder}
       />
 
-      {isDraft && (
+      {editable && (
         <QuestionImportPanel
           examId={examId}
           form={importForm}

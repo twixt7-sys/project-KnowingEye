@@ -239,6 +239,73 @@ class QuestionLockDuringActiveSessionTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
 
+class PublishedExamQuestionEditingTests(APITestCase):
+    """A published exam's questions stay editable until its first attempt."""
+
+    def setUp(self):
+        self.faculty = make_user(User.Role.FACULTY, "pub_faculty")
+        self.student = make_user(User.Role.STUDENT, "pub_student")
+        self.exam = Exam.objects.create(
+            title="Published exam", department=make_department("PUB"),
+            created_by=self.faculty, status=Exam.Status.ACTIVE,
+        )
+        self.question = Question.objects.create(
+            exam=self.exam, question_text="Q1", question_type=Question.QuestionType.SHORT_ANSWER,
+            correct_answer="x", points=1, order=1,
+        )
+        self.client.force_authenticate(user=self.faculty)
+
+    def _patch_question(self):
+        return self.client.patch(
+            f"/api/exams/{self.exam.id}/questions/{self.question.id}/",
+            {"question_text": "Fixed typo"},
+        )
+
+    def test_owner_can_edit_question_before_any_attempt(self):
+        res = self._patch_question()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.question.refresh_from_db()
+        self.assertEqual(self.question.question_text, "Fixed typo")
+
+    def test_owner_can_add_question_before_any_attempt(self):
+        res = self.client.post(
+            f"/api/exams/{self.exam.id}/questions/",
+            {"question_text": "Q2", "question_type": "short_answer", "correct_answer": "y", "points": 1},
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+    def test_locked_once_an_attempt_exists(self):
+        ExamSession.objects.create(
+            exam=self.exam, user=self.student, status=ExamSession.Status.COMPLETED,
+        )
+        res = self._patch_question()
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already started", str(res.data))
+
+    def test_archived_exam_stays_locked(self):
+        self.exam.status = Exam.Status.ARCHIVED
+        self.exam.save(update_fields=["status"])
+        self.assertEqual(self._patch_question().status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_delete_last_question_of_published_exam(self):
+        res = self.client.delete(f"/api/exams/{self.exam.id}/questions/{self.question.id}/")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(Question.objects.filter(pk=self.question.pk).exists())
+
+    def test_exam_settings_stay_draft_only(self):
+        res = self.client.patch(f"/api/exams/{self.exam.id}/", {"title": "Renamed"})
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_detail_reports_questions_editable(self):
+        res = self.client.get(f"/api/exams/{self.exam.id}/")
+        self.assertTrue(res.data["questions_editable"])
+        ExamSession.objects.create(
+            exam=self.exam, user=self.student, status=ExamSession.Status.COMPLETED,
+        )
+        res = self.client.get(f"/api/exams/{self.exam.id}/")
+        self.assertFalse(res.data["questions_editable"])
+
+
 class QuestionOptionImageShapeTests(APITestCase):
     """Options moved from plain strings to {"text", "image"} objects."""
 

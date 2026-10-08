@@ -60,7 +60,7 @@ def _store_option_image(request, exam: Exam, question_id: int | None = None) -> 
     from django.core.files.storage import default_storage
 
     services.assert_can_modify_exam(exam, request.user)
-    services.assert_exam_editable(exam)
+    services.assert_questions_editable(exam)
     uploaded = request.FILES.get("file")
     if not uploaded:
         return Response({"file": ["No file provided."]}, status=status.HTTP_400_BAD_REQUEST)
@@ -366,7 +366,7 @@ class ExamViewSet(viewsets.ModelViewSet):
             return Response(ExamSectionSerializer(qs, many=True).data)
 
         services.assert_can_modify_exam(exam, request.user)
-        services.assert_exam_editable(exam)
+        services.assert_questions_editable(exam)
         serializer = ExamSectionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         order = serializer.validated_data.get("order")
@@ -386,7 +386,7 @@ class ExamViewSet(viewsets.ModelViewSet):
 
         exam = self.get_object()
         services.assert_can_modify_exam(exam, request.user)
-        services.assert_exam_editable(exam)
+        services.assert_questions_editable(exam)
         section = get_object_or_404(exam.sections, pk=section_id)
 
         if request.method == "DELETE":
@@ -411,7 +411,7 @@ class ExamViewSet(viewsets.ModelViewSet):
             return Response(QuestionPoolSerializer(qs, many=True).data)
 
         services.assert_can_modify_exam(exam, request.user)
-        services.assert_exam_editable(exam)
+        services.assert_questions_editable(exam)
         serializer = QuestionPoolSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         order = serializer.validated_data.get("order")
@@ -542,7 +542,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         """Attach an uploaded media file to a question after validation."""
         question = self.get_object()
         services.assert_can_modify_exam(question.exam, request.user)
-        services.assert_exam_editable(question.exam)
+        services.assert_questions_editable(question.exam)
         uploaded = request.FILES.get("file")
         if not uploaded:
             return Response({"file": ["No file provided."]}, status=status.HTTP_400_BAD_REQUEST)
@@ -567,7 +567,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         """Delete a question attachment and its underlying stored file."""
         question = self.get_object()
         services.assert_can_modify_exam(question.exam, request.user)
-        services.assert_exam_editable(question.exam)
+        services.assert_questions_editable(question.exam)
         attachment = get_object_or_404(question.attachments, pk=attachment_id)
         attachment.file.delete(save=False)
         attachment.delete()

@@ -465,6 +465,7 @@ class ExamDetailSerializer(serializers.ModelSerializer):
     reviewed_by_name = serializers.CharField(source="reviewed_by.get_full_name", read_only=True)
     publish_readiness = serializers.SerializerMethodField()
     schedule_state = serializers.SerializerMethodField()
+    questions_editable = serializers.SerializerMethodField()
     department = DepartmentSummarySerializer(read_only=True)
     departments = DepartmentSummarySerializer(many=True, read_only=True)
     category = ExamCategorySummarySerializer(read_only=True)
@@ -514,6 +515,7 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "questions",
             "publish_readiness",
             "schedule_state",
+            "questions_editable",
             "created_at",
             "updated_at",
         ]
@@ -526,6 +528,7 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "created_by_email",
             "publish_readiness",
             "schedule_state",
+            "questions_editable",
             "approval_status",
             "submitted_by",
             "submitted_by_name",
@@ -546,6 +549,11 @@ class ExamDetailSerializer(serializers.ModelSerializer):
         from . import services
 
         return services.exam_schedule_state(obj)
+
+    def get_questions_editable(self, obj):
+        from . import services
+
+        return services.questions_editable(obj)
 
 
 class ExamCreateUpdateSerializer(serializers.ModelSerializer):
