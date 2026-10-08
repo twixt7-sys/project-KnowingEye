@@ -1,0 +1,1595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowing Eye Defense Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f6f3e8; --card:#fffdf7; --ink:#10203a; --ink2:#34425c; --mute:#66728a;
+  --line:#ddd7c4; --line2:#ebe6d6;
+  --green:#1b4d36; --greenv:#1f8a5b; --greens:#e1eee5;
+  --blue:#2456a6; --blues:#e3ebf7;
+  --gold:#a67c2e; --golds:#f4ead2; --goldl:#e4d3a8;
+  --red:#c23b32; --reds:#f8e2df; --amber:#b7791f; --ambers:#f8ecd6;
+  --navy:#10203a; --navy2:#1a2f52;
+  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", Consolas, monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#121b2a;color:var(--ink);font-family:var(--sans)}
+#deck{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform-origin:center center;
+  background:var(--paper);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+#deck::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(1200px 600px at 100% 0%, rgba(31,138,91,.06), transparent 60%),
+             radial-gradient(900px 500px at 0% 100%, rgba(36,86,166,.05), transparent 60%)}
+
+/* ---------- slides ---------- */
+.slide{position:absolute;inset:0;padding:92px 100px 100px;opacity:0;visibility:hidden;
+  transform:translateX(36px);transition:opacity .45s ease, transform .6s cubic-bezier(.2,.7,.2,1), visibility 0s linear .6s}
+.slide.active{opacity:1;visibility:visible;transform:none;transition:opacity .45s ease, transform .6s cubic-bezier(.2,.7,.2,1)}
+.slide.past{transform:translateX(-36px)}
+.slide.dark{background:linear-gradient(140deg,var(--navy) 0%, #142a4a 60%, #173a3a 100%);color:#eef1f6}
+.slide [data-a]{opacity:0}
+.slide.active [data-a]{animation:rise .75s cubic-bezier(.16,.84,.3,1) both;animation-delay:calc(var(--i,0) * 75ms + 120ms)}
+.slide.active [data-a=left]{animation-name:fromLeft}
+.slide.active [data-a=scale]{animation-name:pop}
+.slide.active [data-a=fade]{animation-name:fade}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes fromLeft{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){
+  .slide,.slide.active{transition:none}
+  .slide.active [data-a]{animation:fade .01s both}
+}
+
+/* ---------- type ---------- */
+.kicker{font:700 15px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--greenv);display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.kicker::before{content:"";width:28px;height:2px;background:currentColor}
+.dark .kicker{color:#7fd1a6}
+h1,h2,h3{font-family:var(--serif);margin:0;font-weight:600;letter-spacing:-.01em}
+h2{font-size:52px;line-height:1.08;max-width:1250px}
+h2 em{font-style:normal;color:var(--greenv)}
+h3{font-size:25px;line-height:1.2}
+.lede{font-size:23px;line-height:1.45;color:var(--ink2);max-width:1180px;margin:16px 0 0}
+p{margin:0}
+.small{font-size:17px;line-height:1.45;color:var(--ink2)}
+.tiny{font-size:14px;line-height:1.4;color:var(--mute)}
+.mono{font-family:var(--mono)}
+.muted{color:var(--mute)}
+.hl{background:linear-gradient(transparent 60%, rgba(31,138,91,.2) 60%)}
+
+/* ---------- layout ---------- */
+.row{display:flex;gap:28px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.mt1{margin-top:14px}.mt2{margin-top:26px}.mt3{margin-top:40px}.mt4{margin-top:56px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;box-shadow:0 1px 0 rgba(16,32,58,.03),0 10px 30px -18px rgba(16,32,58,.25)}
+.card h3{margin-bottom:10px}
+.card .num{font:700 14px/1 var(--mono);color:var(--greenv);letter-spacing:.06em;margin-bottom:14px;display:block}
+.tag{display:inline-flex;align-items:center;gap:6px;font:600 13px/1 var(--sans);letter-spacing:.04em;padding:6px 10px;border-radius:999px;background:var(--blues);color:var(--blue)}
+.tag.g{background:var(--greens);color:var(--green)}
+.tag.a{background:var(--ambers);color:#8a5a12}
+.tag.r{background:var(--reds);color:var(--red)}
+.tag.n{background:#e9ecf2;color:var(--ink2)}
+.rule{height:1px;background:var(--line);margin:22px 0}
+ul.clean{list-style:none;margin:0;padding:0}
+ul.clean li{position:relative;padding-left:22px;margin:9px 0;font-size:19px;line-height:1.4;color:var(--ink2)}
+ul.clean li::before{content:"";position:absolute;left:2px;top:.62em;width:8px;height:8px;border-radius:2px;background:var(--greenv);transform:rotate(45deg)}
+
+/* ---------- chrome ---------- */
+.chrome{position:absolute;inset:0;pointer-events:none;z-index:20}
+.c-top{position:absolute;top:34px;left:100px;right:100px;display:flex;justify-content:space-between;align-items:center;
+  font:700 12.5px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.c-brand{display:flex;align-items:center;gap:10px}
+.c-brand svg{width:26px;height:26px}
+.c-bot{position:absolute;left:100px;right:100px;bottom:30px;display:flex;justify-content:space-between;align-items:center;font:500 13px/1 var(--sans);color:var(--mute)}
+.c-count{font:600 14px/1 var(--mono);color:var(--ink2);letter-spacing:.04em}
+.c-hint kbd{font:600 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:3px 6px;background:var(--card);color:var(--ink2)}
+.progress{position:absolute;left:0;right:0;bottom:0;height:6px;display:flex;gap:3px;pointer-events:auto}
+.progress .seg{position:relative;height:100%;background:rgba(16,32,58,.08);cursor:pointer;overflow:hidden}
+.progress .seg i{position:absolute;inset:0 auto 0 0;width:0;background:var(--greenv);transition:width .5s ease}
+.progress .seg:hover{background:rgba(16,32,58,.18)}
+#deck.on-dark .c-top,#deck.on-dark .c-bot{color:rgba(238,241,246,.6)}
+#deck.on-dark .c-count{color:rgba(238,241,246,.85)}
+#deck.on-dark .c-hint kbd{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#dfe5ee}
+#deck.on-dark .progress .seg{background:rgba(255,255,255,.1)}
+#deck.on-dark .c-brand{opacity:0}
+
+/* ---------- citations ---------- */
+cite.c{font-style:normal;font:600 .6em/1 var(--mono);color:#8a6420;background:var(--golds);border:1px solid var(--goldl);
+  padding:.2em .42em;border-radius:6px;vertical-align:.22em;cursor:pointer;margin-left:.18em;white-space:nowrap;transition:background .2s, color .2s}
+cite.c:hover,cite.c.pin{background:var(--gold);color:#fff;border-color:var(--gold)}
+.dark cite.c{background:rgba(228,211,168,.15);border-color:rgba(228,211,168,.4);color:#ead7a6}
+#pop{position:fixed;z-index:100;max-width:440px;background:#fffdf7;border:1px solid var(--goldl);border-left:4px solid var(--gold);
+  border-radius:10px;padding:14px 16px;box-shadow:0 18px 50px -12px rgba(16,32,58,.45);font:15px/1.45 var(--sans);color:var(--ink);
+  opacity:0;transform:translateY(6px);pointer-events:none;transition:opacity .18s, transform .18s}
+#pop.show{opacity:1;transform:none}
+#pop b{font:700 12px/1 var(--mono);color:var(--gold);display:block;margin:8px 0 4px}
+#pop b:first-child{margin-top:0}
+
+/* ---------- screenshot placeholders ---------- */
+.frame{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 18px 40px -24px rgba(16,32,58,.45)}
+.frame .bar{height:34px;flex:0 0 34px;display:flex;align-items:center;gap:7px;padding:0 14px;background:#eef0f4;border-bottom:1px solid var(--line)}
+.frame .bar i{width:10px;height:10px;border-radius:50%;background:#cdd3dd}
+.frame .bar span{margin-left:10px;font:12px/1 var(--mono);color:var(--mute);background:#fff;border:1px solid #dde2ea;border-radius:6px;padding:5px 10px;flex:1;max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shot{position:relative;flex:1;min-height:0;display:grid;place-items:center;cursor:pointer;
+  background:repeating-linear-gradient(135deg,#f1f4f9 0 16px,#eaeef5 16px 32px)}
+.shot .ph{text-align:center;padding:20px;color:var(--ink2);transition:transform .2s}
+.shot:hover .ph{transform:scale(1.03)}
+.shot .ph svg{width:44px;height:44px;color:#93a1b8;margin-bottom:8px}
+.shot .ph b{display:block;font:600 21px/1.2 var(--sans);color:var(--ink)}
+.shot .ph em{display:block;font-style:normal;font-size:15px;color:var(--mute);margin-top:6px}
+.shot .ph small{display:inline-block;margin-top:10px;font:12px/1 var(--mono);color:var(--blue);background:var(--blues);padding:5px 8px;border-radius:6px}
+.shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#fff;display:none}
+.shot.filled{background:#fff}.shot.filled img{display:block}.shot.filled .ph{display:none}
+.shot.drag{outline:3px solid var(--greenv);outline-offset:-6px}
+.frame.plain .bar{display:none}
+
+/* ---------- title ---------- */
+.title-wrap{position:absolute;inset:0;padding:110px 110px 100px;display:grid;grid-template-columns:1.35fr .65fr;gap:40px;align-items:center}
+.title-wrap h1{font-size:76px;line-height:1.02;letter-spacing:-.02em;color:#fff}
+.title-wrap h1 span{color:#7fd1a6}
+.title-sub{font:400 27px/1.4 var(--serif);color:#c9d3e2;margin-top:24px;max-width:860px}
+.title-meta{margin-top:46px;display:flex;gap:46px;font-size:17px;color:#aebbd0;line-height:1.55}
+.title-meta b{display:block;color:#fff;font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px;color:#7fd1a6}
+.eye-big{width:100%;max-width:420px;justify-self:center}
+.logos{position:absolute;top:44px;left:110px;display:flex;gap:16px;align-items:center}
+.logos img{height:58px;width:auto}
+.badge{display:inline-flex;gap:10px;align-items:center;border:1px solid rgba(127,209,166,.4);color:#bfe8d1;border-radius:999px;padding:9px 16px;font:600 14px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;margin-bottom:30px}
+.badge i{width:8px;height:8px;border-radius:50%;background:#3ddc84;box-shadow:0 0 0 4px rgba(61,220,132,.2);animation:pulse 2s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(61,220,132,0)}}
+
+/* ---------- agenda ---------- */
+.agenda{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:46px}
+.ag{all:unset;cursor:pointer;display:block;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 28px;transition:transform .2s, border-color .2s, box-shadow .2s}
+.ag:hover{transform:translateY(-3px);border-color:var(--greenv);box-shadow:0 14px 30px -18px rgba(16,32,58,.4)}
+.ag .n{font:700 44px/1 var(--serif);color:var(--greenv)}
+.ag h3{margin:14px 0 8px;font-size:26px}
+.ag p{font-size:17px;color:var(--mute);line-height:1.4}
+
+/* ---------- stats ---------- */
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:26px 26px 22px}
+.stat .v{font:700 54px/1 var(--serif);color:var(--ink);letter-spacing:-.02em}
+.stat .v small{font-size:26px;color:var(--mute);font-weight:600}
+.stat .l{font-size:17px;color:var(--ink2);margin-top:12px;line-height:1.4}
+.callout{border-left:4px solid var(--greenv);background:var(--greens);border-radius:0 12px 12px 0;padding:18px 24px;font:500 21px/1.45 var(--serif);color:var(--green)}
+
+/* ---------- flow ---------- */
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:44px;position:relative}
+.flow .step{position:relative;z-index:1;padding:0 14px}
+.flow .dot{width:64px;height:64px;border-radius:18px;background:var(--navy);color:#fff;display:grid;place-items:center;font:700 22px var(--serif);position:relative;z-index:2}
+.flow .step:nth-child(4) .dot{background:var(--greenv)}
+.flow .step h3{margin:18px 0 8px;font-size:28px}
+.flow .step p{font-size:18px;color:var(--ink2);line-height:1.4}
+.flow::before{content:"";position:absolute;left:46px;right:22%;top:32px;height:2px;background:repeating-linear-gradient(90deg,var(--line) 0 10px,transparent 10px 18px);z-index:0}
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:48px}
+.pillar{border-top:3px solid var(--navy);padding-top:14px;font:600 20px/1.3 var(--sans)}
+.pillar span{display:block;font:400 16px/1.4 var(--sans);color:var(--mute);margin-top:6px}
+
+.card.tall{min-height:440px;display:flex;flex-direction:column}
+.card.tall .glyph{font:700 120px/1 var(--serif);color:var(--greens);letter-spacing:-.04em;margin-bottom:auto}
+.card.tall h3{font-size:27px}
+.card.tall .small{font-size:18px}
+.scope .card{padding:32px 34px;min-height:520px}
+.scope ul.clean li{font-size:21.5px;margin:16px 0}
+/* ---------- objectives ---------- */
+.obj{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:28px}
+.obj .card{padding:20px 22px}
+.obj .card h3{font-size:21px;margin-bottom:6px}
+.obj .card p{font-size:16px;line-height:1.4;color:var(--ink2)}
+.obj .card.wide{grid-column:span 1;background:var(--navy);color:#fff;border-color:var(--navy)}
+.obj .card.wide p{color:#c9d3e2}
+
+/* ---------- tables ---------- */
+table.t{width:100%;border-collapse:separate;border-spacing:0;font-size:17px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+table.t th{background:#eceadf;text-align:left;font:700 13px/1.2 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);padding:13px 16px;border-bottom:1px solid var(--line)}
+table.t td{padding:11px 16px;border-bottom:1px solid var(--line2);vertical-align:top;line-height:1.35;color:var(--ink2)}
+table.t tr:last-child td{border-bottom:0}
+table.t td:first-child{color:var(--ink);font-weight:600}
+table.t tbody tr{transition:background .15s}
+table.t tbody tr:hover{background:#f7f3e4}
+table.cmp td,table.cmp th{text-align:center;padding:7px 12px}
+table.cmp .yes{width:22px;height:22px;font-size:13px}
+table.cmp td:first-child,table.cmp th:first-child{text-align:left}
+table.cmp th.ke,table.cmp td.ke{background:rgba(31,138,91,.09)}
+table.cmp th.ke{color:var(--green)}
+.yes{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--greens);color:var(--greenv);font-weight:700;font-size:14px}
+.no{display:inline-block;width:12px;height:2px;background:#c9ccd4;vertical-align:middle}
+td.ke .yes{background:var(--greenv);color:#fff}
+.best{color:var(--green)!important;font-weight:700}
+
+/* ---------- architecture ---------- */
+.arch{display:grid;grid-template-columns:1fr 64px 1.25fr 64px 1fr;align-items:stretch;margin-top:34px}
+.tier{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 22px 18px;display:flex;flex-direction:column;gap:12px}
+.tier .th{font:700 13px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.tier h3{font-size:27px}
+.node{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff;font-size:16.5px;line-height:1.35;color:var(--ink2)}
+.node b{display:block;color:var(--ink);font-size:18px;margin-bottom:2px}
+.node.hi{border-color:var(--greenv);background:var(--greens)}
+.node.ext{border-style:dashed}
+.host{margin-top:auto;font:600 13px/1 var(--mono);color:var(--blue)}
+.wire{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:30px}
+.wire div{position:relative;width:100%;height:2px;background:var(--line)}
+.wire div::after{content:"";position:absolute;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--greenv);animation:travel 2.4s linear infinite}
+.wire div.rev::after{animation-direction:reverse;background:var(--blue)}
+.wire span{font:600 12px/1.2 var(--mono);color:var(--mute);text-align:center}
+@keyframes travel{from{left:0}to{left:calc(100% - 10px)}}
+
+/* ---------- pipeline ---------- */
+.pipe{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:40px;position:relative}
+.pipe::before{content:"";position:absolute;left:40px;right:40px;top:38px;height:3px;background:var(--line);border-radius:3px}
+.pipe .pulse{position:absolute;top:33px;left:40px;width:13px;height:13px;border-radius:50%;background:var(--greenv);box-shadow:0 0 0 6px rgba(31,138,91,.18);animation:run 4.5s cubic-bezier(.5,0,.5,1) infinite}
+@keyframes run{from{left:40px}to{left:calc(100% - 53px)}}
+.ps{position:relative;z-index:2}
+.ps .ic{width:76px;height:76px;border-radius:20px;background:var(--navy);display:grid;place-items:center;color:#fff;margin-bottom:18px;border:4px solid var(--paper)}
+.ps .ic svg{width:34px;height:34px}
+.ps:nth-child(6) .ic,.ps:nth-child(7) .ic{background:var(--greenv)}
+.ps h3{font-size:23px;margin-bottom:8px}
+.ps p{font-size:16px;line-height:1.42;color:var(--ink2)}
+.foot2{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:44px}
+.foot2 .card{padding:18px 22px;font-size:17px;line-height:1.45;color:var(--ink2)}
+.foot2 .card b{color:var(--ink)}
+
+/* ---------- EBI ---------- */
+.ebi{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;margin-top:30px;align-items:start}
+.formula{font:600 40px/1.2 var(--serif);color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 26px}
+.formula sub{font-size:.55em}
+.formula .eq{font:500 17px/1.45 var(--mono);color:var(--mute);margin-top:12px}
+.sl{display:grid;grid-template-columns:180px 1fr 70px;align-items:center;gap:16px;margin:14px 0}
+.sl label{font-size:17px;line-height:1.25;color:var(--ink)}
+.sl label b{font-family:var(--mono);color:var(--greenv);margin-right:6px}
+.sl output{font:600 18px var(--mono);text-align:right;color:var(--ink)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:8px;background:linear-gradient(90deg,var(--greenv) var(--p,50%),#dcd8ca var(--p,50%));outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid var(--greenv);box-shadow:0 2px 6px rgba(0,0,0,.2)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:3px solid var(--greenv)}
+input[type=range]:disabled{opacity:.35}
+.toggle{display:flex;align-items:center;gap:12px;font-size:16px;color:var(--ink2);cursor:pointer;user-select:none;margin-top:6px}
+.toggle input{width:20px;height:20px;accent-color:var(--greenv)}
+.gauge{display:flex;gap:30px;align-items:center}
+.gauge svg{width:250px;height:250px;flex:0 0 250px}
+.gauge .val{font:700 58px var(--serif);fill:var(--ink)}
+.gauge .lbl{font:600 14px var(--sans);letter-spacing:.14em;fill:var(--mute)}
+.bands{display:flex;flex-direction:column;gap:10px;flex:1}
+.band{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card);transition:all .25s;opacity:.55}
+.band b{display:block;font-size:19px}
+.band span{font-size:15px;color:var(--mute)}
+.band.on{opacity:1;transform:translateX(6px);box-shadow:0 10px 24px -16px rgba(16,32,58,.5)}
+.band.good.on{border-color:var(--greenv);background:var(--greens)}
+.band.mid.on{border-color:var(--amber);background:var(--ambers)}
+.band.bad.on{border-color:var(--red);background:var(--reds)}
+
+/* ---------- escalation ---------- */
+.ladder{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:28px}
+.rung{border-radius:14px;padding:16px 18px;border:1px solid var(--line);background:var(--card);transition:all .3s;position:relative}
+.rung b{display:block;font:700 21px var(--serif)}
+.rung span{display:block;font-size:14.5px;color:var(--mute);margin-top:6px;line-height:1.35}
+.rung.on{transform:translateY(-6px);color:#fff;box-shadow:0 16px 30px -14px rgba(16,32,58,.55)}
+.rung.on span{color:rgba(255,255,255,.85)}
+.rung.normal.on{background:var(--greenv);border-color:var(--greenv)}
+.rung.warning.on{background:#3d6fb8;border-color:#3d6fb8}
+.rung.suspicious.on{background:var(--amber);border-color:var(--amber)}
+.rung.critical.on{background:var(--red);border-color:var(--red)}
+.rung.action{border-style:dashed}
+.rung.action.on{background:var(--navy);border-color:var(--navy)}
+.sim{display:grid;grid-template-columns:1.1fr .9fr;gap:30px;margin-top:26px}
+.evbtns{display:flex;flex-wrap:wrap;gap:10px}
+.evb{all:unset;cursor:pointer;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:11px 14px;font:600 16px var(--sans);color:var(--ink);transition:all .15s;display:flex;gap:10px;align-items:center}
+.evb:hover{border-color:var(--ink);transform:translateY(-1px)}
+.evb small{font:600 12px var(--mono);color:var(--mute)}
+.evb.reset{background:transparent;color:var(--mute);border-style:dashed}
+.evlog{display:flex;flex-wrap:wrap;gap:8px;min-height:44px;margin-top:16px;padding:12px;border-radius:12px;background:rgba(16,32,58,.04);border:1px dashed var(--line)}
+.evlog .ev{font:600 13px/1 var(--mono);padding:7px 9px;border-radius:7px;background:#fff;border:1px solid var(--line);animation:pop .3s both;cursor:pointer}
+.evlog .empty{font-size:15px;color:var(--mute);align-self:center}
+.meter{height:12px;border-radius:12px;background:#e7e3d6;position:relative;overflow:visible;margin:18px 0 8px}
+.meter i{position:absolute;inset:0 auto 0 0;border-radius:12px;background:var(--ink);transition:width .4s cubic-bezier(.2,.7,.2,1),background .3s}
+.meter .mk{position:absolute;top:-8px;bottom:-8px;width:2px;background:var(--ink2)}
+.meter .mk span{position:absolute;top:30px;left:50%;transform:translateX(-50%);font:600 12px var(--mono);color:var(--mute);white-space:nowrap}
+
+/* ---------- charts ---------- */
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart .ax{stroke:var(--line);stroke-width:1}
+.chart .axl{font:500 13px var(--mono);fill:var(--mute)}
+.chart .ln{fill:none;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.slide.active .chart .ln{animation:draw 1.6s cubic-bezier(.4,0,.2,1) both .3s}
+@keyframes draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+.chart .lab{font:600 14px var(--sans)}
+.hbar{display:grid;grid-template-columns:120px 1fr 90px;align-items:center;gap:14px;margin:14px 0}
+.hbar .track{height:26px;background:rgba(16,32,58,.05);border-radius:6px;position:relative;overflow:visible}
+.hbar .fill{position:absolute;inset:0 auto 0 0;width:0;border-radius:6px;background:var(--navy);transition:width 1.2s cubic-bezier(.2,.7,.2,1) .3s}
+.slide.active .hbar .fill{width:var(--w)}
+.hbar .fill.sel{background:var(--greenv)}
+.hbar .fill.slow{background:var(--red)}
+.hbar b{font-size:17px}
+.hbar output{font:600 16px var(--mono);text-align:right}
+.rt{position:absolute;top:-10px;bottom:-10px;width:0;border-left:2px dashed var(--red)}
+.kv{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kv .stat{padding:18px 18px 16px}
+.kv .stat .v{font-size:42px}
+
+/* ---------- stack ---------- */
+.stack{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:30px}
+.stack .col{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px 14px}
+.stack .col h3{font-size:22px;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.stack .col h3 i{width:10px;height:10px;border-radius:3px;background:var(--greenv)}
+.tech{padding:9px 0;border-top:1px solid var(--line2);font-size:15.5px;line-height:1.3;color:var(--mute)}
+.tech b{display:block;color:var(--ink);font-size:17px;font-weight:600}
+
+/* ---------- roles ---------- */
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
+.role{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start}
+.role .lv{flex:0 0 auto;font:700 12px/1 var(--mono);color:#fff;background:var(--navy);border-radius:6px;padding:6px 7px}
+.role .lv.l1{background:var(--blue)}.role .lv.op{background:var(--greenv)}.role .lv.ex{background:#7a8599}
+.role b{display:block;font-size:19px}
+.role span{font-size:15.5px;color:var(--mute);line-height:1.35}
+.chain{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.chain .st{padding:10px 16px;border-radius:10px;background:var(--card);border:1px solid var(--line);font:600 17px var(--sans)}
+.chain .st.ok{background:var(--greenv);color:#fff;border-color:var(--greenv)}
+.chain .st.rej{background:var(--reds);color:var(--red);border-color:#ecc2bc}
+.chain .ar{color:var(--mute);font-size:20px}
+.tiers3{display:flex;gap:10px;margin-top:14px}
+.tiers3 div{flex:1;border-radius:12px;padding:14px 16px;background:var(--navy);color:#fff;font:600 17px var(--sans)}
+.tiers3 div:nth-child(2){background:var(--navy2)}.tiers3 div:nth-child(3){background:#27467a}
+.tiers3 span{display:block;font:400 14px var(--sans);color:#c9d3e2;margin-top:4px}
+
+/* ---------- walkthrough ---------- */
+.walk{display:grid;grid-template-columns:400px 1fr;gap:34px;margin-top:28px;height:610px}
+.steps{display:flex;flex-direction:column;gap:10px}
+.wstep{all:unset;cursor:pointer;display:block;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:15px 18px;transition:all .25s}
+.wstep .wn{font:700 13px var(--mono);color:var(--mute)}
+.wstep b{display:block;font-size:20px;margin:4px 0 2px}
+.wstep p{font-size:15.5px;line-height:1.38;color:var(--mute);max-height:0;overflow:hidden;transition:max-height .35s ease, margin .35s}
+.wstep.on{border-color:var(--greenv);background:#fff;box-shadow:0 14px 30px -20px rgba(16,32,58,.5);transform:translateX(6px)}
+.wstep.on .wn{color:var(--greenv)}
+.wstep.on p{max-height:120px;margin-top:6px;color:var(--ink2)}
+.screens{position:relative;height:100%}
+.screens .frame{position:absolute;inset:0;opacity:0;transform:translateY(14px) scale(.985);transition:opacity .4s, transform .5s cubic-bezier(.2,.7,.2,1);pointer-events:none}
+.screens .frame.on{opacity:1;transform:none;pointer-events:auto}
+
+/* ---------- monitoring ---------- */
+.mon{display:grid;grid-template-columns:1fr 380px;gap:28px;margin-top:22px;height:580px}
+.mon .side{display:flex;flex-direction:column;gap:10px;min-height:0}
+.co{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.co span b{display:inline;font-size:inherit}
+.co .k{flex:0 0 30px;height:30px;border-radius:9px;background:var(--navy);color:#fff;display:grid;place-items:center;font:700 14px var(--mono)}
+.co b{display:block;font-size:18px}
+.co span{font-size:14.5px;color:var(--mute);line-height:1.35}
+
+/* ---------- revisions ---------- */
+.areas{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:30px}
+.area{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 18px;display:flex;flex-direction:column;gap:10px}
+.area .an{font:700 40px/1 var(--serif);color:var(--greenv)}
+.area h3{font-size:21px}
+.area p{font-size:15px;color:var(--mute);line-height:1.38;flex:1}
+.prio{display:flex;gap:16px;margin-top:30px}
+.prio .card{flex:1;display:flex;align-items:center;gap:20px;padding:20px 24px}
+.prio .pv{font:700 50px/1 var(--serif)}
+.prio .card p{font-size:17px;color:var(--ink2);line-height:1.35}
+.liked{margin-top:26px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:17px;color:var(--ink2)}
+.tabs{display:flex;gap:8px;margin-top:26px}
+.tab{all:unset;cursor:pointer;flex:1;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card);transition:all .2s}
+.tab small{display:block;font:700 12px var(--mono);color:var(--mute)}
+.tab b{font-size:17px}
+.tab.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.tab.on small{color:#7fd1a6}
+.panels{position:relative;margin-top:18px;height:520px}
+.panel{position:absolute;inset:0;opacity:0;transform:translateY(12px);transition:opacity .35s, transform .45s;pointer-events:none;display:grid;grid-template-columns:380px 1fr;gap:28px}
+.panel.on{opacity:1;transform:none;pointer-events:auto}
+.quote{background:var(--navy);color:#fff;border-radius:16px;padding:26px 28px;display:flex;flex-direction:column}
+.quote .qm{font:700 70px/0.6 var(--serif);color:#7fd1a6;height:34px}
+.quote p{font:500 23px/1.4 var(--serif);color:#eef1f6}
+.quote small{margin-top:auto;font:600 13px var(--sans);letter-spacing:.12em;text-transform:uppercase;color:#9fb0c8}
+.items{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start}
+.it{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:16px;line-height:1.38;color:var(--ink2)}
+.it .s{flex:0 0 auto;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:700 12px var(--sans);margin-top:1px}
+.it .s.d{background:var(--greenv);color:#fff}
+.it .s.p{background:var(--ambers);color:#8a5a12;border:1px solid #e9c98c}
+.it b{color:var(--ink)}
+.open{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:30px}
+.open .card{padding:22px 24px}
+.open .card p{font-size:16.5px;line-height:1.42;color:var(--ink2);margin-top:8px}
+.open .card .tag{margin-bottom:12px}
+
+/* ---------- testing ---------- */
+.phases{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:32px;border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+.phase{padding:22px 22px 24px;background:var(--card);border-right:1px solid var(--line);position:relative}
+.phase:last-child{border-right:0}
+.phase .pn{font:700 13px var(--mono);color:var(--greenv);letter-spacing:.08em}
+.phase h3{font-size:23px;margin:8px 0 12px}
+.phase.now{background:var(--navy);color:#fff}
+.phase.now .pn{color:#7fd1a6}
+.phase.now li{color:#d5deeb}
+.phase.now ul.clean li::before{background:#7fd1a6}
+.phase ul.clean li{font-size:16.5px;margin:7px 0}
+.timeline{display:grid;grid-template-columns:1fr 2.6fr 1fr 1fr;gap:6px;margin-top:30px}
+.tl{border-radius:10px;padding:14px 16px;background:var(--blues);color:var(--blue);font:600 17px var(--sans)}
+.tl span{display:block;font:400 14.5px var(--sans);color:var(--ink2);margin-top:4px}
+.tl.main{background:var(--greenv);color:#fff}.tl.main span{color:#e1f3e8}
+
+/* ---------- references ---------- */
+.refs{columns:2;column-gap:44px;margin-top:22px;font-size:13.6px;line-height:1.42;color:var(--ink2)}
+.refs div{break-inside:avoid;padding:4px 0 4px 44px;position:relative;border-radius:6px;transition:background .3s}
+.refs div b{position:absolute;left:0;top:4px;font:700 12.5px var(--mono);color:var(--gold)}
+.refs div.flash{background:var(--golds)}
+.refs.three{columns:3;column-gap:30px;font-size:12.6px;line-height:1.34;margin-top:16px}
+.refs.three div{padding:3px 0 3px 38px}
+.refs.three div b{top:3px;font-size:11.5px}
+
+/* ---------- index modal ---------- */
+#idx{position:fixed;inset:0;z-index:90;background:rgba(10,18,32,.72);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center}
+#idx.show{display:flex}
+#idx .box{width:min(1100px,92vw);max-height:86vh;overflow:auto;background:#fffdf7;border-radius:18px;padding:30px 34px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+#idx h4{font:600 28px var(--serif);margin:0 0 4px;color:var(--ink)}
+#idx .keys{font-size:14px;color:var(--mute);margin-bottom:18px}
+#idx .keys kbd{font:600 11px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:2px 6px;margin:0 2px;background:#fff}
+#idx .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+#idx .sec h5{font:700 12px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--greenv);margin:0 0 8px}
+#idx button{all:unset;display:block;cursor:pointer;font-size:15px;color:var(--ink2);padding:5px 8px;border-radius:6px;width:calc(100% - 16px)}
+#idx button:hover{background:var(--greens);color:var(--ink)}
+#idx button.cur{background:var(--navy);color:#fff}
+#idx button span{font:600 12px var(--mono);color:var(--mute);margin-right:8px}
+#idx button.cur span{color:#7fd1a6}
+.fab{position:fixed;right:16px;top:14px;z-index:80;display:flex;gap:8px;opacity:.25;transition:opacity .2s}
+.fab:hover{opacity:1}
+.fab button{all:unset;cursor:pointer;width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center;font:600 13px var(--mono)}
+.fab button:hover{background:rgba(255,255,255,.25)}
+</style>
+</head>
+<body>
+
+<div class="fab">
+  <button id="bIdx" title="Slide index (O)">☰</button>
+  <button id="bFull" title="Full screen (F)">⤢</button>
+</div>
+
+<div id="deck">
+
+<!-- =========================== 1 TITLE =========================== -->
+<section class="slide dark" data-sec="open" data-title="Title">
+  <div class="logos" data-a="fade">
+    <img src="../../frontend/public/branding/institution-logo.svg" alt="Legacy College of Compostela" onerror="this.remove()">
+    <img src="../../frontend/public/branding/Wellness%20and%20Care%20Center.png" alt="Wellness and Care Center" onerror="this.remove()">
+  </div>
+  <div class="title-wrap">
+    <div>
+      <div class="badge" data-a><i></i>Pre-Deployment Defense · Capstone</div>
+      <h1 data-a>Knowing <span>Eye</span></h1>
+      <p class="title-sub" data-a>A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis</p>
+      <div class="title-meta" data-a>
+        <div><b>Proponents</b>Saturnino C. Ancog III<br>Krhisha Marie O. Cavan<br>Kervy N. Cadiente<br>Twixt Jasley J. Tamera</div>
+        <div><b>Institution</b>Legacy College of Compostela<br>Institute of Information Technology<br>Compostela, Davao de Oro</div>
+        <div><b>Date</b>October 2026</div>
+      </div>
+    </div>
+    <svg class="eye-big" id="eyeBig" viewBox="0 0 100 100" data-a="scale" aria-hidden="true">
+      <defs><linearGradient id="kg" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#3ddc84"/><stop offset="1" stop-color="#2bb3a3"/></linearGradient></defs>
+      <path d="M50 25C30 25 15 40 5 50C15 60 30 75 50 75C70 75 85 60 95 50C85 40 70 25 50 25Z" fill="url(#kg)" fill-opacity=".1" stroke="url(#kg)" stroke-width="2"/>
+      <g id="iris"><circle cx="50" cy="50" r="15" fill="url(#kg)" fill-opacity=".22" stroke="url(#kg)" stroke-width="2"/>
+      <circle cx="50" cy="50" r="8" fill="url(#kg)"/><circle cx="54" cy="46" r="2.6" fill="#fff" fill-opacity=".9"/></g>
+    </svg>
+  </div>
+</section>
+
+<!-- =========================== 2 AGENDA =========================== -->
+<section class="slide" data-sec="open" data-title="Agenda">
+  <div class="kicker" data-a>Agenda</div>
+  <h2 data-a>Contents</h2>
+  <div class="agenda">
+    <button class="ag" data-a data-jump="intro"><div class="n">01</div><h3>Introduction</h3><p>Background, problem statement, and proposed solution.</p></button>
+    <button class="ag" data-a data-jump="docs"><div class="n">02</div><h3>Documentation</h3><p>Objectives, scope, significance, RRL, methodology, and analysis.</p></button>
+    <button class="ag" data-a data-jump="tech"><div class="n">03</div><h3>Technical Details</h3><p>Architecture, AI pipeline, Exam Behavior Index, model evaluation.</p></button>
+    <button class="ag" data-a data-jump="system"><div class="n">04</div><h3>System Presentation</h3><p>Roles, examinee and examiner journeys, live monitoring.</p></button>
+    <button class="ag" data-a data-jump="rev"><div class="n">05</div><h3>Defense Revisions</h3><p>Panel feedback from the outline defense and the revisions made.</p></button>
+    <button class="ag" data-a data-jump="end"><div class="n">06</div><h3>Conclusion</h3><p>Testing and deployment plan, requirements, takeaways.</p></button>
+  </div>
+</section>
+
+<!-- =========================== 4 LITERATURE SIGNALS =========================== -->
+<section class="slide" data-sec="intro" data-title="Background of the Study">
+  <div class="kicker" data-a>01 · Introduction</div>
+  <h2 data-a>Background of the Study</h2>
+  <div class="g4 mt3">
+    <div class="stat" data-a><div class="v"><span class="count" data-to="98.4" data-dec="1">0</span><small>%</small></div><div class="l">face recognition accuracy (90.4% detection) in iExam<cite class="c" data-r="3"></cite></div></div>
+    <div class="stat" data-a><div class="v"><span class="count" data-to="94.2" data-dec="1">0</span><small>%</small></div><div class="l">facial verification; 89.7% for head-movement detection<cite class="c" data-r="7"></cite></div></div>
+    <div class="stat" data-a><div class="v"><span class="count" data-to="96.04" data-dec="2">0</span><small>%</small></div><div class="l">attention classification from head pose + eye gaze<cite class="c" data-r="22"></cite></div></div>
+    <div class="stat" data-a><div class="v"><span class="count" data-to="87.5" data-dec="1">0</span><small>%</small></div><div class="l">cheating cases caught (100% non-cheating) using multimodal behavior at a threshold of 40<cite class="c" data-r="14"></cite></div></div>
+  </div>
+  <div class="g2 mt3">
+    <div class="card" data-a><h3>Multimodal monitoring</h3><p class="small">Combining face recognition, head pose, and gaze gives more consistent evidence than any one method<cite class="c" data-r="13"></cite><cite class="c" data-r="30"></cite>. Gaze, head pose, and object detection already run together in real time<cite class="c" data-r="4"></cite><cite class="c" data-r="8"></cite>.</p></div>
+    <div class="card" data-a><h3>Human review</h3><p class="small">Systems flag behavior and collect evidence for <b>human review</b><cite class="c" data-r="6"></cite>; technology works best alongside institutional policy<cite class="c" data-r="17"></cite>.</p></div>
+  </div>
+</section>
+
+<!-- =========================== 3 BACKGROUND =========================== -->
+<section class="slide" data-sec="intro" data-title="Problem Statement">
+  <div class="kicker" data-a>01 · Introduction</div>
+  <h2 data-a>Problem Statement</h2>
+  <div class="g3 mt3">
+    <div class="card" data-a><span class="num">01 · THE FIELD</span><h3>Academic integrity</h3>
+      <p class="small">Reviews of AI proctoring name security, privacy, and ethics as the central issues<cite class="c" data-r="1"></cite>. A review of 154 publications finds cheating detection and student authentication as the main research threads<cite class="c" data-r="2"></cite>.</p></div>
+    <div class="card" data-a><span class="num">02 · AT LCC</span><h3>Manual proctoring at LCC</h3>
+      <p class="small">The environmental scan (June 1, 2026) found no computer-based exam system with face tracking or identity verification. Suspicious behavior is caught by CCTV or assigned proctors, which is uneven in large exams and adds to proctor workload.</p></div>
+    <div class="card" data-a><span class="num">03 · THE TOOLS</span><h3>Fragmented systems</h3>
+      <p class="small">Existing platforms handle questions and scoring but only monitor passively (webcam recording, screen lock). Nothing analyzes gaze, posture, or facial movement in real time, so review stays manual.</p></div>
+  </div>
+  <div class="callout mt3" data-a>There is no single platform at LCC that both delivers exams and monitors examinee behavior in real time.</div>
+</section>
+
+<!-- =========================== 5 PROPOSED SOLUTION =========================== -->
+<section class="slide" data-sec="intro" data-title="Proposed Solution">
+  <div class="kicker" data-a>01 · Introduction</div>
+  <h2 data-a>Proposed Solution</h2>
+  <div class="flow">
+    <div class="step" data-a><div class="dot">1</div><h3>Create</h3><p>Exam builder, question bank, bulk import, approval chain.</p></div>
+    <div class="step" data-a><div class="dot">2</div><h3>Administer</h3><p>Scheduled windows, timed sessions, autosave, auto-scoring.</p></div>
+    <div class="step" data-a><div class="dot">3</div><h3>Monitor</h3><p>Face presence, identity, gaze, and posture analyzed in real time.</p></div>
+    <div class="step" data-a><div class="dot">4</div><h3>Report</h3><p>Exam Behavior Index, alerts, dashboards, CSV and PDF exports.</p></div>
+  </div>
+  <div class="pillars">
+    <div class="pillar" data-a>Facial + postural analysis<span>Upper-body monitoring is rare in existing proctoring systems.</span></div>
+    <div class="pillar" data-a>One standard webcam<span>No extra cameras or biometric hardware.</span></div>
+    <div class="pillar" data-a>Derived metrics only<span>Frames are analyzed in memory; raw video is not stored.</span></div>
+    <div class="pillar" data-a>Indicators, not accusations<span>The final judgment stays with the administrator.</span></div>
+  </div>
+  <p class="tiny mt3" data-a>Anchored on the CHED ACHIEVE Framework: applying digital innovation and emerging technologies to real institutional problems.</p>
+</section>
+
+<!-- =========================== 6 OBJECTIVES =========================== -->
+<section class="slide" data-sec="docs" data-title="Objectives of the Study">
+  <div class="kicker" data-a>02 · Documentation</div>
+  <h2 data-a>Objectives of the Study</h2>
+  <div class="obj">
+    <div class="card wide" data-a><span class="num" style="color:#7fd1a6">GENERAL OBJECTIVE</span><p>To develop Knowing Eye to improve examination integrity, monitoring efficiency, and assessment reliability.</p></div>
+    <div class="card" data-a><span class="num">01</span><h3>Centralized platform</h3><p>Exam creation, administration, and monitoring in one system.</p></div>
+    <div class="card" data-a><span class="num">02</span><h3>Monitoring & data</h3><p>Capture and store examination-related data.</p></div>
+    <div class="card" data-a><span class="num">03</span><h3>Real-time computer vision</h3><p>Face presence and identity; head, gaze, and posture; abnormal patterns.</p></div>
+    <div class="card" data-a><span class="num">04</span><h3>Deep learning</h3><p>YOLO detection, CNN feature extraction, ArcFace identity verification.</p></div>
+    <div class="card" data-a><span class="num">05</span><h3>Behavior scoring</h3><p>Flag anomalies, generate indicators, support admin review of flags.</p></div>
+    <div class="card" data-a><span class="num">06</span><h3>Admin dashboard</h3><p>Review sessions, analyze behavior reports, support integrity decisions.</p></div>
+    <div class="card" data-a><span class="num">07</span><h3>Evaluation</h3><p>Functionality, usability, and effectiveness of the platform.</p></div>
+  </div>
+</section>
+
+<!-- =========================== 7 SCOPE =========================== -->
+<section class="slide" data-sec="docs" data-title="Scope and Limitations">
+  <div class="kicker" data-a>02 · Documentation</div>
+  <h2 data-a>Scope and Limitations</h2>
+  <div class="g2 mt3 scope">
+    <div class="card" data-a style="border-top:4px solid var(--greenv)">
+      <span class="tag g">IN SCOPE</span>
+      <ul class="clean mt2">
+        <li><b>Locale:</b> Legacy College of Compostela, Dagohoy St., Poblacion, Compostela, Davao de Oro.</li>
+        <li><b>Function:</b> create, administer, and automatically score exams, with behavior monitoring.</li>
+        <li><b>Data:</b> examinee webcam streams, system-generated behavior logs, and exam interaction logs.</li>
+        <li><b>Training data:</b> public datasets plus mock exam sessions recorded with consent, used only for training, testing, and evaluation.</li>
+      </ul>
+    </div>
+    <div class="card" data-a style="border-top:4px solid var(--red)">
+      <span class="tag r">LIMITATIONS</span>
+      <ul class="clean mt2">
+        <li>Institutional web-based exams on <b>desktop or laptop computers with a webcam</b>.</li>
+        <li>Out of scope: mobile app, integration with external institutional databases, biometric hardware, nationwide rollout.</li>
+        <li>No offline mode.</li>
+        <li>Produces <b>behavioral indicators, not accusations of cheating</b>. The administrator makes the final call.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 8 SIGNIFICANCE =========================== -->
+<section class="slide" data-sec="docs" data-title="Significance of the Study">
+  <div class="kicker" data-a>02 · Documentation</div>
+  <h2 data-a>Significance of the Study</h2>
+  <div class="g4 mt3">
+    <div class="card tall" data-a><div class="glyph">01</div><span class="num">SCHOOL</span><h3>Legacy College of Compostela</h3><p class="small">Exam integrity, monitoring efficiency, and reliable assessment through centralized management.</p></div>
+    <div class="card tall" data-a><div class="glyph">02</div><span class="num">PROCTORS</span><h3>Exam proctors</h3><p class="small">Suspicious behavior is detected and recorded automatically, so there is less to watch by hand.</p></div>
+    <div class="card tall" data-a><div class="glyph">03</div><span class="num">TEACHERS</span><h3>Teachers and the Guidance Office</h3><p class="small">More behavioral reports, for fairer and more transparent evaluation of sessions.</p></div>
+    <div class="card tall" data-a><div class="glyph">04</div><span class="num">RESEARCH</span><h3>Future researchers</h3><p class="small">A reference for exam platforms built on computer vision, AI, and behavior monitoring.</p></div>
+  </div>
+</section>
+
+<!-- =========================== 9 RRL =========================== -->
+<section class="slide" data-sec="docs" data-title="Review of Related Literature">
+  <div class="kicker" data-a>02 · Documentation · RRL</div>
+  <h2 data-a>Review of Related Literature</h2>
+  <div class="row mt2" data-a style="gap:10px;flex-wrap:wrap">
+    <span class="tag n">Literature</span><span class="muted">→</span><span class="tag n">Factor</span><span class="muted">→</span><span class="tag n">Parameter</span><span class="muted">→</span><span class="tag n">Algorithm</span><span class="muted">→</span><span class="tag n">Measurement</span><span class="muted">→</span><span class="tag g">Threshold</span>
+  </div>
+  <table class="t mt2" data-a>
+    <thead><tr><th style="width:190px">Factor</th><th>What the literature establishes</th><th style="width:300px">Knowing Eye parameter</th></tr></thead>
+    <tbody>
+      <tr><td>Face presence</td><td>The share of frames with a visible face maps to graduated risk: above 75% is no risk, below 50% is maximum risk<cite class="c" data-r="20"></cite>. Facial landmarks capture subtle behavior changes<cite class="c" data-r="19"></cite>.</td><td>Face presence <b>F<sub>p</sub></b>, 2 s grace period</td></tr>
+      <tr><td>Head movement</td><td>Large head-pose changes and face disappearance signal suspicion<cite class="c" data-r="21"></cite>. Deviations are counted against a set threshold<cite class="c" data-r="22"></cite><cite class="c" data-r="5"></cite>.</td><td>Head yaw and pitch angles</td></tr>
+      <tr><td>Eye gaze</td><td>Judge by how often and how long the examinee looks away, not single glances<cite class="c" data-r="23"></cite><cite class="c" data-r="24"></cite>. Use time-bounded limits<cite class="c" data-r="25"></cite>.</td><td>Looking-away compliance <b>G<sub>c</sub></b></td></tr>
+      <tr><td>Upper body</td><td>A front camera captures head and shoulders<cite class="c" data-r="26"></cite>. Body movement is an anomaly cue<cite class="c" data-r="27"></cite>. Sustained deviation from the expected range calls for review<cite class="c" data-r="28"></cite>.</td><td>Upper-body presence <b>U<sub>p</sub></b></td></tr>
+      <tr><td>Behavior patterns</td><td>Combined visual cues are more reliable than any single factor<cite class="c" data-r="29"></cite><cite class="c" data-r="30"></cite>.</td><td>Composite EBI + escalation ladder</td></tr>
+      <tr><td>Ethics</td><td>Transparency, data privacy, fairness, and explainability are required<cite class="c" data-r="12"></cite><cite class="c" data-r="16"></cite>.</td><td>Derived metrics only; human review</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- =========================== 10 RELATED SYSTEMS =========================== -->
+<section class="slide" data-sec="docs" data-title="Comparison of Related Systems">
+  <div class="kicker" data-a>02 · Documentation · Related Works</div>
+  <h2 data-a>Comparison of Related Systems</h2>
+  <table class="t cmp mt1" data-a id="cmpTable" style="font-size:15px"></table>
+  <p class="tiny mt1" data-a>Adapted from Table 1 of the paper. Systems: iExam<cite class="c" data-r="31"></cite>, AI-Based Online Examination Proctoring System<cite class="c" data-r="32"></cite>, Online Exam Proctoring System Based on AI<cite class="c" data-r="33"></cite>, Online Exam Proctoring Application Using AI<cite class="c" data-r="34"></cite>.</p>
+</section>
+
+<!-- =========================== 11 METHODOLOGY =========================== -->
+<section class="slide" data-sec="docs" data-title="Methodology">
+  <div class="kicker" data-a>02 · Documentation · Methodology</div>
+  <h2 data-a>Methodology<cite class="c" data-r="43"></cite></h2>
+  <div class="g2 mt2" style="grid-template-columns:.9fr 1.1fr;align-items:center">
+    <div class="chart" data-a="scale"><svg viewBox="0 0 520 520" id="agileRing"></svg></div>
+    <div>
+      <p class="lede" data-a style="margin:0 0 22px">The platform's parts (exam features, real-time monitoring, facial and postural analysis) needed to change during development. Agile let us build, test, and refine each part in short cycles.</p>
+      <div class="card" data-a style="padding:18px 22px"><h3 style="font-size:20px">Preliminary defense</h3><p class="small">Three titles were proposed. The panel approved <i>Knowing Eye</i>.</p></div>
+      <div class="card mt1" data-a style="padding:18px 22px"><h3 style="font-size:20px">Environmental scan · June 1, 2026</h3><p class="small">Studied LCC's current exam process, its online-assessment problems, and the requirements for the platform.</p></div>
+      <div class="card mt1" data-a style="padding:18px 22px"><h3 style="font-size:20px">Planning artifacts</h3><p class="small">Team organization chart, sprint-based WBS, Gantt chart, and a room floor plan with 20 workstations and 1 proctor station.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 12 PLANNING ARTIFACTS =========================== -->
+<section class="slide" data-sec="docs" data-title="Planning Artifacts">
+  <div class="kicker" data-a>02 · Documentation · System Planning</div>
+  <h2 data-a>Planning Artifacts</h2>
+  <div class="g2 mt2" style="grid-template-rows:310px 310px;gap:20px">
+    <div class="frame" data-a><div class="bar"><i></i><i></i><i></i><span>Figure 6 · Project development team</span></div><div class="shot" data-shot="fig-team-chart" data-label="Project team chart" data-hint="Figure 6 of the paper"></div></div>
+    <div class="frame" data-a><div class="bar"><i></i><i></i><i></i><span>Figure 7 · figures/agile-wbs.html</span></div><div class="shot" data-shot="fig-wbs" data-label="Work breakdown structure" data-hint="Figure 7 · Agile sprint WBS"></div></div>
+    <div class="frame" data-a><div class="bar"><i></i><i></i><i></i><span>Figures 8–9 · figures/floor-plan.html</span></div><div class="shot" data-shot="fig-floor-plan" data-label="Exam room floor plan" data-hint="20 workstations + 1 proctor station"></div></div>
+    <div class="frame" data-a><div class="bar"><i></i><i></i><i></i><span>Figure 10 · figures/gantt-chart.html</span></div><div class="shot" data-shot="fig-gantt" data-label="Gantt chart" data-hint="Figure 10 · project schedule"></div></div>
+  </div>
+</section>
+
+<!-- =========================== 13 REQUIREMENTS =========================== -->
+<section class="slide" data-sec="docs" data-title="Functional and Non-Functional Requirements">
+  <div class="kicker" data-a>02 · Documentation · System Analysis</div>
+  <h2 data-a>Functional and Non-Functional Requirements</h2>
+  <div class="g2 mt2" style="grid-template-columns:1.25fr .75fr">
+    <div class="g2" style="gap:14px">
+      <div class="card" data-a style="padding:18px 22px"><span class="num">FR · ACCESS</span><p class="small">Registration and login with JWT access and refresh tokens; role-based access control; user account management.</p></div>
+      <div class="card" data-a style="padding:18px 22px"><span class="num">FR · EXAMS</span><p class="small">Create, update, publish, archive, and delete exams and their questions.</p></div>
+      <div class="card" data-a style="padding:18px 22px"><span class="num">FR · SESSIONS</span><p class="small">Availability window and attempt limits; one active session per exam; timed answering; automatic scoring with pass/fail.</p></div>
+      <div class="card" data-a style="padding:18px 22px"><span class="num">FR · MONITORING</span><p class="small">Reference-face enrollment; frames over WebSocket with REST fallback; detection of absence, gaze, posture, and identity mismatch; severity-graded alerts.</p></div>
+      <div class="card" data-a style="padding:18px 22px;grid-column:span 2"><span class="num">FR · REPORTING</span><p class="small">Live alerts and resolution; dashboard KPIs; session reports; time-series analytics; CSV export; examinee history.</p></div>
+    </div>
+    <div class="card" data-a style="background:var(--navy);color:#fff;border-color:var(--navy)">
+      <span class="num" style="color:#7fd1a6">NON-FUNCTIONAL</span>
+      <div class="tech" style="border-color:rgba(255,255,255,.1);color:#b9c6d9"><b style="color:#fff">Security</b>PBKDF2 · JWT · HTTPS/WSS · RBAC on every endpoint</div>
+      <div class="tech" style="border-color:rgba(255,255,255,.1);color:#b9c6d9"><b style="color:#fff">Privacy</b>Raw frames not stored (KE_STORE_FRAMES=False)</div>
+      <div class="tech" style="border-color:rgba(255,255,255,.1);color:#b9c6d9"><b style="color:#fff">Reliability</b>AI falls back to a stub if ML libraries are missing; the API still responds</div>
+      <div class="tech" style="border-color:rgba(255,255,255,.1);color:#b9c6d9"><b style="color:#fff">Scalability</b>Redis channel layer for multi-worker WebSockets</div>
+      <div class="tech" style="border-color:rgba(255,255,255,.1);color:#b9c6d9"><b style="color:#fff">Maintainability</b>Modular monolith organized by feature; 275 automated backend test cases</div>
+      <div class="tech" style="border-color:rgba(255,255,255,.1);color:#b9c6d9"><b style="color:#fff">Portability · Usability</b>Windows/Linux, SQLite → PostgreSQL · responsive, role-based navigation</div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 14 DESIGN MODELS =========================== -->
+<section class="slide" data-sec="docs" data-title="Analysis and Design Models">
+  <div class="kicker" data-a>02 · Documentation · Analysis & Design</div>
+  <h2 data-a>Analysis and Design Models</h2>
+  <div class="g4 mt2" style="height:400px;gap:18px">
+    <div class="frame" data-a><div class="bar"><i></i><i></i><i></i><span>Fig. 13 · Use case</span></div><div class="shot" data-shot="fig-use-case" data-label="Use case diagram" data-hint="Figure 13"></div></div>
+    <div class="frame" data-a><div class="bar"><i></i><i></i><i></i><span>Fig. 14 · CFD Level 0</span></div><div class="shot" data-shot="fig-cfd" data-label="Context flow diagram" data-hint="figures/cfd-level0.html"></div></div>
+    <div class="frame" data-a><div class="bar"><i></i><i></i><i></i><span>Fig. 15 · DFD Level 1</span></div><div class="shot" data-shot="fig-dfd" data-label="DFD Level 1" data-hint="figures/dfd-level1.html"></div></div>
+    <div class="frame" data-a><div class="bar"><i></i><i></i><i></i><span>Fig. 16 · ERD</span></div><div class="shot" data-shot="fig-erd" data-label="Entity relationship diagram" data-hint="Figure 16"></div></div>
+  </div>
+  <div class="g3 mt2">
+    <p class="small" data-a><b>CFD:</b> four external entities: Examiner/Admin, Examinee, Webcam, and the Email/OTP service (a Supabase Edge Function, which is a real external dependency).</p>
+    <p class="small" data-a><b>DFD L1:</b> six processes, one per Django feature app, and five data stores (D1–D5). Reporting only reads; it has no store of its own.</p>
+    <p class="small" data-a><b>ERD:</b> users, exams, questions, sessions, responses, session logs, behavior logs, alerts, and identity references.</p>
+  </div>
+</section>
+
+<!-- =========================== 15 ARCHITECTURE =========================== -->
+<section class="slide" data-sec="tech" data-title="System Architecture">
+  <div class="kicker" data-a>03 · Technical Details</div>
+  <h2 data-a>System Architecture</h2>
+  <div class="arch">
+    <div class="tier" data-a="left">
+      <div class="th">Client tier</div><h3>Browser</h3>
+      <div class="node"><b>Examinee app</b>React 18 + Vite + TypeScript<cite class="c" data-r="48"></cite><cite class="c" data-r="50"></cite></div>
+      <div class="node hi"><b>Webcam capture</b>getUserMedia() snapshots, secure context only<cite class="c" data-r="56"></cite></div>
+      <div class="node"><b>Examiner / proctor console</b>Live monitoring, builder, reports</div>
+      <div class="host">▲ Vercel<cite class="c" data-r="99"></cite></div>
+    </div>
+    <div class="wire" data-a="fade"><div></div><span>HTTPS<br>REST</span><div class="rev"></div><span>WSS<br>frames · alerts</span><div></div></div>
+    <div class="tier" data-a>
+      <div class="th">Server tier</div><h3>Application</h3>
+      <div class="node"><b>Nginx</b>Reverse proxy, TLS (Let's Encrypt)<cite class="c" data-r="76"></cite><cite class="c" data-r="78"></cite></div>
+      <div class="node"><b>Daphne ASGI · Django 6 + DRF + Channels</b>REST API and WebSocket consumers in one process<cite class="c" data-r="58"></cite><cite class="c" data-r="60"></cite><cite class="c" data-r="61"></cite></div>
+      <div class="node hi"><b>AI pipeline</b>backend/ai/knowing_eye: detection, identity, EBI, escalation</div>
+      <div class="host">▲ Railway<cite class="c" data-r="98"></cite></div>
+    </div>
+    <div class="wire" data-a="fade"><div></div><span>SQL</span><div class="rev"></div><span>pub/sub</span><div></div></div>
+    <div class="tier" data-a="left">
+      <div class="th">Data tier</div><h3>Storage</h3>
+      <div class="node"><b>PostgreSQL 17</b>Hosted on Supabase; SQLite in development<cite class="c" data-r="62"></cite><cite class="c" data-r="72"></cite></div>
+      <div class="node"><b>Redis</b>channels-redis layer for broadcasting to multiple workers<cite class="c" data-r="65"></cite></div>
+      <div class="node ext"><b>Email / OTP</b>Supabase Edge Function (external)</div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 16 PIPELINE =========================== -->
+<section class="slide" data-sec="tech" data-title="AI Monitoring Pipeline">
+  <div class="kicker" data-a>03 · Technical Details</div>
+  <h2 data-a>AI Monitoring Pipeline</h2>
+  <div class="pipe">
+    <div class="pulse"></div>
+    <div class="ps" data-a><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div><h3>Capture</h3><p>Webcam snapshots (~5 fps target), sent as JPEG/base64 over WSS with REST fallback.</p></div>
+    <div class="ps" data-a><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></div><h3>Preprocess</h3><p>OpenCV: resize to ≤640 px, light denoise, histogram normalization<cite class="c" data-r="73"></cite>.</p></div>
+    <div class="ps" data-a><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7 21v-2a5 5 0 0110 0v2"/></svg></div><h3>Detect</h3><p>YOLOv8n face detector<cite class="c" data-r="71"></cite>. MediaPipe Face (468 landmarks) and Pose<cite class="c" data-r="68"></cite><cite class="c" data-r="69"></cite>.</p></div>
+    <div class="ps" data-a><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div><h3>Verify</h3><p>ArcFace (buffalo_l) embeddings compared by cosine distance; checked every 3rd frame on a background thread<cite class="c" data-r="70"></cite>.</p></div>
+    <div class="ps" data-a><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div><h3>Score</h3><p>Four indicators normalized to 0–100, combined into an EBI per frame, plus a running session mean.</p></div>
+    <div class="ps" data-a><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></div><h3>Escalate</h3><p>A 60 s sliding window sets the tier; alerts are saved and pushed to the dashboard.</p></div>
+  </div>
+  <div class="foot2">
+    <div class="card" data-a><b>Privacy by default.</b> Frames are analyzed in memory and never written to the database (KE_STORE_FRAMES=False). Face embeddings are kept per session and deleted with it.</div>
+    <div class="card" data-a><b>Keeps running when parts fail.</b> If the ML libraries are missing, the adapter switches to a deterministic stub, so the monitoring API still responds and exams continue.</div>
+  </div>
+</section>
+
+<!-- =========================== 17 EBI =========================== -->
+<section class="slide" data-sec="tech" data-title="Exam Behavior Index">
+  <div class="kicker" data-a>03 · Technical Details · Interactive</div>
+  <h2 data-a>Exam Behavior Index (EBI)</h2>
+  <div class="ebi">
+    <div>
+      <div class="formula" data-a>EBI = (F<sub>p</sub> + F<sub>i</sub> + U<sub>p</sub> + G<sub>c</sub>) / N
+        <div class="eq" id="ebiEq">= (100 + 100 + 100 + 100) / 4</div></div>
+      <div data-a class="mt2">
+        <div class="sl"><label><b>F<sub>p</sub></b>Face presence</label><input type="range" min="0" max="100" value="96" id="eFp"><output id="oFp"></output></div>
+        <div class="sl"><label><b>F<sub>i</sub></b>Identity consistency</label><input type="range" min="0" max="100" value="92" id="eFi"><output id="oFi"></output></div>
+        <div class="sl"><label><b>U<sub>p</sub></b>Upper-body presence</label><input type="range" min="0" max="100" value="84" id="eUp"><output id="oUp"></output></div>
+        <div class="sl"><label><b>G<sub>c</sub></b>Looking-away compliance</label><input type="range" min="0" max="100" value="71" id="eGc"><output id="oGc"></output></div>
+        <label class="toggle"><input type="checkbox" id="eEn" checked> Reference face enrolled (N = 4; otherwise identity is left out and N = 3)</label>
+      </div>
+      <p class="tiny mt2" data-a>The four indicators are <b>formative</b>: each measures a different aspect of behavior, so they need not be correlated<cite class="c" data-r="46"></cite><cite class="c" data-r="47"></cite>. Combining several cues follows proctoring practice<cite class="c" data-r="44"></cite><cite class="c" data-r="45"></cite>.</p>
+    </div>
+    <div data-a>
+      <div class="gauge">
+        <svg viewBox="0 0 260 260"><circle cx="130" cy="130" r="108" fill="none" stroke="#e7e3d6" stroke-width="20"/>
+          <circle id="ebiArc" cx="130" cy="130" r="108" fill="none" stroke="#1f8a5b" stroke-width="20" stroke-linecap="round" transform="rotate(-90 130 130)" stroke-dasharray="678.6" stroke-dashoffset="678.6" style="transition:stroke-dashoffset .5s cubic-bezier(.2,.7,.2,1),stroke .3s"/>
+          <text x="130" y="140" text-anchor="middle" class="val" id="ebiVal">0</text><text x="130" y="172" text-anchor="middle" class="lbl">EBI</text></svg>
+        <div class="bands">
+          <div class="band good" id="bGood"><b>Good · EBI ≥ 80</b><span>All indicators are within acceptable limits.</span></div>
+          <div class="band mid" id="bMid"><b>Mid · 50 ≤ EBI &lt; 80</b><span>One or more indicators deviate moderately. Needs review.</span></div>
+          <div class="band bad" id="bBad"><b>Bad · EBI &lt; 50</b><span>Significant deviation. Review first.</span></div>
+        </div>
+      </div>
+      <div class="card mt2" style="padding:18px 22px"><p class="small"><b>Why 80 and 50?</b> A published proctoring risk model treats compliance above 75% as no risk and below 50% as maximum risk<cite class="c" data-r="20"></cite>. We set the upper cut-off at 80, slightly stricter than 75, so a "good" rating is never more lenient than the reference. Classification uses a fixed threshold, as in prior work<cite class="c" data-r="14"></cite>.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 18 THRESHOLDS =========================== -->
+<section class="slide" data-sec="tech" data-title="CV Parameters and Thresholds">
+  <div class="kicker" data-a>03 · Technical Details</div>
+  <h2 data-a>CV Parameters and Thresholds</h2>
+  <table class="t mt2" data-a style="font-size:16px">
+    <thead><tr><th>Parameter</th><th>Detected by</th><th>Threshold</th><th>Anomaly when</th><th>Severity</th></tr></thead>
+    <tbody>
+      <tr><td>Face presence</td><td>YOLOv8n · MediaPipe Face</td><td class="mono">grace 2.0 s</td><td>Face absent for longer than the grace period<cite class="c" data-r="20"></cite></td><td><span class="tag r">High</span></td></tr>
+      <tr><td>Identity match</td><td>ArcFace buffalo_l</td><td class="mono">cos-dist 0.42 (≈0.58 sim)</td><td>Median of the last 5 checks is above the threshold. Stricter than InsightFace's own 0.40-similarity example<cite class="c" data-r="70"></cite></td><td><span class="tag r">High · critical immediately</span></td></tr>
+      <tr><td>Gaze / head pose</td><td>MediaPipe face transform</td><td class="mono">yaw 40° · pitch 35°</td><td>The angle persists across the time window; an angle alone never flags<cite class="c" data-r="22"></cite><cite class="c" data-r="25"></cite></td><td><span class="tag a">Medium</span></td></tr>
+      <tr><td>Upper body</td><td>MediaPipe Pose</td><td class="mono">shoulder vis ≥ 0.5 · 3.0 s</td><td>Out of frame for longer than the grace period<cite class="c" data-r="26"></cite><cite class="c" data-r="28"></cite></td><td><span class="tag a">Medium</span></td></tr>
+      <tr><td>Posture</td><td>MediaPipe Pose geometry</td><td class="mono">tilt 0.18 (~10°) · lean 0.30</td><td>Sustained lean. <i>Values derived by the team, and labeled as such</i></td><td><span class="tag g">Low</span></td></tr>
+      <tr><td>Suspicious pattern</td><td>Temporal aggregation</td><td class="mono">3 flags / 60 s · 120 s cooldown</td><td>The same signal repeats, judged by frequency over time<cite class="c" data-r="23"></cite></td><td><span class="tag r">High</span></td></tr>
+    </tbody>
+  </table>
+  <p class="small mt2" data-a>Identity checks are skipped on faces smaller than 64 px or turned more than 30°, where ArcFace distances become unreliable. The last decision carries over instead of raising a false mismatch. All values live in <span class="mono">backend/ai/config/pipeline.yaml</span> with their citations.</p>
+</section>
+
+<!-- =========================== 19 ESCALATION =========================== -->
+<section class="slide" data-sec="tech" data-title="Escalation Ladder">
+  <div class="kicker" data-a>03 · Technical Details · Interactive</div>
+  <h2 data-a>Escalation Ladder</h2>
+  <div class="ladder" data-a>
+    <div class="rung normal" data-t="normal"><b>Normal</b><span>No events in the last 60 s.</span></div>
+    <div class="rung warning" data-t="warning"><b>Warning</b><span>Isolated signals. Logged only.</span></div>
+    <div class="rung suspicious" data-t="suspicious"><b>Suspicious</b><span>Score ≥ 1.5, or the same signal 3 times.</span></div>
+    <div class="rung critical" data-t="critical"><b>Critical</b><span>Score ≥ 2.5, or any identity mismatch.</span></div>
+    <div class="rung action" data-t="action"><b>Action</b><span>A proctor pauses, resumes, or terminates. Never automatic.</span></div>
+  </div>
+  <div class="sim">
+    <div data-a>
+      <p class="small"><b>Simulate events within one 60-second window.</b> Each type carries its weight from pipeline.yaml. Click a logged event to remove it.</p>
+      <div class="evbtns mt1">
+        <button class="evb" data-ev="no_face">Face absent <small>1.00</small></button>
+        <button class="evb" data-ev="looking_away">Looking away <small>0.70</small></button>
+        <button class="evb" data-ev="leaving_seat">Left frame <small>0.75</small></button>
+        <button class="evb" data-ev="bad_posture">Poor posture <small>0.60</small></button>
+        <button class="evb" data-ev="identity_mismatch">Identity mismatch <small>0.95</small></button>
+        <button class="evb reset" id="evReset">Reset</button>
+      </div>
+      <div class="evlog" id="evLog"><span class="empty">No events yet. The session is Normal.</span></div>
+    </div>
+    <div class="card" data-a style="padding:20px 24px">
+      <div class="row" style="justify-content:space-between;align-items:baseline"><b style="font-size:19px">Combined score</b><span class="mono" id="evScore" style="font-size:26px;font-weight:600">0.00</span></div>
+      <div class="meter" id="evMeter"><i></i><div class="mk" style="left:37.5%"><span>1.5</span></div><div class="mk" style="left:62.5%"><span>2.5</span></div></div>
+      <p class="small mt3" id="evWhy">Score = sum of event weights × (1 + 0.5 × each additional distinct signal type). Combined signals count for more than one isolated signal.</p>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 20 YOLO TRAINING =========================== -->
+<section class="slide" data-sec="tech" data-title="Face Detection Model Testing">
+  <div class="kicker" data-a>03 · Technical Details · System Testing</div>
+  <h2 data-a>Face Detection Model Testing</h2>
+  <div class="g2 mt2" style="grid-template-columns:1.15fr .85fr;align-items:start">
+    <div class="card chart" data-a style="padding:20px 24px 14px"><svg viewBox="0 0 760 400" id="yoloChart"></svg></div>
+    <div>
+      <div class="kv" style="grid-template-columns:1fr 1fr" data-a>
+        <div class="stat"><div class="v"><span class="count" data-to="96.94" data-dec="2">0</span><small>%</small></div><div class="l">Precision</div></div>
+        <div class="stat"><div class="v"><span class="count" data-to="89.04" data-dec="2">0</span><small>%</small></div><div class="l">mAP@0.5</div></div>
+        <div class="stat"><div class="v"><span class="count" data-to="88.32" data-dec="2">0</span><small>%</small></div><div class="l">F1-score</div></div>
+        <div class="stat"><div class="v"><span class="count" data-to="81.11" data-dec="2">0</span><small>%</small></div><div class="l">Recall</div></div>
+      </div>
+      <div class="card mt1" data-a style="padding:16px 20px"><p class="small"><b>Dataset:</b> WIDER FACE + FDDB, single face class, <b>3,216 train / 804 validation (80/20)</b>, 100 epochs, evaluated every 20 epochs.</p></div>
+      <p class="small mt1" data-a>Recall levels off near 81% because WIDER FACE is full of small, occluded faces in crowds. At webcam distance, high precision matters more: a false face would corrupt the identity and behavior stages downstream.</p>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 21 ALGORITHM COMPARISON =========================== -->
+<section class="slide" data-sec="tech" data-title="Algorithm Comparison">
+  <div class="kicker" data-a>03 · Technical Details · Algorithm Comparison</div>
+  <h2 data-a>Algorithm Comparison</h2>
+  <table class="t mt2" data-a style="font-size:16.5px">
+    <thead><tr><th>Model</th><th>Type</th><th>mAP@0.5</th><th>mAP@.5:.95</th><th>Precision</th><th>Recall</th><th>F1</th><th>ms / frame</th><th>Params</th></tr></thead>
+    <tbody>
+      <tr style="background:rgba(31,138,91,.07)"><td>YOLOv8n <span class="tag g" style="margin-left:6px">selected</span></td><td>1-stage CNN</td><td>88.98</td><td>66.10</td><td class="best">95.84</td><td>81.76</td><td>88.24</td><td>4.28</td><td>3.01 M</td></tr>
+      <tr><td>YOLOv11n</td><td>1-stage CNN</td><td>88.96</td><td>66.58</td><td>94.08</td><td>81.78</td><td>87.50</td><td class="best">3.34</td><td class="best">2.59 M</td></tr>
+      <tr><td>RT-DETR-l</td><td>Transformer</td><td class="best">90.14</td><td class="best">68.17</td><td>92.97</td><td class="best">84.09</td><td class="best">88.31</td><td>42.80</td><td>32.81 M</td></tr>
+    </tbody>
+  </table>
+  <div class="g2 mt2" style="grid-template-columns:1.1fr .9fr;align-items:center">
+    <div class="card" data-a style="padding:18px 26px 22px">
+      <b style="font-size:17px">Throughput (FPS) against the 30 FPS live-webcam requirement</b>
+      <div class="hbar"><b>YOLOv8n</b><div class="track"><div class="fill sel" style="--w:73%"></div><div class="rt" style="left:9.4%"></div></div><output>233.5</output></div>
+      <div class="hbar"><b>YOLOv11n</b><div class="track"><div class="fill" style="--w:93.6%"></div><div class="rt" style="left:9.4%"></div></div><output>299.4</output></div>
+      <div class="hbar"><b>RT-DETR-l</b><div class="track"><div class="fill slow" style="--w:7.3%"></div><div class="rt" style="left:9.4%"></div></div><output>23.4</output></div>
+      <p class="tiny" style="margin-left:134px">Dashed line = 30 FPS</p>
+    </div>
+    <div data-a>
+      <div class="callout" style="font-size:19px">YOLOv8n has the highest precision (fewest false "multiple faces" alerts) at 233 FPS. RT-DETR-l gains about 1 point of mAP but runs ~10× slower, misses real time, and its training diverged at epoch 66.</div>
+      <p class="tiny mt1">YOLOv11n is an equally valid choice when size or speed matters most. Mean confidence at conf ≥ 0.25: 79.19% / 77.25% / 69.27%.</p>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 22 TECH STACK =========================== -->
+<section class="slide" data-sec="tech" data-title="Technology Stack">
+  <div class="kicker" data-a>03 · Technical Details</div>
+  <h2 data-a>Technologies, Concepts, and Theories</h2>
+  <div class="stack">
+    <div class="col" data-a><h3><i></i>Frontend</h3>
+      <div class="tech"><b>React 18 + Vite 6<cite class="c" data-r="48"></cite><cite class="c" data-r="49"></cite></b>Exam, dashboard, monitoring, and report views</div>
+      <div class="tech"><b>TypeScript 5<cite class="c" data-r="50"></cite></b>Typed API, exam, and monitoring models</div>
+      <div class="tech"><b>React Router 7 · TanStack Query<cite class="c" data-r="52"></cite><cite class="c" data-r="51"></cite></b>Role-guarded routes, server-state caching</div>
+      <div class="tech"><b>Tailwind 4 + shadcn/ui<cite class="c" data-r="53"></cite><cite class="c" data-r="54"></cite></b>Institutional design system</div>
+      <div class="tech"><b>Tremor · SheetJS<cite class="c" data-r="88"></cite><cite class="c" data-r="87"></cite></b>Charts and Excel export</div>
+    </div>
+    <div class="col" data-a><h3><i></i>Backend</h3>
+      <div class="tech"><b>Django 6 + DRF<cite class="c" data-r="58"></cite><cite class="c" data-r="59"></cite></b>Users, exams, sessions, and reports API</div>
+      <div class="tech"><b>Channels + Daphne<cite class="c" data-r="60"></cite><cite class="c" data-r="61"></cite></b>ASGI WebSockets for live monitoring</div>
+      <div class="tech"><b>Redis · channels-redis<cite class="c" data-r="64"></cite><cite class="c" data-r="65"></cite></b>Channel layer and cache</div>
+      <div class="tech"><b>ReportLab<cite class="c" data-r="66"></cite></b>PDF exam and monitoring reports</div>
+      <div class="tech"><b>Threshold classifier<cite class="c" data-r="75"></cite></b>Maps the EBI to good / mid / bad</div>
+    </div>
+    <div class="col" data-a><h3><i></i>AI / Computer vision</h3>
+      <div class="tech"><b>YOLOv8n (Ultralytics)<cite class="c" data-r="71"></cite></b>Face detection</div>
+      <div class="tech"><b>MediaPipe Face + Pose<cite class="c" data-r="68"></cite><cite class="c" data-r="69"></cite></b>468 face landmarks; upper-body pose</div>
+      <div class="tech"><b>ArcFace (InsightFace buffalo_l)<cite class="c" data-r="70"></cite></b>Identity embeddings, cosine distance</div>
+      <div class="tech"><b>OpenCV + NumPy<cite class="c" data-r="73"></cite><cite class="c" data-r="74"></cite></b>Frame decoding and array math</div>
+      <div class="tech"><b>CUDA (optional)<cite class="c" data-r="80"></cite></b>GPU acceleration</div>
+    </div>
+    <div class="col" data-a><h3><i></i>Data & deployment</h3>
+      <div class="tech"><b>PostgreSQL 17 on Supabase<cite class="c" data-r="62"></cite><cite class="c" data-r="72"></cite></b>Production database; SQLite in development</div>
+      <div class="tech"><b>Nginx · Let's Encrypt<cite class="c" data-r="76"></cite><cite class="c" data-r="78"></cite></b>Reverse proxy and TLS</div>
+      <div class="tech"><b>Vercel · Railway<cite class="c" data-r="99"></cite><cite class="c" data-r="98"></cite></b>Frontend and backend hosting</div>
+      <div class="tech"><b>Vitest · Django test runner<cite class="c" data-r="85"></cite><cite class="c" data-r="86"></cite></b>Automated testing</div>
+      <div class="tech"><b>Git + GitHub · VS Code<cite class="c" data-r="83"></cite><cite class="c" data-r="82"></cite></b>Version control and IDE</div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 23 SECURITY =========================== -->
+<section class="slide" data-sec="tech" data-title="Security and Privacy">
+  <div class="kicker" data-a>03 · Technical Details · Systems Security Plan</div>
+  <h2 data-a>Security and Privacy</h2>
+  <div class="g3 mt3">
+    <div class="card" data-a><span class="num">AUTHENTICATION</span><h3>Who you are</h3><ul class="clean"><li>PBKDF2-salted password hashes<cite class="c" data-r="89"></cite><cite class="c" data-r="90"></cite></li><li>JWT: 60-min access token, 7-day refresh token, rotation + blacklist<cite class="c" data-r="91"></cite><cite class="c" data-r="92"></cite></li><li>OTP email verification at signup</li></ul></div>
+    <div class="card" data-a><span class="num">AUTHORIZATION</span><h3>What you may do</h3><ul class="clean"><li>RBAC with per-user permission grants on every API and WebSocket route<cite class="c" data-r="93"></cite></li><li>WebSocket JWT checked by JWTAuthMiddleware</li><li>Permission changes audited (PermissionChange)</li></ul></div>
+    <div class="card" data-a><span class="num">TRANSPORT</span><h3>How data travels</h3><ul class="clean"><li>TLS 1.2+ via Nginx, HSTS, secure cookies<cite class="c" data-r="94"></cite><cite class="c" data-r="95"></cite></li><li>CORS limited to known frontend origins<cite class="c" data-r="96"></cite></li><li>Rate limits: 60/min anonymous · 1,200/min authenticated</li></ul></div>
+  </div>
+  <div class="g2 mt2">
+    <div class="card" data-a style="border-left:4px solid var(--greenv)"><span class="num">PRIVACY</span><p class="small">No raw video stored. Behavior logs are scoped to their session, so examinees see only their own. Face embeddings are deleted with the session to prevent biometric misuse. Uploads are checked for size and type.</p></div>
+    <div class="card" data-a style="border-left:4px solid var(--red)"><span class="num">INCIDENT RESPONSE</span><p class="small">Watch logs for spikes in 401/403/500 errors. If breached: rotate DJANGO_SECRET_KEY, invalidate JWTs, force password resets. Monthly <span class="mono">pip audit</span> and <span class="mono">npm audit</span>.</p></div>
+  </div>
+</section>
+
+<!-- =========================== 24 ROLES =========================== -->
+<section class="slide" data-sec="system" data-title="User Roles and Access Control">
+  <div class="kicker" data-a>04 · System Presentation</div>
+  <h2 data-a>User Roles and Access Control</h2>
+  <div class="roles">
+    <div class="role" data-a><span class="lv">L0</span><div><b>Administrator</b><span>Oversight, user and role management, system settings.</span></div></div>
+    <div class="role" data-a><span class="lv l1">L1</span><div><b>Program Head</b><span>Reviews and approves or rejects submitted exams.</span></div></div>
+    <div class="role" data-a><span class="lv op">OP</span><div><b>Guidance Staff</b><span>Creates psychological, abstract, and behavioral exams.</span></div></div>
+    <div class="role" data-a><span class="lv op">OP</span><div><b>Teacher / Exam Creator</b><span>Builds exams and submits them for review.</span></div></div>
+    <div class="role" data-a><span class="lv op">OP</span><div><b>Proctor</b><span>Monitors live sessions, resolves alerts, pauses or resumes sessions.</span></div></div>
+    <div class="role" data-a><span class="lv ex">EX</span><div><b>Examinee</b><span>Takes assigned exams and views their own results.</span></div></div>
+  </div>
+  <div class="g2 mt3">
+    <div data-a>
+      <b style="font-size:19px">Three-tier access engine</b>
+      <div class="tiers3"><div>Role guard<span>Is this role allowed here?</span></div><div>Module access<span>Can this user open the module?</span></div><div>Action permission<span>Per-user grant or deny</span></div></div>
+    </div>
+    <div data-a>
+      <b style="font-size:19px">An exam cannot go live without approval</b>
+      <div class="chain"><span class="st">Draft</span><span class="ar">→</span><span class="st">Pending review</span><span class="ar">→</span><span class="st ok">Approved</span><span class="ar">→</span><span class="st">Published</span></div>
+      <div class="chain"><span class="st rej">Rejected</span><span class="ar">→</span><span class="small">returned to Draft with a note</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 25 EXAMINEE JOURNEY =========================== -->
+<section class="slide" data-sec="system" data-title="Examinee Module" data-steps="3">
+  <div class="kicker" data-a>04 · System Presentation · press → to step through</div>
+  <h2 data-a>Examinee Module</h2>
+  <div class="walk">
+    <div class="steps" data-a="left">
+      <button class="wstep" data-go="0"><span class="wn">STEP 01</span><b>Register and verify</b><p>Only essential fields; photo is optional. A one-time code sent by email activates the account.</p></button>
+      <button class="wstep" data-go="1"><span class="wn">STEP 02</span><b>Exam setup</b><p>System check, camera permission, and reference-face enrollment before the timer starts.</p></button>
+      <button class="wstep" data-go="2"><span class="wn">STEP 03</span><b>Take the exam</b><p>Timed and autosaved. The proctoring dock stays fixed on screen. Right-click and copy are blocked, and tab switches are counted.</p></button>
+      <button class="wstep" data-go="3"><span class="wn">STEP 04</span><b>Submit and get results</b><p>Scored automatically. Essays are held for manual grading, and an email goes out when results are released.</p></button>
+    </div>
+    <div class="screens" data-a="fade">
+      <div class="frame" data-k="0"><div class="bar"><i></i><i></i><i></i><span>/register → OTP verification</span></div><div class="shot" data-shot="register-otp" data-label="Registration + OTP" data-hint="Register page → email code step"></div></div>
+      <div class="frame" data-k="1"><div class="bar"><i></i><i></i><i></i><span>/exam-setup · system check + face enrollment</span></div><div class="shot" data-shot="exam-setup" data-label="Exam setup" data-hint="Camera check + reference face"></div></div>
+      <div class="frame" data-k="2"><div class="bar"><i></i><i></i><i></i><span>/exam/take · proctoring dock</span></div><div class="shot" data-shot="exam-taking" data-label="Exam taking" data-hint="Question view with live dock"></div></div>
+      <div class="frame" data-k="3"><div class="bar"><i></i><i></i><i></i><span>/exam/results</span></div><div class="shot" data-shot="exam-results" data-label="Submitted / results" data-hint="Score, pass/fail, pending review"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 26 EXAMINER JOURNEY =========================== -->
+<section class="slide" data-sec="system" data-title="Examiner Module" data-steps="4">
+  <div class="kicker" data-a>04 · System Presentation · press → to step through</div>
+  <h2 data-a>Examiner Module</h2>
+  <div class="walk">
+    <div class="steps" data-a="left">
+      <button class="wstep" data-go="0"><span class="wn">STEP 01</span><b>Build</b><p>Sections, drag-and-drop ordering, images in questions and answer choices, XLSX/CSV import with validation.</p></button>
+      <button class="wstep" data-go="1"><span class="wn">STEP 02</span><b>Approve and schedule</b><p>Program-head approval, open/close window, locked auto-generated exam code, candidate roster with seat labels.</p></button>
+      <button class="wstep" data-go="2"><span class="wn">STEP 03</span><b>Grade</b><p>Speed Grader for essay items; item analysis on the exam summary.</p></button>
+      <button class="wstep" data-go="3"><span class="wn">STEP 04</span><b>Report</b><p>KPIs, EBI averages by department, time series, severity histogram, CSV and PDF export.</p></button>
+      <button class="wstep" data-go="4"><span class="wn">STEP 05</span><b>Manage access</b><p>Users, roles, and per-user permission grants with an audit trail.</p></button>
+    </div>
+    <div class="screens" data-a="fade">
+      <div class="frame" data-k="0"><div class="bar"><i></i><i></i><i></i><span>/examiner/exams/builder</span></div><div class="shot" data-shot="exam-builder" data-label="Exam builder" data-hint="Questions tab with drag-and-drop"></div></div>
+      <div class="frame" data-k="1"><div class="bar"><i></i><i></i><i></i><span>/examiner/exams/:id · settings + approval</span></div><div class="shot" data-shot="exam-approval" data-label="Approval & schedule" data-hint="Settings tab, window, candidates"></div></div>
+      <div class="frame" data-k="2"><div class="bar"><i></i><i></i><i></i><span>/examiner/exams/:id/grade</span></div><div class="shot" data-shot="exam-grader" data-label="Speed Grader" data-hint="Essay grading view"></div></div>
+      <div class="frame" data-k="3"><div class="bar"><i></i><i></i><i></i><span>/examiner/reports</span></div><div class="shot" data-shot="reports" data-label="Reports & analytics" data-hint="KPI cards + charts + export"></div></div>
+      <div class="frame" data-k="4"><div class="bar"><i></i><i></i><i></i><span>/examiner/users</span></div><div class="shot" data-shot="users-access" data-label="Users & access" data-hint="Manage access dialog"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 27 LIVE MONITORING =========================== -->
+<section class="slide" data-sec="system" data-title="Live Monitoring">
+  <div class="kicker" data-a>04 · System Presentation</div>
+  <h2 data-a>Live Monitoring</h2>
+  <div class="mon">
+    <div class="frame" data-a="scale"><div class="bar"><i></i><i></i><i></i><span>/examiner/monitoring · live sessions</span></div><div class="shot" data-shot="live-monitoring" data-label="Live monitoring dashboard" data-hint="Grid of live session cards with alerts"></div></div>
+    <div class="side">
+      <div class="co" data-a><span class="k">1</span><div><b>Live session cards</b><span>EBI, escalation tier, and <b>seat label</b> to find the examinee in the room.</span></div></div>
+      <div class="co" data-a><span class="k">2</span><div><b>Severity-graded alerts</b><span>High, medium, or low; resolved by a proctor with an audit trail.</span></div></div>
+      <div class="co" data-a><span class="k">3</span><div><b>Pause / resume</b><span>A proctor can pause a session in progress; the examinee sees a paused screen.</span></div></div>
+      <div class="co" data-a><span class="k">4</span><div><b>Session inspector</b><span>Indicator timeline and event log for each session.</span></div></div>
+      <div class="frame" data-a style="flex:1;min-height:0"><div class="bar"><i></i><i></i><i></i><span>session inspector</span></div><div class="shot" data-shot="session-inspector" data-label="Session inspector" data-hint="Per-session drill-down"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 28 REVISIONS OVERVIEW =========================== -->
+<section class="slide" data-sec="rev" data-title="Outline Defense Feedback">
+  <div class="kicker" data-a>05 · Outline Defense Revisions</div>
+  <h2 data-a>Outline Defense Feedback</h2>
+  <div class="areas">
+    <div class="area" data-a><div class="an">01</div><h3>Roles & access</h3><p>A single administrator is a bottleneck and a single point of failure.</p><span class="tag g">Resolved</span></div>
+    <div class="area" data-a><div class="an">02</div><h3>UI / UX</h3><p>Poor contrast, overly dark theme, no Legacy College identity, generic look.</p><span class="tag g">Resolved · 1 asset pending</span></div>
+    <div class="area" data-a><div class="an">03</div><h3>Exam management</h3><p>"Don't reinvent the LMS exam workflow; benchmark it."</p><span class="tag g">Resolved · refinements</span></div>
+    <div class="area" data-a><div class="an">04</div><h3>Computer vision</h3><p>"Are your thresholds based on research, or did you just decide them?"</p><span class="tag a">Capacity test pending</span></div>
+    <div class="area" data-a><div class="an">05</div><h3>Docs & research</h3><p>Chapters 1–2 must stand on their own; testing must run continuously.</p><span class="tag a">Deployment scheduled</span></div>
+  </div>
+  <div class="prio">
+    <div class="card" data-a><div class="pv" style="color:var(--red)">19</div><p><b>P0</b> items to fix before the next defense</p></div>
+    <div class="card" data-a><div class="pv" style="color:var(--amber)">13</div><p><b>P1</b> items planned into sprints</p></div>
+    <div class="card" data-a><div class="pv" style="color:var(--blue)">8</div><p><b>P2</b> items for refinement and polish</p></div>
+  </div>
+  <div class="liked" data-a><b>Kept as-is (the panel liked them):</b><span class="tag g">CV concept</span><span class="tag g">Identity detection</span><span class="tag g">Snapshots instead of continuous video</span><span class="tag g">Exam system</span></div>
+</section>
+
+<!-- =========================== 29 REVISIONS BOARD =========================== -->
+<section class="slide" data-sec="rev" data-title="Revisions per Area" data-steps="4">
+  <div class="kicker" data-a>05 · Outline Defense Revisions · press → to step through areas</div>
+  <h2 data-a>Revisions per Area</h2>
+  <div class="tabs" data-a>
+    <button class="tab" data-go="0"><small>AREA 01</small><b>Roles & access</b></button>
+    <button class="tab" data-go="1"><small>AREA 02</small><b>UI / UX</b></button>
+    <button class="tab" data-go="2"><small>AREA 03</small><b>Exam & LMS</b></button>
+    <button class="tab" data-go="3"><small>AREA 04</small><b>Computer vision</b></button>
+    <button class="tab" data-go="4"><small>AREA 05</small><b>Docs & research</b></button>
+  </div>
+  <div class="panels" data-a="fade">
+    <div class="panel" data-k="0">
+      <div class="quote"><div class="qm">“</div><p>One administrator creates a bottleneck and makes the system vulnerable if that person is unavailable.</p><small>Area 01 · P0</small></div>
+      <div class="items">
+        <div class="it"><span class="s d">✓</span><div><b>Six roles</b>: Admin, Guidance Staff, Program Head, Teacher, Proctor, Examinee</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>RBAC + per-user permissions</b>, three-tier engine with PermissionChange audit</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Approval chain</b>: L0 Admin → L1 Program Head; an exam cannot publish without approval</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Simpler registration</b>: essential fields only, profile photo optional</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>OTP + email verification</b> via Supabase Edge Function, with password confirmation</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Clear flow</b>: register → OTP sent → verify → account active</div></div>
+      </div>
+    </div>
+    <div class="panel" data-k="1">
+      <div class="quote"><div class="qm">“</div><p>Poor contrast, an overly dark theme, no institutional identity, and a generic, template-generated look.</p><small>Area 02 · largest volume of feedback</small></div>
+      <div class="items">
+        <div class="it"><span class="s d">✓</span><div><b>Contrast fixed</b> to WCAG AA: buttons, disabled states, inputs; no gray-on-gray</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Light theme by default</b>, readable under classroom lighting and projectors</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Legacy College identity</b>: institution logo, campus imagery, LCC green</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Template look removed</b>: redesigned the generated-looking components</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Search, filter, and sort</b>; status colors consistent across the app</div></div>
+        <div class="it"><span class="s p">!</span><div><b>Department seal</b> is a placeholder until the office provides its official mark</div></div>
+      </div>
+    </div>
+    <div class="panel" data-k="2">
+      <div class="quote"><div class="qm">“</div><p>Don't reinvent the LMS examination workflow. Benchmark it.</p><small>Area 03 · P0</small></div>
+      <div class="items">
+        <div class="it"><span class="s d">✓</span><div><b>LMS benchmark</b> against Google Forms and Jotform, written up as a comparison table</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Categories</b>: Psychological, Mental/Abstract, Behavioral, plus search, filter, sort</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Exam window</b> enforced on the server: Upcoming / Active / Closed / Expired</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Exam code</b> auto-generated (dept + year) and locked; title edited separately</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Multiple departments, cloning, drag-and-drop</b>; questions locked once an exam is in progress</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Image answer choices</b>, XLSX/CSV import with validation and template</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Essays held for manual grading</b>; email sent when results are released</div></div>
+        <div class="it"><span class="s p">!</span><div><b>Refinements left</b>: per-section schedules, Guidance-only content scope, a dedicated per-exam report</div></div>
+      </div>
+    </div>
+    <div class="panel" data-k="3">
+      <div class="quote"><div class="qm">“</div><p>Are your threshold values based on research, or did the team just decide them?</p><small>Area 04 · most technical questioning</small></div>
+      <div class="items">
+        <div class="it"><span class="s d">✓</span><div><b>Every CV parameter specified</b>: what it measures, why, normal vs. suspicious, algorithm, threshold, action</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Thresholds cited</b>: identity<cite class="c" data-r="70"></cite>, gaze<cite class="c" data-r="22"></cite><cite class="c" data-r="25"></cite>, EBI bands<cite class="c" data-r="14"></cite><cite class="c" data-r="20"></cite>; team-derived posture values labeled as such</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Escalation ladder</b>: Normal → Warning → Suspicious → Critical → Action, unit-tested</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Dataset and algorithm comparison</b>: WIDER FACE + FDDB; YOLOv8n vs. YOLOv11n vs. RT-DETR-l</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Hardware spec</b>, snapshot policy, seat-label proctor locator, fixed camera preview</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Browser deterrents</b> (right-click, copy, tab switches), presented as deterrents and not as security</div></div>
+        <div class="it"><span class="s p">!</span><div><b>Load test</b>: Locust harness for REST + WebSocket is built, but only n = 3 has been run. The 5 → 100 user ladder still needs dedicated hardware</div></div>
+      </div>
+    </div>
+    <div class="panel" data-k="4">
+      <div class="quote"><div class="qm">“</div><p>Testing runs continuously, before, during, and after deployment, not only after it.</p><small>Area 05 · flagged as a major correction</small></div>
+      <div class="items">
+        <div class="it"><span class="s d">✓</span><div><b>RRL expanded</b> on face presence, head movement, gaze, posture, and behavior patterns<cite class="c" data-r="19"></cite>–<cite class="c" data-r="30"></cite></div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Chain made explicit</b>: literature → factor → parameter → algorithm → threshold</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Agile WBS</b> organized by sprint, plus a Gantt chart</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Floor plan</b>: seating, camera placement, proctor station (Variations A and B)</div></div>
+        <div class="it"><span class="s d">✓</span><div><b>Continuous testing model</b> plus a systems security and maintenance plan</div></div>
+        <div class="it"><span class="s p">!</span><div><b>Six-week deployment</b> with the Guidance Office is next (Capstone 2)</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 30 OPEN ITEMS =========================== -->
+<section class="slide" data-sec="rev" data-title="Remaining Items">
+  <div class="kicker" data-a>05 · Outline Defense Revisions</div>
+  <h2 data-a>Remaining Items</h2>
+  <div class="open">
+    <div class="card" data-a><span class="tag a">P0 · CAPACITY</span><h3>Load test, 5 → 100 users</h3><p>The Locust harness covers REST and the WebSocket snapshot channel. Only n = 3 ran on shared dev hardware. Re-run on the deployment server before go-live to answer the ~30-per-room and ~100-overall question with data.</p></div>
+    <div class="card" data-a><span class="tag a">P0 · IDENTITY</span><h3>Department seal</h3><p>The institution logo and campus imagery are in place. The department mark stays a labeled placeholder until the office provides the official seal.</p></div>
+    <div class="card" data-a><span class="tag a">P1 · DIAGRAMS</span><h3>Use case and FR list</h3><p>Update the paper's use-case diagram and requirements from two actors to the six roles the system implements.</p></div>
+    <div class="card" data-a><span class="tag n">P1 · EXAMS</span><h3>Per-section schedules</h3><p>The ExamAssignment roster exists. Separate schedules for each section group are a refinement still to build.</p></div>
+    <div class="card" data-a><span class="tag n">P1 · SCOPE</span><h3>Guidance-only content</h3><p>RBAC and module access already limit who can manage exams. A separate confidentiality layer for Guidance content would be a further step.</p></div>
+    <div class="card" data-a><span class="tag g">CAPSTONE 2</span><h3>Six-week deployment</h3><p>Pre-deployment validation, then a live deployment with the Guidance Office. Results, issues, and fixes go into the final paper.</p></div>
+  </div>
+</section>
+
+<!-- =========================== 31 TESTING & DEPLOYMENT =========================== -->
+<section class="slide" data-sec="end" data-title="Testing and Deployment Plan">
+  <div class="kicker" data-a>06 · Conclusion · Readiness</div>
+  <h2 data-a>Testing and Deployment Plan</h2>
+  <div class="phases" data-a>
+    <div class="phase"><span class="pn">PHASE 1</span><h3>During development</h3><ul class="clean"><li>Unit, integration, functional</li><li>CV model and UI testing</li><li>Performance, access, and security</li></ul></div>
+    <div class="phase now"><span class="pn">PHASE 2 · NOW</span><h3>Before deployment</h3><ul class="clean"><li>Pre-deployment validation</li><li>Readiness check (this defense)</li><li>Fix critical issues</li></ul></div>
+    <div class="phase"><span class="pn">PHASE 3</span><h3>During deployment</h3><ul class="clean"><li>Real-world results</li><li>Performance measurement</li><li>User feedback, live fixes</li></ul></div>
+    <div class="phase"><span class="pn">PHASE 4</span><h3>After deployment</h3><ul class="clean"><li>Analyze results</li><li>Document findings</li><li>Final revisions</li></ul></div>
+  </div>
+  <div class="timeline" data-a>
+    <div class="tl">Validate<span>Readiness and load testing on the deployment server</span></div>
+    <div class="tl main">About six weeks of live deployment<span>With the LCC Guidance Office: monitor, collect feedback, log and fix issues</span></div>
+    <div class="tl">Analyze<span>Usability, functionality, effectiveness</span></div>
+    <div class="tl">Report<span>Findings into the final paper</span></div>
+  </div>
+  <p class="small mt2" data-a>Evidence so far: 275 automated backend test cases (APIs, RBAC, OTP, WebSocket consumers, EBI, escalation), the AI pipeline suite, and frontend Vitest. These run with <span class="mono">test-all.cmd</span>.</p>
+</section>
+
+<!-- =========================== 32 REQUIREMENTS & MAINTENANCE =========================== -->
+<section class="slide" data-sec="end" data-title="Technical Requirements and Maintenance">
+  <div class="kicker" data-a>06 · Conclusion · Readiness</div>
+  <h2 data-a>Technical Requirements and Maintenance</h2>
+  <div class="g2 mt2" style="grid-template-columns:1fr 1fr;align-items:start">
+    <table class="t" data-a style="font-size:15.5px">
+      <thead><tr><th>Client component</th><th>Recommended</th></tr></thead>
+      <tbody>
+        <tr><td>Processor</td><td>Intel Core i5 12th Gen / AMD Ryzen 5 5000 or newer</td></tr>
+        <tr><td>RAM · Storage</td><td>16 GB DDR4/DDR5 · 512 GB NVMe SSD</td></tr>
+        <tr><td>Graphics</td><td>Integrated, or a dedicated GPU with ≥ 4 GB VRAM</td></tr>
+        <tr><td>Display · OS</td><td>1920 × 1080 · Windows 11 64-bit</td></tr>
+        <tr><td>Camera</td><td>Built-in or external 1080p webcam at 30 FPS</td></tr>
+        <tr><td>Network · Browser</td><td>Wired Ethernet or 5 GHz Wi-Fi · latest Chrome or Edge</td></tr>
+      </tbody>
+    </table>
+    <div>
+      <div class="g2" style="gap:12px">
+        <div class="card" data-a style="padding:16px 18px"><span class="num">CORRECTIVE</span><p class="small">Fix bugs found in logs, user reports, and failed tests with hotfixes.</p></div>
+        <div class="card" data-a style="padding:16px 18px"><span class="num">ADAPTIVE · SEMESTER</span><p class="small">Update schedules, question banks, thresholds, and pipeline.yaml.</p></div>
+        <div class="card" data-a style="padding:16px 18px"><span class="num">PERFECTIVE · QUARTERLY</span><p class="small">Performance tuning, UI and report improvements, model upgrades.</p></div>
+        <div class="card" data-a style="padding:16px 18px"><span class="num">PREVENTIVE · WEEKLY</span><p class="small">Daily pg_dump backups (30-day retention), dependency updates, log rotation.</p></div>
+      </div>
+      <div class="card mt1" data-a style="padding:16px 20px"><span class="num">SUPPORT RESPONSE TIMES</span>
+        <div class="row" style="gap:10px;flex-wrap:wrap"><span class="tag r">Critical · 4 h</span><span class="tag a">High · 1 business day</span><span class="tag">Medium · 3 days</span><span class="tag n">Low · next release</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== 33 CONCLUSION =========================== -->
+<section class="slide dark" data-sec="end" data-title="Conclusion">
+  <div class="kicker" data-a>06 · Conclusion</div>
+  <h2 data-a style="color:#fff">Conclusion</h2>
+  <div class="g2 mt4" style="gap:22px">
+    <div data-a style="border-top:2px solid #7fd1a6;padding-top:18px"><h3 style="color:#fff">Integrated</h3><p class="small" style="color:#c9d3e2;margin-top:8px">Exam creation, delivery, monitoring, and reporting in one web platform built for LCC's Guidance Office.</p></div>
+    <div data-a style="border-top:2px solid #7fd1a6;padding-top:18px"><h3 style="color:#fff">Grounded</h3><p class="small" style="color:#c9d3e2;margin-top:8px">Every parameter and threshold is traced to the literature, or clearly labeled as derived by the team.</p></div>
+    <div data-a style="border-top:2px solid #7fd1a6;padding-top:18px"><h3 style="color:#fff">Measured</h3><p class="small" style="color:#c9d3e2;margin-top:8px">The face detector was chosen on evidence: YOLOv8n had the highest precision (95.84%) at 233 FPS, against two alternatives on the same data.</p></div>
+    <div data-a style="border-top:2px solid #7fd1a6;padding-top:18px"><h3 style="color:#fff">Responsible</h3><p class="small" style="color:#c9d3e2;margin-top:8px">Only derived metrics are stored, and escalation keeps a human in the loop. The system gives indicators, never accusations.</p></div>
+  </div>
+  <p class="mt4" data-a style="font:500 22px/1.4 var(--serif);color:#dfe6f0">Next: validate on the deployment server → about six weeks live with the Guidance Office → findings into the final paper.</p>
+</section>
+
+<!-- =========================== 34 REFERENCES I =========================== -->
+<section class="slide" data-sec="end" data-title="References (I)">
+  <div class="kicker" data-a>References · Literature</div>
+  <h2 data-a>References (I)</h2>
+  <div class="refs three" id="refsA" data-a="fade"></div>
+</section>
+
+<!-- =========================== 35 REFERENCES II =========================== -->
+<section class="slide" data-sec="end" data-title="References (II)">
+  <div class="kicker" data-a>References · Technologies</div>
+  <h2 data-a>References (II)</h2>
+  <div class="refs" id="refsB" data-a="fade"></div>
+</section>
+
+<!-- =========================== 36 THANK YOU =========================== -->
+<section class="slide dark" data-sec="end" data-title="Thank You · Q&A">
+  <div class="title-wrap" style="grid-template-columns:1fr">
+    <div style="text-align:center">
+      <div class="badge" data-a style="margin:0 auto 30px"><i></i>Open for questions</div>
+      <h1 data-a style="font-size:96px">Thank <span>you.</span></h1>
+      <p class="title-sub" data-a style="margin:24px auto 0">Knowing Eye: A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis</p>
+      <p data-a style="margin-top:40px;color:#9fb0c8;font-size:18px">Ancog III · Cavan · Cadiente · Tamera · Legacy College of Compostela · Institute of Information Technology</p>
+    </div>
+  </div>
+</section>
+
+<!-- chrome -->
+<div class="chrome">
+  <div class="c-top">
+    <div class="c-brand"><svg viewBox="0 0 100 100"><path d="M50 25C30 25 15 40 5 50C15 60 30 75 50 75C70 75 85 60 95 50C85 40 70 25 50 25Z" fill="none" stroke="#1f8a5b" stroke-width="6"/><circle cx="50" cy="50" r="12" fill="#1f8a5b"/></svg>Knowing Eye · Pre-Deployment Defense</div>
+    <div id="cSec"></div>
+  </div>
+  <div class="c-bot">
+    <div class="c-hint"><kbd>←</kbd> <kbd>→</kbd> navigate &nbsp; <kbd>O</kbd> index &nbsp; <kbd>F</kbd> full screen &nbsp; click a <span style="color:var(--gold);font-weight:600">[n]</span> for its source</div>
+    <div class="c-count" id="cCount">01 / 36</div>
+  </div>
+  <div class="progress" id="prog"></div>
+</div>
+</div>
+
+<div id="pop"></div>
+<div id="idx"><div class="box"><h4>Slide index</h4><div class="keys"><kbd>←</kbd><kbd>→</kbd> / <kbd>Space</kbd> next · <kbd>Home</kbd><kbd>End</kbd> first/last · <kbd>O</kbd> index · <kbd>F</kbd> full screen · <kbd>Esc</kbd> close. Screenshot slots: click or drop an image, or save PNGs into <span class="mono">screenshots/</span> beside this file.</div><div class="cols" id="idxCols"></div></div></div>
+<input type="file" id="filePick" accept="image/*" hidden>
+
+<script>
+(() => {
+/* ------------------------------------------------------------------ data */
+const SECTIONS = [
+  ["open","Opening"],["intro","01 · Introduction"],["docs","02 · Documentation"],["tech","03 · Technical Details"],
+  ["system","04 · System Presentation"],["rev","05 · Defense Revisions"],["end","06 · Conclusion"]
+];
+const REFS = {
+1:"A. Nigam, R. Pasricha, T. Singh, and P. Churi, “A Systematic Review on AI-based Proctoring Systems: Past, Present and Future,” Education and Information Technologies, vol. 26, no. 5, pp. 6421–6445, 2021.",
+2:"S. Han, S. Nikou, and W. Yilma Ayele, “Digital proctoring in higher education: a systematic literature review,” Int. J. Educational Management, vol. 38, no. 1, pp. 265–285, 2023.",
+3:"X. Yang, D. Wu, X. Yi, J. H. M. Lee, and T. Lee, “iExam: A Novel Online Exam Monitoring and Analysis System Based on Face Detection and Recognition,” arXiv:2206.13356.",
+4:"N. A. Kashyap et al., “AutoOEP — A Multi-modal Framework for Online Exam Proctoring,” arXiv:2509.10887.",
+5:"M. Ege and M. Ceyhan, online automated proctoring system, Hugging Face Papers 2312.00795.",
+6:"N. G N and S. N. Nayak, “Artificial Intelligence Based Online Examination Proctoring System,” IJRASET, vol. 11, no. 9, pp. 569–573, 2023.",
+7:"J. R. Pansare, “Proctoring Using AI,” IJRASET, vol. 13, no. 6, pp. 1825–1835, 2025.",
+8:"T. Singh, R. R. Nair, T. Babu, and D. Prakash, “Enhancing Academic Integrity in Online Assessments: Introducing an Effective Online Exam Proctoring Model using YOLO,” Procedia Computer Science, vol. 235, pp. 1399–1408, 2024.",
+12:"S. Han, S. Nikou, and W. Yilma Ayele, “Digital proctoring in higher education: a systematic literature review,” Int. J. Educational Management, vol. 38, no. 1, 2023.",
+13:"S. Kaddoura and G. Abdu, “Towards effective and efficient online exam systems using deep learning-based cheating detection approach,” Intelligent Systems with Applications, vol. 16, 200153, 2022.",
+14:"B. J. Ferdosi, M. Rahman, A. M. Sakib, and T. Helaly, “Modeling and Classification of the Behavioral Patterns of Students Participating in Online Examination,” Human Behavior and Emerging Technologies, 2023.",
+16:"C. Mutimukwe, S. Han, O. Viberg, and T. Cerratto-Pargman, “Privacy as Contextual Integrity in Online Proctoring Systems in Higher Education: A Scoping Review,” HICSS, 2023.",
+17:"O. L. Holden, M. E. Norris, and V. A. Kuhlmeier, “Academic Integrity in Online Assessment: A Research Review,” Frontiers in Education, vol. 6, 2021.",
+19:"M. Malhotra and I. Chhabra, Scientific Reports, 2025. nature.com/articles/s41598-025-15486-8.",
+20:"D. Smetters, “Systems and methods for assessing data collected by automated proctoring,” US Patent 11645935B1.",
+21:"H. Li, M. Xu, Y. Wang, H. Wei, and H. Qu, “A Visual Analytics Approach to Facilitate the Proctoring of Online Exams,” Proc. CHI ’21, pp. 1–17, 2021.",
+22:"C. S. Indi, V. Pritham, V. Acharya, and K. Prakasha, “Detection of Malpractice in E-exams by Head Pose and Gaze Estimation,” iJET, vol. 16, no. 08, 2021.",
+23:"N. Dilini et al., “Cheating Detection in Browser-based Online Exams through Eye Gaze Tracking,” ICITR, 2021.",
+24:"W. Yaqub, M. Mohanty, and B. Suleiman, “Proctoring Online Exam Using Eye Tracking,” SECRYPT, pp. 738–745, 2023.",
+25:"S. M. S. Haider et al., “AI for Academic Integrity: GPU-Free Pose Estimation Framework for Automated Invigilation,” Automation, vol. 6, no. 4, 2025.",
+26:"P. Stapleton and J. Blanchard, “Remote Proctoring,” Proc. SIGCSE ’21, 2021.",
+27:"W. Yaqub, M. Mohanty, and B. Suleiman, “Image-Hashing-Based Anomaly Detection for Privacy-Preserving Online Proctoring,” arXiv:2107.09373.",
+28:"A. Kshitij and S. Sweta, “A vision-based behavioural monitoring framework towards trustworthy AI proctoring for online assessments,” Frontiers in Education, vol. 11, 2026.",
+29:"A. Sridhar and J. S. Rajshekhar, “AI-Integrated Proctoring System for Online Exams,” J. Artificial Intelligence and Capsule Networks, vol. 4, no. 2, 2022.",
+30:"M. Malhotra and I. Chhabra, “Ensuring academic integrity through automated online exam proctoring: a decade long systematic review,” Discover Education, vol. 5, 2026.",
+31:"X. Yang et al., “iExam: A Novel Online Exam Monitoring and Analysis System Based on Face Detection and Recognition,” arXiv:2206.13356.",
+32:"N. G N and S. N. Nayak, “Artificial Intelligence Based Online Examination Proctoring System,” IJRASET, vol. 11, no. 9, 2023.",
+33:"Tharun, S. Krishna, T. Kumar, and L. Prasad, “Online Exam Proctoring System Based on Artificial Intelligence,” IJNRD, 2024.",
+34:"A. Vinod Patil et al., “Online exam proctoring application using AI,” Int. J. Science and Research Archive, vol. 15, no. 2, 2025.",
+43:"S. Alsaqqa, S. Sawalha, and H. Abdel-Nabi, “Agile Software Development: Methodologies and Trends,” iJIM, vol. 14, no. 11, pp. 246–270, 2020.",
+44:"T. Potluri, S. Venkatramaphanikumar, and K. V. K. Kishore, “An automated online proctoring system using attentive-net to assess student mischievous behavior,” Multimedia Tools and Applications, 2023.",
+45:"P. Tejaswi, S. Venkatramaphanikumar, and K. V. K. Kishore, “Proctor net: An AI framework for suspicious activity detection in online proctored examinations,” Measurement, vol. 206, 2023.",
+46:"A. Diamantopoulos and H. M. Winklhofer, “Index construction with formative indicators: An alternative to scale development,” J. Marketing Research, vol. 38, no. 2, 2001.",
+47:"T. Coltman, T. M. Devinney, D. F. Midgley, and S. Venaik, “Formative versus reflective measurement models,” J. Business Research, vol. 61, no. 12, 2008.",
+48:"“React v18.0,” react.dev blog, 2022.",
+49:"“Vite 6.0 is out!,” vite.dev blog.",
+50:"D. Rosenwasser, “Announcing TypeScript 5.0,” Microsoft DevBlogs, 2023.",
+51:"“TanStack Query v5,” tanstack.com/query/v5.",
+52:"“React Router CHANGELOG,” reactrouter.com/changelog.",
+53:"“Tailwind CSS v4.0,” tailwindcss.com/blog/tailwindcss-v4.",
+54:"shadcn, “Vite installation,” ui.shadcn.com.",
+56:"“MediaDevices: getUserMedia() method,” MDN Web Docs.",
+58:"“django/docs/releases/5.2.txt,” GitHub, django/django.",
+59:"“Django 5.2 release notes,” Django documentation.",
+60:"“Django Channels documentation,” channels.readthedocs.io.",
+61:"“channels/docs/installation.rst,” GitHub, django/channels.",
+62:"“PostgreSQL 17 Press Kit,” postgresql.org.",
+64:"“Django’s cache framework,” Django documentation.",
+65:"“channels_redis: Redis channel layer backend for Django Channels,” GitHub.",
+66:"“ReportLab Docs: Chapter 1 Introduction,” docs.reportlab.com.",
+68:"“MediaPipe Face Mesh,” google-ai-edge/mediapipe, GitHub.",
+69:"“Pose landmark detection guide,” Google AI Edge, MediaPipe.",
+70:"“InsightFace: Face Analysis,” insightface.ai.",
+71:"Ultralytics, “YOLOv8,” docs.ultralytics.com/models/yolov8.",
+72:"Supabase, “Supabase Docs,” supabase.com/docs.",
+73:"OpenCV, “About OpenCV,” opencv.org.",
+74:"“NumPy reference — NumPy v2.0 Manual,” numpy.org.",
+75:"D. Datta et al., “Eye Gaze Detection Based on Computational Visual Perception and Facial Landmarks,” Computers, Materials & Continua, vol. 68, no. 2, 2021.",
+76:"“NGINX Reverse Proxy,” NGINX Documentation.",
+78:"P. Porada and A. Gable, “New Intermediate Certificates,” Let’s Encrypt, 2024.",
+80:"“CUDA Toolkit Documentation,” NVIDIA Docs.",
+82:"Microsoft, “Visual Studio Code documentation,” code.visualstudio.com.",
+83:"GitHub, “About Git,” GitHub Docs.",
+85:"“Vitest Guide,” vitest.dev.",
+86:"“Testing in Django,” Django documentation.",
+87:"“Getting Started,” SheetJS Community Edition.",
+88:"tremorlabs, “Tremor,” npm.tremor.so.",
+89:"OWASP, “Password Storage Cheat Sheet.”",
+90:"Python, “hashlib — Secure hashes and message digests.”",
+91:"M. B. Jones, J. Bradley, and N. Sakimura, “JSON Web Token (JWT),” IETF RFC 7519.",
+92:"Y. Sheffer, D. Hardt, and M. B. Jones, “JSON Web Token Best Current Practices,” IETF RFC 8725.",
+93:"NIST, “Role-based access control (RBAC),” CSRC Glossary.",
+94:"OWASP, “Django Security Cheat Sheet.”",
+95:"OWASP, “Session Management Cheat Sheet.”",
+96:"MDN Web Docs, “Cross-Origin Resource Sharing (CORS).”",
+98:"“Railway Docs,” docs.railway.com.",
+99:"“Introduction to Vercel,” Vercel Documentation."
+};
+
+/* ------------------------------------------------------------------ setup */
+const deck = document.getElementById('deck');
+const slides = [...deck.querySelectorAll('.slide')];
+const N = slides.length;
+let cur = 0, step = 0;
+
+slides.forEach(s => s.querySelectorAll('[data-a]').forEach((el, i) => el.style.setProperty('--i', i)));
+
+// citations
+document.querySelectorAll('cite.c').forEach(c => { c.textContent = '[' + c.dataset.r + ']'; c.tabIndex = 0; });
+
+// related-systems table
+(() => {
+  const H = ['List of functions','iExam','AI Proctoring','Online Exam','AI Application','Knowing Eye'];
+  const R = [
+    ['Face detection and presence monitoring',1,1,1,1,1],['Identity / face recognition verification',1,1,1,1,1],
+    ['Eye gaze tracking',0,1,0,1,1],['Head pose estimation',0,1,0,0,1],['Postural / body posture analysis',0,0,1,0,1],
+    ['Mouth movement analysis',0,1,0,0,0],['Integrated exam creation and administration',0,1,1,1,1],
+    ['Web-based online application',0,1,1,1,1],['Real-time behavioral analysis',1,1,1,1,1],
+    ['Cheating probability / risk scoring',0,0,0,0,1],['Administrative dashboard and session reports',0,1,0,0,1],
+    ['Privacy-preserving monitoring (derived metrics)',0,0,0,0,1],['Standard single-webcam deployment',0,1,1,1,1]
+  ];
+  const t = document.getElementById('cmpTable');
+  t.innerHTML = '<thead><tr>' + H.map((h,i)=>`<th class="${i===5?'ke':''}">${h}</th>`).join('') + '</tr></thead><tbody>' +
+    R.map(r => '<tr>' + r.map((v,i)=> i===0 ? `<td>${v}</td>` : `<td class="${i===5?'ke':''}">${v?'<span class="yes">✓</span>':'<span class="no"></span>'}</td>`).join('') + '</tr>').join('') + '</tbody>';
+})();
+
+// references slides
+(() => {
+  const keys = Object.keys(REFS).map(Number).sort((a,b)=>a-b);
+  const fill = (id, list) => document.getElementById(id).innerHTML = list.map(k => `<div id="ref-${k}"><b>[${k}]</b>${REFS[k]}</div>`).join('');
+  fill('refsA', keys.filter(k => k <= 47));
+  fill('refsB', keys.filter(k => k > 47));
+})();
+
+/* ------------------------------------------------------------------ progress + index */
+const prog = document.getElementById('prog');
+const secFirst = {};
+SECTIONS.forEach(([id]) => {
+  const idxs = slides.map((s,i)=>s.dataset.sec===id?i:-1).filter(i=>i>=0);
+  if (!idxs.length) return;
+  secFirst[id] = idxs[0];
+  const seg = document.createElement('div');
+  seg.className = 'seg'; seg.style.flex = idxs.length; seg.dataset.sec = id; seg.innerHTML = '<i></i>';
+  seg.title = SECTIONS.find(s=>s[0]===id)[1];
+  seg.onclick = () => go(idxs[0]);
+  prog.appendChild(seg);
+});
+const idxCols = document.getElementById('idxCols');
+SECTIONS.forEach(([id,name]) => {
+  const d = document.createElement('div'); d.className = 'sec';
+  d.innerHTML = `<h5>${name}</h5>` + slides.map((s,i)=> s.dataset.sec===id ? `<button data-i="${i}"><span>${String(i+1).padStart(2,'0')}</span>${s.dataset.title}</button>` : '').join('');
+  idxCols.appendChild(d);
+});
+idxCols.addEventListener('click', e => { const b = e.target.closest('button'); if (b) { go(+b.dataset.i); toggleIdx(false); } });
+const idx = document.getElementById('idx');
+function toggleIdx(force){ const show = force ?? !idx.classList.contains('show'); idx.classList.toggle('show', show);
+  idxCols.querySelectorAll('button').forEach(b => b.classList.toggle('cur', +b.dataset.i === cur)); }
+idx.addEventListener('click', e => { if (e.target === idx) toggleIdx(false); });
+
+/* ------------------------------------------------------------------ navigation */
+const stepsOf = i => +(slides[i].dataset.steps || 0);
+function go(n, st = 0) {
+  n = Math.max(0, Math.min(N - 1, n));
+  const changed = n !== cur || !slides[n].classList.contains('active');
+  slides.forEach((s, i) => { s.classList.toggle('active', i === n); s.classList.toggle('past', i < n); });
+  cur = n; step = Math.max(0, Math.min(stepsOf(n), st));
+  applyStep();
+  if (changed) onEnter(slides[n]);
+  const s = slides[n];
+  deck.classList.toggle('on-dark', s.classList.contains('dark'));
+  document.getElementById('cCount').textContent = String(n+1).padStart(2,'0') + ' / ' + String(N).padStart(2,'0');
+  const sec = SECTIONS.find(x => x[0] === s.dataset.sec);
+  document.getElementById('cSec').textContent = s.dataset.sec === 'open' ? '' : sec[1];
+  prog.querySelectorAll('.seg').forEach(seg => {
+    const idxs = slides.map((x,i)=>x.dataset.sec===seg.dataset.sec?i:-1).filter(i=>i>=0);
+    const done = idxs.filter(i => i <= n).length;
+    seg.querySelector('i').style.width = (done / idxs.length * 100) + '%';
+  });
+  hidePop(true);
+  try { history.replaceState(null, '', '#' + (n + 1)); } catch (e) {}
+}
+function applyStep() {
+  const s = slides[cur];
+  s.querySelectorAll('[data-go]').forEach(b => b.classList.toggle('on', +b.dataset.go === step));
+  s.querySelectorAll('[data-k]').forEach(p => p.classList.toggle('on', +p.dataset.k === step));
+}
+function next(){ if (step < stepsOf(cur)) { step++; applyStep(); } else if (cur < N-1) go(cur + 1); }
+function prev(){ if (step > 0) { step--; applyStep(); } else if (cur > 0) go(cur - 1, stepsOf(cur - 1)); }
+
+document.addEventListener('keydown', e => {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key) && e.target.type === 'range') return;
+  if (idx.classList.contains('show') && e.key !== 'o' && e.key !== 'O' && e.key !== 'Escape') return;
+  switch (e.key) {
+    case 'ArrowRight': case 'PageDown': next(); e.preventDefault(); break;
+    case ' ': if (tag === 'BUTTON' || tag === 'INPUT') return; next(); e.preventDefault(); break;
+    case 'ArrowLeft': case 'PageUp': prev(); e.preventDefault(); break;
+    case 'Home': go(0); break;
+    case 'End': go(N - 1); break;
+    case 'o': case 'O': toggleIdx(); break;
+    case 'f': case 'F': full(); break;
+    case 'Escape': toggleIdx(false); hidePop(true); break;
+  }
+});
+deck.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]');
+  if (g) { step = +g.dataset.go; applyStep(); g.blur(); return; }
+  const j = e.target.closest('[data-jump]');
+  if (j) { go(secFirst[j.dataset.jump]); return; }
+});
+let tx = null;
+deck.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive:true});
+deck.addEventListener('touchend', e => { if (tx === null) return; const dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 50) (dx < 0 ? next : prev)(); tx = null; });
+function full(){ if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+document.getElementById('bFull').onclick = full;
+document.getElementById('bIdx').onclick = () => toggleIdx();
+
+function fit(){ const s = Math.min(innerWidth / 1600, innerHeight / 900); deck.style.transform = `translate(-50%,-50%) scale(${s})`; }
+addEventListener('resize', fit); fit();
+
+/* ------------------------------------------------------------------ citation popover */
+const pop = document.getElementById('pop');
+let pinned = null;
+function showPop(c){
+  const ids = c.dataset.r.split(',').map(x=>x.trim());
+  pop.innerHTML = ids.map(i => `<b>[${i}]</b>${REFS[i] || 'See References in the paper.'}`).join('');
+  const r = c.getBoundingClientRect();
+  pop.classList.add('show');
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let x = Math.min(Math.max(12, r.left + r.width/2 - pw/2), innerWidth - pw - 12);
+  let y = r.top - ph - 10; if (y < 10) y = r.bottom + 10;
+  pop.style.left = x + 'px'; pop.style.top = y + 'px';
+}
+function hidePop(force){ if (pinned && !force) return; pop.classList.remove('show'); if (force && pinned) { pinned.classList.remove('pin'); pinned = null; } }
+deck.addEventListener('mouseover', e => { const c = e.target.closest('cite.c'); if (c && !pinned) showPop(c); });
+deck.addEventListener('mouseout', e => { const c = e.target.closest('cite.c'); if (c && !pinned) hidePop(); });
+document.addEventListener('click', e => {
+  const c = e.target.closest('cite.c');
+  if (c) { e.stopPropagation(); if (pinned === c) { hidePop(true); return; } if (pinned) pinned.classList.remove('pin'); pinned = c; c.classList.add('pin'); showPop(c); return; }
+  if (!e.target.closest('#pop')) hidePop(true);
+}, true);
+
+/* ------------------------------------------------------------------ screenshot slots */
+const ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg>';
+const pick = document.getElementById('filePick');
+let pickTarget = null;
+function setShot(el, src){ el.querySelector('img').src = src; el.classList.add('filled'); }
+document.querySelectorAll('.shot').forEach(el => {
+  const name = el.dataset.shot;
+  el.innerHTML = `<img alt="${el.dataset.label}"><div class="ph">${ICON}<b>${el.dataset.label}</b><em>${el.dataset.hint || ''}</em><small>screenshots/${name}.png</small></div>`;
+  const probe = new Image();
+  probe.onload = () => setShot(el, probe.src);
+  probe.src = `screenshots/${name}.png`;
+  el.addEventListener('click', e => { e.stopPropagation(); pickTarget = el; pick.value = ''; pick.click(); });
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag'); });
+  el.addEventListener('dragleave', () => el.classList.remove('drag'));
+  el.addEventListener('drop', e => { e.preventDefault(); el.classList.remove('drag'); const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) setShot(el, URL.createObjectURL(f)); });
+});
+pick.addEventListener('change', () => { const f = pick.files[0]; if (f && pickTarget) setShot(pickTarget, URL.createObjectURL(f)); });
+
+/* ------------------------------------------------------------------ on-enter effects */
+function onEnter(s){
+  s.querySelectorAll('.count').forEach(el => {
+    const to = +el.dataset.to, dec = +(el.dataset.dec || 0), t0 = performance.now(), dur = 1300;
+    const tick = t => { const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = (to * e).toFixed(dec); if (p < 1) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
+  if (s.querySelector('#ebiArc')) updEBI();
+  if (s.querySelector('#evLog')) renderEv();
+}
+
+/* ------------------------------------------------------------------ agile ring */
+(() => {
+  const svg = document.getElementById('agileRing');
+  const ph = ['Planning','Design','Development','Testing','Deployment','Maintenance'];
+  const cx = 260, cy = 260, R = 190;
+  let h = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#ddd7c4" stroke-width="2" stroke-dasharray="6 8"/>`;
+  h += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#1f8a5b" stroke-width="3" stroke-dasharray="120 1074" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 ${cx} ${cy}" to="360 ${cx} ${cy}" dur="9s" repeatCount="indefinite"/></circle>`;
+  h += `<text x="${cx}" y="${cy-8}" text-anchor="middle" style="font:600 34px var(--serif);fill:#10203a">Agile</text><text x="${cx}" y="${cy+24}" text-anchor="middle" style="font:500 16px var(--sans);fill:#66728a">iterate · test · refine</text>`;
+  ph.forEach((p, i) => {
+    const a = -Math.PI/2 + i * 2*Math.PI/6, x = cx + R*Math.cos(a), y = cy + R*Math.sin(a);
+    h += `<g><circle cx="${x}" cy="${y}" r="40" fill="${i===5?'#1f8a5b':'#10203a'}"/><text x="${x}" y="${y+7}" text-anchor="middle" style="font:700 20px var(--serif);fill:#fff">${String(i+1).padStart(2,'0')}</text>`;
+    const c = Math.cos(a), side = Math.abs(c) > 0.3;
+    const lx = side ? x + Math.sign(c) * 52 : x, ly = side ? y + 6 : y + Math.sign(Math.sin(a)) * 58 + 6;
+    const anchor = side ? (c > 0 ? 'start' : 'end') : 'middle';
+    h += `<text x="${lx}" y="${ly}" text-anchor="${anchor}" style="font:600 18px var(--sans);fill:#10203a">${p}</text></g>`;
+  });
+  svg.setAttribute('viewBox','-90 -40 700 600');
+  svg.innerHTML = h;
+})();
+
+/* ------------------------------------------------------------------ YOLO chart */
+(() => {
+  const svg = document.getElementById('yoloChart');
+  const W = 760, H = 400, L = 56, Rm = 120, T = 20, B = 46;
+  const xs = [20,40,60,80,100], ymin = 74, ymax = 100;
+  const S = [
+    ['Precision','#10203a',[95.07,95.04,94.89,95.86,96.94]],
+    ['mAP@0.5','#1f8a5b',[85.20,87.72,87.34,88.44,89.04]],
+    ['F1-score','#a67c2e',[84.63,86.67,87.50,88.01,88.32]],
+    ['Recall','#2456a6',[76.25,79.65,81.17,81.35,81.11]]
+  ];
+  const X = v => L + (v - 20) / 80 * (W - L - Rm), Y = v => T + (ymax - v) / (ymax - ymin) * (H - T - B);
+  let h = '';
+  for (let v = 75; v <= 100; v += 5) h += `<line class="ax" x1="${L}" x2="${W-Rm}" y1="${Y(v)}" y2="${Y(v)}"/><text class="axl" x="${L-10}" y="${Y(v)+4}" text-anchor="end">${v}</text>`;
+  xs.forEach(x => h += `<text class="axl" x="${X(x)}" y="${H-B+24}" text-anchor="middle">${x}</text>`);
+  h += `<text class="axl" x="${(L+W-Rm)/2}" y="${H-4}" text-anchor="middle">epochs</text>`;
+  const ends = [];
+  S.forEach(([n, c, v]) => {
+    const pts = v.map((y,i) => [X(xs[i]), Y(y)]);
+    let len = 0; for (let i=1;i<pts.length;i++) len += Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
+    h += `<polyline class="ln" points="${pts.map(p=>p.join(',')).join(' ')}" stroke="${c}" style="--len:${len.toFixed(0)};stroke-dasharray:${len.toFixed(0)}"/>`;
+    pts.forEach(p => h += `<circle cx="${p[0]}" cy="${p[1]}" r="4.5" fill="#fffdf7" stroke="${c}" stroke-width="2.5"/>`);
+    ends.push({n, c, y: pts[4][1], v: v[4]});
+  });
+  ends.sort((a,b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i-1].y < 20) ends[i].y = ends[i-1].y + 20;
+  ends.forEach(e => h += `<text class="lab" x="${W-Rm+14}" y="${e.y+5}" fill="${e.c}">${e.n} <tspan style="font-family:var(--mono);font-size:12px">${e.v.toFixed(2)}</tspan></text>`);
+  svg.innerHTML = h;
+})();
+
+/* ------------------------------------------------------------------ EBI calculator */
+const eIds = ['Fp','Fi','Up','Gc'];
+function updEBI(){
+  const en = document.getElementById('eEn').checked;
+  const v = {};
+  eIds.forEach(k => { const el = document.getElementById('e'+k); v[k] = +el.value; el.style.setProperty('--p', el.value + '%');
+    document.getElementById('o'+k).textContent = (k==='Fi' && !en) ? 'n/a' : el.value; });
+  document.getElementById('eFi').disabled = !en;
+  const parts = en ? [v.Fp, v.Fi, v.Up, v.Gc] : [v.Fp, v.Up, v.Gc];
+  const ebi = parts.reduce((a,b)=>a+b,0) / parts.length;
+  document.getElementById('ebiEq').textContent = `= (${parts.join(' + ')}) / ${parts.length} = ${ebi.toFixed(1)}`;
+  document.getElementById('ebiVal').textContent = ebi.toFixed(1);
+  const arc = document.getElementById('ebiArc'), C = 678.6;
+  arc.style.strokeDashoffset = C * (1 - ebi / 100);
+  const band = ebi >= 80 ? 'good' : ebi >= 50 ? 'mid' : 'bad';
+  arc.style.stroke = band === 'good' ? '#1f8a5b' : band === 'mid' ? '#b7791f' : '#c23b32';
+  ['Good','Mid','Bad'].forEach(b => document.getElementById('b'+b).classList.toggle('on', b.toLowerCase() === band));
+}
+eIds.forEach(k => document.getElementById('e'+k).addEventListener('input', updEBI));
+document.getElementById('eEn').addEventListener('change', updEBI);
+updEBI();
+
+/* ------------------------------------------------------------------ escalation simulator (mirrors features/behavior/escalation.py) */
+const W8 = {no_face:1.0, looking_away:0.7, leaving_seat:0.75, bad_posture:0.6, identity_mismatch:0.95};
+const LBL = {no_face:'face absent', looking_away:'looking away', leaving_seat:'left frame', bad_posture:'poor posture', identity_mismatch:'identity mismatch'};
+let evs = [];
+function tier(){
+  if (!evs.length) return {t:'normal', score:0, why:'No events in the 60-second window. The session is <b>Normal</b>.'};
+  const types = [...new Set(evs)];
+  let score = evs.reduce((a,e)=>a+W8[e],0);
+  if (types.includes('identity_mismatch')) return {t:'critical', score, why:'<b>Identity mismatch</b> is critical on first occurrence. The dashboard recommends that a proctor intervene.'};
+  if (types.length > 1) score *= 1 + 0.5 * (types.length - 1);
+  const counts = {}; evs.forEach(e => counts[e] = (counts[e]||0) + 1);
+  const rep = Object.entries(counts).find(([,c]) => c >= 3);
+  if (score >= 2.5) return {t:'critical', score, why:`Combined score ${score.toFixed(2)} ≥ 2.5${types.length>1?` (×${(1+0.5*(types.length-1)).toFixed(1)} for ${types.length} distinct signals)`:''}. <b>Critical</b>: recommend that a proctor intervene.`};
+  if (score >= 1.5 || rep) return {t:'suspicious', score, why: rep && score < 1.5 ? `“${LBL[rep[0]]}” repeated ${rep[1]}× in 60 s. <b>Suspicious</b> (repeated pattern).` : `Combined score ${score.toFixed(2)} ≥ 1.5${types.length>1?` (×${(1+0.5*(types.length-1)).toFixed(1)} for ${types.length} distinct signals)`:''}. <b>Suspicious</b>: flag for proctor attention.`};
+  return {t:'warning', score, why:`Score ${score.toFixed(2)} &lt; 1.5 with no repeated pattern. <b>Warning</b>: logged, no intervention.`};
+}
+function renderEv(){
+  const r = tier();
+  const log = document.getElementById('evLog');
+  log.innerHTML = evs.length ? evs.map((e,i)=>`<span class="ev" data-i="${i}" title="remove">${LBL[e]} · ${W8[e].toFixed(2)}</span>`).join('') : '<span class="empty">No events yet. The session is Normal.</span>';
+  document.getElementById('evScore').textContent = r.score.toFixed(2);
+  const m = document.querySelector('#evMeter i');
+  m.style.width = Math.min(100, r.score / 4 * 100) + '%';
+  m.style.background = {normal:'#1f8a5b', warning:'#3d6fb8', suspicious:'#b7791f', critical:'#c23b32'}[r.t];
+  document.getElementById('evWhy').innerHTML = r.why;
+  document.querySelectorAll('.rung').forEach(el => el.classList.toggle('on', el.dataset.t === r.t || (r.t === 'critical' && el.dataset.t === 'action')));
+}
+document.querySelectorAll('.evb[data-ev]').forEach(b => b.addEventListener('click', () => { if (evs.length < 14) evs.push(b.dataset.ev); renderEv(); b.blur(); }));
+document.getElementById('evReset').addEventListener('click', e => { evs = []; renderEv(); e.currentTarget.blur(); });
+document.getElementById('evLog').addEventListener('click', e => { const t = e.target.closest('.ev'); if (t) { evs.splice(+t.dataset.i, 1); renderEv(); } });
+renderEv();
+
+/* ------------------------------------------------------------------ title eye follows the pointer */
+const iris = document.getElementById('iris'), eye = document.getElementById('eyeBig');
+document.addEventListener('mousemove', e => {
+  if (cur !== 0) return;
+  const r = eye.getBoundingClientRect(); const dx = e.clientX - (r.left + r.width/2), dy = e.clientY - (r.top + r.height/2);
+  const d = Math.hypot(dx, dy) || 1, k = Math.min(1, d / 400);
+  iris.setAttribute('transform', `translate(${(dx/d*12*k).toFixed(2)} ${(dy/d*6*k).toFixed(2)})`);
+});
+
+/* ------------------------------------------------------------------ start */
+const h = parseInt(location.hash.replace('#',''), 10);
+go(Number.isFinite(h) ? h - 1 : 0);
+})();
+</script>
+</body>
+</html>

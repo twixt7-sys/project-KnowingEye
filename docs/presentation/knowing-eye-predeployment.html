@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowing Eye Defense Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f6f3e8; --card:#fffdf7; --ink:#10203a; --ink2:#34425c; --mute:#66728a;
+  --line:#ddd7c4; --line2:#ebe6d6;
+  --green:#1b4d36; --greenv:#1f8a5b; --greens:#e1eee5;
+  --blue:#2456a6; --blues:#e3ebf7;
+  --gold:#a67c2e; --golds:#f4ead2; --goldl:#e4d3a8;
+  --red:#c23b32; --reds:#f8e2df; --amber:#b7791f; --ambers:#f8ecd6;
+  --navy:#10203a;
+  --serif:"Source Serif 4", Georgia, serif;
+  --sans:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono:"JetBrains Mono", Consolas, monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#121b2a;color:var(--ink);font-family:var(--sans)}
+#deck{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform-origin:center;background:var(--paper);overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+#deck::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(1200px 600px at 100% 0%,rgba(31,138,91,.06),transparent 60%)}
+
+.slide{position:absolute;inset:0;padding:96px 100px 100px;opacity:0;visibility:hidden;transform:translateX(36px);
+  transition:opacity .45s ease,transform .6s cubic-bezier(.2,.7,.2,1),visibility 0s linear .6s}
+.slide.active{opacity:1;visibility:visible;transform:none;transition:opacity .45s ease,transform .6s cubic-bezier(.2,.7,.2,1)}
+.slide.past{transform:translateX(-36px)}
+.slide.dark{background:linear-gradient(140deg,var(--navy) 0%,#142a4a 60%,#173a3a 100%);color:#eef1f6}
+.slide [data-a]{opacity:0}
+.slide.active [data-a]{animation:rise .7s cubic-bezier(.16,.84,.3,1) both;animation-delay:calc(var(--i,0)*80ms + 120ms)}
+.slide.active [data-a=scale]{animation-name:pop}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.slide,.slide.active{transition:none}.slide.active [data-a]{animation:none;opacity:1}}
+
+.kicker{font:700 15px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--greenv);display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.kicker::before{content:"";width:28px;height:2px;background:currentColor}
+.dark .kicker{color:#7fd1a6}
+h1,h2,h3{font-family:var(--serif);margin:0;font-weight:600;letter-spacing:-.01em}
+h2{font-size:52px;line-height:1.08}
+h3{font-size:24px;line-height:1.2}
+p{margin:0}
+.small{font-size:18px;line-height:1.45;color:var(--ink2)}
+.tiny{font-size:14.5px;line-height:1.4;color:var(--mute)}
+.mono{font-family:var(--mono)}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.mt1{margin-top:14px}.mt2{margin-top:26px}.mt3{margin-top:38px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 26px;box-shadow:0 10px 30px -20px rgba(16,32,58,.3)}
+.lab{display:block;font:700 13px/1 var(--mono);letter-spacing:.06em;color:var(--greenv);margin-bottom:14px}
+.tag{display:inline-flex;align-items:center;font:600 13px/1 var(--sans);padding:6px 10px;border-radius:999px;background:var(--blues);color:var(--blue)}
+.tag.g{background:var(--greens);color:var(--green)}.tag.a{background:var(--ambers);color:#8a5a12}.tag.r{background:var(--reds);color:var(--red)}
+ul.l{list-style:none;margin:0;padding:0}
+ul.l li{position:relative;padding-left:22px;margin:12px 0;font-size:20px;line-height:1.38;color:var(--ink2)}
+ul.l li::before{content:"";position:absolute;left:2px;top:.6em;width:8px;height:8px;border-radius:2px;background:var(--greenv);transform:rotate(45deg)}
+ul.l.r li::before{background:var(--red)}
+
+/* chrome */
+.chrome{position:absolute;inset:0;pointer-events:none;z-index:20}
+.c-top{position:absolute;top:34px;left:100px;right:100px;display:flex;justify-content:space-between;font:700 12.5px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+.c-brand{display:flex;align-items:center;gap:10px}.c-brand svg{width:26px;height:26px}
+.c-bot{position:absolute;left:100px;right:100px;bottom:30px;display:flex;justify-content:space-between;font:500 13px/1 var(--sans);color:var(--mute)}
+.c-count{font:600 14px/1 var(--mono);color:var(--ink2)}
+.c-hint kbd{font:600 11px/1 var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:3px 6px;background:var(--card);color:var(--ink2)}
+.progress{position:absolute;left:0;bottom:0;height:6px;width:0;background:var(--greenv);transition:width .5s ease}
+#deck.on-dark .c-top,#deck.on-dark .c-bot{color:rgba(238,241,246,.6)}
+#deck.on-dark .c-count{color:rgba(238,241,246,.85)}
+#deck.on-dark .c-hint kbd{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.2);color:#dfe5ee}
+#deck.on-dark .c-brand{opacity:0}
+
+/* citations */
+cite.c{font-style:normal;font:600 .6em/1 var(--mono);color:#8a6420;background:var(--golds);border:1px solid var(--goldl);padding:.2em .42em;border-radius:6px;vertical-align:.22em;cursor:pointer;margin-left:.18em;white-space:nowrap}
+cite.c:hover,cite.c.pin{background:var(--gold);color:#fff;border-color:var(--gold)}
+.dark cite.c{background:rgba(228,211,168,.15);border-color:rgba(228,211,168,.4);color:#ead7a6}
+#pop{position:fixed;z-index:100;max-width:440px;background:#fffdf7;border:1px solid var(--goldl);border-left:4px solid var(--gold);border-radius:10px;padding:14px 16px;box-shadow:0 18px 50px -12px rgba(16,32,58,.45);font:15px/1.45 var(--sans);color:var(--ink);opacity:0;transform:translateY(6px);pointer-events:none;transition:opacity .18s,transform .18s}
+#pop.show{opacity:1;transform:none}
+#pop b{font:700 12px/1 var(--mono);color:var(--gold);display:block;margin:8px 0 4px}#pop b:first-child{margin-top:0}
+
+/* title */
+.title-wrap{position:absolute;inset:0;padding:110px;display:grid;grid-template-columns:1.35fr .65fr;gap:40px;align-items:center}
+.title-wrap h1{font-size:80px;line-height:1.02;color:#fff}
+.title-wrap h1 span{color:#7fd1a6}
+.title-sub{font:400 27px/1.4 var(--serif);color:#c9d3e2;margin-top:22px;max-width:860px}
+.title-meta{margin-top:46px;display:flex;gap:46px;font-size:17px;color:#aebbd0;line-height:1.55}
+.title-meta b{display:block;font-size:13px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px;color:#7fd1a6}
+.eye-big{width:100%;max-width:400px;justify-self:center}
+.logos{position:absolute;top:44px;left:110px;display:flex;gap:16px}.logos img{height:58px}
+.badge{display:inline-flex;gap:10px;align-items:center;border:1px solid rgba(127,209,166,.4);color:#bfe8d1;border-radius:999px;padding:9px 16px;font:600 14px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;margin-bottom:28px}
+.badge i{width:8px;height:8px;border-radius:50%;background:#3ddc84}
+
+/* stats */
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px}
+.stat .v{font:700 44px/1 var(--serif)}.stat .v small{font-size:22px;color:var(--mute)}
+.stat .l{font-size:16px;color:var(--ink2);margin-top:8px;line-height:1.35}
+
+/* objectives */
+.objs{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:14px}
+.ob{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 14px 16px;font:600 16.5px/1.3 var(--sans)}
+.ob b{display:block;font:700 22px/1 var(--serif);color:var(--greenv);margin-bottom:8px}
+.gen{background:var(--navy);color:#fff;border-radius:14px;padding:18px 24px;font:500 21px/1.4 var(--serif)}
+.gen span{display:block;font:700 12.5px/1 var(--mono);letter-spacing:.08em;color:#7fd1a6;margin-bottom:8px}
+
+/* flow strips */
+.strip{display:flex;gap:8px;align-items:stretch}
+.strip .s{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;position:relative}
+.strip .s b{display:block;font:700 18px/1.2 var(--sans);color:var(--ink)}
+.strip .s span{display:block;font-size:15px;color:var(--mute);margin-top:4px;line-height:1.35}
+.strip .s::after{content:"→";position:absolute;right:-16px;top:50%;transform:translateY(-50%);color:var(--mute);font-size:18px;z-index:2}
+.strip .s:last-child::after{display:none}
+.strip .s.hi{background:var(--greens);border-color:var(--greenv)}
+.strip.ag .s{text-align:center;padding:16px 10px}
+.strip.ag .s b{font:600 19px var(--serif)}
+
+/* architecture */
+.arch{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.tier{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+.tier .th{font:700 12.5px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin-bottom:12px}
+.node{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;font-size:16.5px;line-height:1.35;color:var(--ink2);margin-top:8px}
+.node b{color:var(--ink)}
+.node.hi{border-color:var(--greenv);background:var(--greens)}
+.host{margin-top:12px;font:600 13px/1 var(--mono);color:var(--blue)}
+
+/* EBI */
+.formula{font:600 38px/1.2 var(--serif);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px}
+.formula sub{font-size:.55em}
+.formula .eq{font:500 16px/1.4 var(--mono);color:var(--mute);margin-top:8px}
+.ind{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.ind div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px;color:var(--ink2);line-height:1.3}
+.ind b{display:block;font:700 18px var(--mono);color:var(--greenv)}
+.sl{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:12px;margin:9px 0}
+.sl label{font:700 16px var(--mono);color:var(--greenv)}
+.sl output{font:600 16px var(--mono);text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:7px;border-radius:7px;background:linear-gradient(90deg,var(--greenv) var(--p,50%),#dcd8ca var(--p,50%));outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;border:3px solid var(--greenv)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--greenv)}
+.gauge{display:flex;gap:22px;align-items:center}
+.gauge svg{width:190px;height:190px;flex:0 0 190px}
+.gauge .val{font:700 50px var(--serif);fill:var(--ink)}
+.gauge .gl{font:600 13px var(--sans);letter-spacing:.14em;fill:var(--mute)}
+.bands{display:flex;flex-direction:column;gap:8px;flex:1}
+.band{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--card);opacity:.5;transition:all .25s;font-size:17px}
+.band b{font-weight:700}
+.band.on{opacity:1}
+.band.good.on{border-color:var(--greenv);background:var(--greens)}
+.band.mid.on{border-color:var(--amber);background:var(--ambers)}
+.band.bad.on{border-color:var(--red);background:var(--reds)}
+
+/* tables */
+table.t{width:100%;border-collapse:separate;border-spacing:0;font-size:17px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+table.t th{background:#eceadf;text-align:left;font:700 12.5px/1.2 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);padding:12px 16px;border-bottom:1px solid var(--line)}
+table.t td{padding:12px 16px;border-bottom:1px solid var(--line2);vertical-align:top;line-height:1.35;color:var(--ink2)}
+table.t tr:last-child td{border-bottom:0}
+table.t td:first-child{color:var(--ink);font-weight:600}
+table.t tr.sel{background:rgba(31,138,91,.08)}
+.best{color:var(--green)!important;font-weight:700}
+table.t.big{font-size:20px}
+table.t.big td{padding:20px 20px}
+table.t.big th{padding:14px 20px}
+.concl .card{padding:30px 30px 34px}
+.concl .small{font-size:21px}
+
+/* demo */
+.demo{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-top:70px}
+.dm{border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:30px 24px 34px;background:rgba(255,255,255,.04);min-height:300px}
+.dm b{display:block;font:700 46px/1 var(--serif);color:#7fd1a6}
+.dm h3{color:#fff;font-size:27px;margin:60px 0 10px}
+.dm p{font-size:18px;color:#b9c6d9;line-height:1.4}
+
+/* index */
+#idx{position:fixed;inset:0;z-index:90;background:rgba(10,18,32,.72);display:none;align-items:center;justify-content:center}
+#idx.show{display:flex}
+#idx .box{width:min(560px,92vw);background:#fffdf7;border-radius:18px;padding:26px 30px}
+#idx h4{font:600 26px var(--serif);margin:0 0 12px}
+#idx button{all:unset;display:block;cursor:pointer;font-size:16px;color:var(--ink2);padding:7px 10px;border-radius:6px;width:calc(100% - 20px)}
+#idx button:hover{background:var(--greens)}#idx button.cur{background:var(--navy);color:#fff}
+#idx button span{font:600 12px var(--mono);color:var(--mute);margin-right:10px}
+.fab{position:fixed;right:16px;top:14px;z-index:80;display:flex;gap:8px;opacity:.25;transition:opacity .2s}
+.fab:hover{opacity:1}
+.fab button{all:unset;cursor:pointer;width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center;font:600 13px var(--mono)}
+</style>
+</head>
+<body>
+<div class="fab"><button id="bIdx" title="Slide index (O)">☰</button><button id="bFull" title="Full screen (F)">⤢</button></div>
+
+<div id="deck">
+
+<!-- 1 · TITLE -->
+<section class="slide dark" data-title="Title">
+  <div class="logos" data-a>
+    <img src="../../frontend/public/branding/institution-logo.svg" alt="Legacy College of Compostela" onerror="this.remove()">
+    <img src="../../frontend/public/branding/Wellness%20and%20Care%20Center.png" alt="Wellness and Care Center" onerror="this.remove()">
+  </div>
+  <div class="title-wrap">
+    <div>
+      <div class="badge" data-a><i></i>Pre-Deployment Defense</div>
+      <h1 data-a>Knowing <span>Eye</span></h1>
+      <p class="title-sub" data-a>A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis</p>
+      <div class="title-meta" data-a>
+        <div><b>Proponents</b>Saturnino C. Ancog III<br>Krhisha Marie O. Cavan<br>Kervy N. Cadiente<br>Twixt Jasley J. Tamera</div>
+        <div><b>Institution</b>Legacy College of Compostela<br>Institute of Information Technology</div>
+        <div><b>Date</b>October 2026</div>
+      </div>
+    </div>
+    <svg class="eye-big" id="eyeBig" viewBox="0 0 100 100" data-a="scale" aria-hidden="true">
+      <defs><linearGradient id="kg" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse"><stop stop-color="#3ddc84"/><stop offset="1" stop-color="#2bb3a3"/></linearGradient></defs>
+      <path d="M50 25C30 25 15 40 5 50C15 60 30 75 50 75C70 75 85 60 95 50C85 40 70 25 50 25Z" fill="url(#kg)" fill-opacity=".1" stroke="url(#kg)" stroke-width="2"/>
+      <g id="iris"><circle cx="50" cy="50" r="15" fill="url(#kg)" fill-opacity=".22" stroke="url(#kg)" stroke-width="2"/><circle cx="50" cy="50" r="8" fill="url(#kg)"/><circle cx="54" cy="46" r="2.6" fill="#fff" fill-opacity=".9"/></g>
+    </svg>
+  </div>
+</section>
+
+<!-- 2 · BACKGROUND & PROBLEM -->
+<section class="slide" data-title="Background and Problem Statement">
+  <div class="kicker" data-a>Introduction</div>
+  <h2 data-a>Background and Problem Statement</h2>
+  <div class="g2 mt3" style="grid-template-columns:1.1fr .9fr">
+    <div class="card" data-a>
+      <span class="lab">PROBLEM · LCC ENVIRONMENTAL SCAN, JUNE 1, 2026</span>
+      <ul class="l r">
+        <li>No computer-based exam system with face tracking or identity verification.</li>
+        <li>Suspicious behavior is caught only by CCTV or assigned proctors, which does not scale to large exams.</li>
+        <li>Existing platforms manage exams but monitor passively, with no real-time behavior analysis.</li>
+      </ul>
+      <p class="small mt2"><b>Proposed:</b> one web platform for exam creation, administration, and real-time facial and postural behavior monitoring.</p>
+    </div>
+    <div style="display:grid;gap:12px" data-a>
+      <div class="stat"><div class="v">98.4<small>%</small></div><div class="l">face recognition accuracy; 90.4% face detection (iExam)<cite class="c" data-r="3"></cite></div></div>
+      <div class="stat"><div class="v">94.2<small>%</small></div><div class="l">facial verification; 89.7% head-movement detection<cite class="c" data-r="7"></cite></div></div>
+      <div class="stat"><div class="v">87.5<small>%</small></div><div class="l">cheating cases detected with multimodal behavior analysis<cite class="c" data-r="14"></cite></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · OBJECTIVES & SCOPE -->
+<section class="slide" data-title="Objectives, Scope, and Limitations">
+  <div class="kicker" data-a>Documentation</div>
+  <h2 data-a>Objectives, Scope, and Limitations</h2>
+  <div class="gen mt2" data-a><span>GENERAL OBJECTIVE</span>Develop Knowing Eye to improve examination integrity, monitoring efficiency, and assessment reliability.</div>
+  <div class="objs" data-a>
+    <div class="ob"><b>1</b>Centralized exam platform</div>
+    <div class="ob"><b>2</b>Monitoring and data management</div>
+    <div class="ob"><b>3</b>Real-time computer vision</div>
+    <div class="ob"><b>4</b>YOLO, CNN, and ArcFace</div>
+    <div class="ob"><b>5</b>Behavior scoring and flagging</div>
+    <div class="ob"><b>6</b>Administrative dashboard</div>
+    <div class="ob"><b>7</b>Usability and effectiveness evaluation</div>
+  </div>
+  <div class="g2 mt2">
+    <div class="card" data-a style="border-top:4px solid var(--greenv);padding:18px 24px"><span class="lab">SCOPE</span>
+      <ul class="l" style="margin-top:-6px"><li>Legacy College of Compostela, Compostela, Davao de Oro</li><li>Webcam streams, behavior logs, and exam interaction logs</li><li>Public datasets + consented mock exam sessions</li></ul></div>
+    <div class="card" data-a style="border-top:4px solid var(--red);padding:18px 24px"><span class="lab" style="color:var(--red)">LIMITATIONS</span>
+      <ul class="l r" style="margin-top:-6px"><li>Desktop or laptop with webcam; online only</li><li>No mobile app, external databases, or biometric hardware</li><li>Behavioral indicators, not accusations; the administrator decides</li></ul></div>
+  </div>
+</section>
+
+<!-- 4 · METHODOLOGY & ARCHITECTURE -->
+<section class="slide" data-title="Methodology and System Architecture">
+  <div class="kicker" data-a>Documentation · Technical Details</div>
+  <h2 data-a>Methodology and System Architecture</h2>
+  <p class="tiny mt2" data-a><b style="color:var(--ink)">Agile Software Development</b><cite class="c" data-r="43"></cite></p>
+  <div class="strip ag mt1" data-a>
+    <div class="s"><b>Planning</b></div><div class="s"><b>Design</b></div><div class="s"><b>Development</b></div>
+    <div class="s"><b>Testing</b></div><div class="s hi"><b>Deployment</b></div><div class="s"><b>Maintenance</b></div>
+  </div>
+  <p class="tiny mt3" data-a><b style="color:var(--ink)">Three-tier architecture</b> (Figure 11)</p>
+  <div class="arch mt1" data-a>
+    <div class="tier"><div class="th">Client tier</div>
+      <div class="node"><b>React 18 + Vite + TypeScript</b></div>
+      <div class="node hi"><b>Webcam capture</b> via browser media API</div>
+      <div class="node">Examinee, examiner, and proctor views</div>
+      <div class="host">Vercel</div></div>
+    <div class="tier"><div class="th">Server tier</div>
+      <div class="node"><b>Nginx</b> reverse proxy, TLS</div>
+      <div class="node"><b>Django 6 + DRF + Channels</b> on Daphne (REST + WebSocket)</div>
+      <div class="node hi"><b>AI pipeline</b>: detection, identity, EBI</div>
+      <div class="host">Railway</div></div>
+    <div class="tier"><div class="th">Data tier</div>
+      <div class="node"><b>PostgreSQL</b> on Supabase</div>
+      <div class="node"><b>Redis</b> channel layer</div>
+      <div class="node">Email / OTP service</div></div>
+  </div>
+</section>
+
+<!-- 5 · MONITORING & EBI -->
+<section class="slide" data-title="Behavior Monitoring and EBI">
+  <div class="kicker" data-a>Technical Details</div>
+  <h2 data-a>Behavior Monitoring and Exam Behavior Index</h2>
+  <div class="strip mt2" data-a>
+    <div class="s"><b>Capture</b><span>Webcam frames over WebSocket</span></div>
+    <div class="s"><b>Detect</b><span>YOLOv8n<cite class="c" data-r="71"></cite>, MediaPipe Face & Pose<cite class="c" data-r="68"></cite></span></div>
+    <div class="s"><b>Verify</b><span>ArcFace embeddings<cite class="c" data-r="70"></cite></span></div>
+    <div class="s"><b>Score</b><span>Exam Behavior Index</span></div>
+    <div class="s hi"><b>Flag</b><span>Alerts for administrator review</span></div>
+  </div>
+  <div class="g2 mt2" style="grid-template-columns:1.05fr .95fr;align-items:start">
+    <div data-a>
+      <div class="formula">EBI = (F<sub>p</sub> + F<sub>i</sub> + U<sub>p</sub> + G<sub>c</sub>) / N<div class="eq" id="ebiEq"></div></div>
+      <div class="ind">
+        <div><b>F<sub>p</sub></b>Face presence</div><div><b>F<sub>i</sub></b>Identity consistency</div>
+        <div><b>U<sub>p</sub></b>Upper-body presence</div><div><b>G<sub>c</sub></b>Looking-away compliance</div>
+      </div>
+      <p class="tiny mt1">Formative indicators<cite class="c" data-r="46"></cite><cite class="c" data-r="47"></cite>. Raw frames are not stored; only derived metrics.</p>
+    </div>
+    <div class="card" data-a style="padding:18px 22px">
+      <div class="gauge">
+        <svg viewBox="0 0 260 260"><circle cx="130" cy="130" r="108" fill="none" stroke="#e7e3d6" stroke-width="22"/>
+          <circle id="ebiArc" cx="130" cy="130" r="108" fill="none" stroke="#1f8a5b" stroke-width="22" stroke-linecap="round" transform="rotate(-90 130 130)" stroke-dasharray="678.6" stroke-dashoffset="678.6" style="transition:stroke-dashoffset .5s,stroke .3s"/>
+          <text x="130" y="142" text-anchor="middle" class="val" id="ebiVal">0</text><text x="130" y="176" text-anchor="middle" class="gl">EBI</text></svg>
+        <div class="bands">
+          <div class="band good" id="bGood"><b>Good</b> · EBI ≥ 80</div>
+          <div class="band mid" id="bMid"><b>Mid</b> · 50–79 · review</div>
+          <div class="band bad" id="bBad"><b>Bad</b> · &lt; 50 · prioritize</div>
+        </div>
+      </div>
+      <div class="sl"><label>Fp</label><input type="range" min="0" max="100" value="96" id="eFp"><output id="oFp"></output></div>
+      <div class="sl"><label>Fi</label><input type="range" min="0" max="100" value="92" id="eFi"><output id="oFi"></output></div>
+      <div class="sl"><label>Up</label><input type="range" min="0" max="100" value="84" id="eUp"><output id="oUp"></output></div>
+      <div class="sl"><label>Gc</label><input type="range" min="0" max="100" value="71" id="eGc"><output id="oGc"></output></div>
+      <p class="tiny">Bands follow a graduated risk model<cite class="c" data-r="20"></cite> and threshold-based classification<cite class="c" data-r="14"></cite>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · MODEL TESTING -->
+<section class="slide" data-title="Face Detection Model Testing">
+  <div class="kicker" data-a>System Testing</div>
+  <h2 data-a>Face Detection Model Testing</h2>
+  <p class="small mt1" data-a>WIDER FACE + FDDB · 3,216 training / 804 validation images · same settings for all models</p>
+  <table class="t mt2" data-a>
+    <thead><tr><th>Model</th><th>mAP@0.5</th><th>Precision</th><th>Recall</th><th>F1</th><th>FPS</th><th>Params</th></tr></thead>
+    <tbody>
+      <tr class="sel"><td>YOLOv8n <span class="tag g" style="margin-left:8px">selected</span></td><td>88.98</td><td class="best">95.84</td><td>81.76</td><td>88.24</td><td>233.5</td><td>3.01 M</td></tr>
+      <tr><td>YOLOv11n</td><td>88.96</td><td>94.08</td><td>81.78</td><td>87.50</td><td class="best">299.4</td><td class="best">2.59 M</td></tr>
+      <tr><td>RT-DETR-l</td><td class="best">90.14</td><td>92.97</td><td class="best">84.09</td><td class="best">88.31</td><td style="color:var(--red)">23.4</td><td>32.81 M</td></tr>
+    </tbody>
+  </table>
+  <div class="g2 mt2" style="grid-template-columns:1.2fr .8fr;align-items:stretch">
+    <div class="card" data-a style="border-left:4px solid var(--greenv)"><span class="lab">WHY YOLOv8n</span>
+      <ul class="l" style="margin-top:-6px"><li>Highest precision: fewest false face detections</li><li>233 FPS, well above the 30 FPS webcam requirement</li><li>RT-DETR-l falls below real time and diverged at epoch 66</li></ul></div>
+    <div class="card" data-a><span class="lab">YOLOv8n · 100 EPOCHS</span>
+      <div class="g2" style="gap:14px">
+        <div><div style="font:700 36px var(--serif)">96.94%</div><div class="tiny">Precision</div></div>
+        <div><div style="font:700 36px var(--serif)">89.04%</div><div class="tiny">mAP@0.5</div></div>
+        <div><div style="font:700 36px var(--serif)">88.32%</div><div class="tiny">F1-score</div></div>
+        <div><div style="font:700 36px var(--serif)">81.11%</div><div class="tiny">Recall</div></div>
+      </div></div>
+  </div>
+</section>
+
+<!-- 7 · REVISIONS -->
+<section class="slide" data-title="Outline Defense Revisions">
+  <div class="kicker" data-a>Revisions</div>
+  <h2 data-a>Outline Defense Revisions</h2>
+  <table class="t mt3 big" data-a>
+    <thead><tr><th style="width:230px">Area</th><th style="width:420px">Panel comment</th><th>Revision</th></tr></thead>
+    <tbody>
+      <tr><td>Access control</td><td>A single administrator is a bottleneck</td><td>Role-based access, exam approval chain, OTP email verification</td></tr>
+      <tr><td>UI / UX</td><td>Low contrast, dark theme, no LCC identity</td><td>Light theme, improved contrast, Legacy College branding</td></tr>
+      <tr><td>Exam management</td><td>Benchmark the LMS exam workflow</td><td>Compared with Google Forms and Jotform; categories, schedules, bulk import, essay grading</td></tr>
+      <tr><td>Computer vision</td><td>Thresholds must be based on research</td><td>Cited thresholds and EBI bands, escalation levels, dataset and algorithm comparison</td></tr>
+      <tr><td>Documentation</td><td>Stronger RRL; continuous testing</td><td>Expanded RRL, Agile WBS, floor plan, testing before, during, and after deployment</td></tr>
+    </tbody>
+  </table>
+  <p class="small mt3" data-a style="font-size:20px"><span class="tag a">Pending</span>&nbsp; Load testing at 5–100 users on the deployment server · six-week deployment with the Guidance Office</p>
+</section>
+
+<!-- 8 · DEMO -->
+<section class="slide dark" data-title="System Demonstration">
+  <div class="kicker" data-a>Live Demo</div>
+  <h2 data-a style="color:#fff;font-size:64px">System Demonstration</h2>
+  <div class="demo">
+    <div class="dm" data-a><b>01</b><h3>Register</h3><p>Sign up with OTP email verification</p></div>
+    <div class="dm" data-a><b>02</b><h3>Exam setup</h3><p>Camera check and face enrollment</p></div>
+    <div class="dm" data-a><b>03</b><h3>Take exam</h3><p>Timed exam with live monitoring</p></div>
+    <div class="dm" data-a><b>04</b><h3>Monitor</h3><p>Proctor dashboard, EBI, and alerts</p></div>
+    <div class="dm" data-a><b>05</b><h3>Report</h3><p>Session reports and CSV/PDF export</p></div>
+  </div>
+</section>
+
+<!-- 9 · CONCLUSION -->
+<section class="slide" data-title="Conclusion and Next Steps">
+  <div class="kicker" data-a>Conclusion</div>
+  <h2 data-a>Conclusion and Next Steps</h2>
+  <div class="g3 mt3 concl">
+    <div class="card" data-a><span class="lab">INTEGRATED</span><p class="small">Exam creation, delivery, monitoring, and reporting in one web platform.</p></div>
+    <div class="card" data-a><span class="lab">EVIDENCE-BASED</span><p class="small">Thresholds drawn from literature; YOLOv8n chosen through model comparison.</p></div>
+    <div class="card" data-a><span class="lab">HUMAN-REVIEWED</span><p class="small">The system flags behavior; the administrator makes the final judgment.</p></div>
+  </div>
+  <p class="tiny mt3" data-a><b style="color:var(--ink)">Next steps</b></p>
+  <div class="strip mt1" data-a>
+    <div class="s"><b>Pre-deployment validation</b><span>Readiness and load testing</span></div>
+    <div class="s hi"><b>Deployment · about six weeks</b><span>With the LCC Guidance Office</span></div>
+    <div class="s"><b>Evaluation</b><span>Functionality, usability, effectiveness</span></div>
+    <div class="s"><b>Final paper</b><span>Results and revisions</span></div>
+  </div>
+  <p class="tiny mt2" data-a>Recommended client: Core i5 12th Gen / Ryzen 5 5000 · 16 GB RAM · 1080p 30 FPS webcam · latest Chrome or Edge</p>
+</section>
+
+<!-- 10 · THANK YOU -->
+<section class="slide dark" data-title="Thank You">
+  <div class="title-wrap" style="grid-template-columns:1fr;text-align:center">
+    <div>
+      <h1 data-a style="font-size:110px">Thank <span>you.</span></h1>
+      <p class="title-sub" data-a style="margin:26px auto 0">Knowing Eye: A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis</p>
+    </div>
+  </div>
+</section>
+
+<div class="chrome">
+  <div class="c-top"><div class="c-brand"><svg viewBox="0 0 100 100"><path d="M50 25C30 25 15 40 5 50C15 60 30 75 50 75C70 75 85 60 95 50C85 40 70 25 50 25Z" fill="none" stroke="#1f8a5b" stroke-width="6"/><circle cx="50" cy="50" r="12" fill="#1f8a5b"/></svg>Knowing Eye</div><div></div></div>
+  <div class="c-bot"><div class="c-hint"><kbd>←</kbd> <kbd>→</kbd> navigate &nbsp; <kbd>O</kbd> index &nbsp; <kbd>F</kbd> full screen</div><div class="c-count" id="cCount"></div></div>
+  <div class="progress" id="prog"></div>
+</div>
+</div>
+
+<div id="pop"></div>
+<div id="idx"><div class="box"><h4>Slides</h4><div id="idxList"></div></div></div>
+
+<script>
+(() => {
+const REFS = {
+3:"X. Yang, D. Wu, X. Yi, J. H. M. Lee, and T. Lee, “iExam: A Novel Online Exam Monitoring and Analysis System Based on Face Detection and Recognition,” arXiv:2206.13356.",
+7:"J. R. Pansare, “Proctoring Using AI,” IJRASET, vol. 13, no. 6, pp. 1825–1835, 2025.",
+14:"B. J. Ferdosi, M. Rahman, A. M. Sakib, and T. Helaly, “Modeling and Classification of the Behavioral Patterns of Students Participating in Online Examination,” Human Behavior and Emerging Technologies, 2023.",
+20:"D. Smetters, “Systems and methods for assessing data collected by automated proctoring,” US Patent 11645935B1.",
+43:"S. Alsaqqa, S. Sawalha, and H. Abdel-Nabi, “Agile Software Development: Methodologies and Trends,” iJIM, vol. 14, no. 11, pp. 246–270, 2020.",
+46:"A. Diamantopoulos and H. M. Winklhofer, “Index construction with formative indicators: An alternative to scale development,” J. Marketing Research, vol. 38, no. 2, 2001.",
+47:"T. Coltman, T. M. Devinney, D. F. Midgley, and S. Venaik, “Formative versus reflective measurement models,” J. Business Research, vol. 61, no. 12, 2008.",
+68:"“MediaPipe Face Mesh,” google-ai-edge/mediapipe, GitHub.",
+70:"“InsightFace: Face Analysis,” insightface.ai.",
+71:"Ultralytics, “YOLOv8,” docs.ultralytics.com/models/yolov8."
+};
+const deck = document.getElementById('deck');
+const slides = [...deck.querySelectorAll('.slide')];
+const N = slides.length;
+let cur = 0;
+slides.forEach(s => s.querySelectorAll('[data-a]').forEach((el, i) => el.style.setProperty('--i', i)));
+document.querySelectorAll('cite.c').forEach(c => c.textContent = '[' + c.dataset.r + ']');
+
+// index
+const idx = document.getElementById('idx'), list = document.getElementById('idxList');
+list.innerHTML = slides.map((s,i) => `<button data-i="${i}"><span>${String(i+1).padStart(2,'0')}</span>${s.dataset.title}</button>`).join('');
+list.onclick = e => { const b = e.target.closest('button'); if (b) { go(+b.dataset.i); toggleIdx(false); } };
+idx.onclick = e => { if (e.target === idx) toggleIdx(false); };
+function toggleIdx(f){ const show = f ?? !idx.classList.contains('show'); idx.classList.toggle('show', show);
+  list.querySelectorAll('button').forEach(b => b.classList.toggle('cur', +b.dataset.i === cur)); }
+
+function go(n){
+  n = Math.max(0, Math.min(N-1, n)); cur = n;
+  slides.forEach((s,i) => { s.classList.toggle('active', i === n); s.classList.toggle('past', i < n); });
+  deck.classList.toggle('on-dark', slides[n].classList.contains('dark'));
+  document.getElementById('cCount').textContent = String(n+1).padStart(2,'0') + ' / ' + String(N).padStart(2,'0');
+  document.getElementById('prog').style.width = ((n+1)/N*100) + '%';
+  hidePop(true);
+  try { history.replaceState(null, '', '#' + (n+1)); } catch (e) {}
+}
+document.addEventListener('keydown', e => {
+  if (e.target.type === 'range' && e.key.startsWith('Arrow')) return;
+  switch (e.key) {
+    case 'ArrowRight': case 'PageDown': go(cur+1); e.preventDefault(); break;
+    case ' ': if (e.target.tagName === 'BUTTON') return; go(cur+1); e.preventDefault(); break;
+    case 'ArrowLeft': case 'PageUp': go(cur-1); e.preventDefault(); break;
+    case 'Home': go(0); break; case 'End': go(N-1); break;
+    case 'o': case 'O': toggleIdx(); break;
+    case 'f': case 'F': full(); break;
+    case 'Escape': toggleIdx(false); hidePop(true); break;
+  }
+});
+let tx = null;
+deck.addEventListener('touchstart', e => tx = e.touches[0].clientX, {passive:true});
+deck.addEventListener('touchend', e => { if (tx === null) return; const dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 50) go(cur + (dx < 0 ? 1 : -1)); tx = null; });
+function full(){ if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+document.getElementById('bFull').onclick = full;
+document.getElementById('bIdx').onclick = () => toggleIdx();
+function fit(){ const s = Math.min(innerWidth/1600, innerHeight/900); deck.style.transform = `translate(-50%,-50%) scale(${s})`; }
+addEventListener('resize', fit); fit();
+
+// citation popover
+const pop = document.getElementById('pop'); let pinned = null;
+function showPop(c){
+  pop.innerHTML = c.dataset.r.split(',').map(i => `<b>[${i}]</b>${REFS[i] || ''}`).join('');
+  pop.classList.add('show');
+  const r = c.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight;
+  pop.style.left = Math.min(Math.max(12, r.left + r.width/2 - pw/2), innerWidth - pw - 12) + 'px';
+  pop.style.top = (r.top - ph - 10 < 10 ? r.bottom + 10 : r.top - ph - 10) + 'px';
+}
+function hidePop(force){ if (pinned && !force) return; pop.classList.remove('show'); if (force && pinned) { pinned.classList.remove('pin'); pinned = null; } }
+deck.addEventListener('mouseover', e => { const c = e.target.closest('cite.c'); if (c && !pinned) showPop(c); });
+deck.addEventListener('mouseout', e => { if (e.target.closest('cite.c') && !pinned) hidePop(); });
+document.addEventListener('click', e => {
+  const c = e.target.closest('cite.c');
+  if (c) { e.stopPropagation(); if (pinned === c) { hidePop(true); return; } if (pinned) pinned.classList.remove('pin'); pinned = c; c.classList.add('pin'); showPop(c); return; }
+  if (!e.target.closest('#pop')) hidePop(true);
+}, true);
+
+// EBI calculator
+const ids = ['Fp','Fi','Up','Gc'];
+function upd(){
+  const v = ids.map(k => { const el = document.getElementById('e'+k); el.style.setProperty('--p', el.value + '%'); document.getElementById('o'+k).textContent = el.value; return +el.value; });
+  const ebi = v.reduce((a,b)=>a+b,0) / 4;
+  document.getElementById('ebiEq').textContent = `= (${v.join(' + ')}) / 4 = ${ebi.toFixed(1)}`;
+  document.getElementById('ebiVal').textContent = ebi.toFixed(1);
+  const arc = document.getElementById('ebiArc'); arc.style.strokeDashoffset = 678.6 * (1 - ebi/100);
+  const band = ebi >= 80 ? 'good' : ebi >= 50 ? 'mid' : 'bad';
+  arc.style.stroke = {good:'#1f8a5b', mid:'#b7791f', bad:'#c23b32'}[band];
+  ['Good','Mid','Bad'].forEach(b => document.getElementById('b'+b).classList.toggle('on', b.toLowerCase() === band));
+}
+ids.forEach(k => document.getElementById('e'+k).addEventListener('input', upd)); upd();
+
+// title eye follows the pointer
+const iris = document.getElementById('iris'), eye = document.getElementById('eyeBig');
+document.addEventListener('mousemove', e => {
+  if (cur !== 0) return;
+  const r = eye.getBoundingClientRect(), dx = e.clientX - (r.left + r.width/2), dy = e.clientY - (r.top + r.height/2), d = Math.hypot(dx, dy) || 1, k = Math.min(1, d/400);
+  iris.setAttribute('transform', `translate(${(dx/d*12*k).toFixed(2)} ${(dy/d*6*k).toFixed(2)})`);
+});
+
+const h = parseInt(location.hash.slice(1), 10);
+go(Number.isFinite(h) ? h - 1 : 0);
+})();
+</script>
+</body>
+</html>

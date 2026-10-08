@@ -1,0 +1,268 @@
+{
+  "yolo11n": {
+    "weights": "C:\\Users\\Twixt\\AppData\\Local\\Temp\\claude\\C--Users-Twixt-Desktop---Files-Side-Hobbies-Root-project-KnowingEye\\addfc4be-83b0-4d43-9533-08226f1a73ab\\scratchpad\\k7020\\knowing-eye-70-20-10\\yolo11n\\best.pt",
+    "conf": 0.25,
+    "nms_iou": 0.7,
+    "imgsz": 640,
+    "split": "test (70/20/10, seed 42)",
+    "images": 402,
+    "faces_total": 1005,
+    "faces_in_domain": 463,
+    "images_with_in_domain_face": 326,
+    "detections": 967,
+    "iou_threshold": 0.5,
+    "domain_min_side_frac": 0.15,
+    "all_faces": {
+      "Accuracy (%)": 79.76,
+      "Precision (%)": 90.49,
+      "Recall (%)": 87.06,
+      "F1 (%)": 88.74,
+      "TP": 875,
+      "FP": 92,
+      "FN": 130,
+      "Faces counted": 1005
+    },
+    "in_domain": {
+      "Accuracy (%)": 82.34,
+      "Precision (%)": 83.24,
+      "Recall (%)": 98.7,
+      "F1 (%)": 90.32,
+      "TP": 457,
+      "FP": 92,
+      "FN": 6,
+      "Faces counted": 463
+    },
+    "by_stratum": {
+      "FDDB": {
+        "images": 283,
+        "all_faces": {
+          "Accuracy (%)": 86.63,
+          "Precision (%)": 89.67,
+          "Recall (%)": 96.24,
+          "F1 (%)": 92.84,
+          "TP": 512,
+          "FP": 59,
+          "FN": 20,
+          "Faces counted": 532
+        },
+        "in_domain": {
+          "Accuracy (%)": 86.3,
+          "Precision (%)": 87.23,
+          "Recall (%)": 98.77,
+          "F1 (%)": 92.64,
+          "TP": 403,
+          "FP": 59,
+          "FN": 5,
+          "Faces counted": 408
+        }
+      },
+      "WIDER-13": {
+        "images": 71,
+        "all_faces": {
+          "Accuracy (%)": 69.57,
+          "Precision (%)": 95.36,
+          "Recall (%)": 72.0,
+          "F1 (%)": 82.05,
+          "TP": 144,
+          "FP": 7,
+          "FN": 56,
+          "Faces counted": 200
+        },
+        "in_domain": {
+          "Accuracy (%)": 81.4,
+          "Precision (%)": 83.33,
+          "Recall (%)": 97.22,
+          "F1 (%)": 89.74,
+          "TP": 35,
+          "FP": 7,
+          "FN": 1,
+          "Faces counted": 36
+        }
+      },
+      "WIDER-16": {
+        "images": 23,
+        "all_faces": {
+          "Accuracy (%)": 69.59,
+          "Precision (%)": 88.15,
+          "Recall (%)": 76.77,
+          "F1 (%)": 82.07,
+          "TP": 119,
+          "FP": 16,
+          "FN": 36,
+          "Faces counted": 155
+        },
+        "in_domain": {
+          "Accuracy (%)": 38.46,
+          "Precision (%)": 38.46,
+          "Recall (%)": 100.0,
+          "F1 (%)": 55.56,
+          "TP": 10,
+          "FP": 16,
+          "FN": 0,
+          "Faces counted": 10
+        }
+      },
+      "WIDER-29": {
+        "images": 25,
+        "all_faces": {
+          "Accuracy (%)": 78.12,
+          "Precision (%)": 90.91,
+          "Recall (%)": 84.75,
+          "F1 (%)": 87.72,
+          "TP": 100,
+          "FP": 10,
+          "FN": 18,
+          "Faces counted": 118
+        },
+        "in_domain": {
+          "Accuracy (%)": 47.37,
+          "Precision (%)": 47.37,
+          "Recall (%)": 100.0,
+          "F1 (%)": 64.29,
+          "TP": 9,
+          "FP": 10,
+          "FN": 0,
+          "Faces counted": 9
+        }
+      }
+    },
+    "speed_cpu": {
+      "ms_mean": 804.79,
+      "fps": 1.2,
+      "images_timed": 399
+    }
+  },
+  "yolov8n": {
+    "weights": "C:\\Users\\Twixt\\AppData\\Local\\Temp\\claude\\C--Users-Twixt-Desktop---Files-Side-Hobbies-Root-project-KnowingEye\\addfc4be-83b0-4d43-9533-08226f1a73ab\\scratchpad\\k7020\\knowing-eye-70-20-10\\yolov8n\\best.pt",
+    "conf": 0.25,
+    "nms_iou": 0.7,
+    "imgsz": 640,
+    "split": "test (70/20/10, seed 42)",
+    "images": 402,
+    "faces_total": 1005,
+    "faces_in_domain": 463,
+    "images_with_in_domain_face": 326,
+    "detections": 1005,
+    "iou_threshold": 0.5,
+    "domain_min_side_frac": 0.15,
+    "all_faces": {
+      "Accuracy (%)": 77.88,
+      "Precision (%)": 87.56,
+      "Recall (%)": 87.56,
+      "F1 (%)": 87.56,
+      "TP": 880,
+      "FP": 125,
+      "FN": 125,
+      "Faces counted": 1005
+    },
+    "in_domain": {
+      "Accuracy (%)": 77.21,
+      "Precision (%)": 78.41,
+      "Recall (%)": 98.06,
+      "F1 (%)": 87.14,
+      "TP": 454,
+      "FP": 125,
+      "FN": 9,
+      "Faces counted": 463
+    },
+    "by_stratum": {
+      "FDDB": {
+        "images": 283,
+        "all_faces": {
+          "Accuracy (%)": 84.58,
+          "Precision (%)": 87.78,
+          "Recall (%)": 95.86,
+          "F1 (%)": 91.64,
+          "TP": 510,
+          "FP": 71,
+          "FN": 22,
+          "Faces counted": 532
+        },
+        "in_domain": {
+          "Accuracy (%)": 83.51,
+          "Precision (%)": 84.93,
+          "Recall (%)": 98.04,
+          "F1 (%)": 91.01,
+          "TP": 400,
+          "FP": 71,
+          "FN": 8,
+          "Faces counted": 408
+        }
+      },
+      "WIDER-13": {
+        "images": 71,
+        "all_faces": {
+          "Accuracy (%)": 70.67,
+          "Precision (%)": 94.84,
+          "Recall (%)": 73.5,
+          "F1 (%)": 82.82,
+          "TP": 147,
+          "FP": 8,
+          "FN": 53,
+          "Faces counted": 200
+        },
+        "in_domain": {
+          "Accuracy (%)": 79.55,
+          "Precision (%)": 81.4,
+          "Recall (%)": 97.22,
+          "F1 (%)": 88.61,
+          "TP": 35,
+          "FP": 8,
+          "FN": 1,
+          "Faces counted": 36
+        }
+      },
+      "WIDER-16": {
+        "images": 23,
+        "all_faces": {
+          "Accuracy (%)": 63.83,
+          "Precision (%)": 78.43,
+          "Recall (%)": 77.42,
+          "F1 (%)": 77.92,
+          "TP": 120,
+          "FP": 33,
+          "FN": 35,
+          "Faces counted": 155
+        },
+        "in_domain": {
+          "Accuracy (%)": 23.26,
+          "Precision (%)": 23.26,
+          "Recall (%)": 100.0,
+          "F1 (%)": 37.74,
+          "TP": 10,
+          "FP": 33,
+          "FN": 0,
+          "Faces counted": 10
+        }
+      },
+      "WIDER-29": {
+        "images": 25,
+        "all_faces": {
+          "Accuracy (%)": 78.63,
+          "Precision (%)": 88.79,
+          "Recall (%)": 87.29,
+          "F1 (%)": 88.03,
+          "TP": 103,
+          "FP": 13,
+          "FN": 15,
+          "Faces counted": 118
+        },
+        "in_domain": {
+          "Accuracy (%)": 40.91,
+          "Precision (%)": 40.91,
+          "Recall (%)": 100.0,
+          "F1 (%)": 58.06,
+          "TP": 9,
+          "FP": 13,
+          "FN": 0,
+          "Faces counted": 9
+        }
+      }
+    },
+    "speed_cpu": {
+      "ms_mean": 693.77,
+      "fps": 1.4,
+      "images_timed": 399
+    }
+  }
+}

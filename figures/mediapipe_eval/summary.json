@@ -1,0 +1,146 @@
+{
+  "detector": "MediaPipe Face Landmarker (BlazeFace short-range detector), production config",
+  "split": "test (70/20/10, seed 42)",
+  "images": 402,
+  "faces_total": 1005,
+  "faces_in_domain": 463,
+  "images_with_in_domain_face": 326,
+  "detections": 454,
+  "iou_threshold": 0.5,
+  "domain_min_side_frac": 0.15,
+  "all_faces": {
+    "Accuracy (%)": 45.03,
+    "Precision (%)": 99.78,
+    "Recall (%)": 45.07,
+    "F1 (%)": 62.1,
+    "TP": 453,
+    "FP": 1,
+    "FN": 552,
+    "Faces counted": 1005
+  },
+  "in_domain": {
+    "Accuracy (%)": 85.99,
+    "Precision (%)": 99.75,
+    "Recall (%)": 86.18,
+    "F1 (%)": 92.47,
+    "TP": 399,
+    "FP": 1,
+    "FN": 64,
+    "Faces counted": 463
+  },
+  "by_stratum": {
+    "FDDB": {
+      "images": 283,
+      "all_faces": {
+        "Accuracy (%)": 70.92,
+        "Precision (%)": 99.74,
+        "Recall (%)": 71.05,
+        "F1 (%)": 82.99,
+        "TP": 378,
+        "FP": 1,
+        "FN": 154,
+        "Faces counted": 532
+      },
+      "in_domain": {
+        "Accuracy (%)": 85.82,
+        "Precision (%)": 99.72,
+        "Recall (%)": 86.03,
+        "F1 (%)": 92.37,
+        "TP": 351,
+        "FP": 1,
+        "FN": 57,
+        "Faces counted": 408
+      }
+    },
+    "WIDER-13": {
+      "images": 71,
+      "all_faces": {
+        "Accuracy (%)": 25.0,
+        "Precision (%)": 100.0,
+        "Recall (%)": 25.0,
+        "F1 (%)": 40.0,
+        "TP": 50,
+        "FP": 0,
+        "FN": 150,
+        "Faces counted": 200
+      },
+      "in_domain": {
+        "Accuracy (%)": 83.33,
+        "Precision (%)": 100.0,
+        "Recall (%)": 83.33,
+        "F1 (%)": 90.91,
+        "TP": 30,
+        "FP": 0,
+        "FN": 6,
+        "Faces counted": 36
+      }
+    },
+    "WIDER-16": {
+      "images": 23,
+      "all_faces": {
+        "Accuracy (%)": 8.39,
+        "Precision (%)": 100.0,
+        "Recall (%)": 8.39,
+        "F1 (%)": 15.48,
+        "TP": 13,
+        "FP": 0,
+        "FN": 142,
+        "Faces counted": 155
+      },
+      "in_domain": {
+        "Accuracy (%)": 100.0,
+        "Precision (%)": 100.0,
+        "Recall (%)": 100.0,
+        "F1 (%)": 100.0,
+        "TP": 10,
+        "FP": 0,
+        "FN": 0,
+        "Faces counted": 10
+      }
+    },
+    "WIDER-29": {
+      "images": 25,
+      "all_faces": {
+        "Accuracy (%)": 10.17,
+        "Precision (%)": 100.0,
+        "Recall (%)": 10.17,
+        "F1 (%)": 18.46,
+        "TP": 12,
+        "FP": 0,
+        "FN": 106,
+        "Faces counted": 118
+      },
+      "in_domain": {
+        "Accuracy (%)": 88.89,
+        "Precision (%)": 100.0,
+        "Recall (%)": 88.89,
+        "F1 (%)": 94.12,
+        "TP": 8,
+        "FP": 0,
+        "FN": 1,
+        "Faces counted": 9
+      }
+    }
+  },
+  "speed_cpu": {
+    "cpu": "Intel64 Family 6 Model 140 Stepping 1, GenuineIntel",
+    "detect_ms_mean": 77.55,
+    "preprocess_ms_mean": 27.6,
+    "fps_detect_only": 12.9,
+    "fps_end_to_end": 9.5,
+    "images_timed": 399
+  },
+  "pipeline_config": {
+    "preprocessing": {
+      "max_width": 640,
+      "denoise": "light",
+      "normalize_histogram": true
+    },
+    "detection": {
+      "face_backend": "mediapipe",
+      "pose_backend": "mediapipe",
+      "pose_model": "full",
+      "pose_min_visibility": 0.5
+    }
+  }
+}
