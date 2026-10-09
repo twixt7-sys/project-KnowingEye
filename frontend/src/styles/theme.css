@@ -734,372 +734,229 @@
   color: var(--lcc-white);
 }
 
-/* ---- Landing: the answer sheet ------------------------------------------ */
+/* ---- Landing ----------------------------------------------------------- */
 
-/*
- * The home page is one printed optical answer sheet. "Ink" is the form's
- * LCC-green dropout color (rules, captions, bubble outlines); "graphite" is
- * what a pencil leaves when an option is chosen. The timing track down the
- * left edge is the row of marks a scanner reads to align the sheet.
- */
-.answer-sheet-page {
-  width: 100%;
-  max-width: 52rem;
+.landing-home {
+  padding-top: 0.5rem;
+}
+
+.hero-institution-wrap {
+  position: relative;
   margin-inline: auto;
-}
-
-.answer-sheet {
-  --ink: #23714c;
-  --ink-rule: color-mix(in srgb, var(--ink) 34%, transparent);
-  --ink-wash: color-mix(in srgb, var(--ink) 7%, transparent);
-  --graphite: #30343a;
-  --paper: #ffffff;
-
-  display: grid;
-  grid-template-columns: 1.125rem minmax(0, 1fr);
-  text-align: left;
-  background: var(--paper);
-  border: 1px solid var(--ink-rule);
-  border-radius: 3px;
-  box-shadow: 0 1px 1px rgba(19, 39, 67, 0.06), 0 28px 56px -32px rgba(19, 39, 67, 0.42);
-}
-
-.dark .answer-sheet {
-  --ink: #62c597;
-  --graphite: #e6edf8;
-  --paper: var(--card);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.4), 0 32px 64px -28px rgba(0, 0, 0, 0.7);
+  margin-bottom: 2.75rem;
+  max-width: 44rem;
+  --hero-emblem-top: 2.5rem;
+  padding-top: var(--hero-emblem-top);
 }
 
 @media (min-width: 640px) {
-  .answer-sheet {
-    grid-template-columns: 1.75rem minmax(0, 1fr);
+  .hero-institution-wrap {
+    margin-bottom: 3.25rem;
+    --hero-emblem-top: 3rem;
+    padding-top: var(--hero-emblem-top);
   }
 }
 
-.answer-sheet-track {
+.hero-institution-emblem {
+  position: absolute;
+  left: 50%;
+  top: var(--hero-emblem-top);
+  z-index: 20;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 1.5rem 0 1.5rem 0.375rem;
-}
-
-.answer-sheet-track > span {
-  display: block;
-  width: 0.5rem;
-  height: 0.25rem;
-  background: var(--foreground);
-}
-
-@media (min-width: 640px) {
-  .answer-sheet-track {
-    padding: 2rem 0 2rem 0.625rem;
-  }
-
-  .answer-sheet-track > span {
-    width: 0.75rem;
-    height: 0.3125rem;
-  }
-}
-
-.answer-sheet-body {
-  padding: 1.5rem 1.25rem 1.5rem 0.75rem;
-}
-
-@media (min-width: 640px) {
-  .answer-sheet-body {
-    padding: 2.25rem 3rem 2rem 1.75rem;
-  }
-}
-
-/* Letterhead: issuing seals, institution, and the product mark. */
-.answer-sheet-letterhead {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    "seals mark"
-    "issuer issuer";
   align-items: center;
-  gap: 0.75rem 0.875rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--ink-rule);
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
-@media (min-width: 640px) {
-  .answer-sheet-letterhead {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "seals issuer mark";
-    gap: 1.125rem;
-  }
-}
-
-.answer-sheet-seals {
-  grid-area: seals;
-  display: flex;
-  gap: 0.375rem;
-}
-
-.answer-sheet-issuer {
-  grid-area: issuer;
-}
-
-.answer-sheet-seal {
-  height: 2.5rem;
-  width: 2.5rem;
+.hero-institution-logo {
+  height: 6rem;
+  width: 6rem;
   border-radius: 9999px;
+  border: 1.5px solid color-mix(in srgb, var(--gold) 60%, var(--border));
+  background: var(--card);
+  padding: 0.625rem;
+  box-shadow: 0 0 0 6px var(--background), 0 0 0 7px
+    color-mix(in srgb, var(--border) 80%, transparent), 0 12px 32px rgba(19, 39, 67, 0.14);
 }
 
 @media (min-width: 640px) {
-  .answer-sheet-seal {
-    height: 3.25rem;
-    width: 3.25rem;
+  .hero-institution-logo {
+    height: 7rem;
+    width: 7rem;
+    padding: 0.75rem;
   }
 }
 
-.answer-sheet-institution {
-  font-family: var(--font-serif);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  line-height: 1.25;
-  letter-spacing: -0.005em;
-  color: var(--foreground);
+.dark .hero-institution-logo {
+  box-shadow: 0 0 0 6px var(--background), 0 0 0 7px
+    color-mix(in srgb, var(--border) 80%, transparent), 0 16px 40px rgba(0, 0, 0, 0.55);
 }
 
-.answer-sheet-unit {
-  margin-top: 0.125rem;
-  font-size: 0.8125rem;
-  line-height: 1.35;
-  color: var(--ink);
+/* Paired seals: institution leads, department tucks behind like a second coin. */
+.hero-institution-emblem > :first-child {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-institution-logo--dept {
+  height: 4.75rem;
+  width: 4.75rem;
+  margin-left: -1.125rem;
+  padding: 0.5rem;
 }
 
 @media (min-width: 640px) {
-  .answer-sheet-institution {
-    font-size: 1.0625rem;
-  }
-
-  .answer-sheet-unit {
-    font-size: 0.875rem;
+  .hero-institution-logo--dept {
+    height: 5.5rem;
+    width: 5.5rem;
+    padding: 0.625rem;
   }
 }
 
-.answer-sheet-mark {
-  grid-area: mark;
-  height: 2rem;
-  width: 2rem;
+.hero-institution-panel {
+  position: relative;
+  z-index: 10;
+  overflow: visible;
+}
+
+.hero-institution-body {
+  padding: 4.5rem 1.75rem 2.25rem;
+  text-align: center;
 }
 
 @media (min-width: 640px) {
-  .answer-sheet-mark {
-    height: 2.5rem;
-    width: 2.5rem;
+  .hero-institution-body {
+    padding: 5.25rem 2.75rem 2.75rem;
   }
 }
 
-/* Title block. */
-.answer-sheet-heading {
-  padding: 2.25rem 0 2.5rem;
+.hero-app-mark {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
 }
 
-@media (min-width: 640px) {
-  .answer-sheet-heading {
-    padding: 3.25rem 0;
-  }
+.hero-app-mark-icon {
+  height: 2.25rem;
+  width: 2.25rem;
+  opacity: 0.9;
 }
 
-.answer-sheet-title {
-  font-family: var(--font-serif);
-  font-size: clamp(3.25rem, 11vw, 6rem);
-  font-weight: 600;
-  line-height: 0.9;
-  letter-spacing: -0.045em;
-  color: var(--foreground);
-}
-
-.answer-sheet-tagline {
-  margin-top: 1rem;
-  font-size: 1.125rem;
+.hero-institution-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
   font-weight: 500;
-  line-height: 1.35;
-  color: color-mix(in srgb, var(--foreground) 82%, var(--muted-foreground));
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--primary);
 }
 
-@media (min-width: 640px) {
-  .answer-sheet-tagline {
-    font-size: 1.3125rem;
-  }
-}
-
-.answer-sheet-description {
-  margin-top: 1.25rem;
-  max-width: 34rem;
-  font-size: 1rem;
-  line-height: 1.65;
+.hero-institution-unit {
+  margin-top: 0.375rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  line-height: 1.4;
   color: var(--muted-foreground);
 }
 
-/* The portal choice, asked as a multiple-choice item. */
-.answer-sheet-question {
-  margin-bottom: 0.75rem;
-  font-family: var(--font-serif);
-  font-size: 1.125rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--foreground);
-}
-
-.answer-sheet-options {
-  border-top: 1px solid var(--ink-rule);
-}
-
-.answer-sheet-options > li {
-  border-bottom: 1px solid var(--ink-rule);
-}
-
-.answer-option {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas:
-    "bubble text"
-    ". action";
-  column-gap: 1rem;
-  row-gap: 0.625rem;
-  align-items: center;
-  padding: 1.125rem 0.5rem;
-  border-radius: 2px;
-  transition: background-color var(--motion-fast) ease;
+.hero-title-block {
+  margin-top: 1.75rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 @media (min-width: 640px) {
-  .answer-option {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "bubble text action";
-    column-gap: 1.375rem;
-    padding: 1.375rem 0.75rem;
+  .hero-title-block {
+    margin-top: 2rem;
+    padding-top: 2rem;
   }
 }
 
-.answer-option-bubble {
-  grid-area: bubble;
-  display: inline-flex;
-  height: 2.25rem;
-  width: 2.25rem;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid var(--ink);
-  border-radius: 9999px;
+.hero-title {
   font-family: var(--font-serif);
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--ink);
-  transition: background-color var(--motion-normal) ease, border-color var(--motion-normal) ease,
-    color var(--motion-normal) ease;
-}
-
-.answer-option-text {
-  grid-area: text;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.answer-option-title {
-  font-family: var(--font-serif);
-  font-size: 1.375rem;
-  font-weight: 600;
-  line-height: 1.15;
+  font-size: 3rem;
+  font-weight: 560;
+  line-height: 1.02;
   letter-spacing: -0.02em;
   color: var(--foreground);
 }
 
-.answer-option-description {
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  color: var(--muted-foreground);
-}
-
-.answer-option-action {
-  grid-area: action;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--ink);
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 0.25em;
-  transition: text-decoration-color var(--motion-fast) ease;
-}
-
-.answer-option:hover,
-.answer-option:focus-visible {
-  background: var(--ink-wash);
-}
-
-/* Choosing an option shades its bubble in pencil. */
-.answer-option:hover .answer-option-bubble,
-.answer-option:focus-visible .answer-option-bubble {
-  background: repeating-linear-gradient(
-      118deg,
-      color-mix(in srgb, var(--paper) 9%, transparent) 0 1px,
-      transparent 1px 3px
-    ), var(--graphite);
-  border-color: var(--graphite);
-  color: var(--paper);
-}
-
-.answer-option:hover .answer-option-action,
-.answer-option:focus-visible .answer-option-action {
-  text-decoration-color: currentColor;
-}
-
-.answer-option:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-/* Footnotes along the bottom edge of the sheet. */
-.answer-sheet-footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.75rem;
-  margin-top: 2rem;
-  font-size: 0.9375rem;
-  font-weight: 500;
-}
-
-.answer-sheet-footer a {
-  color: var(--ink);
-  text-decoration: underline;
-  text-decoration-color: var(--ink-rule);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.3em;
-  transition: text-decoration-color var(--motion-fast) ease;
-}
-
-.answer-sheet-footer a:hover {
-  text-decoration-color: currentColor;
-}
-
-.answer-sheet-footer a:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 3px;
-  border-radius: 2px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .answer-option,
-  .answer-option-bubble,
-  .answer-option-action,
-  .answer-sheet-footer a {
-    transition: none;
+@media (min-width: 640px) {
+  .hero-title {
+    font-size: 4rem;
   }
 }
 
-/* Mono index numeral used on the features and about pages. */
+.hero-tagline {
+  margin-top: 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: color-mix(in srgb, var(--foreground) 72%, var(--muted-foreground));
+}
+
+@media (min-width: 640px) {
+  .hero-tagline {
+    font-size: 1.125rem;
+  }
+}
+
+.hero-description {
+  margin: 1.75rem auto 0;
+  max-width: 28rem;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+}
+
+.landing-portals {
+  display: grid;
+  width: 100%;
+  max-width: 44rem;
+  margin-inline: auto;
+  gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .landing-portals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+.landing-portal-card {
+  padding: 1.75rem;
+}
+
+@media (min-width: 640px) {
+  .landing-portal-card {
+    padding: 2rem;
+  }
+}
+
 .portal-index {
   font-family: var(--font-mono);
   font-size: 0.75rem;
   letter-spacing: 0.14em;
   color: color-mix(in srgb, var(--gold) 90%, var(--muted-foreground));
+}
+
+.landing-home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 2.25rem;
+}
+
+@media (min-width: 640px) {
+  .landing-home-actions {
+    margin-top: 2.75rem;
+  }
 }
 
 /* ---- Visual hierarchy (workspace pages) ---- */
