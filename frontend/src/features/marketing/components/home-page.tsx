@@ -1,99 +1,93 @@
-import { ArrowRight, GraduationCap, UserCog } from "@/shared/icons";
 import { Link } from "react-router";
 
 import { brand } from "@/core/config/brand";
 import { DepartmentLogo, InstitutionLogo, Logo } from "@/shared/components/layout/logo";
-import { Button } from "@/shared/components/ui/button";
+
+/*
+ * The home page is set as an optical answer sheet: one printed form in LCC
+ * green "dropout ink", a timing track down the edge, and the portal choice
+ * asked as a multiple-choice item whose bubble shades in when picked.
+ */
 
 const portals = [
   {
-    index: "01",
+    option: "A",
     title: "Examiner",
     description: "Create exams, monitor sessions, and review reports.",
     to: "/examiner",
-    icon: UserCog,
   },
   {
-    index: "02",
+    option: "B",
     title: "Examinee",
     description: "Take assigned exams and view your results.",
     to: "/examinee",
-    icon: GraduationCap,
   },
 ];
 
+const timingMarks = Array.from({ length: 22 }, (_, i) => `timing-mark-${i}`);
+
 export function HomePage() {
   return (
-    <section className="landing-home mx-auto w-full max-w-4xl text-center">
-      <div className="hero-institution-wrap">
-        <div className="hero-institution-emblem">
-          <InstitutionLogo className="hero-institution-logo" />
-          <DepartmentLogo className="hero-institution-logo hero-institution-logo--dept" />
+    <section className="answer-sheet-page">
+      <article className="answer-sheet" aria-labelledby="answer-sheet-title">
+        <div className="answer-sheet-track" aria-hidden>
+          {timingMarks.map((mark) => (
+            <span key={mark} />
+          ))}
         </div>
 
-        <div className="surface-panel hero-institution-panel tick-frame">
-          <span className="tick-frame-corners" aria-hidden />
-          <div className="hero-institution-body">
-            <div className="hero-app-mark" aria-hidden>
-              <Logo className="hero-app-mark-icon" />
+        <div className="answer-sheet-body">
+          <header className="answer-sheet-letterhead">
+            <div className="answer-sheet-seals">
+              <InstitutionLogo className="answer-sheet-seal" />
+              <DepartmentLogo className="answer-sheet-seal" />
             </div>
-
-            <p className="hero-institution-eyebrow">{brand.institutionName}</p>
-            <p className="hero-institution-unit">{brand.institutionUnit}</p>
-
-            <div className="hero-title-block">
-              <h1 className="hero-title">{brand.appName}</h1>
-              <p className="hero-tagline">{brand.tagline}</p>
+            <div className="answer-sheet-issuer">
+              <p className="answer-sheet-institution">{brand.institutionName}</p>
+              <p className="answer-sheet-unit">{brand.institutionUnit}</p>
             </div>
+            <Logo className="answer-sheet-mark" />
+          </header>
 
-            <p className="hero-description">
+          <div className="answer-sheet-heading">
+            <h1 id="answer-sheet-title" className="answer-sheet-title">
+              {brand.appName}
+            </h1>
+            <p className="answer-sheet-tagline">{brand.tagline}</p>
+            <p className="answer-sheet-description">
               Secure, monitored online examinations for {brand.institutionName}, built for fair
               assessment and academic integrity.
             </p>
           </div>
+
+          <div className="answer-sheet-item">
+            <h2 id="answer-sheet-question" className="answer-sheet-question">
+              Choose your portal
+            </h2>
+            <ul className="answer-sheet-options" aria-labelledby="answer-sheet-question">
+              {portals.map((portal) => (
+                <li key={portal.title}>
+                  <Link to={portal.to} className="answer-option">
+                    <span className="answer-option-bubble" aria-hidden>
+                      {portal.option}
+                    </span>
+                    <span className="answer-option-text">
+                      <span className="answer-option-title">{portal.title}</span>
+                      <span className="answer-option-description">{portal.description}</span>
+                    </span>
+                    <span className="answer-option-action">Open portal</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <footer className="answer-sheet-footer">
+            <Link to="/features">Explore features</Link>
+            <Link to="/about">About the project</Link>
+          </footer>
         </div>
-      </div>
-
-      <p className="kicker mb-5 justify-center">Choose your portal</p>
-
-      <div className="landing-portals">
-        {portals.map((portal) => (
-          <Link
-            key={portal.title}
-            to={portal.to}
-            className="landing-portal-card surface-panel-interactive group relative block overflow-hidden text-left"
-          >
-            <span className="portal-index absolute right-5 top-5" aria-hidden>
-              {portal.index}
-            </span>
-            <portal.icon
-              className="mb-4 h-6 w-6 text-primary transition-transform duration-200 group-hover:-translate-y-0.5"
-              weight="regular"
-            />
-            <h2 className="font-serif text-xl font-semibold tracking-tight">{portal.title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {portal.description}
-            </p>
-            <span className="mt-5 inline-flex items-center gap-2 font-mono text-xs font-medium uppercase tracking-[0.1em] text-primary">
-              Open portal
-              <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-            </span>
-            <span
-              className="absolute inset-x-0 bottom-0 h-[2.5px] origin-left scale-x-0 bg-primary transition-transform duration-300 ease-out group-hover:scale-x-100"
-              aria-hidden
-            />
-          </Link>
-        ))}
-      </div>
-
-      <div className="landing-home-actions">
-        <Button asChild variant="outline">
-          <Link to="/features">Explore features</Link>
-        </Button>
-        <Button asChild variant="ghost">
-          <Link to="/about">About the project</Link>
-        </Button>
-      </div>
+      </article>
     </section>
   );
 }
