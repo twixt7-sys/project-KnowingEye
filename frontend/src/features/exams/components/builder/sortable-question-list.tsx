@@ -16,15 +16,19 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Link } from "react-router";
 import { GripVertical, Trash2 } from "@/shared/icons";
 
 import type { Question } from "@/core/config/api";
 import { BuilderIconBtn } from "@/features/exams/components/builder/builder-primitives";
+import { examPreviewPath } from "@/features/exams/lib/exam-paths";
 
 interface SortableQuestionRowProps {
   question: Question;
   sectionTitleById: Map<number, string>;
   editable: boolean;
+  /** Set when the user may preview the exam; shows a per-question preview link. */
+  previewExamId?: number;
   onEdit: (q: Question) => void;
   onDelete: (q: Question) => void;
 }
@@ -33,6 +37,7 @@ const SortableQuestionRow = memo(function SortableQuestionRow({
   question,
   sectionTitleById,
   editable,
+  previewExamId,
   onEdit,
   onDelete,
 }: SortableQuestionRowProps) {
@@ -74,18 +79,30 @@ const SortableQuestionRow = memo(function SortableQuestionRow({
             : ""}
         </p>
       </div>
-      {editable && (
+      {(editable || previewExamId != null) && (
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onEdit(question)}
-            className="text-xs px-2 py-1 border border-border rounded hover:bg-accent"
-          >
-            Edit
-          </button>
-          <BuilderIconBtn onClick={() => onDelete(question)} label="Delete">
-            <Trash2 className="w-4 h-4 text-status-alert" />
-          </BuilderIconBtn>
+          {previewExamId != null && (
+            <Link
+              to={examPreviewPath(previewExamId, question.id)}
+              className="text-xs px-2 py-1 border border-border rounded hover:bg-accent"
+            >
+              Preview
+            </Link>
+          )}
+          {editable && (
+            <>
+              <button
+                type="button"
+                onClick={() => onEdit(question)}
+                className="text-xs px-2 py-1 border border-border rounded hover:bg-accent"
+              >
+                Edit
+              </button>
+              <BuilderIconBtn onClick={() => onDelete(question)} label="Delete">
+                <Trash2 className="w-4 h-4 text-status-alert" />
+              </BuilderIconBtn>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -96,6 +113,7 @@ interface SortableQuestionListProps {
   questions: Question[];
   sectionTitleById: Map<number, string>;
   editable: boolean;
+  previewExamId?: number;
   onEdit: (q: Question) => void;
   onDelete: (q: Question) => void;
   onReorder: (questionIds: number[]) => void;
@@ -105,6 +123,7 @@ export const SortableQuestionList = memo(function SortableQuestionList({
   questions,
   sectionTitleById,
   editable,
+  previewExamId,
   onEdit,
   onDelete,
   onReorder,
@@ -143,6 +162,7 @@ export const SortableQuestionList = memo(function SortableQuestionList({
             question={q}
             sectionTitleById={sectionTitleById}
             editable={false}
+            previewExamId={previewExamId}
             onEdit={onEdit}
             onDelete={onDelete}
           />
@@ -161,6 +181,7 @@ export const SortableQuestionList = memo(function SortableQuestionList({
               question={q}
               sectionTitleById={sectionTitleById}
               editable={editable}
+              previewExamId={previewExamId}
               onEdit={onEdit}
               onDelete={onDelete}
             />

@@ -5,6 +5,8 @@ import { AlertTriangle, CheckCircle2, ClipboardList, Send, ShieldCheck, XCircle 
 import type { Exam, PublishReadiness } from "@/core/config/api";
 import { useAuth } from "@/core/providers/auth-provider";
 import { BuilderStat } from "@/features/exams/components/builder/builder-primitives";
+import { useCanPreviewExam } from "@/features/exams/hooks/use-can-preview-exam";
+import { examPreviewPath } from "@/features/exams/lib/exam-paths";
 
 interface BuilderPublishTabProps {
   exam: Exam;
@@ -48,6 +50,7 @@ export function BuilderPublishTab({
   rejectPending,
 }: BuilderPublishTabProps) {
   const { canApproveExams, isAdmin } = useAuth();
+  const canPreviewExam = useCanPreviewExam();
   const [rejectNote, setRejectNote] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
 
@@ -58,6 +61,11 @@ export function BuilderPublishTab({
   return (
     <div className="bg-card border border-border rounded-xl p-6 space-y-4">
       <div className="flex flex-wrap gap-2">
+        {canPreviewExam(exam.created_by) && (
+          <Link to={examPreviewPath(exam.id)} className="text-sm text-primary underline">
+            Preview as student
+          </Link>
+        )}
         <Link
           to={`/examiner/exams/${exam.id}/grading`}
           className="text-sm text-primary underline"

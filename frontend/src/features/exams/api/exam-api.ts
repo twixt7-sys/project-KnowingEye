@@ -5,6 +5,7 @@ import {
   apiClient,
   type Exam,
   type ExamCategory,
+  type ExamPreview,
   type ExamSection,
   type PublishReadiness,
   type Question,
@@ -38,6 +39,10 @@ export function fetchCategories() {
 
 export function fetchExamById(id: number) {
   return apiClient.getExam(id);
+}
+
+export function fetchExamPreview(id: number) {
+  return apiClient.getExamPreview(id);
 }
 
 export function createExam(payload: Partial<Exam>) {
@@ -171,4 +176,4 @@ export function importExamAssignments(examId: number, csv: string) {
   return apiClient.importExamAssignments(examId, csv);
 }
 
-export type { Exam, ExamCategory, Question, PublishReadiness, QuestionAttachment };
+export type { Exam, ExamCategory, ExamPreview, Question, PublishReadiness, QuestionAttachment };

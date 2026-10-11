@@ -19,6 +19,7 @@ function page<K extends string>(
 const About = page(() => import("../../pages/about"), "About");
 const ExamBuilder = page(() => import("../../pages/exam-builder"), "ExamBuilder");
 const ExamGrader = page(() => import("../../pages/exam-grader"), "ExamGrader");
+const ExamPreview = page(() => import("../../pages/exam-preview"), "ExamPreview");
 const ExamResults = page(() => import("../../pages/exam-results"), "ExamResults");
 const ExamSetup = page(() => import("../../pages/exam-setup"), "ExamSetup");
 const ExamSubmitted = page(() => import("../../pages/exam-submitted"), "ExamSubmitted");
@@ -120,6 +121,7 @@ export const router = createBrowserRouter([
 
       protectedRoute("examiner/exams/:examId/edit", { requiredModule: "exams" }, ExamBuilder),
       protectedRoute("examiner/exams/:examId/grading", { requiredModule: "exams" }, ExamGrader),
+      protectedRoute("examiner/exams/:examId/preview", { requiredModule: "exams" }, ExamPreview),
 
       // Shared
       protectedRoute("exams/:examId", {}, ExamSummary),

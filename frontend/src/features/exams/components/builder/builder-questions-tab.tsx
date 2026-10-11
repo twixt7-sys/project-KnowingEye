@@ -1,6 +1,7 @@
 import { memo, useMemo, useState } from "react";
+import { Link } from "react-router";
 
-import { Plus, Trash2 } from "@/shared/icons";
+import { PlayCircle, Plus, Trash2 } from "@/shared/icons";
 
 import type { Exam, ExamSection, Question, QuestionAttachment } from "@/core/config/api";
 import { BuilderField } from "@/features/exams/components/builder/builder-primitives";
@@ -8,6 +9,7 @@ import { QuestionFormDialog } from "@/features/exams/components/builder/question
 import { QuestionImportPanel } from "@/features/exams/components/builder/question-import-panel";
 import { SortableQuestionList } from "@/features/exams/components/builder/sortable-question-list";
 import type { ImportCheckStatus } from "@/features/exams/hooks/use-exam-builder";
+import { examPreviewPath } from "@/features/exams/lib/exam-paths";
 import type { ParsedQuestionForm } from "@/features/exams/lib/question-import-form";
 import type { ImportProblems } from "@/features/exams/lib/question-import-issues";
 import type { QuestionDraft } from "@/features/exams/schemas/builder-schemas";
@@ -18,6 +20,8 @@ interface BuilderQuestionsTabProps {
   sections: ExamSection[];
   status: Exam["status"];
   editable: boolean;
+  /** Whether the user may preview this exam as a student (shows the preview links). */
+  canPreview: boolean;
   saving: boolean;
   showQuestionForm: boolean;
   editingQuestion: Question | null;
@@ -174,6 +178,7 @@ export function BuilderQuestionsTab({
   sections,
   status,
   editable,
+  canPreview,
   saving,
   showQuestionForm,
   editingQuestion,
@@ -226,6 +231,14 @@ export function BuilderQuestionsTab({
         >
           <Plus className="w-4 h-4" /> Add question
         </button>
+        {canPreview && (
+          <Link
+            to={examPreviewPath(examId)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-accent"
+          >
+            <PlayCircle className="w-4 h-4" /> Preview as student
+          </Link>
+        )}
       </div>
 
       <SectionManager
@@ -240,6 +253,7 @@ export function BuilderQuestionsTab({
         questions={questions}
         sectionTitleById={sectionTitleById}
         editable={editable}
+        previewExamId={canPreview ? examId : undefined}
         onEdit={onEdit}
         onDelete={onDelete}
         onReorder={onReorder}

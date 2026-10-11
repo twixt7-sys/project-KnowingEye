@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router";
 
 import {
   ApiError,
@@ -46,6 +47,7 @@ import {
 } from "@/features/exams/lib/question-import-issues";
 import {
   EMPTY_QUESTION,
+  builderTabSchema,
   examFormToPayload,
   examToForm,
   toDatetimeLocal,
@@ -75,7 +77,15 @@ export function useExamBuilder(examId: number) {
   const confirm = useConfirm();
   const queryClient = useQueryClient();
 
-  const [tab, setTab] = useState<BuilderTab>("settings");
+  // The tab lives in the URL so leaving the builder (e.g. to preview the exam)
+  // and coming back lands on the tab the author was on.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const parsedTab = builderTabSchema.safeParse(searchParams.get("tab"));
+  const tab: BuilderTab = parsedTab.success ? parsedTab.data : "settings";
+  const setTab = useCallback(
+    (next: BuilderTab) => setSearchParams({ tab: next }, { replace: true }),
+    [setSearchParams]
+  );
   const [form, setForm] = useState<ExamForm | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);

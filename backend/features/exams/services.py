@@ -15,7 +15,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from .dto import ExamLifecycleResult
 from .models import Department, Exam, ExamAssignment, Question
-from .serializers import option_text
+from .serializers import ExamTakeSerializer, option_text
 
 User = get_user_model()
 
@@ -77,12 +77,68 @@ def assert_can_view_readiness(exam: Exam, user) -> None:
     Raises:
         PermissionDenied: If the user is neither.
     """
+    _assert_can_modify_or_review(exam, user)
+
+
+def assert_can_preview_exam(exam: Exam, user) -> None:
+    """Ensure ``user`` may preview ``exam`` as a student would see it.
+
+    The same audience as the readiness report, so a reviewer can walk through
+    a submission they didn't create.
+
+    Raises:
+        PermissionDenied: If the user is neither a modifier nor a reviewer.
+    """
+    _assert_can_modify_or_review(
+        exam, user, message="You can only preview exams you created or are reviewing."
+    )
+
+
+def _assert_can_modify_or_review(exam: Exam, user, message: str | None = None) -> None:
+    """Allow whoever can modify ``exam`` or holds Level 1 review authority.
+
+    ``message`` replaces the reviewer check's own error text when given.
+    """
     try:
         assert_can_modify_exam(exam, user)
         return
     except PermissionDenied:
         pass
-    assert_can_review_exam(user)
+    try:
+        assert_can_review_exam(user)
+    except PermissionDenied:
+        if message is None:
+            raise
+        raise PermissionDenied(message) from None
+
+
+def build_exam_preview(exam: Exam, user, *, context: dict) -> dict:
+    """Return the exam as a student attempt would be handed it, persisting nothing.
+
+    Pool draws and question/option shuffling are applied via the session
+    app's builders, and the payload is the answer-key-free take shape. Unlike
+    a session payload, pool members that weren't drawn are left out rather
+    than appended. Each call is a fresh random draw.
+
+    Raises:
+        PermissionDenied: If ``user`` may not preview ``exam``.
+    """
+    # Imported lazily: the session app imports from this one.
+    from features.session.services import build_option_order, build_question_order
+
+    assert_can_preview_exam(exam, user)
+
+    data = dict(ExamTakeSerializer(exam, context=context).data)
+    by_id = {q["id"]: q for q in data["questions"]}
+    order = build_question_order(exam)
+    options = build_option_order(exam, order)
+    data["questions"] = [
+        {**by_id[qid], "options": options.get(str(qid), by_id[qid]["options"])}
+        for qid in order
+        if qid in by_id
+    ]
+    data["is_preview"] = True
+    return data
 
 
 def exam_has_active_session(exam: Exam) -> bool:

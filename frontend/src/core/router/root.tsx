@@ -47,6 +47,10 @@ export function Root() {
     );
   }
 
+  if (mode === "preview") {
+    return <ErrorBoundary>{content}</ErrorBoundary>;
+  }
+
   if (mode === "examiner") {
     return (
       <ErrorBoundary>

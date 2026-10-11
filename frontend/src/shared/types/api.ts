@@ -121,6 +121,13 @@ export interface Exam {
   questions_editable?: boolean;
 }
 
+/** Student-shaped exam payload for the examiner's "Preview as student" view (no answer keys). */
+export type ExamPreview = Exam & {
+  is_preview: true;
+  questions: Question[];
+  sections: ExamSection[];
+};
+
 /** An in-exam question grouping - separate from the exam-level ExamCategory. */
 export interface ExamSection {
   id: number;

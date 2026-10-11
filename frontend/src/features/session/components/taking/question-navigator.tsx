@@ -16,6 +16,8 @@ interface QuestionNavigatorProps {
   autosaveStatus: "idle" | "saving" | "saved" | "error";
   onSelectQuestion: (index: number) => void;
   belowProgress?: ReactNode;
+  /** Sticky offset below the page header; a taller header (the preview banner) needs a larger one. */
+  stickyTopClassName?: string;
 }
 
 interface QuestionGroup {
@@ -63,10 +65,11 @@ export function QuestionNavigator({
   autosaveStatus,
   onSelectQuestion,
   belowProgress,
+  stickyTopClassName = "top-24",
 }: QuestionNavigatorProps) {
   const groups = groupBySections(questions, sections);
   return (
-    <div className="sticky top-24 space-y-6">
+    <div className={`sticky ${stickyTopClassName} space-y-6`}>
       <div className="bg-card rounded-xl border border-border p-6">
         <h3 className="font-semibold mb-4">Progress</h3>
         <div className="mb-3">
