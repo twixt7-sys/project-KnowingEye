@@ -229,6 +229,74 @@ describe("QuestionFormDialog - answer choices", () => {
     );
   });
 
+  it("adds choices up to ten, then disables the button", () => {
+    let latest: QuestionDraft = EMPTY_QUESTION;
+    render(
+      <Harness
+        onDraftChange={(d) => {
+          latest = d;
+        }}
+      />
+    );
+    expect(screen.getByText("4 of 10 choices")).toBeInTheDocument();
+
+    const add = screen.getByRole("button", { name: "Add choice" });
+    for (let i = 0; i < 6; i++) fireEvent.click(add);
+
+    expect(latest.options).toHaveLength(10);
+    expect(screen.getByText("10 of 10 choices")).toBeInTheDocument();
+    expect(add).toBeDisabled();
+    expect(screen.getByPlaceholderText("Option 10")).toBeInTheDocument();
+  });
+
+  it("removes a choice and keeps the correct answer on its row", () => {
+    let latest: QuestionDraft = EMPTY_QUESTION;
+    render(
+      <Harness
+        onDraftChange={(d) => {
+          latest = d;
+        }}
+      />
+    );
+    fireEvent.change(screen.getByPlaceholderText("Option 1"), { target: { value: "Circle" } });
+    fireEvent.change(screen.getByPlaceholderText("Option 3"), { target: { value: "Square" } });
+    fireEvent.change(screen.getByLabelText("Correct option"), { target: { value: "2" } });
+    expect(latest.correct_answer).toBe("Square");
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove option 1" }));
+
+    expect(latest.options.map((o) => o.text)).toEqual(["", "Square", ""]);
+    expect(latest.correct_answer).toBe("Square");
+    expect((screen.getByLabelText("Correct option") as HTMLSelectElement).value).toBe("1");
+  });
+
+  it("will not remove below two choices", () => {
+    render(<Harness />);
+    for (let i = 0; i < 2; i++) {
+      fireEvent.click(screen.getByRole("button", { name: "Remove option 1" }));
+    }
+    expect(screen.getByText("2 of 10 choices")).toBeInTheDocument();
+    for (const button of screen.getAllByRole("button", { name: /^Remove option/ })) {
+      expect(button).toBeDisabled();
+    }
+  });
+
+  it("warns about duplicate choices and blocks saving", () => {
+    render(<Harness />);
+    expect(screen.getByRole("button", { name: "Save question" })).toBeEnabled();
+
+    fireEvent.change(screen.getByPlaceholderText("Option 1"), { target: { value: "Paris" } });
+    fireEvent.change(screen.getByPlaceholderText("Option 2"), { target: { value: "paris" } });
+
+    expect(screen.getByText(/Two choices read the same/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Option 1")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("button", { name: "Save question" })).toBeDisabled();
+
+    fireEvent.change(screen.getByPlaceholderText("Option 2"), { target: { value: "London" } });
+    expect(screen.queryByText(/Two choices read the same/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save question" })).toBeEnabled();
+  });
+
   it("keeps the correct answer on its choice when the text is edited", () => {
     let latest: QuestionDraft = EMPTY_QUESTION;
     render(

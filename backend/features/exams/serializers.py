@@ -196,6 +196,11 @@ def option_text(opt) -> str:
     return str(opt or "")
 
 
+# Mirrors MIN_OPTIONS / MAX_OPTIONS in the frontend's lib/question-options.ts.
+MIN_CHOICES = 2
+MAX_CHOICES = 10
+
+
 class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
     """Serializer for creating and updating questions."""
 
@@ -262,9 +267,20 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
 
         if qtype == Question.QuestionType.MULTIPLE_CHOICE:
             option_texts = [option_text(o) for o in options]
-            if len([t for t in option_texts if t]) < 2:
+            filled = [t.strip().casefold() for t in option_texts if t.strip()]
+            if len(filled) < MIN_CHOICES:
                 raise serializers.ValidationError(
                     {"options": "Multiple choice needs at least two options."}
+                )
+            if len(filled) > MAX_CHOICES:
+                raise serializers.ValidationError(
+                    {"options": f"Multiple choice allows at most {MAX_CHOICES} options."}
+                )
+            # Answers are graded by option text, so two options that read the
+            # same would both count as correct.
+            if len(set(filled)) != len(filled):
+                raise serializers.ValidationError(
+                    {"options": "Each option must be different from the others."}
                 )
             if not correct:
                 raise serializers.ValidationError(

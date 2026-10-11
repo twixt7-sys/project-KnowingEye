@@ -346,6 +346,53 @@ class ExamsAPITests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def _post_choices(self, choices, correct):
+        return self.client.post(
+            f"/api/exams/{self.exam.id}/questions/",
+            {
+                "question_text": "Pick one",
+                "question_type": "multiple_choice",
+                "options": choices,
+                "correct_answer": correct,
+                "points": 1,
+            },
+            format="json",
+        )
+
+    def test_multiple_choice_accepts_any_count_from_two_to_ten(self):
+        for count in (2, 3, 7, 10):
+            choices = [f"Choice {n}" for n in range(1, count + 1)]
+            response = self._post_choices(choices, "Choice 1")
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED, (count, response.data))
+            self.assertEqual(len(Question.objects.get(pk=response.data["id"]).options), count)
+
+    def test_multiple_choice_rejects_more_than_ten_options(self):
+        choices = [f"Choice {n}" for n in range(1, 12)]
+        response = self._post_choices(choices, "Choice 1")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("at most 10", str(response.data))
+
+    def test_blank_rows_do_not_count_towards_the_maximum(self):
+        choices = [f"Choice {n}" for n in range(1, 11)] + ["", " "]
+        response = self._post_choices(choices, "Choice 1")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+
+    def test_multiple_choice_rejects_duplicate_options(self):
+        """Grading matches by text, so a repeat of the right answer would double-count."""
+        response = self._post_choices(["Paris", "London", " paris "], "Paris")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("different", str(response.data))
+
+    def test_picture_only_options_are_not_duplicates_of_each_other(self):
+        response = self._post_choices(
+            [
+                {"text": "", "image": "http://testserver/media/a.png"},
+                {"text": "", "image": "http://testserver/media/b.png"},
+            ],
+            "Option 1",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+
     def test_upload_rejects_unsupported_file_type(self):
         question = Question.objects.get(exam=self.exam)
         exe = SimpleUploadedFile("run.exe", b"MZ", content_type="application/x-msdownload")

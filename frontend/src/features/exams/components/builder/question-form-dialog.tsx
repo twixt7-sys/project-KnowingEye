@@ -13,7 +13,14 @@ import {
   isPictureFile,
   validateAttachment,
 } from "@/features/exams/lib/attachment-rules";
-import { optionLabel } from "@/features/exams/lib/question-options";
+import {
+  MAX_OPTIONS,
+  MIN_OPTIONS,
+  addOption,
+  duplicateOptionIndexes,
+  optionLabel,
+  removeOption,
+} from "@/features/exams/lib/question-options";
 import type { QuestionDraft } from "@/features/exams/schemas/builder-schemas";
 
 const NEW_SECTION_VALUE = "__new_section__";
@@ -249,6 +256,15 @@ export const QuestionFormDialog = memo(function QuestionFormDialog({
     (opt, i) => optionLabel(opt, i) !== "" && optionLabel(opt, i) === questionDraft.correct_answer
   );
 
+  const isMultipleChoice = questionDraft.question_type === "multiple_choice";
+  const duplicateRows = isMultipleChoice
+    ? duplicateOptionIndexes(questionDraft.options)
+    : new Set<number>();
+  // Rows are re-indexed by add/remove, which an in-flight upload would land on
+  // the wrong row of, so both wait for it.
+  const canAddOption = questionDraft.options.length < MAX_OPTIONS && optionImageBusy === null;
+  const canRemoveOption = questionDraft.options.length > MIN_OPTIONS && optionImageBusy === null;
+
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-card rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border">
@@ -305,7 +321,7 @@ export const QuestionFormDialog = memo(function QuestionFormDialog({
             onCreateSection={onCreateSection}
           />
 
-          {questionDraft.question_type === "multiple_choice" && (
+          {isMultipleChoice && (
             <div className="space-y-2">
               <p className="text-sm font-medium">Options</p>
               <p className="text-xs text-muted-foreground">
@@ -319,7 +335,8 @@ export const QuestionFormDialog = memo(function QuestionFormDialog({
                     value={opt.text}
                     onChange={(e) => updateOption(i, { text: e.target.value })}
                     placeholder={opt.image ? `Option ${i + 1} (picture only)` : `Option ${i + 1}`}
-                    className="field-input flex-1"
+                    aria-invalid={duplicateRows.has(i) || undefined}
+                    className={`field-input flex-1 ${duplicateRows.has(i) ? "border-status-alert" : ""}`}
                   />
                   {opt.image ? (
                     <div className="relative shrink-0">
@@ -362,8 +379,37 @@ export const QuestionFormDialog = memo(function QuestionFormDialog({
                       />
                     </label>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setQuestionDraft((prev) => removeOption(prev, i))}
+                    disabled={!canRemoveOption}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-status-alert hover:bg-accent/50 disabled:opacity-40 disabled:hover:bg-transparent"
+                    aria-label={`Remove option ${i + 1}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               ))}
+              {duplicateRows.size > 0 && (
+                <p className="text-xs text-status-alert">
+                  Two choices read the same. Make each choice different, or both would count as
+                  correct.
+                </p>
+              )}
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => setQuestionDraft((prev) => addOption(prev))}
+                  disabled={!canAddOption}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm hover:bg-accent/50 disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add choice
+                </button>
+                <span className="text-xs text-muted-foreground">
+                  {questionDraft.options.length} of {MAX_OPTIONS} choices
+                </span>
+              </div>
               <BuilderField label="Correct option">
                 <select
                   value={correctIndex >= 0 ? String(correctIndex) : ""}
@@ -553,8 +599,8 @@ export const QuestionFormDialog = memo(function QuestionFormDialog({
             <button
               type="button"
               onClick={onSave}
-              disabled={saving}
-              className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground"
+              disabled={saving || duplicateRows.size > 0}
+              className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save question"}
             </button>
