@@ -405,6 +405,65 @@ def publish_exam(exam: Exam, user) -> ExamLifecycleResult:
     return ExamLifecycleResult(exam=exam, message="Exam published successfully.")
 
 
+def unpublish_exam(exam: Exam, user) -> ExamLifecycleResult:
+    """Return a published exam to draft, if no examinee has attempted it yet.
+
+    Once any session exists, responses and scores point at the questions, so
+    the exam can't safely become editable again - the only option from there
+    is to archive and duplicate (same invariant as
+    :func:`assert_questions_editable`). The approval chain is reset so edits
+    made while the exam is a draft are reviewed again before a non-admin
+    can republish.
+
+    Args:
+        exam: The exam to unpublish.
+        user: The requesting user (must be able to modify the exam).
+
+    Returns:
+        An :class:`ExamLifecycleResult` wrapping the updated exam.
+
+    Raises:
+        PermissionDenied: If the user cannot modify the exam.
+        ValidationError: If the exam is not published, or has been attempted.
+    """
+    assert_can_modify_exam(exam, user)
+
+    with transaction.atomic():
+        # Lock the row so an examinee can't start a session between the
+        # attempt check and the status change.
+        locked = Exam.objects.select_for_update().get(pk=exam.pk)
+
+        if locked.status != Exam.Status.ACTIVE:
+            raise ValidationError({"status": "Only a published exam can be unpublished."})
+        if locked.sessions.exists():
+            raise ValidationError(
+                {
+                    "status": (
+                        "Cannot unpublish - examinees have already started this "
+                        "exam. Archive and duplicate it to make changes."
+                    )
+                }
+            )
+
+        locked.status = Exam.Status.DRAFT
+        locked.approval_status = Exam.ApprovalStatus.NOT_SUBMITTED
+        locked.reviewed_by = None
+        locked.reviewed_at = None
+        locked.rejection_note = ""
+        locked.save(
+            update_fields=[
+                "status",
+                "approval_status",
+                "reviewed_by",
+                "reviewed_at",
+                "rejection_note",
+                "updated_at",
+            ]
+        )
+        _record_approval_event(locked, user, "unpublish")
+    return ExamLifecycleResult(exam=locked, message="Exam unpublished and returned to draft.")
+
+
 def _record_approval_event(exam: Exam, actor, action: str, note: str = "") -> None:
     from .models import ExamApprovalEvent
 

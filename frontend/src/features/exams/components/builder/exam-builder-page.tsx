@@ -176,6 +176,8 @@ export function ExamBuilderPage() {
           isDraft={builder.isDraft}
           saving={builder.saving}
           onPublish={builder.publish}
+          onUnpublish={builder.unpublish}
+          unpublishPending={builder.unpublishPending}
           onSubmitForReview={builder.submitForReview}
           submitPending={builder.submitPending}
           onApprove={builder.approveReview}

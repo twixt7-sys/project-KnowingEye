@@ -59,3 +59,32 @@ describe("ApiClient token refresh", () => {
     expect(tokenStore.refresh).toBe("new-refresh");
   });
 });
+
+describe("ApiClient exam lifecycle", () => {
+  beforeEach(() => {
+    tokenStore.set("access-token", "refresh-token");
+  });
+
+  afterEach(() => {
+    tokenStore.clear();
+    vi.unstubAllGlobals();
+  });
+
+  it("unpublishExam POSTs to the unpublish endpoint", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(JSON.stringify({ message: "ok", exam: { id: 7, status: "draft" } }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await apiClient.unpublishExam(7);
+
+    expect(res.exam.status).toBe("draft");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toMatch(/\/exams\/7\/unpublish\/$/);
+    expect(init?.method).toBe("POST");
+  });
+});

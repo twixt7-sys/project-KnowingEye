@@ -522,6 +522,7 @@ class ExamApprovalEvent(models.Model):
         SUBMIT = "submit", "Submitted for review"
         APPROVE = "approve", "Approved"
         REJECT = "reject", "Rejected"
+        UNPUBLISH = "unpublish", "Unpublished"
 
     exam = models.ForeignKey(
         Exam,

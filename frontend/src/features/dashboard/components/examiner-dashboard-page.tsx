@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   Copy,
   Eye,
+  EyeOff,
   FileText,
   Inbox,
   Plus,
@@ -23,7 +24,13 @@ import { type Exam, apiClient, formatApiError } from "@/core/config/api";
 import { brand } from "@/core/config/brand";
 import { useAuth } from "@/core/providers/auth-provider";
 import { dashboardQueries } from "@/features/dashboard/queries/queries";
-import { archiveExam, createExam, deleteExam, publishExam } from "@/features/exams/api/exam-api";
+import {
+  archiveExam,
+  createExam,
+  deleteExam,
+  publishExam,
+  unpublishExam,
+} from "@/features/exams/api/exam-api";
 import {
   CheckboxSetting,
   DepartmentChecklist,
@@ -254,6 +261,22 @@ export function ExaminerDashboardPage() {
     }
   };
 
+  const unpublish = async (exam: Exam) => {
+    const confirmed = await confirm({
+      title: "Unpublish exam?",
+      description: `"${exam.title}" returns to draft and examinees can no longer see it. Exams that have already been attempted can't be unpublished.`,
+      confirmLabel: "Unpublish",
+    });
+    if (!confirmed) return;
+    setActionError(null);
+    try {
+      await unpublishExam(exam.id);
+      reload();
+    } catch (e) {
+      setActionError(formatApiError(e));
+    }
+  };
+
   const archive = async (exam: Exam) => {
     const confirmed = await confirm({
       title: "Archive exam?",
@@ -470,6 +493,13 @@ export function ExaminerDashboardPage() {
                             icon={Send}
                             tone="primary"
                             onClick={() => publish(exam)}
+                          />
+                        )}
+                        {exam.status === "active" && (
+                          <IconAction
+                            label="Unpublish"
+                            icon={EyeOff}
+                            onClick={() => unpublish(exam)}
                           />
                         )}
                         {exam.status !== "archived" && (

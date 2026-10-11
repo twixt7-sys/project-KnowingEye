@@ -228,6 +228,18 @@ class ExamViewSet(viewsets.ModelViewSet):
         )
 
     @action(detail=True, methods=["post"])
+    def unpublish(self, request, pk=None):
+        """Return a published, not-yet-attempted exam to draft."""
+        result = services.unpublish_exam(self.get_object(), request.user)
+        return Response(
+            {
+                "message": result.message,
+                "exam": ExamDetailSerializer(result.exam, context={"request": request}).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["post"])
     def submit(self, request, pk=None):
         """Submit a draft exam for program-head review."""
         result = services.submit_exam_for_approval(self.get_object(), request.user)
