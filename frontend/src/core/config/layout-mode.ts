@@ -5,12 +5,28 @@ type LayoutAuth = {
   isStudent: boolean;
 };
 
-export type LayoutMode = "auth" | "public" | "examiner" | "examinee" | "examinee-focus";
+export type LayoutMode =
+  | "auth"
+  | "public"
+  | "examiner"
+  | "examinee"
+  | "examinee-focus"
+  | "preview";
 
 const EXAMINER_PREFIXES = ["/monitoring", "/reports", "/users", "/settings", "/examiner/exams"];
 
 export function getLayoutMode(pathname: string, auth: LayoutAuth): LayoutMode {
   if (pathname === "/login") return "auth";
+
+  // The examiner's student-view preview renders its own full-page shell, so it
+  // gets none of the workspace chrome (sidebar, header).
+  if (
+    auth.isAuthenticated &&
+    auth.isStaff &&
+    /^\/examiner\/exams\/[^/]+\/preview\/?$/.test(pathname)
+  ) {
+    return "preview";
+  }
 
   if (/^\/examinee\/exam\/[^/]+\/?$/.test(pathname)) {
     return "examinee-focus";

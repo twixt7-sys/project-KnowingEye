@@ -2,6 +2,7 @@ import { AlertTriangle, Camera, Loader2 } from "@/shared/icons";
 import type { ClipboardEvent, DragEvent, MouseEvent, ReactNode } from "react";
 
 import { ExamTimer } from "@/features/session/components/taking/exam-timer";
+import { PreviewBanner } from "@/features/session/components/taking/preview-banner";
 
 interface FocusShellProps {
   monitoringEnabled: boolean;
@@ -14,6 +15,10 @@ interface FocusShellProps {
   paused?: boolean;
   submitting: boolean;
   onSubmitClick: () => void;
+  /** Examiner preview: no deterrents (examiners need to select and copy), a
+   * "nothing is saved" banner, and "End preview" in place of Submit. */
+  preview?: boolean;
+  onExitPreview?: () => void;
   children: ReactNode;
 }
 
@@ -45,6 +50,8 @@ export function FocusShell({
   paused = false,
   submitting,
   onSubmitClick,
+  preview = false,
+  onExitPreview,
   children,
 }: FocusShellProps) {
   const guard = <T extends MouseEvent | ClipboardEvent>(e: T) => {
@@ -61,14 +68,19 @@ export function FocusShell({
 
   return (
     <div
-      className="min-h-screen bg-background select-none [&_input]:select-text [&_textarea]:select-text"
-      onContextMenu={guard}
-      onCopy={guardCopyCut}
-      onCut={guardCopyCut}
-      onPaste={blockPaste}
-      onDrop={blockPaste}
+      className={
+        preview
+          ? "min-h-screen bg-background"
+          : "min-h-screen bg-background select-none [&_input]:select-text [&_textarea]:select-text"
+      }
+      onContextMenu={preview ? undefined : guard}
+      onCopy={preview ? undefined : guardCopyCut}
+      onCut={preview ? undefined : guardCopyCut}
+      onPaste={preview ? undefined : blockPaste}
+      onDrop={preview ? undefined : blockPaste}
     >
       <div className="sticky top-0 z-50 bg-card border-b border-border">
+        {preview && <PreviewBanner onExit={onExitPreview} />}
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -110,7 +122,13 @@ export function FocusShell({
                 disabled={submitting || paused}
                 className="px-6 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Exam"}
+                {submitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : preview ? (
+                  "End preview"
+                ) : (
+                  "Submit Exam"
+                )}
               </button>
             </div>
           </div>

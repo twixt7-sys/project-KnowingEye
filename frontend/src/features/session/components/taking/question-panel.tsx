@@ -165,6 +165,8 @@ interface QuestionPanelProps {
   answer: SavedAnswer | undefined;
   answerText: string;
   submitting: boolean;
+  /** Label of the last-question button; the examiner preview ends instead of submitting. */
+  submitLabel?: string;
   onAnswerChange: (answer: string) => void;
   onToggleFlag: () => void;
   onPrevious: () => void;
@@ -180,6 +182,7 @@ export function QuestionPanel({
   answer,
   answerText,
   submitting,
+  submitLabel = "Submit Exam",
   onAnswerChange,
   onToggleFlag,
   onPrevious,
@@ -242,7 +245,7 @@ export function QuestionPanel({
             disabled={submitting}
             className="inline-flex items-center gap-2 px-6 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Exam"}
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : submitLabel}
           </button>
         ) : (
           <button

@@ -16,6 +16,7 @@ import type {
   Department,
   Exam,
   ExamCategory,
+  ExamPreview,
   ExamSection,
   ExamSession,
   FrameAnalysis,
@@ -427,6 +428,11 @@ class ApiClient {
 
   async getExam(id: number) {
     return this.request<Exam>(`/exams/${id}/`);
+  }
+
+  /** The exam as a student would be handed it, with no attempt created. */
+  async getExamPreview(id: number) {
+    return this.request<ExamPreview>(`/exams/${id}/preview/`);
   }
 
   async createExam(payload: Partial<Exam>) {

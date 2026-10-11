@@ -174,7 +174,7 @@ class ExamViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Return exams visible to the requester, prefetching for detail views."""
         qs = self.exam_service.visible_to(self.request.user)
-        if self.action == "retrieve":
+        if self.action in {"retrieve", "preview"}:
             qs = qs.prefetch_related("questions__attachments")
         return qs
 
@@ -214,6 +214,20 @@ class ExamViewSet(viewsets.ModelViewSet):
         exam = self.get_object()
         services.assert_can_view_readiness(exam, request.user)
         return Response(services.exam_publish_readiness(exam))
+
+    @action(detail=True, methods=["get"])
+    def preview(self, request, pk=None):
+        """Return the exam as a student would be handed it, without an attempt.
+
+        Works on any exam status, including drafts, and writes nothing. Every
+        call is a fresh random draw, so the response is never cached.
+        """
+        payload = services.build_exam_preview(
+            self.get_object(), request.user, context={"request": request}
+        )
+        response = Response(payload)
+        response["Cache-Control"] = "no-store"
+        return response
 
     @action(detail=True, methods=["post"])
     def publish(self, request, pk=None):

@@ -8,6 +8,7 @@ import {
   Eye,
   FileText,
   Inbox,
+  PlayCircle,
   Plus,
   Send,
   Trash2,
@@ -28,6 +29,8 @@ import {
   CheckboxSetting,
   DepartmentChecklist,
 } from "@/features/exams/components/builder/builder-primitives";
+import { useCanPreviewExam } from "@/features/exams/hooks/use-can-preview-exam";
+import { examPreviewPath } from "@/features/exams/lib/exam-paths";
 import {
   type ExamForm,
   toDatetimeLocal,
@@ -136,6 +139,7 @@ export function ExaminerDashboardPage() {
   const navigate = useNavigate();
   const confirm = useConfirm();
   const { user } = useAuth();
+  const canPreviewExam = useCanPreviewExam();
   const dashboardQuery = useQuery(dashboardQueries.examiner());
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 300);
@@ -489,6 +493,13 @@ export function ExaminerDashboardPage() {
                           />
                         )}
                         <IconAction label="Duplicate" icon={Copy} onClick={() => duplicate(exam)} />
+                        {canPreviewExam(exam.created_by) && (
+                          <IconAction
+                            label="Preview as student"
+                            icon={PlayCircle}
+                            to={examPreviewPath(exam.id)}
+                          />
+                        )}
                         <IconAction label="Summary" icon={FileText} to={`/exams/${exam.id}`} />
                         <IconAction
                           label="Grade submissions"
