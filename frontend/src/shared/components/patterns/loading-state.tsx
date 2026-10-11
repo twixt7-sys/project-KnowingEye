@@ -21,3 +21,20 @@ export function LoadingState({ label = "Loading…", className }: LoadingStatePr
     </output>
   );
 }
+
+type TableLoadingRowProps = {
+  /** Number of columns the row must span (the table's header column count). */
+  colSpan: number;
+  label?: string;
+};
+
+/** `<tbody>` row holding a centered spinner while a table's data loads. */
+export function TableLoadingRow({ colSpan, label }: TableLoadingRowProps) {
+  return (
+    <tr>
+      <td colSpan={colSpan}>
+        <LoadingState label={label} className="py-10" />
+      </td>
+    </tr>
+  );
+}

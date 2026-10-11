@@ -22,6 +22,7 @@ import { PageHeader } from "@/shared/components/layout/page-header";
 import { PageShell } from "@/shared/components/layout/page-shell";
 import { SectionPanel } from "@/shared/components/layout/section-panel";
 import { StatCard } from "@/shared/components/layout/stat-card";
+import { TableLoadingRow } from "@/shared/components/patterns/loading-state";
 import { Button } from "@/shared/components/ui/button";
 import { useDebounce } from "@/shared/hooks/use-debounce";
 import { usePagination } from "@/shared/hooks/use-pagination";
@@ -252,7 +253,7 @@ export function ReportsPage() {
         </div>
       )}
 
-      {summary?.by_department && summary.by_department.length > 0 && (
+      {(summaryQuery.isLoading || (summary?.by_department?.length ?? 0) > 0) && (
         <SectionPanel
           title="Department summary"
           description="Completed-session KPIs grouped by exam department."
@@ -270,7 +271,10 @@ export function ReportsPage() {
                 </tr>
               </thead>
               <tbody>
-                {summary.by_department.map((d) => (
+                {summaryQuery.isLoading && (
+                  <TableLoadingRow colSpan={6} label="Loading department summary…" />
+                )}
+                {summary?.by_department.map((d) => (
                   <tr key={d.department_id ?? d.department_name}>
                     <td>
                       <div className="flex items-center gap-2">
@@ -368,6 +372,7 @@ export function ReportsPage() {
               </tr>
             </thead>
             <tbody>
+              {tableLoading && <TableLoadingRow colSpan={10} label="Loading sessions…" />}
               {sessions.map((s) => (
                 <tr key={s.id}>
                   <td>
