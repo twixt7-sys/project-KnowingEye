@@ -451,6 +451,12 @@ class ApiClient {
     return this.request<{ message: string }>(`/exams/${id}/archive/`, { method: "POST" });
   }
 
+  async unarchiveExam(id: number) {
+    return this.request<{ message: string; exam: Exam }>(`/exams/${id}/unarchive/`, {
+      method: "POST",
+    });
+  }
+
   async submitExamForReview(id: number) {
     return this.request<{ message: string; exam: Exam }>(`/exams/${id}/submit/`, {
       method: "POST",
