@@ -9,10 +9,14 @@ import {
 import type { ReactNode } from "react";
 
 import { cn } from "../ui/utils";
+import { TableLoadingRow } from "./loading-state";
 
 type DataTableProps<TData> = {
   columns: ColumnDef<TData, unknown>[];
   data: TData[];
+  /** Shows a spinner row in place of the body while data loads. */
+  loading?: boolean;
+  loadingLabel?: string;
   className?: string;
   tableClassName?: string;
   emptyState?: ReactNode;
@@ -24,6 +28,8 @@ type DataTableProps<TData> = {
 export function DataTable<TData>({
   columns,
   data,
+  loading = false,
+  loadingLabel,
   className,
   tableClassName,
   emptyState,
@@ -57,7 +63,9 @@ export function DataTable<TData>({
           ))}
         </thead>
         <tbody>
-          {rows.length === 0 ? (
+          {loading ? (
+            <TableLoadingRow colSpan={columns.length} label={loadingLabel} />
+          ) : rows.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className="py-10 text-center text-muted-foreground">
                 {emptyState ?? "No results."}

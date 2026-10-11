@@ -23,6 +23,7 @@ import { ScrollableDataTable } from "@/shared/components/common/scrollable-data-
 import { PageShell } from "@/shared/components/layout/page-shell";
 import { SectionPanel } from "@/shared/components/layout/section-panel";
 import { EmptyState } from "@/shared/components/patterns/empty-state";
+import { TableLoadingRow } from "@/shared/components/patterns/loading-state";
 import { PageHeaderV2 } from "@/shared/components/patterns/page-header-v2";
 import { StatGrid } from "@/shared/components/patterns/stat-grid";
 import { Button } from "@/shared/components/ui/button";
@@ -213,6 +214,7 @@ export function UsersPage() {
               </tr>
             </thead>
             <tbody>
+              {usersQuery.isLoading && <TableLoadingRow colSpan={5} label="Loading users…" />}
               {users.length === 0 && !usersQuery.isLoading && (
                 <tr>
                   <td colSpan={5}>
