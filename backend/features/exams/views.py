@@ -302,6 +302,18 @@ class ExamViewSet(viewsets.ModelViewSet):
         )
 
     @action(detail=True, methods=["post"])
+    def unarchive(self, request, pk=None):
+        """Restore an archived exam to its pre-archive status."""
+        result = services.unarchive_exam(self.get_object(), request.user)
+        return Response(
+            {
+                "message": result.message,
+                "exam": ExamDetailSerializer(result.exam, context={"request": request}).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["post"])
     def duplicate(self, request, pk=None):
         """Clone exam as a new draft."""
         exam = self.get_object()

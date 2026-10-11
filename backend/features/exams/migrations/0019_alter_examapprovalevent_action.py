@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('exams', '0017_audit_trail_indexes'),
+        ('exams', '0018_exam_previous_status'),
     ]
 
     operations = [

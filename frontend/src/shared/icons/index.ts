@@ -17,6 +17,7 @@ export {
   WarningCircle as AlertCircle,
   Warning as AlertTriangle,
   Archive,
+  ArrowCounterClockwise as ArchiveRestore,
   ArrowLeft,
   ArrowRight,
   Medal as Award,

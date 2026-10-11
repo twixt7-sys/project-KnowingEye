@@ -64,6 +64,10 @@ export function archiveExam(id: number) {
   return apiClient.archiveExam(id);
 }
 
+export function unarchiveExam(id: number) {
+  return apiClient.unarchiveExam(id);
+}
+
 export function submitExamForReview(id: number) {
   return apiClient.submitExamForReview(id);
 }

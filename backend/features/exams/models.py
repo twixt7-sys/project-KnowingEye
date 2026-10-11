@@ -224,6 +224,13 @@ class Exam(models.Model):
         default=Status.DRAFT,
         help_text='Exam status'
     )
+    previous_status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        blank=True,
+        default='',
+        help_text='Status held before archiving, so unarchiving can restore it',
+    )
     approval_status = models.CharField(
         max_length=20,
         choices=ApprovalStatus.choices,
