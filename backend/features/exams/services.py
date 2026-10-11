@@ -528,9 +528,40 @@ def archive_exam(exam: Exam, user) -> ExamLifecycleResult:
     if exam.status == Exam.Status.ARCHIVED:
         raise ValidationError({"status": "Exam is already archived."})
 
+    exam.previous_status = exam.status
     exam.status = Exam.Status.ARCHIVED
-    exam.save(update_fields=["status", "updated_at"])
+    exam.save(update_fields=["status", "previous_status", "updated_at"])
     return ExamLifecycleResult(exam=exam, message="Exam archived successfully.")
+
+
+def unarchive_exam(exam: Exam, user) -> ExamLifecycleResult:
+    """Restore an archived exam to the status it had before archiving.
+
+    Exams archived before ``previous_status`` existed have no record of their
+    prior state and come back as drafts, so they must be re-published.
+    ``approval_status`` is left untouched.
+
+    Args:
+        exam: The exam to unarchive.
+        user: The requesting user (must be able to modify the exam).
+
+    Returns:
+        An :class:`ExamLifecycleResult` wrapping the updated exam.
+
+    Raises:
+        PermissionDenied: If the user cannot modify the exam.
+        ValidationError: If the exam is not archived.
+    """
+    assert_can_modify_exam(exam, user)
+
+    if exam.status != Exam.Status.ARCHIVED:
+        raise ValidationError({"status": "Exam is not archived."})
+
+    restorable = (Exam.Status.DRAFT, Exam.Status.ACTIVE)
+    exam.status = exam.previous_status if exam.previous_status in restorable else Exam.Status.DRAFT
+    exam.previous_status = ""
+    exam.save(update_fields=["status", "previous_status", "updated_at"])
+    return ExamLifecycleResult(exam=exam, message="Exam unarchived successfully.")
 
 
 def delete_exam(exam: Exam, user) -> None:

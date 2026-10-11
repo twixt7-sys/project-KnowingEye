@@ -306,6 +306,33 @@ class PublishedExamQuestionEditingTests(APITestCase):
         self.assertFalse(res.data["questions_editable"])
 
 
+class UnarchiveExamPermissionTests(APITestCase):
+    """Unarchiving follows the same ownership rule as archiving."""
+
+    def setUp(self):
+        self.owner = make_user(User.Role.FACULTY, "unarch_owner")
+        self.other = make_user(User.Role.FACULTY, "unarch_other")
+        self.exam = Exam.objects.create(
+            title="Archived exam", department=make_department("UNA"),
+            created_by=self.owner, status=Exam.Status.ARCHIVED,
+            previous_status=Exam.Status.ACTIVE,
+        )
+
+    def test_owner_can_unarchive(self):
+        self.client.force_authenticate(user=self.owner)
+        res = self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ACTIVE)
+
+    def test_non_owner_cannot_unarchive(self):
+        self.client.force_authenticate(user=self.other)
+        res = self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ARCHIVED)
+
+
 class QuestionOptionImageShapeTests(APITestCase):
     """Options moved from plain strings to {"text", "image"} objects."""
 

@@ -2,6 +2,7 @@ import {
   Activity,
   AlertTriangle,
   Archive,
+  ArchiveRestore,
   BarChart3,
   ClipboardCheck,
   Copy,
@@ -23,7 +24,13 @@ import { type Exam, apiClient, formatApiError } from "@/core/config/api";
 import { brand } from "@/core/config/brand";
 import { useAuth } from "@/core/providers/auth-provider";
 import { dashboardQueries } from "@/features/dashboard/queries/queries";
-import { archiveExam, createExam, deleteExam, publishExam } from "@/features/exams/api/exam-api";
+import {
+  archiveExam,
+  createExam,
+  deleteExam,
+  publishExam,
+  unarchiveExam,
+} from "@/features/exams/api/exam-api";
 import {
   CheckboxSetting,
   DepartmentChecklist,
@@ -271,6 +278,22 @@ export function ExaminerDashboardPage() {
     }
   };
 
+  const unarchive = async (exam: Exam) => {
+    const confirmed = await confirm({
+      title: "Unarchive exam?",
+      description: `"${exam.title}" will return to the status it had before it was archived. If it was published, it reopens to examinees during its scheduled window. Exams archived earlier come back as drafts.`,
+      confirmLabel: "Unarchive",
+    });
+    if (!confirmed) return;
+    setActionError(null);
+    try {
+      await unarchiveExam(exam.id);
+      reload();
+    } catch (e) {
+      setActionError(formatApiError(e));
+    }
+  };
+
   const remove = async (exam: Exam) => {
     const confirmed = await confirm({
       title: "Delete exam?",
@@ -481,12 +504,20 @@ export function ExaminerDashboardPage() {
                           />
                         )}
                         {exam.status === "archived" && (
-                          <IconAction
-                            label="Delete"
-                            icon={Trash2}
-                            tone="danger"
-                            onClick={() => remove(exam)}
-                          />
+                          <>
+                            <IconAction
+                              label="Unarchive"
+                              icon={ArchiveRestore}
+                              tone="primary"
+                              onClick={() => unarchive(exam)}
+                            />
+                            <IconAction
+                              label="Delete"
+                              icon={Trash2}
+                              tone="danger"
+                              onClick={() => remove(exam)}
+                            />
+                          </>
                         )}
                         <IconAction label="Duplicate" icon={Copy} onClick={() => duplicate(exam)} />
                         <IconAction label="Summary" icon={FileText} to={`/exams/${exam.id}`} />

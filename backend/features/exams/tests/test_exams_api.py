@@ -370,6 +370,53 @@ class ExamsAPITests(APITestCase):
         self.exam.refresh_from_db()
         self.assertEqual(self.exam.status, Exam.Status.ARCHIVED)
 
+    def test_archive_records_previous_status(self):
+        self.exam.status = Exam.Status.ACTIVE
+        self.exam.save(update_fields=["status"])
+        self.client.post(f"/api/exams/{self.exam.id}/archive/")
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.previous_status, Exam.Status.ACTIVE)
+
+    def test_unarchive_restores_active_exam(self):
+        self.exam.status = Exam.Status.ACTIVE
+        self.exam.save(update_fields=["status"])
+        self.client.post(f"/api/exams/{self.exam.id}/archive/")
+        response = self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["exam"]["status"], Exam.Status.ACTIVE)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ACTIVE)
+        self.assertEqual(self.exam.previous_status, "")
+
+    def test_unarchive_restores_draft_exam(self):
+        self.client.post(f"/api/exams/{self.exam.id}/archive/")
+        response = self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.DRAFT)
+
+    def test_unarchive_without_recorded_status_falls_back_to_draft(self):
+        # Exams archived before ``previous_status`` existed have no record.
+        Exam.objects.filter(pk=self.exam.pk).update(status=Exam.Status.ARCHIVED, previous_status="")
+        response = self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.DRAFT)
+
+    def test_cannot_unarchive_exam_that_is_not_archived(self):
+        response = self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.DRAFT)
+
+    def test_unarchived_draft_is_editable_again(self):
+        self.client.post(f"/api/exams/{self.exam.id}/archive/")
+        self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        response = self.client.patch(
+            f"/api/exams/{self.exam.id}/", {"title": "Back again"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_cannot_edit_active_exam(self):
         self.exam.status = Exam.Status.ACTIVE
         self.exam.save(update_fields=["status"])
