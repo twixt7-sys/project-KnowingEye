@@ -306,6 +306,89 @@ class PublishedExamQuestionEditingTests(APITestCase):
         self.assertFalse(res.data["questions_editable"])
 
 
+class UnpublishExamTests(APITestCase):
+    """A published exam can return to draft until its first attempt."""
+
+    def setUp(self):
+        self.faculty = make_user(User.Role.FACULTY, "unpub_faculty")
+        self.other_faculty = make_user(User.Role.FACULTY, "unpub_other")
+        self.student = make_user(User.Role.STUDENT, "unpub_student")
+        self.exam = Exam.objects.create(
+            title="Live exam", department=make_department("UNP"),
+            created_by=self.faculty, status=Exam.Status.ACTIVE,
+            approval_status=Exam.ApprovalStatus.APPROVED,
+            reviewed_by=self.faculty, reviewed_at=timezone.now(),
+        )
+        self.client.force_authenticate(user=self.faculty)
+
+    def _unpublish(self):
+        return self.client.post(f"/api/exams/{self.exam.id}/unpublish/")
+
+    def test_owner_can_unpublish_before_any_attempt(self):
+        res = self._unpublish()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["exam"]["status"], "draft")
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.DRAFT)
+
+    def test_resets_approval_and_records_event(self):
+        self._unpublish()
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.approval_status, Exam.ApprovalStatus.NOT_SUBMITTED)
+        self.assertIsNone(self.exam.reviewed_by)
+        self.assertIsNone(self.exam.reviewed_at)
+        event = self.exam.approval_events.get()
+        self.assertEqual(event.action, "unpublish")
+        self.assertEqual(event.actor, self.faculty)
+
+    def test_settings_editable_afterwards(self):
+        self._unpublish()
+        res = self.client.patch(f"/api/exams/{self.exam.id}/", {"title": "Renamed"})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_non_admin_cannot_republish_without_new_approval(self):
+        Question.objects.create(
+            exam=self.exam, question_text="Q1", question_type=Question.QuestionType.SHORT_ANSWER,
+            correct_answer="x", points=1, order=1,
+        )
+        self._unpublish()
+        res = self.client.post(f"/api/exams/{self.exam.id}/publish/")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("approval_status", res.data["error"]["details"])
+
+    def test_blocked_once_an_attempt_exists(self):
+        ExamSession.objects.create(
+            exam=self.exam, user=self.student, status=ExamSession.Status.COMPLETED,
+        )
+        res = self._unpublish()
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already started", str(res.data))
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ACTIVE)
+
+    def test_draft_exam_cannot_be_unpublished(self):
+        self.exam.status = Exam.Status.DRAFT
+        self.exam.save(update_fields=["status"])
+        self.assertEqual(self._unpublish().status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_archived_exam_cannot_be_unpublished(self):
+        self.exam.status = Exam.Status.ARCHIVED
+        self.exam.save(update_fields=["status"])
+        self.assertEqual(self._unpublish().status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_non_owner_forbidden(self):
+        self.client.force_authenticate(user=self.other_faculty)
+        res = self._unpublish()
+        self.assertIn(res.status_code, (status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND))
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ACTIVE)
+
+    def test_student_cannot_unpublish(self):
+        self.client.force_authenticate(user=self.student)
+        res = self._unpublish()
+        self.assertIn(res.status_code, (status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND))
+
+
 class UnarchiveExamPermissionTests(APITestCase):
     """Unarchiving follows the same ownership rule as archiving."""
 

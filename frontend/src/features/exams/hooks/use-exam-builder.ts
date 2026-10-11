@@ -22,6 +22,7 @@ import {
   importExamAssignments,
   importQuestionRows,
   publishExam,
+  unpublishExam,
   rejectExam,
   reorderQuestions,
   submitExamForReview,
@@ -308,6 +309,19 @@ export function useExamBuilder(examId: number) {
     },
   });
 
+  const unpublishMutation = useMutation({
+    mutationFn: () => unpublishExam(examId),
+    onMutate: () => {
+      setActionError(null);
+      setMessage(null);
+    },
+    onSuccess: async (res) => {
+      setMessage(res.message);
+      await invalidateBuilder();
+    },
+    onError: (e) => setActionError(formatApiError(e, "Unpublish failed")),
+  });
+
   const submitMutation = useMutation({
     mutationFn: () => submitExamForReview(examId),
     onMutate: () => {
@@ -411,6 +425,7 @@ export function useExamBuilder(examId: number) {
   const checkImportMutate = checkImportMutation.mutate;
   const importQuestionsMutate = importQuestionsMutation.mutate;
   const publishMutate = publishMutation.mutate;
+  const unpublishMutate = unpublishMutation.mutate;
   const submitMutate = submitMutation.mutate;
   const approveMutate = approveMutation.mutate;
   const rejectMutate = rejectMutation.mutate;
@@ -616,6 +631,17 @@ export function useExamBuilder(examId: number) {
 
   const publish = useCallback(() => publishMutate(), [publishMutate]);
 
+  const unpublish = useCallback(async () => {
+    const confirmed = await confirm({
+      title: "Unpublish exam?",
+      description:
+        "The exam returns to draft and examinees can no longer see it. You can edit it, but a non-admin creator needs it re-approved before publishing again.",
+      confirmLabel: "Unpublish",
+    });
+    if (!confirmed) return;
+    unpublishMutate();
+  }, [confirm, unpublishMutate]);
+
   const submitForReview = useCallback(() => submitMutate(), [submitMutate]);
 
   const approveReview = useCallback(() => approveMutate(), [approveMutate]);
@@ -722,6 +748,8 @@ export function useExamBuilder(examId: number) {
     clearImport,
     runImport,
     publish,
+    unpublish,
+    unpublishPending: unpublishMutation.isPending,
     submitForReview,
     submitPending: submitMutation.isPending,
     approveReview,

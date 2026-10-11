@@ -141,7 +141,7 @@ export interface ExamSection {
 
 export interface ExamApprovalEvent {
   id: number;
-  action: "submit" | "approve" | "reject";
+  action: "submit" | "approve" | "reject" | "unpublish";
   note: string;
   actor: number | null;
   actor_name?: string;

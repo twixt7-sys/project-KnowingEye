@@ -278,7 +278,8 @@ export function BuilderSettingsTab({
         </button>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Published exams cannot be edited here. Archive and duplicate to create a new cycle.
+          Only draft exams can be edited here. Unpublish a published exam that no one has attempted
+          yet, or archive and duplicate it to create a new cycle.
         </p>
       )}
     </div>

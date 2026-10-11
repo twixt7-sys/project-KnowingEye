@@ -453,6 +453,12 @@ class ApiClient {
     });
   }
 
+  async unpublishExam(id: number) {
+    return this.request<{ message: string; exam: Exam }>(`/exams/${id}/unpublish/`, {
+      method: "POST",
+    });
+  }
+
   async archiveExam(id: number) {
     return this.request<{ message: string }>(`/exams/${id}/archive/`, { method: "POST" });
   }

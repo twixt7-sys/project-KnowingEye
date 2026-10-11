@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { AlertTriangle, CheckCircle2, ClipboardList, Send, ShieldCheck, XCircle } from "@/shared/icons";
+import { AlertTriangle, CheckCircle2, ClipboardList, EyeOff, Send, ShieldCheck, XCircle } from "@/shared/icons";
 
 import type { Exam, PublishReadiness } from "@/core/config/api";
 import { useAuth } from "@/core/providers/auth-provider";
@@ -14,6 +14,8 @@ interface BuilderPublishTabProps {
   isDraft: boolean;
   saving: boolean;
   onPublish: () => void;
+  onUnpublish: () => void;
+  unpublishPending: boolean;
   onSubmitForReview: () => void;
   submitPending: boolean;
   onApprove: () => void;
@@ -42,6 +44,8 @@ export function BuilderPublishTab({
   isDraft,
   saving,
   onPublish,
+  onUnpublish,
+  unpublishPending,
   onSubmitForReview,
   submitPending,
   onApprove,
@@ -57,6 +61,8 @@ export function BuilderPublishTab({
   const approvalStatus = exam.approval_status ?? "not_submitted";
   const canSubmit = isDraft && readiness.ready && approvalStatus !== "pending" && !isAdmin;
   const canPublish = isDraft && readiness.ready && (isAdmin || approvalStatus === "approved");
+  // No attempts yet - mirrors the server rule, which refuses once any session exists.
+  const canUnpublish = exam.questions_editable !== false;
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 space-y-4">
@@ -215,6 +221,25 @@ export function BuilderPublishTab({
         <p className="text-sm text-status-safe flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4" /> This exam is already published.
         </p>
+      )}
+
+      {exam.status === "active" && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={onUnpublish}
+            disabled={unpublishPending || !canUnpublish}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted text-sm disabled:opacity-50"
+          >
+            <EyeOff className="w-4 h-4" />
+            {unpublishPending ? "Unpublishing…" : "Unpublish"}
+          </button>
+          <p className="text-xs text-muted-foreground">
+            {canUnpublish
+              ? "Unpublishing returns the exam to draft so you can edit its settings."
+              : "Examinees have already started this exam, so it can't be unpublished. Archive and duplicate it to make changes."}
+          </p>
+        </div>
       )}
     </div>
   );

@@ -153,7 +153,8 @@ function QuestionLockNotice({ status, editable }: { status: Exam["status"]; edit
   if (status === "active" && editable) {
     text =
       "This exam is published - question changes reach examinees right away. " +
-      "Questions lock once the first examinee starts the exam.";
+      "Questions lock once the first examinee starts the exam. " +
+      "Until then you can unpublish it from the Review & publish tab.";
   } else if (status === "active") {
     text =
       "Questions are locked because examinees have already started this exam. " +

@@ -61,6 +61,10 @@ export function publishExam(id: number) {
   return apiClient.publishExam(id);
 }
 
+export function unpublishExam(id: number) {
+  return apiClient.unpublishExam(id);
+}
+
 export function archiveExam(id: number) {
   return apiClient.archiveExam(id);
 }

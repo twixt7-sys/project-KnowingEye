@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   Copy,
   Eye,
+  EyeOff,
   FileText,
   Inbox,
   PlayCircle,
@@ -31,6 +32,7 @@ import {
   deleteExam,
   publishExam,
   unarchiveExam,
+  unpublishExam,
 } from "@/features/exams/api/exam-api";
 import {
   CheckboxSetting,
@@ -259,6 +261,22 @@ export function ExaminerDashboardPage() {
     setActionError(null);
     try {
       await publishExam(exam.id);
+      reload();
+    } catch (e) {
+      setActionError(formatApiError(e));
+    }
+  };
+
+  const unpublish = async (exam: Exam) => {
+    const confirmed = await confirm({
+      title: "Unpublish exam?",
+      description: `"${exam.title}" returns to draft and examinees can no longer see it. Exams that have already been attempted can't be unpublished.`,
+      confirmLabel: "Unpublish",
+    });
+    if (!confirmed) return;
+    setActionError(null);
+    try {
+      await unpublishExam(exam.id);
       reload();
     } catch (e) {
       setActionError(formatApiError(e));
@@ -497,6 +515,13 @@ export function ExaminerDashboardPage() {
                             icon={Send}
                             tone="primary"
                             onClick={() => publish(exam)}
+                          />
+                        )}
+                        {exam.status === "active" && (
+                          <IconAction
+                            label="Unpublish"
+                            icon={EyeOff}
+                            onClick={() => unpublish(exam)}
                           />
                         )}
                         {exam.status !== "archived" && (
