@@ -1,0 +1,37 @@
+Verified live on 2026-09-06 against a fresh Python 3.12 venv with only
+requirements-core.txt + requirements-cv.txt installed (the documented setup
+path — requirements-identity.txt was NOT installed).
+
+$ python -c "
+import django; django.setup()
+from ai import adapter
+adapter._get_pipeline()
+print('pipeline mode:', adapter.get_pipeline_mode())
+"
+[ERROR:0@0.509] global persistence.cpp:584 open Can't open file:
+  '.../cv2/data/haarcascade_frontalface_default.xml' in read mode
+[ERROR:0@0.511] global persistence.cpp:584 open Can't open file:
+  '.../cv2/data/haarcascade_upperbody.xml' in read mode
+2026-09-06 18:03:37,857 [INFO] knowing_eye.ai.adapter: Loaded production
+  BehaviorPipeline from backend/ai/knowing_eye.
+pipeline mode: production
+
+$ python -c "
+import django; django.setup()
+from ai.knowing_eye.recognition.identity import IdentityVerifier
+v = IdentityVerifier()
+print('active backend:', v._active_backend)
+"
+active backend: appearance
+
+Conclusion: the face/pose pipeline correctly reports "production" once
+requirements-cv.txt is installed. Identity verification, even in that
+"production" pipeline, silently falls back to the "appearance" backend (a
+16x16 grayscale crop compared by cosine distance) because ArcFace
+(requirements-identity.txt) is never installed by the documented setup path.
+This confirms finding A-5 in 06-qa-findings.md.
+
+Separately, the two [ERROR] lines above show opencv-python-headless's bundled
+Haar cascade data files are not resolving at the expected path in this
+environment — the Haar fallback path itself is not fully functional here,
+though it never had to run since mediapipe loaded successfully.

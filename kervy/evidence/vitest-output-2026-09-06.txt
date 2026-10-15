@@ -1,0 +1,61 @@
+
+> frontend@0.0.1 test
+> vitest run --run
+
+
+ RUN  v4.1.9 /home/user/project-KnowingEye/frontend
+
+ ❯ src/features/exams/lib/question-import-template.test.ts (2 tests | 1 failed) 30ms
+     × converts an xlsx worksheet back to importable CSV 27ms
+Error: kaboom
+    at Boom (/home/user/project-KnowingEye/frontend/src/shared/components/common/error-boundary.test.tsx:7:9)
+    at renderWithHooks (/home/user/project-KnowingEye/frontend/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/home/user/project-KnowingEye/frontend/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/home/user/project-KnowingEye/frontend/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/home/user/project-KnowingEye/frontend/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/home/user/project-KnowingEye/frontend/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/home/user/project-KnowingEye/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/home/user/project-KnowingEye/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/home/user/project-KnowingEye/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/home/user/project-KnowingEye/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+Error: kaboom
+    at Boom (/home/user/project-KnowingEye/frontend/src/shared/components/common/error-boundary.test.tsx:7:9)
+    at renderWithHooks (/home/user/project-KnowingEye/frontend/node_modules/react-dom/cjs/react-dom.development.js:15486:18)
+    at mountIndeterminateComponent (/home/user/project-KnowingEye/frontend/node_modules/react-dom/cjs/react-dom.development.js:20103:13)
+    at beginWork (/home/user/project-KnowingEye/frontend/node_modules/react-dom/cjs/react-dom.development.js:21626:16)
+    at HTMLUnknownElement.callCallback (/home/user/project-KnowingEye/frontend/node_modules/react-dom/cjs/react-dom.development.js:4164:14)
+    at HTMLUnknownElement.callTheUserObjectsOperation (/home/user/project-KnowingEye/frontend/node_modules/jsdom/lib/generated/idl/EventListener.js:26:30)
+    at innerInvokeEventListeners (/home/user/project-KnowingEye/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:360:16)
+    at invokeEventListeners (/home/user/project-KnowingEye/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:296:3)
+    at HTMLUnknownElementImpl._dispatch (/home/user/project-KnowingEye/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:243:9)
+    at HTMLUnknownElementImpl.dispatchEvent (/home/user/project-KnowingEye/frontend/node_modules/jsdom/lib/jsdom/living/events/EventTarget-impl.js:114:17)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/features/exams/lib/question-import-template.test.ts > question-import-template > converts an xlsx worksheet back to importable CSV
+AssertionError: expected 'question_text,question_type,options,o…' to contain 'question_text,question_type,options,c…'
+
+- Expected
++ Received
+
+- question_text,question_type,options,correct_answer,points
++ question_text,question_type,options,option_images,correct_answer,points
++ Sample question?,short_answer,,Sample answer,2,
+
+ ❯ src/features/exams/lib/question-import-template.test.ts:30:17
+     28|
+     29|     const csv = await readImportFileAsCsv(file);
+     30|     expect(csv).toContain("question_text,question_type,options,correct…
+       |                 ^
+     31|     expect(csv).toContain("Sample question?");
+     32|     expect(csv).toContain("Sample answer");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 5 passed (6)
+      Tests  1 failed | 32 passed (33)
+   Start at  17:58:05
+   Duration  4.94s (transform 596ms, setup 510ms, import 2.34s, tests 292ms, environment 7.20s)
+
+VITEST EXIT: 1
