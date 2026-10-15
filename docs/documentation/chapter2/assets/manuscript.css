@@ -17,6 +17,8 @@ figure.doc-fig figcaption { color: var(--muted); font-size: 0.85rem; margin-top:
 .future-note { border-left: 3px solid var(--accent2); padding: 0.5rem 0.9rem; background: var(--accent-soft); border-radius: 0 8px 8px 0; margin: 1rem 0; }
 .req-list li { margin-bottom: 0.3rem; }
 .note { border-left: 3px solid var(--warn); padding: 0.6rem 0.9rem; background: color-mix(in srgb, var(--warn) 10%, transparent); border-radius: 0 8px 8px 0; margin: 1rem 0; }
+.equation-block { text-align: center; margin: 1rem auto; padding: 0.7rem 1rem; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface2); }
+.equation-block code { font-size: 1.15rem; background: none; }
 figure.doc-fig .mermaid { display: flex; justify-content: center; background: var(--surface2); border-radius: 10px; padding: 1rem; overflow-x: auto; }
 figure.doc-fig figcaption { font-weight: 600; color: var(--text); margin-bottom: 0.6rem; }
 .graph-source { margin-top: 0.6rem; }

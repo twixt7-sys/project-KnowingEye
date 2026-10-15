@@ -132,7 +132,7 @@ class TierFromEventsRealWeightsTests(TestCase):
     def test_multiple_combined_signal_types_reach_critical(self):
         events = [
             EventRecord(event_type="no_face", timestamp=NOW),
-            EventRecord(event_type="multiple_faces", timestamp=NOW),
+            EventRecord(event_type="bad_posture", timestamp=NOW),
             EventRecord(event_type="looking_away", timestamp=NOW),
         ]
         result = tier_from_events(events, now=NOW)

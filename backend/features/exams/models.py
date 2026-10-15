@@ -171,6 +171,10 @@ class Exam(models.Model):
         default=False,
         help_text='When enabled, multiple-choice options are shuffled per attempt',
     )
+    disable_copy_paste = models.BooleanField(
+        default=False,
+        help_text='When enabled, copy, cut, and paste are blocked while examinees take the exam',
+    )
     unanswered_counts_as_wrong = models.BooleanField(
         default=True,
         help_text='When true, unanswered questions score zero toward the total',
@@ -219,6 +223,13 @@ class Exam(models.Model):
         choices=Status.choices,
         default=Status.DRAFT,
         help_text='Exam status'
+    )
+    previous_status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        blank=True,
+        default='',
+        help_text='Status held before archiving, so unarchiving can restore it',
     )
     approval_status = models.CharField(
         max_length=20,
@@ -518,6 +529,7 @@ class ExamApprovalEvent(models.Model):
         SUBMIT = "submit", "Submitted for review"
         APPROVE = "approve", "Approved"
         REJECT = "reject", "Rejected"
+        UNPUBLISH = "unpublish", "Unpublished"
 
     exam = models.ForeignKey(
         Exam,
@@ -537,6 +549,9 @@ class ExamApprovalEvent(models.Model):
     class Meta:
         db_table = "exams_approval_event"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["exam", "-created_at"]),
+        ]
 
     def __str__(self):
         return f"{self.exam_id} - {self.action} by {self.actor_id}"

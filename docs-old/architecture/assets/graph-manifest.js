@@ -735,14 +735,6 @@ window.KNOWING_EYE_GRAPHS = {
         ]
       },
       {
-        "provider": "Render",
-        "fit": "Free tier friendly",
-        "services": [
-          "Web service",
-          "Managed Postgres"
-        ]
-      },
-      {
         "provider": "DigitalOcean App Platform",
         "fit": "Simple VPS-style",
         "services": [

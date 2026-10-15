@@ -165,9 +165,19 @@
           "description": "Session logs"
         },
         {
+          "path": "/{id}/pause/",
+          "method": "POST",
+          "description": "Pause an in-progress session (stops the exam clock); optional reason"
+        },
+        {
+          "path": "/{id}/resume/",
+          "method": "POST",
+          "description": "Resume a paused session (paused time is added back to the deadline)"
+        },
+        {
           "path": "/{id}/terminate/",
           "method": "POST",
-          "description": "Terminate session"
+          "description": "Terminate a live (setup, in-progress or paused) session; the examinee's open sockets are told at once and later save/submit/frame requests are refused with code session_terminated"
         }
       ]
     },

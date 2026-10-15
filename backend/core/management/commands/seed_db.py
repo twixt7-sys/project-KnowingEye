@@ -1,6 +1,6 @@
 import ast
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
@@ -10,7 +10,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from features.exams.models import Department, Exam, Question
+from features.exams.models import Department, Exam, ExamCategory, Question
 from features.session.models import ExamSession, Response
 
 
@@ -34,7 +34,19 @@ class Command(BaseCommand):
         data_dir = self.get_data_dir()
 
         if options['flush']:
+            if not options['noinput']:
+                confirm = input(
+                    'This will PERMANENTLY DELETE every exam, session, and account '
+                    '(including admins) from this database. Continue? [y/N]: '
+                ).strip().lower()
+                if confirm not in ('y', 'yes'):
+                    self.stdout.write(self.style.WARNING('Flush aborted by user.'))
+                    return
             self.flush_data()
+            # Wiping deletes every account, including the bootstrap admin -
+            # recreate it immediately so a login is never lost.
+            self.ensure_admin()
+            self.reset_sequences()
             return
 
         if not options['noinput']:
@@ -184,6 +196,14 @@ class Command(BaseCommand):
 
     def load_exams(self, data_dir):
         path = data_dir / 'exams.csv'
+        # exams.csv doesn't carry an availability window, and a freshly
+        # created exam needs one to be submittable/publishable/takeable, so
+        # newly-created rows get a default open window here. Computed fresh
+        # per run (not stored back into `defaults`), so it only applies at
+        # creation and doesn't cause already-seeded exams to be rewritten
+        # with a new "now" - and thus reported as "updated" - on every reseed.
+        default_available_from = timezone.now() - timedelta(days=7)
+        default_available_until = timezone.now() + timedelta(days=90)
         with path.open(newline='', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
@@ -203,11 +223,19 @@ class Command(BaseCommand):
                     defaults['exam_code'] = row['exam_code']
                 if row.get('monitoring_enabled') is not None:
                     defaults['monitoring_enabled'] = self.parse_bool(row['monitoring_enabled'])
+                if row.get('available_from'):
+                    defaults['available_from'] = self.parse_datetime(row['available_from'])
+                if row.get('available_until'):
+                    defaults['available_until'] = self.parse_datetime(row['available_until'])
                 exam, created = Exam.objects.get_or_create(
                     id=self.parse_int(row['id']),
                     defaults=defaults,
                 )
                 if created:
+                    if exam.available_from is None:
+                        exam.available_from = default_available_from
+                    if exam.available_until is None:
+                        exam.available_until = default_available_until
                     exam.save()
                     self.stdout.write(f'Created exam {exam.title}.')
                 else:
@@ -330,35 +358,52 @@ class Command(BaseCommand):
                         self.stdout.write(f'Updated response {response.id}.')
 
     def flush_data(self):
-        self.stdout.write('Removing all exam data and application users...')
+        """Delete every exam, session, and account, in FK-safe order.
+
+        Most of the schema cascades from just two roots once ExamSession is
+        gone first: Exam.delete() cascades Question (-> QuestionAttachment),
+        ExamSection, QuestionPool, ExamAssignment, and ExamApprovalEvent;
+        User.delete() cascades PermissionChange and EmailVerification. The
+        only rows that *block* deletion here (Exam.created_by/department are
+        PROTECT) protect against deleting a User/Department out from under a
+        surviving Exam - moot once Exam itself is gone. This intentionally
+        removes every account, including any existing superuser - callers
+        (``--flush``) recreate the bootstrap admin immediately after.
+        """
+        self.stdout.write('Removing all exam, session, and account data...')
 
         deleted_sessions = ExamSession.objects.count()
         ExamSession.objects.all().delete()
         if deleted_sessions:
-            self.stdout.write(f'Deleted {deleted_sessions} session(s).')
-
-        deleted_questions = Question.objects.count()
-        Question.objects.all().delete()
-        if deleted_questions:
-            self.stdout.write(f'Deleted {deleted_questions} question(s).')
+            self.stdout.write(
+                f'Deleted {deleted_sessions} session(s) '
+                '(+ responses, logs, behavior/alert/identity records).'
+            )
 
         deleted_exams = Exam.objects.count()
         Exam.objects.all().delete()
         if deleted_exams:
-            self.stdout.write(f'Deleted {deleted_exams} exam(s).')
+            self.stdout.write(
+                f'Deleted {deleted_exams} exam(s) '
+                '(+ questions, sections, pools, assignments, approval history).'
+            )
+
+        deleted_categories = ExamCategory.objects.count()
+        ExamCategory.objects.all().delete()
+        if deleted_categories:
+            self.stdout.write(f'Deleted {deleted_categories} exam categor(y/ies).')
 
         deleted_departments = Department.objects.count()
         Department.objects.all().delete()
         if deleted_departments:
             self.stdout.write(f'Deleted {deleted_departments} department(s).')
 
-        removed = self.user_model.objects.filter(is_superuser=False).count()
-        self.user_model.objects.filter(is_superuser=False).delete()
+        removed = self.user_model.objects.count()
+        self.user_model.objects.all().delete()
         if removed:
-            self.stdout.write(f'Deleted {removed} user(s).')
+            self.stdout.write(f'Deleted {removed} user(s) (all accounts).')
 
-        self.reset_sequences()
-        self.stdout.write(self.style.SUCCESS('Database cleared for reseed.'))
+        self.stdout.write(self.style.SUCCESS('Database cleared.'))
 
     def reset_sequences(self):
         """Bump PostgreSQL sequences after rows inserted with explicit IDs."""
@@ -427,6 +472,15 @@ class Command(BaseCommand):
             return []
         try:
             parsed = ast.literal_eval(value)
-            return parsed if isinstance(parsed, list) else []
         except (ValueError, SyntaxError):
             return []
+        if not isinstance(parsed, list):
+            return []
+        # Options are stored as {"text": str, "image": str|null} everywhere
+        # else (see Question.options / validate_options) - normalize here too
+        # so a freshly-seeded question isn't the one path that still writes
+        # plain strings, which older frontend code couldn't render.
+        return [
+            item if isinstance(item, dict) else {"text": str(item), "image": None}
+            for item in parsed
+        ]

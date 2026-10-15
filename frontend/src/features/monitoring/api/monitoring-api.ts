@@ -10,7 +10,11 @@ export function sendMonitoringFrame(body: { image: string; session_id: string })
   return apiClient.sendFrame(body);
 }
 
-export function enrollReferenceFace(body: { image: string; session_id: string }) {
+export function enrollReferenceFace(body: {
+  image: string;
+  images?: string[];
+  session_id: string;
+}) {
   return apiClient.enrollReference(body);
 }
 
@@ -18,8 +22,9 @@ export function fetchMonitoringHealth() {
   return apiClient.getMonitoringHealth();
 }
 
+/** Every session still live: running or paused by a proctor. */
 export function fetchActiveSessions(pageSize = 50) {
-  return apiClient.listSessionReports({ status: "in_progress", page_size: pageSize });
+  return apiClient.listSessionReports({ status: "in_progress,paused", page_size: pageSize });
 }
 
 export function fetchAlerts(params?: { resolved?: boolean }) {
@@ -30,8 +35,20 @@ export function resolveAlert(alertId: string) {
   return apiClient.resolveAlert(alertId);
 }
 
+export function resolveAlertsBulk(params: { session?: string; alert_type?: string }) {
+  return apiClient.resolveAlertsBulk(params);
+}
+
 export function fetchSessionReport(sessionId: string) {
   return apiClient.getSessionReport(sessionId);
+}
+
+export function pauseSession(sessionId: string, reason?: string) {
+  return apiClient.pauseSession(sessionId, reason);
+}
+
+export function resumeSession(sessionId: string) {
+  return apiClient.resumeSession(sessionId);
 }
 
 export function terminateSession(sessionId: string) {

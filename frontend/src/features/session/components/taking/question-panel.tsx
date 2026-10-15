@@ -9,11 +9,22 @@ const TRUE_FALSE_FALLBACK: QuestionOption[] = [
   { text: "False", image: null },
 ];
 
-function choiceOptions(question: Question): QuestionOption[] {
-  if (question.question_type === "true_false") {
-    return question.options?.length >= 2 ? question.options : TRUE_FALSE_FALLBACK;
+// Options are normalized to {text, image} everywhere they're written through
+// the builder API (see ExamCreateUpdateSerializer.validate_options on the
+// backend), but raw-seeded/imported data can still land in the DB as plain
+// strings - handle both so a malformed row doesn't render as a blank choice.
+function normalizeOption(option: QuestionOption | string): QuestionOption {
+  if (typeof option === "string") {
+    return { text: option, image: null };
   }
-  return question.options ?? [];
+  return option;
+}
+
+function choiceOptions(question: Question): QuestionOption[] {
+  const raw = question.question_type === "true_false" && (question.options?.length ?? 0) < 2
+    ? TRUE_FALSE_FALLBACK
+    : (question.options ?? []);
+  return raw.map(normalizeOption);
 }
 
 function QuestionAnswerFields({
@@ -102,6 +113,8 @@ function QuestionAnswerFields({
               <img
                 src={option.image}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="h-14 w-14 shrink-0 rounded-md border border-border object-cover"
               />
             )}
@@ -120,7 +133,13 @@ function QuestionAttachments({ attachments }: { attachments?: QuestionAttachment
       {attachments.map((att) => (
         <div key={att.id} className="rounded-lg border bg-muted/30 p-3">
           {att.kind === "image" && (
-            <img src={att.url} alt={att.caption || "Question image"} className="max-h-64 rounded-md mx-auto" />
+            <img
+              src={att.url}
+              alt={att.caption || "Question image"}
+              loading="lazy"
+              decoding="async"
+              className="max-h-64 rounded-md mx-auto"
+            />
           )}
           {att.kind === "pdf" && (
             <a href={att.url} target="_blank" rel="noreferrer" className="text-sm text-primary underline">
@@ -142,9 +161,12 @@ interface QuestionPanelProps {
   question: Question;
   questionIndex: number;
   totalQuestions: number;
+  sectionTitle?: string | null;
   answer: SavedAnswer | undefined;
   answerText: string;
   submitting: boolean;
+  /** Label of the last-question button; the examiner preview ends instead of submitting. */
+  submitLabel?: string;
   onAnswerChange: (answer: string) => void;
   onToggleFlag: () => void;
   onPrevious: () => void;
@@ -156,9 +178,11 @@ export function QuestionPanel({
   question,
   questionIndex,
   totalQuestions,
+  sectionTitle,
   answer,
   answerText,
   submitting,
+  submitLabel = "Submit Exam",
   onAnswerChange,
   onToggleFlag,
   onPrevious,
@@ -171,9 +195,16 @@ export function QuestionPanel({
     <div className="bg-card rounded-xl border border-border p-6 md:p-8 mb-6">
       <div className="mb-6">
         <div className="flex items-start justify-between mb-4">
-          <h2 className="text-xl font-semibold">
-            Question {questionIndex + 1} of {totalQuestions}
-          </h2>
+          <div>
+            {sectionTitle && (
+              <p className="text-xs font-medium uppercase tracking-wide text-primary mb-1">
+                {sectionTitle}
+              </p>
+            )}
+            <h2 className="text-xl font-semibold">
+              Question {questionIndex + 1} of {totalQuestions}
+            </h2>
+          </div>
           <button
             type="button"
             onClick={onToggleFlag}
@@ -214,7 +245,7 @@ export function QuestionPanel({
             disabled={submitting}
             className="inline-flex items-center gap-2 px-6 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Exam"}
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : submitLabel}
           </button>
         ) : (
           <button

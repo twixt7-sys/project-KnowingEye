@@ -112,7 +112,18 @@ if DB_ENGINE == "django.db.backends.postgresql":
             "PASSWORD": decouple_config("DB_PASSWORD", default="postgres"),
             "HOST": decouple_config("DB_HOST", default="localhost"),
             "PORT": decouple_config("DB_PORT", default="5432"),
-            "CONN_MAX_AGE": int(decouple_config("DB_CONN_MAX_AGE", default="60")),
+            # Default to 0 (no persistent connections). A pooled host (e.g.
+            # Supabase's pgbouncer) has a small, fixed client slot count -
+            # holding a connection open per Daphne worker/WebSocket thread
+            # for CONN_MAX_AGE seconds exhausts that pool under any real
+            # concurrency ("FATAL: max clients reached in session mode").
+            # Only raise this if connecting directly to Postgres, uncooled.
+            "CONN_MAX_AGE": int(decouple_config("DB_CONN_MAX_AGE", default="0")),
+            # Required when the pooler runs in transaction-pooling mode
+            # (e.g. Supabase's port 6543) - server-side cursors can't span
+            # the pooler's per-transaction connection reassignment. Harmless
+            # to leave on for session-mode/direct connections too.
+            "DISABLE_SERVER_SIDE_CURSORS": True,
         }
     }
 else:
@@ -132,10 +143,34 @@ if REDIS_URL:
             "CONFIG": {"hosts": [REDIS_URL]},
         }
     }
+    # Shared across workers, so cached responses and their invalidation hold
+    # for every process (LocMemCache below is per-process).
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": REDIS_URL,
+            "KEY_PREFIX": "knowing-eye",
+        }
+    }
 else:
     CHANNEL_LAYERS = {
         "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
     }
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "knowing-eye",
+        }
+    }
+
+# Seconds to cache expensive read-only aggregate endpoints (reports).
+# 0 disables response caching entirely.
+API_CACHE_TTL_SECONDS = int(decouple_config("API_CACHE_TTL_SECONDS", default="30"))
+# Seconds to cache rarely-changing reference lists (departments, categories).
+# Writes invalidate them immediately; this is only the upper bound.
+API_REFERENCE_CACHE_TTL_SECONDS = int(
+    decouple_config("API_REFERENCE_CACHE_TTL_SECONDS", default="300")
+)
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -153,8 +188,11 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
 
-MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/media/"
+# Point MEDIA_ROOT at a persistent volume in production (e.g. a Railway volume
+# mounted at /data -> DJANGO_MEDIA_ROOT=/data/media). The container filesystem
+# is wiped on every deploy, which would delete uploaded question pictures.
+MEDIA_ROOT = Path(decouple_config("DJANGO_MEDIA_ROOT", default=str(BASE_DIR / "media")))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -251,6 +289,21 @@ KNOWING_EYE = {
 DEFAULT_FROM_EMAIL = decouple_config("DEFAULT_FROM_EMAIL", default="no-reply@knowingeye.local")
 EMAIL_SUBJECT_PREFIX = "[Knowing Eye] "
 
+# Supabase (optional). When set, ``EMAIL_BACKEND`` defaults to
+# ``core.utils.supabase_email_backend.SupabaseEmailBackend``, which relays
+# outgoing mail (OTP codes included) through the ``send-email`` Supabase Edge
+# Function - see ``supabase/functions/send-email`` and ``docs/backend`` for
+# setup. Leave both blank to keep the console/SMTP backends unchanged.
+SUPABASE_URL = decouple_config("SUPABASE_URL", default="")
+SUPABASE_OTP_FUNCTION_SECRET = decouple_config("SUPABASE_OTP_FUNCTION_SECRET", default="")
+# Sender address for mail relayed through the Supabase edge function. Left
+# blank on purpose: Django's DEFAULT_FROM_EMAIL defaults to a placeholder
+# (no-reply@knowingeye.local) that Resend will never accept as a verified
+# sender, so SupabaseEmailBackend omits "from" unless this is explicitly
+# set - letting the edge function's own RESEND_FROM_EMAIL/onboarding@resend.dev
+# default apply instead of silently failing every send.
+SUPABASE_FROM_EMAIL = decouple_config("SUPABASE_FROM_EMAIL", default="")
+
 # Seed administrator credentials (consumed by ``manage.py seed_db``).
 # Kept out of the committed CSV seed so the bootstrap admin password is
 # supplied via the environment (see ``backend/.env``, gitignored) rather
@@ -270,3 +323,8 @@ OTP_CODE_LENGTH = 6
 OTP_TTL_MINUTES = int(decouple_config("OTP_TTL_MINUTES", default="10"))
 OTP_RESEND_COOLDOWN_SECONDS = int(decouple_config("OTP_RESEND_COOLDOWN_SECONDS", default="60"))
 OTP_MAX_ATTEMPTS = int(decouple_config("OTP_MAX_ATTEMPTS", default="5"))
+# Dev/test convenience: echoes the plaintext code back on the verify-email
+# request endpoint so a code can be verified with no working mail transport
+# at all. Off by default everywhere; only meaningful when DEBUG is also on
+# (the view checks both) - never enable this against a real deployment.
+OTP_DEBUG_RETURN_CODE = env_bool("OTP_DEBUG_RETURN_CODE", default=False)

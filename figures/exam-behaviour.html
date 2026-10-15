@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowing Eye - Exam Behavior Index</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --ink:#000000;
+    --line:#000000;
+    --fill:#cbe4f7;
+    --caption-blue:#1f4e8c;
+    --muted:#444444;
+    --soft:#f0f0f0;
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:Arial,Helvetica,sans-serif;
+  }
+
+  body{
+    padding:14px 20px 24px;
+  }
+
+  .page{
+    max-width:1500px;
+    margin:0 auto;
+  }
+
+  .top-title{
+    text-align:center;
+    font-size:30px;
+    font-weight:700;
+    letter-spacing:.03em;
+    margin:2px 0 2px;
+    color:#111;
+  }
+
+  .top-subtitle{
+    text-align:center;
+    font-size:11.5px;
+    color:#444;
+    margin:0 0 8px;
+  }
+
+  .diagram-wrap{
+    border:1px solid #ddd;
+    padding:4px;
+    margin-top:4px;
+  }
+
+  svg{
+    display:block;
+    width:100%;
+    height:auto;
+    font-family:Arial,Helvetica,sans-serif;
+    margin:0 auto;
+  }
+
+  .bottom-title{
+    text-align:center;
+    font-size:22px;
+    font-weight:700;
+    letter-spacing:.03em;
+    margin:10px 0 5px;
+    color:#111;
+  }
+
+  .caption-rule{
+    border:none;
+    border-top:1.5px solid #999;
+    max-width:900px;
+    margin:0 auto;
+  }
+
+  .figure-caption{
+    text-align:center;
+    font-style:italic;
+    font-size:11.5px;
+    font-weight:700;
+    color:var(--caption-blue);
+    margin:7px 0 12px;
+  }
+
+  .legend{
+    display:flex;
+    justify-content:center;
+    gap:18px;
+    flex-wrap:wrap;
+    margin:0 0 6px;
+    font-size:9.5px;
+  }
+
+  .legend .item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+
+  .legend .swatch{
+    width:24px;
+    height:16px;
+    border:1.3px solid var(--line);
+    background:var(--fill);
+    border-radius:5px;
+    display:inline-block;
+  }
+
+  .discussion{
+    border-top:1.5px solid var(--line);
+    padding-top:16px;
+    margin-top:6px;
+  }
+
+  .discussion h2{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    margin:0 0 10px;
+  }
+
+  .discussion h3{
+    font-size:11.5px;
+    margin:16px 0 8px;
+    text-transform:uppercase;
+    letter-spacing:.035em;
+  }
+
+  .discussion p{
+    font-size:11.5px;
+    line-height:1.65;
+    margin:0 0 12px;
+    text-align:justify;
+  }
+
+  .discussion table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:10.5px;
+    margin-top:8px;
+  }
+
+  .discussion th,
+  .discussion td{
+    border:1px solid #999;
+    padding:6px 8px;
+    text-align:left;
+    vertical-align:top;
+  }
+
+  .discussion th{
+    background:var(--soft);
+    font-weight:700;
+  }
+
+  .discussion code{
+    font-family:Consolas,"Courier New",monospace;
+    font-size:10.5px;
+    background:var(--soft);
+    padding:1px 4px;
+    border-radius:3px;
+  }
+
+  .equation{
+    margin:12px auto 14px;
+    width:max-content;
+    max-width:100%;
+    border:1px solid #999;
+    background:#fafafa;
+    padding:12px 22px;
+    font-family:"Times New Roman",serif;
+    font-size:18px;
+  }
+
+  .note{
+    border-left:4px solid #000;
+    padding:8px 12px;
+    background:#fafafa;
+    margin:10px 0 14px;
+    font-size:10.8px;
+    line-height:1.55;
+  }
+
+  .reference-list{
+    margin:8px 0 0 18px;
+    padding:0;
+  }
+
+  .reference-list li{
+    font-size:10.5px;
+    line-height:1.6;
+    margin-bottom:6px;
+    padding-left:4px;
+  }
+
+  .small-muted{
+    color:#555;
+    font-size:10px;
+  }
+
+  @media print{
+    body{ padding:10px 12px; }
+    @page{ size:landscape; margin:9mm; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="top-title">KNOWING EYE</div>
+  <div class="top-subtitle">A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis</div>
+
+  <div class="legend">
+    <span class="item"><span class="swatch" style="border-radius:50%/40%;"></span>Observed Indicator</span>
+    <span class="item"><span class="swatch"></span>Composite Index</span>
+    <span class="item"><span class="swatch" style="border-radius:3px;"></span>Interpretation / Validation</span>
+  </div>
+
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 1560 700" width="1560" height="700">
+      <defs>
+        <marker id="arrow1" markerWidth="9" markerHeight="9" refX="7" refY="3.5"
+                orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L8,3.5 L0,7 Z" fill="#000"/>
+        </marker>
+      </defs>
+
+      <!-- LEFT INDICATOR GROUP -->
+      <ellipse cx="210" cy="130" rx="145" ry="48" fill="var(--fill)" stroke="#000" stroke-width="2"/>
+      <text x="210" y="125" font-size="15" font-weight="700" text-anchor="middle">Face Presence</text>
+      <text x="210" y="145" font-size="10.5" text-anchor="middle">face visible in camera frame</text>
+
+      <ellipse cx="210" cy="275" rx="145" ry="48" fill="var(--fill)" stroke="#000" stroke-width="2"/>
+      <text x="210" y="270" font-size="15" font-weight="700" text-anchor="middle">Face Identity</text>
+      <text x="210" y="290" font-size="10.5" text-anchor="middle">identity match / consistency</text>
+
+      <ellipse cx="210" cy="420" rx="145" ry="48" fill="var(--fill)" stroke="#000" stroke-width="2"/>
+      <text x="210" y="415" font-size="15" font-weight="700" text-anchor="middle">Upper-Body Presence</text>
+      <text x="210" y="435" font-size="10.5" text-anchor="middle">expected body region remains visible</text>
+
+      <ellipse cx="210" cy="565" rx="145" ry="48" fill="var(--fill)" stroke="#000" stroke-width="2"/>
+      <text x="210" y="560" font-size="15" font-weight="700" text-anchor="middle">Looking-Away Compliance</text>
+      <text x="210" y="580" font-size="10.5" text-anchor="middle">higher score = less looking away</text>
+
+      <!-- CENTER PROCESS -->
+      <rect x="610" y="225" width="340" height="250" rx="18"
+            fill="var(--fill)" stroke="#000" stroke-width="2"/>
+      <line x1="610" y1="267" x2="950" y2="267" stroke="#000" stroke-width="1.5"/>
+      <text x="780" y="252" font-size="13" text-anchor="middle">COMPOSITE INDEX</text>
+
+      <text x="780" y="317" font-size="19" font-weight="700" text-anchor="middle">Exam Behavior Index</text>
+      <text x="780" y="342" font-size="12" text-anchor="middle">Formative measurement of observed</text>
+      <text x="780" y="359" font-size="12" text-anchor="middle">examination-monitoring conditions</text>
+
+      <rect x="675" y="382" width="210" height="58" rx="8"
+            fill="#ffffff" stroke="#000" stroke-width="1.5"/>
+      <text x="780" y="406" font-size="16" font-family="Times New Roman,serif" text-anchor="middle">
+        EBI = (Fₚ + Fᵢ + Uₚ + G𝒸) / 4
+      </text>
+      <text x="780" y="426" font-size="9.5" text-anchor="middle">all indicators normalized to 0–1</text>
+
+      <!-- RIGHT INTERPRETATION -->
+      <rect x="1110" y="110" width="285" height="120" rx="14"
+            fill="var(--fill)" stroke="#000" stroke-width="2"/>
+      <line x1="1110" y1="145" x2="1395" y2="145" stroke="#000" stroke-width="1.5"/>
+      <text x="1252" y="132" font-size="12.5" text-anchor="middle">INTERPRETATION</text>
+      <text x="1252" y="169" font-size="13.5" font-weight="700" text-anchor="middle">Higher EBI</text>
+      <text x="1252" y="188" font-size="10.5" text-anchor="middle">greater conformity with predefined</text>
+      <text x="1252" y="203" font-size="10.5" text-anchor="middle">visual examination conditions</text>
+
+      <rect x="1110" y="300" width="285" height="120" rx="14"
+            fill="var(--fill)" stroke="#000" stroke-width="2"/>
+      <line x1="1110" y1="335" x2="1395" y2="335" stroke="#000" stroke-width="1.5"/>
+      <text x="1252" y="322" font-size="12.5" text-anchor="middle">LOWER EBI</text>
+      <text x="1252" y="359" font-size="10.5" text-anchor="middle">greater deviation from one or more</text>
+      <text x="1252" y="376" font-size="10.5" text-anchor="middle">predefined monitoring conditions</text>
+      <text x="1252" y="399" font-size="10" font-style="italic" text-anchor="middle">not, by itself, proof of cheating</text>
+
+      <rect x="1110" y="490" width="285" height="120" rx="14"
+            fill="var(--fill)" stroke="#000" stroke-width="2"/>
+      <line x1="1110" y1="525" x2="1395" y2="525" stroke="#000" stroke-width="1.5"/>
+      <text x="1252" y="512" font-size="12.5" text-anchor="middle">VALIDATION</text>
+      <text x="1252" y="549" font-size="10.5" text-anchor="middle">compare index against expert / human-labeled</text>
+      <text x="1252" y="566" font-size="10.5" text-anchor="middle">examination events and behavioral observations</text>
+      <text x="1252" y="589" font-size="10" font-style="italic" text-anchor="middle">to establish external validity</text>
+
+      <!-- FLOWS -->
+      <path d="M355,130 L610,275" fill="none" stroke="#000" stroke-width="1.8" marker-end="url(#arrow1)"/>
+      <path d="M355,275 L610,315" fill="none" stroke="#000" stroke-width="1.8" marker-end="url(#arrow1)"/>
+      <path d="M355,420 L610,385" fill="none" stroke="#000" stroke-width="1.8" marker-end="url(#arrow1)"/>
+      <path d="M355,565 L610,425" fill="none" stroke="#000" stroke-width="1.8" marker-end="url(#arrow1)"/>
+
+      <text x="470" y="205" font-size="10.5" font-weight="700" text-anchor="middle">normalized score</text>
+      <text x="470" y="296" font-size="10.5" font-weight="700" text-anchor="middle">normalized score</text>
+      <text x="475" y="404" font-size="10.5" font-weight="700" text-anchor="middle">normalized score</text>
+      <text x="475" y="520" font-size="10.5" font-weight="700" text-anchor="middle">inverse-transformed compliance</text>
+
+      <path d="M950,300 L1110,195" fill="none" stroke="#000" stroke-width="1.8" marker-end="url(#arrow1)"/>
+      <path d="M950,350 L1110,360" fill="none" stroke="#000" stroke-width="1.8" marker-end="url(#arrow1)"/>
+
+      <text x="1030" y="245" font-size="10.5" font-weight="700" text-anchor="middle">0–1 composite score</text>
+      <text x="1035" y="344" font-size="10.5" font-weight="700" text-anchor="middle">interpretive indicator</text>
+
+      <path d="M1252,420 L1252,490" fill="none" stroke="#000" stroke-width="1.8" marker-end="url(#arrow1)"/>
+      <text x="1312" y="462" font-size="10.5" font-weight="700" text-anchor="middle">external criterion</text>
+
+      <!-- FORMATIVE LABEL -->
+      <rect x="580" y="520" width="400" height="64" rx="10"
+            fill="#ffffff" stroke="#000" stroke-width="1.5"/>
+      <text x="780" y="545" font-size="11.5" font-weight="700" text-anchor="middle">
+        FORMATIVE INDEX
+      </text>
+      <text x="780" y="562" font-size="10.5" text-anchor="middle">
+        indicators collectively define the monitoring index;
+      </text>
+      <text x="780" y="577" font-size="10.5" text-anchor="middle">
+        high internal consistency is not the primary requirement
+      </text>
+    </svg>
+  </div>
+
+  <div class="bottom-title">EXAM BEHAVIOR INDEX</div>
+  <hr class="caption-rule">
+  <div class="figure-caption">Figure 10: Proposed Composite Exam Behavior Index for Knowing Eye Behavior Monitoring</div>
+
+  <div class="discussion">
+    <h2>Discussion</h2>
+
+    <p>
+      The proposed <b>Exam Behavior Index (EBI)</b> represents the overall observed examination-monitoring state of
+      an examinee using four measurable indicators: <b>face presence</b>, <b>face identity consistency</b>,
+      <b>upper-body presence</b>, and <b>looking-away compliance</b>. Automated online proctoring research commonly
+      combines multiple visual cues, including face detection, identity or spoofing verification, head-pose analysis,
+      and gaze-related behavior, rather than relying on a single signal to characterize examination conditions [1], [2].
+      The proposed index follows the same multi-indicator principle while remaining limited to the visual features
+      implemented by the Knowing Eye system.
+    </p>
+
+    <p>
+      The four indicators are treated as <b>formative indicators</b> of the EBI. In formative measurement, the observed
+      indicators collectively contribute to the definition of a composite construct and are not required to be
+      interchangeable or strongly correlated [3], [4]. This is appropriate because the four measurements capture
+      different aspects of examination monitoring. An examinee may remain identifiable while looking away from the
+      examination screen, or may maintain an appropriate gaze while temporarily moving outside the camera's observable
+      region. Consequently, each indicator provides distinct information and contributes to the overall index.
+    </p>
+
+    <h3>Indicator Definition</h3>
+
+    <table>
+      <tr>
+        <th>Indicator</th>
+        <th>Meaning</th>
+        <th>Normalized direction</th>
+      </tr>
+      <tr>
+        <td><b>Face Presence</b> (<code>Fₚ</code>)</td>
+        <td>Measures whether the examinee's face remains observable within the camera frame.</td>
+        <td>Higher = greater presence compliance</td>
+      </tr>
+      <tr>
+        <td><b>Face Identity</b> (<code>Fᵢ</code>)</td>
+        <td>Measures consistency between the observed face and the enrolled/reference identity.</td>
+        <td>Higher = stronger identity consistency</td>
+      </tr>
+      <tr>
+        <td><b>Upper-Body Presence</b> (<code>Uₚ</code>)</td>
+        <td>Measures whether the expected upper-body region remains visible within the monitored frame.</td>
+        <td>Higher = greater frame compliance</td>
+      </tr>
+      <tr>
+        <td><b>Looking-Away Compliance</b> (<code>G𝒸</code>)</td>
+        <td>Represents gaze/orientation compliance after converting looking-away behavior into a positive compliance scale.</td>
+        <td>Higher = less looking away</td>
+      </tr>
+    </table>
+
+    <h3>Composite Calculation</h3>
+
+    <p>
+      Before aggregation, each indicator is normalized to a common scale from 0 to 1, where larger values represent
+      greater conformity with the predefined examination conditions. Because looking away is an adverse event, its
+      raw measure should be transformed into a compliance score rather than averaged directly as a positive quantity.
+      For example, if <code>L</code> represents a normalized looking-away score, the corresponding compliance term may
+      be represented as <code>G𝒸 = 1 − L</code>.
+    </p>
+
+    <div class="equation">
+      EBI = (Fₚ + Fᵢ + Uₚ + G𝒸) / 4
+    </div>
+
+    <p>
+      Under the proposed equal-weight formulation, the resulting EBI ranges from 0 to 1. A value closer to 1 represents
+      greater conformity with the predefined visual monitoring conditions, whereas a lower value indicates greater
+      deviation across one or more monitored indicators. The arithmetic mean is suitable as an initial index-construction
+      method when the indicators have been normalized to the same direction and scale and the equal-weighting decision
+      is theoretically justified [3].
+    </p>
+
+    <div class="note">
+      <b>Interpretation note.</b> The EBI should be interpreted as a monitoring index rather than as a direct measure
+      of cheating. A lower score indicates deviation from specified visual examination conditions, but such deviation
+      can have multiple causes, including ordinary movement, temporary occlusion, camera framing, or changes in gaze.
+      The index therefore supports monitoring and event detection rather than serving as standalone proof of academic
+      misconduct.
+    </div>
+
+    <h3>Important Measurement Consideration</h3>
+
+    <p>
+      Face presence and face identity require careful handling because an absent face does not necessarily provide
+      evidence of an incorrect identity. If the face is not observable, identity may be <b>not evaluated</b> rather
+      than automatically assigned a score of zero. Otherwise, a single absence event could be counted twice through
+      both face-presence and identity indicators. The implemented aggregation rule should therefore explicitly define
+      when identity is evaluated and how missing observations are treated.
+    </p>
+
+    <p>
+      The equal weighting used in this formulation is a methodological design decision, not evidence that the four
+      indicators have objectively identical importance. Future validation may compare this initial formulation with
+      alternative weighting approaches based on expert assessment, empirical event frequencies, or relationships with
+      human-labeled examination behavior. Such validation would strengthen the interpretation of the composite index
+      beyond simple mathematical aggregation.
+    </p>
+
+    <h3>Recommended Validation Strategy</h3>
+
+    <p>
+      To establish empirical support for the EBI, system-generated index values may be compared against an external
+      criterion such as expert- or human-labeled examination events. This provides a direct way to evaluate whether
+      changes in the composite score correspond to the kinds of observable examination behavior the system is intended
+      to monitor. The validation strategy is particularly important because formative indices are evaluated through
+      the relevance and contribution of their indicators and through relationships with appropriate external criteria,
+      rather than solely through internal-consistency statistics [3], [4].
+    </p>
+
+    <h3>References</h3>
+
+    <ol class="reference-list">
+      <li>
+        T. Potluri, S. Venkatramaphanikumar, and K. V. K. Kishore,
+        “An automated online proctoring system using attentive-net to assess student mischievous behavior,”
+        <i>Multimedia Tools and Applications</i>, 2023, doi: 10.1007/s11042-023-14604-w.
+      </li>
+      <li>
+        P. Tejaswi, S. Venkatramaphanikumar, and K. V. K. Kishore,
+        “Proctor net: An AI framework for suspicious activity detection in online proctored examinations,”
+        <i>Measurement</i>, vol. 206, Art. no. 112266, 2023, doi: 10.1016/j.measurement.2022.112266.
+      </li>
+      <li>
+        A. Diamantopoulos and H. M. Winklhofer,
+        “Index construction with formative indicators: An alternative to scale development,”
+        <i>Journal of Marketing Research</i>, vol. 38, no. 2, pp. 269–277, 2001,
+        doi: 10.1509/jmkr.38.2.269.18845.
+      </li>
+      <li>
+        T. Coltman, T. M. Devinney, D. F. Midgley, and S. Venaik,
+        “Formative versus reflective measurement models: Two applications of formative measurement,”
+        <i>Journal of Business Research</i>, vol. 61, no. 12, pp. 1250–1262, 2008,
+        doi: 10.1016/j.jbusres.2008.01.013.
+      </li>
+      <li>
+        J. A. Bollen and R. Lennox,
+        “Conventional wisdom on measurement: A structural equation perspective,”
+        <i>Psychological Bulletin</i>, vol. 110, no. 2, pp. 305–314, 1991.
+      </li>
+    </ol>
+
+    <p class="small-muted">
+      Note: The page uses the same compact, diagram-oriented visual language as the supplied Knowing Eye DFD reference.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

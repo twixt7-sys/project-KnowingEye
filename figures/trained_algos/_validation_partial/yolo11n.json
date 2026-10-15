@@ -1,0 +1,1 @@
+{"model": "yolo11n", "mAP50 (%)": 88.97, "mAP50-95 (%)": 66.61, "Precision (%)": 94.03, "Recall (%)": 81.84, "F1 (%)": 87.51, "Mean Confidence (%)": 77.25, "Detections (n)": 1938}

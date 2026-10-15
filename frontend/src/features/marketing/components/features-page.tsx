@@ -2,12 +2,12 @@ import {
   Activity,
   Brain,
   Camera,
+  ClipboardCheck,
   Database,
-  Eye,
   FileCheck,
   LineChart,
   ShieldCheck,
-  Video,
+  UserCog,
 } from "@/shared/icons";
 
 import {
@@ -22,43 +22,65 @@ const coreFeatures = [
     category: "Exam Management",
     icon: FileCheck,
     items: [
-      "Create and configure custom examinations",
-      "Schedule and deploy exams to specific groups",
-      "Manage examinee registrations and permissions",
-      "Set time limits and auto-submission rules",
-      "Question bank with multiple choice, essay, and more",
+      "Full exam lifecycle: draft, publish, archive",
+      "Categories, multi-department assignment, auto exam codes",
+      "Sections and question pools with shuffle",
+      "Bulk question import from XLSX/CSV, with templates",
+      "Duplication, drag-and-drop reordering, image questions",
+    ],
+  },
+  {
+    category: "Roles & Approval Workflow",
+    icon: UserCog,
+    items: [
+      "Six roles: Admin, Guidance Staff, Program Head, Faculty, Proctor, Student",
+      "Faculty-authored exams routed to Program Head for approval",
+      "Per-user permission grants layered on top of roles",
+      "Full audit trail of every permission change",
+      "CSV roster and assignment import",
+    ],
+  },
+  {
+    category: "Exam Taking & Grading",
+    icon: ClipboardCheck,
+    items: [
+      "Autosave, server-side heartbeat, and auto-submit on timeout",
+      "One-active-exam guard with pre-exam integrity checks",
+      "Practice exam mode",
+      "Auto-grading for objective items; Speed Grader for essays",
+      "Tab/focus-switch logging and results-release notifications",
     ],
   },
   {
     category: "AI Monitoring",
     icon: Brain,
     items: [
-      "Real-time facial detection using MediaPipe",
-      "Head pose estimation and tracking",
-      "Eye gaze direction analysis",
-      "Posture recognition and classification",
-      "Identity verification via face embeddings",
+      "Real-time frame analysis: face, head pose, and eye-gaze tracking",
+      "Identity verification against an enrolled reference face",
+      "Automatic fallback to a deterministic stub if ML deps are absent",
+      "Configurable detection thresholds via a pipeline config file",
+      "Frame retention disabled by default for privacy",
     ],
   },
   {
     category: "Behavior Analysis",
     icon: Activity,
     items: [
-      "Automated behavior scoring engine",
-      "Anomaly detection algorithms",
-      "Event flagging for suspicious activities",
-      "Pattern recognition for cheating behaviors",
-      "Continuous monitoring throughout exam",
+      "Four-tier escalation: Normal, Warning, Suspicious, Critical",
+      "Weighted, time-windowed scoring across event types",
+      "Critical-on-sight events (e.g. identity mismatch) escalate instantly",
+      "Automatic intervention recommendations",
+      "Behavior log and alert history with resolve / resolve-all actions",
     ],
   },
   {
-    category: "Security & Verification",
+    category: "Security & Access",
     icon: ShieldCheck,
     items: [
-      "Face recognition identity verification",
-      "Multi-factor authentication",
-      "Encrypted video streams (HTTPS)",
-      "Role-based access control",
+      "JWT authentication with access, refresh, and verify flows",
+      "OTP email verification during registration",
+      "Role-based access control layered with per-user permissions",
+      "Production hardening: HSTS, secure cookies, SSL proxy",
       "Secure data storage with consent",
     ],
   },
@@ -66,54 +88,54 @@ const coreFeatures = [
     category: "Reporting & Analytics",
     icon: LineChart,
     items: [
-      "Comprehensive behavioral reports",
-      "Session playback and review",
-      "Suspicion score dashboards",
-      "Event timeline visualization",
-      "Export data in multiple formats",
+      "Dashboard KPI summaries and day-by-day timeseries",
+      "Per-department and per-exam item analytics",
+      "Pass-rate, severity, and behavior-event breakdowns",
+      "Session detail and event-timeline views",
+      "CSV and PDF export",
     ],
   },
   {
-    category: "Real-time Features",
+    category: "Real-time Infrastructure",
     icon: Camera,
     items: [
-      "Live webcam monitoring",
-      "WebSocket communication",
-      "Instant anomaly alerts",
-      "Admin live session view",
-      "Real-time behavioral metrics",
+      "Per-session WebSocket monitoring channel",
+      "Dedicated admin live-alerts broadcast channel",
+      "JWT-authenticated WebSocket connections",
+      "Redis-ready channel layer for multi-worker deployments",
+      "Served over ASGI via Django Channels and Daphne",
     ],
   },
 ];
 
 const techStack = [
   {
-    name: "Computer Vision",
-    description: "OpenCV for video processing and facial analysis",
-    icon: Eye,
+    name: "Backend",
+    description: "Django, DRF, SimpleJWT, and Channels for HTTP + WebSocket",
+    icon: FileCheck,
   },
   {
-    name: "Deep Learning",
-    description: "TensorFlow & PyTorch for AI model training",
+    name: "Frontend",
+    description: "React, Vite, TypeScript, Tailwind, and TanStack Query",
+    icon: LineChart,
+  },
+  {
+    name: "AI / Computer Vision",
+    description: "MediaPipe-based detection pipeline with stub fallback",
     icon: Brain,
   },
   {
-    name: "Video Processing",
-    description: "Real-time stream capture and analysis",
-    icon: Video,
-  },
-  {
     name: "Data Storage",
-    description: "PostgreSQL for secure data management",
+    description: "SQLite in development, PostgreSQL in production",
     icon: Database,
   },
 ];
 
 const detectionModels = [
   "MediaPipe for face and pose detection",
-  "CNN for feature extraction",
-  "FaceNet for face recognition",
-  "ArcFace for identity verification",
+  "Face-embedding matching for identity verification",
+  "FaceNet/ArcFace-grade embeddings on the roadmap",
+  "Deterministic stub fallback when ML deps are unavailable",
 ];
 
 const analysisFeatures = [
@@ -124,20 +146,20 @@ const analysisFeatures = [
 ];
 
 const workflowSteps = [
-  "User logs in and starts exam session",
-  "System verifies identity via face recognition",
-  "Webcam streams are captured in real time",
-  "AI models analyze facial and postural behavior",
-  "Behavior scoring engine evaluates actions",
-  "Suspicious events are flagged and logged",
-  "Admin monitors sessions via dashboard",
-  "Reports are generated after exam completion",
+  "Faculty authors an exam; a Program Head reviews and approves it",
+  "Student logs in and starts an exam session",
+  "Identity is verified against the enrolled reference face",
+  "Webcam frames are analyzed in real time by the AI pipeline",
+  "Behavior scoring escalates events from Normal toward Critical",
+  "Critical events and identity mismatches trigger instant admin alerts",
+  "Objective items auto-grade; essays go to Speed Grader for review",
+  "Reports, analytics, and CSV/PDF exports are generated after completion",
 ];
 
 const metrics = [
-  { value: "95%+", label: "Detection accuracy" },
-  { value: "<100ms", label: "Response latency" },
-  { value: "100%", label: "Automated monitoring" },
+  { value: "140+", label: "Automated backend tests" },
+  { value: "6", label: "Roles & permission tiers" },
+  { value: "4", label: "Behavior escalation tiers" },
 ];
 
 export function FeaturesPage() {
@@ -159,7 +181,7 @@ export function FeaturesPage() {
       <section className="mb-24">
         <SectionHeading
           kicker="Capability index"
-          title="Six systems, one platform"
+          title="Eight systems, one platform"
           description="Every capability is catalogued below — from authoring an exam to the report that lands on the examiner's desk."
         />
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -180,8 +202,8 @@ export function FeaturesPage() {
       <section className="mb-24">
         <SectionHeading
           kicker="Under the hood"
-          title="AI Technology Stack"
-          description="Powered by state-of-the-art deep learning and computer vision models."
+          title="Technology Stack"
+          description="The frameworks and services running underneath every feature above."
         />
         <div className="surface-panel grid grid-cols-1 divide-y divide-border/70 sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
           {techStack.map((tech, i) => (
@@ -266,7 +288,7 @@ export function FeaturesPage() {
 
       {/* Metrics band */}
       <section className="mb-8">
-        <SectionHeading kicker="Measured" title="Performance Metrics" />
+        <SectionHeading kicker="By the numbers" title="Platform at a Glance" />
         <div className="surface-panel mx-auto grid max-w-4xl grid-cols-1 divide-y divide-border/70 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {metrics.map((metric) => (
             <div key={metric.label} className="p-8 text-center">

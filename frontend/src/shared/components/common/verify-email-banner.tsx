@@ -26,6 +26,7 @@ export function VerifyEmailBanner() {
   const [sent, setSent] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [debugCode, setDebugCode] = useState<string | null>(null);
 
   if (!user || user.email_verified || dismissed) {
     return null;
@@ -35,8 +36,12 @@ export function VerifyEmailBanner() {
     setSending(true);
     setError(null);
     try {
-      await apiClient.requestEmailVerification();
+      const res = await apiClient.requestEmailVerification();
       setSent(true);
+      // Only ever present in local/dev (OTP_DEBUG_RETURN_CODE + DEBUG) when
+      // there's no working mail transport - lets the flow be tested without
+      // a real inbox.
+      setDebugCode(res.debug_code ?? null);
     } catch (e) {
       setError(formatApiError(e, "Could not send verification code"));
     } finally {
@@ -110,6 +115,11 @@ export function VerifyEmailBanner() {
         )}
       </div>
 
+      {debugCode && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Dev mode, no mail transport configured - code: <span className="font-mono">{debugCode}</span>
+        </p>
+      )}
       {error && <p className="mt-2 text-xs text-status-alert">{error}</p>}
     </div>
   );

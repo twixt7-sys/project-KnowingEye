@@ -7,6 +7,7 @@ import {
   CornerUpLeft,
   CornerUpRight,
   Loader2,
+  PinIcon,
   ScanFace,
   UserCheck,
   Eye,
@@ -41,6 +42,7 @@ const DOCK_POSITIONS: {
   { id: "bottom-left", label: "Bottom left", className: "bottom-4 left-4", icon: CornerDownLeft },
   { id: "top-right", label: "Top right", className: "top-20 right-4", icon: CornerUpRight },
   { id: "top-left", label: "Top left", className: "top-20 left-4", icon: CornerUpLeft },
+  { id: "inline", label: "Below progress", className: "", icon: PinIcon },
 ];
 
 interface ProctoringDockProps {
@@ -67,12 +69,23 @@ export function ProctoringDock({
   onReEnroll,
 }: ProctoringDockProps) {
   const dockLayout = DOCK_POSITIONS.find((p) => p.id === dockPosition) ?? DOCK_POSITIONS[0];
+  const isInline = dockPosition === "inline";
+
+  const ebiScore =
+    monitoring.analysis?.exam_behavior_index_pct ??
+    monitoring.analysis?.metrics?.exam_behavior_index_pct ??
+    monitoring.analysis?.overall_compliance_pct ??
+    null;
 
   return (
     <div
-      className={`fixed z-40 max-w-[calc(100vw-2rem)] ${dockLayout.className} ${
-        feedOpen ? "w-[min(520px,calc(100vw-2rem))]" : "w-72"
-      }`}
+      className={
+        isInline
+          ? "w-full"
+          : `fixed z-40 max-w-[calc(100vw-2rem)] ${dockLayout.className} ${
+              feedOpen ? "w-[min(520px,calc(100vw-2rem))]" : "w-72"
+            }`
+      }
     >
       <div className="bg-card/95 backdrop-blur border border-border rounded-xl shadow-xl shadow-black/20 overflow-hidden">
         <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-border/60">
@@ -88,14 +101,13 @@ export function ProctoringDock({
             <span className="flex items-center gap-2 shrink-0">
               <span
                 className={`text-xs font-medium ${
-                  monitoring.analysis && monitoring.analysis.overall_compliance_pct < 80
+                  ebiScore != null && ebiScore < 80
                     ? "text-destructive"
                     : "text-muted-foreground"
                 }`}
+                title="Exam Behavior Index"
               >
-                {monitoring.analysis
-                  ? `${monitoring.analysis.overall_compliance_pct.toFixed(0)}%`
-                  : "…"}
+                {ebiScore != null ? `EBI ${ebiScore.toFixed(0)}%` : "…"}
               </span>
               {feedOpen ? (
                 <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -211,7 +223,7 @@ export function ProctoringDock({
                         </div>
                         <div className="h-1 bg-muted rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full transition-all duration-300 ${
+                            className={`h-full rounded-full transition-[width] duration-100 ease-out ${
                               flagged
                                 ? "bg-destructive"
                                 : "bg-primary"

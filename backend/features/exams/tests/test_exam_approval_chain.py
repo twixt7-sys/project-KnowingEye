@@ -8,7 +8,10 @@ a non-admin creator.
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -31,6 +34,7 @@ def make_user(role, username):
 
 def make_ready_exam(creator) -> Exam:
     """A draft exam with just enough content to pass publish-readiness."""
+    now = timezone.now()
     exam = Exam.objects.create(
         title="Approval Chain Exam",
         description="x",
@@ -38,6 +42,8 @@ def make_ready_exam(creator) -> Exam:
         passing_score=60,
         status=Exam.Status.DRAFT,
         created_by=creator,
+        available_from=now,
+        available_until=now + timedelta(days=7),
     )
     Question.objects.create(
         exam=exam,
@@ -100,6 +106,21 @@ class ExamApprovalChainTests(APITestCase):
 
     def test_other_faculty_cannot_submit_someone_elses_exam(self):
         response = self._submit(self.other_faculty)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_program_head_can_view_readiness_for_someone_elses_exam(self):
+        """A reviewer needs the readiness checklist to judge a submission -
+        not just the creator building it - so the "Review & publish" tab
+        doesn't silently blank out for anyone but the exam's own creator."""
+        self._submit(self.faculty)
+        self.client.force_authenticate(user=self.program_head)
+        response = self.client.get(f"/api/exams/{self.exam.id}/readiness/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["ready"])
+
+    def test_unrelated_faculty_cannot_view_readiness(self):
+        self.client.force_authenticate(user=self.other_faculty)
+        response = self.client.get(f"/api/exams/{self.exam.id}/readiness/")
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_program_head_can_approve_pending_exam(self):

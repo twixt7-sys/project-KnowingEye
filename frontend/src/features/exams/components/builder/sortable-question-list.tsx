@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -15,22 +16,34 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { Link } from "react-router";
 import { GripVertical, Trash2 } from "@/shared/icons";
 
 import type { Question } from "@/core/config/api";
 import { BuilderIconBtn } from "@/features/exams/components/builder/builder-primitives";
+import { examPreviewPath } from "@/features/exams/lib/exam-paths";
 
 interface SortableQuestionRowProps {
   question: Question;
-  isDraft: boolean;
+  sectionTitleById: Map<number, string>;
+  editable: boolean;
+  /** Set when the user may preview the exam; shows a per-question preview link. */
+  previewExamId?: number;
   onEdit: (q: Question) => void;
   onDelete: (q: Question) => void;
 }
 
-function SortableQuestionRow({ question, isDraft, onEdit, onDelete }: SortableQuestionRowProps) {
+const SortableQuestionRow = memo(function SortableQuestionRow({
+  question,
+  sectionTitleById,
+  editable,
+  previewExamId,
+  onEdit,
+  onDelete,
+}: SortableQuestionRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: question.id,
-    disabled: !isDraft,
+    disabled: !editable,
   });
 
   const style = {
@@ -41,7 +54,7 @@ function SortableQuestionRow({ question, isDraft, onEdit, onDelete }: SortableQu
 
   return (
     <div ref={setNodeRef} style={style} className="p-4 flex gap-4 items-start">
-      {isDraft && (
+      {editable && (
         <button
           type="button"
           className="mt-0.5 cursor-grab touch-none text-muted-foreground hover:text-foreground"
@@ -61,37 +74,56 @@ function SortableQuestionRow({ question, isDraft, onEdit, onDelete }: SortableQu
             ? ` · ${question.options.length} options`
             : ""}
           {question.attachments?.length ? ` · ${question.attachments.length} attachment(s)` : ""}
+          {question.section != null && sectionTitleById.has(question.section)
+            ? ` · ${sectionTitleById.get(question.section)}`
+            : ""}
         </p>
       </div>
-      {isDraft && (
+      {(editable || previewExamId != null) && (
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onEdit(question)}
-            className="text-xs px-2 py-1 border border-border rounded hover:bg-accent"
-          >
-            Edit
-          </button>
-          <BuilderIconBtn onClick={() => onDelete(question)} label="Delete">
-            <Trash2 className="w-4 h-4 text-status-alert" />
-          </BuilderIconBtn>
+          {previewExamId != null && (
+            <Link
+              to={examPreviewPath(previewExamId, question.id)}
+              className="text-xs px-2 py-1 border border-border rounded hover:bg-accent"
+            >
+              Preview
+            </Link>
+          )}
+          {editable && (
+            <>
+              <button
+                type="button"
+                onClick={() => onEdit(question)}
+                className="text-xs px-2 py-1 border border-border rounded hover:bg-accent"
+              >
+                Edit
+              </button>
+              <BuilderIconBtn onClick={() => onDelete(question)} label="Delete">
+                <Trash2 className="w-4 h-4 text-status-alert" />
+              </BuilderIconBtn>
+            </>
+          )}
         </div>
       )}
     </div>
   );
-}
+});
 
 interface SortableQuestionListProps {
   questions: Question[];
-  isDraft: boolean;
+  sectionTitleById: Map<number, string>;
+  editable: boolean;
+  previewExamId?: number;
   onEdit: (q: Question) => void;
   onDelete: (q: Question) => void;
   onReorder: (questionIds: number[]) => void;
 }
 
-export function SortableQuestionList({
+export const SortableQuestionList = memo(function SortableQuestionList({
   questions,
-  isDraft,
+  sectionTitleById,
+  editable,
+  previewExamId,
   onEdit,
   onDelete,
   onReorder,
@@ -100,6 +132,8 @@ export function SortableQuestionList({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
+
+  const questionIds = useMemo(() => questions.map((q) => q.id), [questions]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -114,19 +148,21 @@ export function SortableQuestionList({
   if (questions.length === 0) {
     return (
       <div className="bg-card border border-border rounded-xl p-10 text-center text-muted-foreground text-sm">
-        No questions yet. Add manually or import from CSV below.
+        No questions yet. Add them one by one, or import a filled-in question form below.
       </div>
     );
   }
 
-  if (!isDraft) {
+  if (!editable) {
     return (
       <div className="bg-card border border-border rounded-xl divide-y divide-border">
         {questions.map((q) => (
           <SortableQuestionRow
             key={q.id}
             question={q}
-            isDraft={false}
+            sectionTitleById={sectionTitleById}
+            editable={false}
+            previewExamId={previewExamId}
             onEdit={onEdit}
             onDelete={onDelete}
           />
@@ -137,13 +173,15 @@ export function SortableQuestionList({
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      <SortableContext items={questions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
+      <SortableContext items={questionIds} strategy={verticalListSortingStrategy}>
         <div className="bg-card border border-border rounded-xl divide-y divide-border">
           {questions.map((q) => (
             <SortableQuestionRow
               key={q.id}
               question={q}
-              isDraft={isDraft}
+              sectionTitleById={sectionTitleById}
+              editable={editable}
+              previewExamId={previewExamId}
               onEdit={onEdit}
               onDelete={onDelete}
             />
@@ -152,4 +190,4 @@ export function SortableQuestionList({
       </SortableContext>
     </DndContext>
   );
-}
+});

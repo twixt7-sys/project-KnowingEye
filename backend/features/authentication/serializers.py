@@ -5,8 +5,10 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from shared.utils.images import AVATAR_MAX_DIMENSION, compress_image
 
-User = get_user_model()
+
+User =get_user_model()
 logger = logging.getLogger("knowing_eye")
 
 
@@ -32,12 +34,16 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "avatar_url", "email_verified"]
 
     def get_avatar_url(self, obj):
+        if not obj.avatar:
+            return None
+        # Absolute, because the frontend and API are deployed as separate
+        # origins (Vercel + Railway) - a root-relative "/media/..." path
+        # would resolve against whatever origin the SPA happens to be on,
+        # not the API that actually serves the file.
         request = self.context.get("request")
-        if obj.avatar and request is not None:
+        if request is not None:
             return request.build_absolute_uri(obj.avatar.url)
-        if obj.avatar:
-            return obj.avatar.url
-        return None
+        return obj.avatar.url
 
 
 class UserDetailSerializer(UserSerializer):
@@ -92,7 +98,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         size = getattr(value, "size", 0) or 0
         if size > 5 * 1024 * 1024:
             raise serializers.ValidationError("Profile photo must be 5 MB or smaller.")
-        return value
+        return compress_image(value, max_dimension=AVATAR_MAX_DIMENSION)
 
     def validate(self, data):
         if data["password"] != data.pop("password2"):
@@ -131,11 +137,15 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         try:
             issue_otp(user)
+            user._verification_email_sent = True
         except Exception:
             # Registration already succeeded (the user row is committed) - a
             # failed/misconfigured mail send shouldn't fail account creation.
             # The user can request a new code from the verify-email screen.
+            # _verification_email_sent (read by RegisterView) tells the
+            # frontend not to assume a code is already on its way.
             logger.exception("Failed to send registration OTP to user %s", user.id)
+            user._verification_email_sent = False
 
         return user
 
@@ -155,6 +165,11 @@ class AvatarUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["avatar"]
+
+    def validate_avatar(self, value):
+        if value is None:
+            return value
+        return compress_image(value, max_dimension=AVATAR_MAX_DIMENSION)
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

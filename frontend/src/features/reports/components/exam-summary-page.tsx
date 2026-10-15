@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Eye, Loader2, Users } from "@/shared/icons";
+import { ArrowLeft, Eye, Users } from "@/shared/icons";
 
 import { formatApiError } from "@/core/config/api";
 import { useAuth } from "@/core/providers/auth-provider";
@@ -10,6 +10,7 @@ import { IconAction } from "@/shared/components/common/icon-action";
 import { ScrollableDataTable } from "@/shared/components/common/scrollable-data-table";
 import { SectionPanel } from "@/shared/components/layout/section-panel";
 import { EmptyState } from "@/shared/components/patterns/empty-state";
+import { TableLoadingRow } from "@/shared/components/patterns/loading-state";
 import { PageHeaderV2 } from "@/shared/components/patterns/page-header-v2";
 import { usePagination } from "@/shared/hooks/use-pagination";
 
@@ -52,14 +53,6 @@ export function ExamSummaryPage() {
       ? formatApiError(sessionsQuery.error ?? analyticsQuery.error, "Failed to load exam summary.")
       : null;
 
-  if (sessionsQuery.isLoading && sessions.length === 0) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="page-flow">
       <Link
@@ -86,7 +79,7 @@ export function ExamSummaryPage() {
         }
       />
 
-      {analytics && analytics.questions.length > 0 && (
+      {(analyticsQuery.isLoading || (analytics?.questions.length ?? 0) > 0) && (
         <SectionPanel
           title="Item analysis"
           description="Per-question difficulty at a glance — correctness and average time spent."
@@ -102,7 +95,10 @@ export function ExamSummaryPage() {
                 </tr>
               </thead>
               <tbody>
-                {analytics.questions.map((q) => (
+                {analyticsQuery.isLoading && (
+                  <TableLoadingRow colSpan={4} label="Loading item analysis…" />
+                )}
+                {analytics?.questions.map((q) => (
                   <tr key={q.question_id}>
                     <td className="font-mono text-sm tabular-nums">{q.order}</td>
                     <td className="capitalize text-muted-foreground">
@@ -137,7 +133,9 @@ export function ExamSummaryPage() {
               </tr>
             </thead>
             <tbody>
-              {sessions.length === 0 ? (
+              {sessionsQuery.isLoading ? (
+                <TableLoadingRow colSpan={6} label="Loading sessions…" />
+              ) : sessions.length === 0 ? (
                 <tr>
                   <td colSpan={6}>
                     <EmptyState

@@ -20,6 +20,7 @@ from ai.adapter import (
 )
 from ai.frame_utils import decode_base64_image
 from features.behavior.services import persist_analysis
+from features.monitoring.broadcast import broadcast_frame_result
 from features.session.models import ExamSession
 
 logger = logging.getLogger("knowing_eye.monitoring.views")
@@ -67,24 +68,31 @@ def receive_frame(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    from features.session.services import ensure_active_session, touch_setup_activity
+    from features.session.services import (
+        ensure_active_session,
+        refusal_body,
+        touch_setup_activity,
+    )
 
     if session.status == ExamSession.Status.SETUP:
         touch_setup_activity(session)
 
     if not ensure_active_session(session):
         session.refresh_from_db()
+        # The code tells an examinee who fell back to REST frames whether the
+        # session was terminated or ran out of time - it picks the screen.
         return Response(
-            {"error": "Session has expired due to time limit"},
+            refusal_body(session, "Session has expired due to time limit"),
             status=status.HTTP_400_BAD_REQUEST,
         )
 
     if session.status not in (
         ExamSession.Status.SETUP,
         ExamSession.Status.IN_PROGRESS,
+        ExamSession.Status.PAUSED,
     ):
         return Response(
-            {"error": "Session is not active"}, status=status.HTTP_400_BAD_REQUEST
+            refusal_body(session, "Session is not active"), status=status.HTTP_400_BAD_REQUEST
         )
 
     try:
@@ -96,7 +104,13 @@ def receive_frame(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
+    if session.status == ExamSession.Status.PAUSED:
+        # Keep the live picture flowing to the proctor, but raise no alerts
+        # while the exam is paused (persist_analysis also records nothing).
+        analysis = {**analysis, "alerts": []}
+
     persisted = persist_analysis(session, analysis)
+    broadcast_frame_result(session, request.user, frame, analysis)
 
     return Response(
         {
@@ -113,11 +127,21 @@ def receive_frame(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def enroll_reference_view(request):
-    """POST /api/monitoring/enroll/  - store a reference face for a session."""
+    """POST /api/monitoring/enroll/  - store a reference face for a session.
+
+    Accepts ``image`` (one frame) or ``images`` (up to 5 frames captured a
+    moment apart, fused into a single, steadier reference template).
+    """
+    images = request.data.get("images") or []
+    if not isinstance(images, list):
+        images = []
     image_data = request.data.get("image")
+    if image_data:
+        images = [image_data, *images]
+    images = images[:5]
     session_id = request.data.get("session_id")
 
-    if not image_data:
+    if not images:
         return Response({"error": "image is required"}, status=status.HTTP_400_BAD_REQUEST)
     if not session_id:
         return Response({"error": "session_id is required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -132,8 +156,8 @@ def enroll_reference_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    frame = decode_base64_image(image_data)
-    if frame is None:
+    frames = [f for f in (decode_base64_image(img) for img in images) if f is not None]
+    if not frames:
         return Response({"error": "invalid image"}, status=status.HTTP_400_BAD_REQUEST)
 
     from features.session.services import ensure_active_session, touch_setup_activity
@@ -148,12 +172,13 @@ def enroll_reference_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    result = _enroll_reference(frame, session=session)
+    result = _enroll_reference(frames, session=session)
     logger.info(
-        "enroll session=%s ok=%s backend=%s",
+        "enroll session=%s ok=%s backend=%s frames=%d",
         session_id,
         result.get("ok"),
         result.get("backend"),
+        len(frames),
     )
     return Response({**result, "session_id": str(session_id)})
 

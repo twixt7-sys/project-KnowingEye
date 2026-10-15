@@ -30,6 +30,7 @@ class BehaviorTemporalTracker:
 
     * **no_face** - only after face missing for ``no_face_grace_seconds``
     * **leaving_seat** - face visible but upper-body keypoints missing for grace period
+      (not raised while the face is that of the recognised examinee)
     * **suspicious_pattern** - repeated flags within a sliding time window
     """
 
@@ -62,9 +63,16 @@ class BehaviorTemporalTracker:
         now = time.monotonic()
         state = self._states.setdefault(str(session_id), _SessionState())
         face_count = result.face.count
+        # A detected identity (the enrolled face was recognised) proves a face is
+        # present even if the detector's face count is 0 this frame.
+        identity_pct = result.metrics.identity_match_pct
+        identity_detected = (
+            identity_pct is not None and identity_pct >= result.metrics.alert_threshold_pct
+        )
+        face_present = face_count > 0 or identity_detected
 
         # --- no_face grace timer ---
-        if face_count == 0:
+        if not face_present:
             if state.no_face_since is None:
                 state.no_face_since = now
             no_face_elapsed = now - state.no_face_since
@@ -73,7 +81,11 @@ class BehaviorTemporalTracker:
             no_face_elapsed = 0.0
 
         # --- leaving seat: face present but upper body not detected ---
-        leaving_active = face_count > 0 and not pose_detected
+        # Not while the recognised examinee's face box is in view: they are
+        # evidently still seated and close framing just hides the shoulders
+        # (the same rule keeps Up within 50-100%, see upper_body_presence_pct).
+        verified_in_seat = identity_detected and face_count > 0
+        leaving_active = face_present and not pose_detected and not verified_in_seat
         if leaving_active:
             if state.leaving_seat_since is None:
                 state.leaving_seat_since = now
@@ -100,7 +112,7 @@ class BehaviorTemporalTracker:
                 continue
             alerts.append(alert)
 
-        if face_count == 0 and no_face_elapsed >= self._no_face_grace:
+        if not face_present and no_face_elapsed >= self._no_face_grace:
             self._ensure_event(
                 events,
                 alerts,
@@ -152,20 +164,23 @@ class BehaviorTemporalTracker:
             )
 
         metrics = result.metrics
-        if face_count == 0:
-            from ai.knowing_eye.behavior.normalize import overall_compliance_pct
+        if not face_present:
+            from ai.knowing_eye.behavior.normalize import exam_behavior_index_pct
 
+            ebi, ebi_count = exam_behavior_index_pct(
+                0.0,
+                0.0,
+                result.metrics.posture_compliance_pct,
+                result.metrics.identity_match_pct,
+            )
             metrics = MetricScores(
                 face_presence_pct=0.0,
                 gaze_focus_pct=0.0,
                 posture_compliance_pct=result.metrics.posture_compliance_pct,
                 identity_match_pct=result.metrics.identity_match_pct,
-                overall_compliance_pct=overall_compliance_pct(
-                    0.0,
-                    0.0,
-                    result.metrics.posture_compliance_pct,
-                    result.metrics.identity_match_pct,
-                ),
+                overall_compliance_pct=ebi,
+                exam_behavior_index_pct=ebi,
+                ebi_indicator_count=ebi_count,
                 alert_threshold_pct=result.metrics.alert_threshold_pct,
             )
 

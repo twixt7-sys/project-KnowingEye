@@ -7,6 +7,7 @@ verification" and "add email verification".
 from __future__ import annotations
 
 import re
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core import mail
@@ -111,6 +112,26 @@ class OtpServiceTests(APITestCase):
         with self.assertRaises(ValidationError):
             issue_otp(self.user)
 
+    def test_issue_otp_returns_plaintext_code(self):
+        code = issue_otp(self.user)
+        self.assertRegex(code, r"^\d{6}$")
+        self.assertIn(code, mail.outbox[-1].body)
+
+    def test_issue_otp_raises_friendly_error_when_send_fails(self):
+        from rest_framework.exceptions import ValidationError
+
+        with patch(
+            "features.authentication.otp_service.send_mail",
+            side_effect=RuntimeError("smtp down"),
+        ):
+            with self.assertRaises(ValidationError) as ctx:
+                issue_otp(self.user)
+        self.assertIn("couldn't send", str(ctx.exception.detail["detail"]))
+        # The failed attempt shouldn't leave a code the user can never see.
+        self.assertEqual(
+            EmailVerification.objects.filter(user=self.user, consumed_at__isnull=True).count(), 0
+        )
+
 
 class OtpEndpointTests(APITestCase):
     def setUp(self):
@@ -138,8 +159,43 @@ class OtpEndpointTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(len(mail.outbox), 1)
+        self.assertTrue(response.data["verification_email_sent"])
         user = User.objects.get(username="otp_register")
         self.assertFalse(user.email_verified)
+
+    def test_registration_reports_failed_otp_send_without_failing_registration(self):
+        self.client.force_authenticate(user=None)
+        with patch(
+            "features.authentication.otp_service.send_mail",
+            side_effect=RuntimeError("smtp down"),
+        ):
+            response = self.client.post(
+                "/api/auth/register/",
+                {
+                    "username": "otp_register_fail",
+                    "email": "otp_register_fail@test.local",
+                    "password": "TestPass123!",
+                    "password2": "TestPass123!",
+                    "first_name": "Otp",
+                    "last_name": "Fail",
+                },
+                format="multipart",
+            )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertFalse(response.data["verification_email_sent"])
+        self.assertTrue(User.objects.filter(username="otp_register_fail").exists())
+
+    @override_settings(DEBUG=True, OTP_DEBUG_RETURN_CODE=True)
+    def test_request_verification_echoes_debug_code_when_enabled(self):
+        response = self.client.post("/api/auth/profile/verify-email/request/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertRegex(response.data["debug_code"], r"^\d{6}$")
+        self.assertEqual(response.data["debug_code"], _code_from_outbox())
+
+    def test_request_verification_omits_debug_code_by_default(self):
+        response = self.client.post("/api/auth/profile/verify-email/request/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotIn("debug_code", response.data)
 
     def test_request_then_confirm_verification(self):
         response = self.client.post("/api/auth/profile/verify-email/request/")

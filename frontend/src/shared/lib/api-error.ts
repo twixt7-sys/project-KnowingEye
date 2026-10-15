@@ -11,6 +11,30 @@ export class ApiError extends Error {
   detail(): string {
     return extractApiErrorMessage(this.payload);
   }
+
+  /**
+   * Machine-readable reason, when the server sent one (e.g. `session_paused`).
+   * Switch on this, not on `detail()`: the prose is for display and can change.
+   */
+  get code(): string | undefined {
+    const code = (this.payload as { code?: unknown } | null)?.code;
+    return typeof code === "string" ? code : undefined;
+  }
+}
+
+// Reasons the backend refuses an examinee's request because of the session's
+// state (see `refusal_body` in features/session/services.py).
+const PROCTOR_HALT_CODES = ["session_paused", "session_terminated"];
+const SESSION_OVER_CODES = ["session_terminated", "session_expired", "session_submitted"];
+
+/** The server refused because a proctor paused or terminated the session. */
+export function isProctorHalt(err: unknown): boolean {
+  return err instanceof ApiError && PROCTOR_HALT_CODES.includes(err.code ?? "");
+}
+
+/** The server refused because the attempt is over for good (terminated, timed out, or submitted). */
+export function isSessionOver(err: unknown): boolean {
+  return err instanceof ApiError && SESSION_OVER_CODES.includes(err.code ?? "");
 }
 
 function statusFallback(status: number): string {

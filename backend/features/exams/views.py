@@ -12,9 +12,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from core.security.drf import IsAdminOrReadOnly
+from core.utils.api_cache import cache_get_response
 
 from . import services
-from .attachment_utils import validate_attachment_file
+from shared.utils.images import OPTION_IMAGE_MAX_DIMENSION
+
+from .attachment_utils import compress_attachment, validate_attachment_file
 from .models import (
     Department,
     Exam,
@@ -45,6 +48,41 @@ from .serializers import (
 User = get_user_model()
 
 
+def _store_option_image(request, exam: Exam, question_id: int | None = None) -> Response:
+    """Validate and store one option image, returning its absolute URL.
+
+    Shared by the exam-level endpoint (used while a question is still being
+    drafted and has no id yet) and the question-level one. The image is stored
+    under media/ like other question attachments but returned as a bare URL for
+    the client to place into that option's ``image`` field - options don't have
+    their own id to hang a QuestionAttachment row off of.
+    """
+    from django.core.files.storage import default_storage
+
+    services.assert_can_modify_exam(exam, request.user)
+    services.assert_questions_editable(exam)
+    uploaded = request.FILES.get("file")
+    if not uploaded:
+        return Response({"file": ["No file provided."]}, status=status.HTTP_400_BAD_REQUEST)
+    kind = validate_attachment_file(uploaded)
+    if kind != "image":
+        return Response(
+            {"file": ["Option images must be an image file (JPEG, PNG, GIF, or WebP)."]},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    uploaded = compress_attachment(uploaded, kind, OPTION_IMAGE_MAX_DIMENSION)
+    folder = f"questions/{exam.id}/{question_id}" if question_id else f"questions/{exam.id}/drafts"
+    path = default_storage.save(f"{folder}/options/{uploaded.name}", uploaded)
+    # The SPA (Vercel) and API (Railway) are separate origins in production,
+    # so a root-relative /media/... URL would resolve against the SPA host
+    # and 404. Make it absolute against the API host; a storage backend that
+    # already returns an absolute URL (e.g. S3) is left untouched.
+    url = default_storage.url(path)
+    if url.startswith("/"):
+        url = request.build_absolute_uri(url)
+    return Response({"url": url}, status=status.HTTP_201_CREATED)
+
+
 class DepartmentViewSet(viewsets.ModelViewSet):
     """CRUD for institutional departments (admin write, authenticated read)."""
 
@@ -61,6 +99,10 @@ class DepartmentViewSet(viewsets.ModelViewSet):
             if active_only in {"1", "true", "True"}:
                 qs = qs.filter(is_active=True)
         return qs
+
+    @cache_get_response("reference-data", ttl_setting="API_REFERENCE_CACHE_TTL_SECONDS")
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         department = self.get_object()
@@ -96,6 +138,10 @@ class ExamCategoryViewSet(viewsets.ModelViewSet):
                 qs = qs.filter(is_active=True)
         return qs
 
+    @cache_get_response("reference-data", ttl_setting="API_REFERENCE_CACHE_TTL_SECONDS")
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
     def destroy(self, request, *args, **kwargs):
         category = self.get_object()
         if category.exams.exists():
@@ -128,7 +174,7 @@ class ExamViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Return exams visible to the requester, prefetching for detail views."""
         qs = self.exam_service.visible_to(self.request.user)
-        if self.action == "retrieve":
+        if self.action in {"retrieve", "preview"}:
             qs = qs.prefetch_related("questions__attachments")
         return qs
 
@@ -166,8 +212,22 @@ class ExamViewSet(viewsets.ModelViewSet):
     def readiness(self, request, pk=None):
         """Return the publish-readiness report for an exam."""
         exam = self.get_object()
-        services.assert_can_modify_exam(exam, request.user)
+        services.assert_can_view_readiness(exam, request.user)
         return Response(services.exam_publish_readiness(exam))
+
+    @action(detail=True, methods=["get"])
+    def preview(self, request, pk=None):
+        """Return the exam as a student would be handed it, without an attempt.
+
+        Works on any exam status, including drafts, and writes nothing. Every
+        call is a fresh random draw, so the response is never cached.
+        """
+        payload = services.build_exam_preview(
+            self.get_object(), request.user, context={"request": request}
+        )
+        response = Response(payload)
+        response["Cache-Control"] = "no-store"
+        return response
 
     @action(detail=True, methods=["post"])
     def publish(self, request, pk=None):
@@ -176,7 +236,19 @@ class ExamViewSet(viewsets.ModelViewSet):
         return Response(
             {
                 "message": result.message,
-                "exam": ExamDetailSerializer(result.exam).data,
+                "exam": ExamDetailSerializer(result.exam, context={"request": request}).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["post"])
+    def unpublish(self, request, pk=None):
+        """Return a published, not-yet-attempted exam to draft."""
+        result = services.unpublish_exam(self.get_object(), request.user)
+        return Response(
+            {
+                "message": result.message,
+                "exam": ExamDetailSerializer(result.exam, context={"request": request}).data,
             },
             status=status.HTTP_200_OK,
         )
@@ -238,7 +310,19 @@ class ExamViewSet(viewsets.ModelViewSet):
         return Response(
             {
                 "message": result.message,
-                "exam": ExamDetailSerializer(result.exam).data,
+                "exam": ExamDetailSerializer(result.exam, context={"request": request}).data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["post"])
+    def unarchive(self, request, pk=None):
+        """Restore an archived exam to its pre-archive status."""
+        result = services.unarchive_exam(self.get_object(), request.user)
+        return Response(
+            {
+                "message": result.message,
+                "exam": ExamDetailSerializer(result.exam, context={"request": request}).data,
             },
             status=status.HTTP_200_OK,
         )
@@ -320,7 +404,7 @@ class ExamViewSet(viewsets.ModelViewSet):
             return Response(ExamSectionSerializer(qs, many=True).data)
 
         services.assert_can_modify_exam(exam, request.user)
-        services.assert_exam_editable(exam)
+        services.assert_questions_editable(exam)
         serializer = ExamSectionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         order = serializer.validated_data.get("order")
@@ -333,6 +417,27 @@ class ExamViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @action(detail=True, methods=["patch", "delete"], url_path=r"sections/(?P<section_id>\d+)")
+    def section_detail(self, request, pk=None, section_id=None):
+        """Update or remove a single section (title/instructions/order/paging)."""
+        from .serializers import ExamSectionSerializer
+
+        exam = self.get_object()
+        services.assert_can_modify_exam(exam, request.user)
+        services.assert_questions_editable(exam)
+        section = get_object_or_404(exam.sections, pk=section_id)
+
+        if request.method == "DELETE":
+            # Questions pointing at this section fall back to unsectioned
+            # (Question.section is SET_NULL) rather than blocking deletion.
+            section.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        serializer = ExamSectionSerializer(section, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(ExamSectionSerializer(section).data)
+
     @action(detail=True, methods=["get", "post"], url_path="pools")
     def pools(self, request, pk=None):
         """List or create question pools."""
@@ -344,7 +449,7 @@ class ExamViewSet(viewsets.ModelViewSet):
             return Response(QuestionPoolSerializer(qs, many=True).data)
 
         services.assert_can_modify_exam(exam, request.user)
-        services.assert_exam_editable(exam)
+        services.assert_questions_editable(exam)
         serializer = QuestionPoolSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         order = serializer.validated_data.get("order")
@@ -363,19 +468,32 @@ class ExamViewSet(viewsets.ModelViewSet):
         exam = self.get_object()
         ser = QuestionImportSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        created = services.import_questions(
-            exam,
-            request.user,
-            csv_text=ser.validated_data.get("csv"),
-            items=ser.validated_data.get("questions"),
-        )
+        source = {
+            "csv_text": ser.validated_data.get("csv"),
+            "items": ser.validated_data.get("questions"),
+        }
+        if ser.validated_data["dry_run"]:
+            validated = services.validate_question_import(exam, request.user, **source)
+            return Response({"valid": True, "count": len(validated)})
+        created = services.import_questions(exam, request.user, **source)
         return Response(
             {
                 "imported": len(created),
-                "questions": QuestionDetailSerializer(created, many=True).data,
+                "questions": QuestionDetailSerializer(
+                    created, many=True, context={"request": request}
+                ).data,
             },
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=True, methods=["post"], url_path="option-image")
+    def upload_option_image(self, request, pk=None):
+        """Upload an answer-choice image before its question has been saved.
+
+        Lets the builder attach pictures to choices while a new question is
+        still a draft, instead of forcing a save-then-edit round trip.
+        """
+        return _store_option_image(request, self.get_object())
 
     @action(detail=True, methods=["post"], url_path="questions/reorder")
     def reorder_questions(self, request, pk=None):
@@ -386,7 +504,9 @@ class ExamViewSet(viewsets.ModelViewSet):
         ordered = services.reorder_questions(
             exam, request.user, ser.validated_data["question_ids"]
         )
-        return Response(QuestionDetailSerializer(ordered, many=True).data)
+        return Response(
+            QuestionDetailSerializer(ordered, many=True, context={"request": request}).data
+        )
 
 
 class QuestionViewSet(viewsets.ModelViewSet):
@@ -433,11 +553,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         qs = self.filter_queryset(self.get_queryset())
         if request.user.is_admin() or security.has_module(request.user, "exams"):
-            serializer = QuestionDetailSerializer(qs, many=True)
+            serializer = QuestionDetailSerializer(qs, many=True, context={"request": request})
         else:
             from .serializers import QuestionTakeSerializer
 
-            serializer = QuestionTakeSerializer(qs, many=True)
+            serializer = QuestionTakeSerializer(qs, many=True, context={"request": request})
         return Response(serializer.data)
 
     def perform_create(self, serializer):
@@ -460,7 +580,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         """Attach an uploaded media file to a question after validation."""
         question = self.get_object()
         services.assert_can_modify_exam(question.exam, request.user)
-        services.assert_exam_editable(question.exam)
+        services.assert_questions_editable(question.exam)
         uploaded = request.FILES.get("file")
         if not uploaded:
             return Response({"file": ["No file provided."]}, status=status.HTTP_400_BAD_REQUEST)
@@ -485,7 +605,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         """Delete a question attachment and its underlying stored file."""
         question = self.get_object()
         services.assert_can_modify_exam(question.exam, request.user)
-        services.assert_exam_editable(question.exam)
+        services.assert_questions_editable(question.exam)
         attachment = get_object_or_404(question.attachments, pk=attachment_id)
         attachment.file.delete(save=False)
         attachment.delete()
@@ -497,30 +617,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
         Directive Area 03 ("Question management"): abstract/psychological
         items need image-based answer choices, not just image-based question
-        bodies. The image is stored under media/ like other question
-        attachments, but returned as a bare URL for the client to place into
-        that option's ``image`` field - options don't have their own id to
-        hang a QuestionAttachment row off of.
+        bodies.
         """
-        from django.core.files.storage import default_storage
-
         question = self.get_object()
-        services.assert_can_modify_exam(question.exam, request.user)
-        services.assert_exam_editable(question.exam)
-        uploaded = request.FILES.get("file")
-        if not uploaded:
-            return Response({"file": ["No file provided."]}, status=status.HTTP_400_BAD_REQUEST)
-        kind = validate_attachment_file(uploaded)
-        if kind != "image":
-            return Response(
-                {"file": ["Option images must be an image file (JPEG, PNG, GIF, or WebP)."]},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        path = default_storage.save(
-            f"questions/{question.exam_id}/{question.id}/options/{uploaded.name}",
-            uploaded,
-        )
-        url = default_storage.url(path)
-        if not url.startswith(("http://", "https://")):
-            url = request.build_absolute_uri(url)
-        return Response({"url": url}, status=status.HTTP_201_CREATED)
+        return _store_option_image(request, question.exam, question.id)

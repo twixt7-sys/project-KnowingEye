@@ -1,9 +1,16 @@
+import shutil
+import tempfile
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 from features.exams.models import Department, Exam, Question, QuestionAttachment
+from features.session.models import ExamSession
 
 User = get_user_model()
 
@@ -27,6 +34,7 @@ class ExamsAPITests(APITestCase):
             name="Institute of Information Technology",
             abbreviation="IIT",
         )
+        now = timezone.now()
         self.exam = Exam.objects.create(
             title="Sample Exam",
             description="Test",
@@ -34,6 +42,8 @@ class ExamsAPITests(APITestCase):
             passing_score=60,
             status=Exam.Status.DRAFT,
             created_by=self.admin,
+            available_from=now,
+            available_until=now + timedelta(days=7),
         )
         Question.objects.create(
             exam=self.exam,
@@ -82,6 +92,34 @@ class ExamsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["question_text"], "Capital of France?")
 
+    def test_created_question_returns_id_so_a_picture_can_be_attached(self):
+        """The builder uploads a new question's pictures using the id from the create response."""
+        media_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media_root, ignore_errors=True)
+        with override_settings(MEDIA_ROOT=media_root):
+            created = self.client.post(
+                f"/api/exams/{self.exam.id}/questions/",
+                {
+                    "question_text": "Which shape is shown?",
+                    "question_type": "multiple_choice",
+                    "options": [{"text": "Circle", "image": None}, {"text": "Square", "image": None}],
+                    "correct_answer": "Circle",
+                    "points": 1,
+                },
+                format="json",
+            )
+            self.assertEqual(created.status_code, status.HTTP_201_CREATED)
+            self.assertIsInstance(created.data["id"], int)
+
+            png = SimpleUploadedFile("shape.png", b"\x89PNG\r\n\x1a\n", content_type="image/png")
+            upload = self.client.post(
+                f"/api/exams/{self.exam.id}/questions/{created.data['id']}/attachments/",
+                {"file": png},
+                format="multipart",
+            )
+            self.assertEqual(upload.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(upload.data["kind"], QuestionAttachment.Kind.IMAGE)
+
     def test_import_questions_from_csv_template(self):
         response = self.client.post(
             f"/api/exams/{self.exam.id}/questions/import/",
@@ -90,6 +128,92 @@ class ExamsAPITests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["imported"], 3)
+
+    def _import_items(self, items, **extra):
+        return self.client.post(
+            f"/api/exams/{self.exam.id}/questions/import/",
+            {"questions": items, **extra},
+            format="json",
+        )
+
+    def test_import_form_items_resolve_letters_and_friendly_types(self):
+        response = self._import_items(
+            [
+                {
+                    "row": 14,
+                    "question_text": "Capital of France?",
+                    "question_type": "Multiple Choice",
+                    "options": ["London", "Paris", "Berlin", "", ""],
+                    "correct_answer": "b",
+                    "points": 2.0,
+                },
+                {
+                    "row": 15,
+                    "question_text": "The sun is a star.",
+                    "question_type": "True/False",
+                    "options": ["", "", "", "", ""],
+                    "correct_answer": True,
+                    "points": "",
+                },
+            ]
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        mc, tf = response.data["questions"]
+        self.assertEqual(mc["correct_answer"], "Paris")
+        self.assertEqual(mc["points"], 2)
+        self.assertEqual([o["text"] for o in mc["options"]], ["London", "Paris", "Berlin"])
+        self.assertEqual(tf["question_type"], "true_false")
+        self.assertEqual(tf["correct_answer"], "true")
+
+    def test_import_reports_issues_by_sheet_row_and_saves_nothing(self):
+        before = Question.objects.filter(exam=self.exam).count()
+        response = self._import_items(
+            [
+                {
+                    "row": 14,
+                    "question_text": "OK row",
+                    "question_type": "essay",
+                    "correct_answer": "Key points",
+                },
+                {
+                    "row": 15,
+                    "question_text": "Gap row",
+                    "question_type": "multiple_choice",
+                    "options": ["One", "", "Three"],
+                    "correct_answer": "A",
+                },
+                {
+                    "row": 16,
+                    "question_text": "Bad letter",
+                    "question_type": "mcq",
+                    "options": ["One", "Two"],
+                    "correct_answer": "D",
+                    "points": "two",
+                },
+                {"row": 17, "question_text": "", "question_type": "quiz", "correct_answer": ""},
+            ]
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        details = response.data["error"]["details"]
+        by_row = {}
+        for issue in details["issues"]:
+            by_row.setdefault(int(issue["row"]), set()).add(issue["field"])
+        self.assertNotIn(14, by_row)
+        self.assertEqual(by_row[15], {"options"})
+        self.assertEqual(by_row[16], {"correct_answer", "points"})
+        self.assertEqual(by_row[17], {"question_text", "question_type", "correct_answer"})
+        self.assertTrue(any(line.startswith("Row 16:") for line in details["errors"]))
+        self.assertEqual(Question.objects.filter(exam=self.exam).count(), before)
+
+    def test_import_dry_run_validates_without_saving(self):
+        before = Question.objects.filter(exam=self.exam).count()
+        response = self._import_items(
+            [{"row": 14, "question_text": "Q?", "question_type": "short_answer", "correct_answer": "A"}],
+            dry_run=True,
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {"valid": True, "count": 1})
+        self.assertEqual(Question.objects.filter(exam=self.exam).count(), before)
 
     def test_list_questions_returns_admin_detail(self):
         response = self.client.get(f"/api/exams/{self.exam.id}/questions/")
@@ -112,6 +236,173 @@ class ExamsAPITests(APITestCase):
         list_q = self.client.get(f"/api/exams/{self.exam.id}/questions/")
         self.assertEqual(len(list_q.data[0]["attachments"]), 1)
 
+    def test_attachment_urls_are_absolute_in_list_and_reorder(self):
+        """Frontend and API are separate origins in prod, so URLs must carry the host."""
+        media_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media_root, ignore_errors=True)
+        with override_settings(MEDIA_ROOT=media_root):
+            question = Question.objects.get(exam=self.exam)
+            png = SimpleUploadedFile("chart.png", b"\x89PNG\r\n\x1a\n", content_type="image/png")
+            upload = self.client.post(
+                f"/api/exams/{self.exam.id}/questions/{question.id}/attachments/",
+                {"file": png},
+                format="multipart",
+            )
+            self.assertEqual(upload.status_code, status.HTTP_201_CREATED)
+            self.assertTrue(upload.data["url"].startswith("http"))
+
+            listed = self.client.get(f"/api/exams/{self.exam.id}/questions/")
+            self.assertTrue(listed.data[0]["attachments"][0]["url"].startswith("http"))
+
+            reordered = self.client.post(
+                f"/api/exams/{self.exam.id}/questions/reorder/",
+                {"question_ids": [question.id]},
+                format="json",
+            )
+            self.assertEqual(reordered.status_code, status.HTTP_200_OK)
+            self.assertTrue(reordered.data[0]["attachments"][0]["url"].startswith("http"))
+
+    def test_upload_option_image_returns_absolute_url(self):
+        media_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media_root, ignore_errors=True)
+        with override_settings(MEDIA_ROOT=media_root):
+            question = Question.objects.get(exam=self.exam)
+            png = SimpleUploadedFile("opt.png", b"\x89PNG\r\n\x1a\n", content_type="image/png")
+            response = self.client.post(
+                f"/api/exams/{self.exam.id}/questions/{question.id}/option-image/",
+                {"file": png},
+                format="multipart",
+            )
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertTrue(response.data["url"].startswith("http"))
+            self.assertIn("/media/questions/", response.data["url"])
+
+    def test_upload_option_image_before_question_is_saved(self):
+        """Choices can get pictures while the question is still a draft."""
+        media_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media_root, ignore_errors=True)
+        with override_settings(MEDIA_ROOT=media_root):
+            png = SimpleUploadedFile("opt.png", b"\x89PNG\r\n\x1a\n", content_type="image/png")
+            response = self.client.post(
+                f"/api/exams/{self.exam.id}/option-image/",
+                {"file": png},
+                format="multipart",
+            )
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertTrue(response.data["url"].startswith("http"))
+            self.assertIn(f"/media/questions/{self.exam.id}/drafts/", response.data["url"])
+
+    def test_draft_option_image_rejects_non_images(self):
+        pdf = SimpleUploadedFile("doc.pdf", b"%PDF-1.4", content_type="application/pdf")
+        response = self.client.post(
+            f"/api/exams/{self.exam.id}/option-image/",
+            {"file": pdf},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_multiple_choice_options_may_be_pictures_only(self):
+        """A choice with a picture and no text is accepted and gets a stable label."""
+        response = self.client.post(
+            f"/api/exams/{self.exam.id}/questions/",
+            {
+                "question_text": "Which shape completes the pattern?",
+                "question_type": "multiple_choice",
+                "options": [
+                    {"text": "", "image": "http://testserver/media/a.png"},
+                    {"text": "", "image": "http://testserver/media/b.png"},
+                    {"text": "", "image": None},
+                ],
+                "correct_answer": "Option 2",
+                "points": 1,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        question = Question.objects.get(pk=response.data["id"])
+        self.assertEqual(
+            question.options,
+            [
+                {"text": "Option 1", "image": "http://testserver/media/a.png"},
+                {"text": "Option 2", "image": "http://testserver/media/b.png"},
+                {"text": "", "image": None},
+            ],
+        )
+
+    def test_blank_options_without_pictures_still_do_not_count(self):
+        response = self.client.post(
+            f"/api/exams/{self.exam.id}/questions/",
+            {
+                "question_text": "Pick one",
+                "question_type": "multiple_choice",
+                "options": [
+                    {"text": "", "image": None},
+                    {"text": "Only one", "image": None},
+                ],
+                "correct_answer": "Only one",
+                "points": 1,
+            },
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _post_choices(self, choices, correct):
+        return self.client.post(
+            f"/api/exams/{self.exam.id}/questions/",
+            {
+                "question_text": "Pick one",
+                "question_type": "multiple_choice",
+                "options": choices,
+                "correct_answer": correct,
+                "points": 1,
+            },
+            format="json",
+        )
+
+    def test_multiple_choice_accepts_any_count_from_two_to_ten(self):
+        for count in (2, 3, 7, 10):
+            choices = [f"Choice {n}" for n in range(1, count + 1)]
+            response = self._post_choices(choices, "Choice 1")
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED, (count, response.data))
+            self.assertEqual(len(Question.objects.get(pk=response.data["id"]).options), count)
+
+    def test_multiple_choice_rejects_more_than_ten_options(self):
+        choices = [f"Choice {n}" for n in range(1, 12)]
+        response = self._post_choices(choices, "Choice 1")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("at most 10", str(response.data))
+
+    def test_blank_rows_do_not_count_towards_the_maximum(self):
+        choices = [f"Choice {n}" for n in range(1, 11)] + ["", " "]
+        response = self._post_choices(choices, "Choice 1")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+
+    def test_multiple_choice_rejects_duplicate_options(self):
+        """Grading matches by text, so a repeat of the right answer would double-count."""
+        response = self._post_choices(["Paris", "London", " paris "], "Paris")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("different", str(response.data))
+
+    def test_picture_only_options_are_not_duplicates_of_each_other(self):
+        response = self._post_choices(
+            [
+                {"text": "", "image": "http://testserver/media/a.png"},
+                {"text": "", "image": "http://testserver/media/b.png"},
+            ],
+            "Option 1",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+
+    def test_upload_rejects_unsupported_file_type(self):
+        question = Question.objects.get(exam=self.exam)
+        exe = SimpleUploadedFile("run.exe", b"MZ", content_type="application/x-msdownload")
+        response = self.client.post(
+            f"/api/exams/{self.exam.id}/questions/{question.id}/attachments/",
+            {"file": exe},
+            format="multipart",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_publish_exam(self):
         response = self.client.post(f"/api/exams/{self.exam.id}/publish/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -126,6 +417,53 @@ class ExamsAPITests(APITestCase):
         self.exam.refresh_from_db()
         self.assertEqual(self.exam.status, Exam.Status.ARCHIVED)
 
+    def test_archive_records_previous_status(self):
+        self.exam.status = Exam.Status.ACTIVE
+        self.exam.save(update_fields=["status"])
+        self.client.post(f"/api/exams/{self.exam.id}/archive/")
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.previous_status, Exam.Status.ACTIVE)
+
+    def test_unarchive_restores_active_exam(self):
+        self.exam.status = Exam.Status.ACTIVE
+        self.exam.save(update_fields=["status"])
+        self.client.post(f"/api/exams/{self.exam.id}/archive/")
+        response = self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["exam"]["status"], Exam.Status.ACTIVE)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ACTIVE)
+        self.assertEqual(self.exam.previous_status, "")
+
+    def test_unarchive_restores_draft_exam(self):
+        self.client.post(f"/api/exams/{self.exam.id}/archive/")
+        response = self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.DRAFT)
+
+    def test_unarchive_without_recorded_status_falls_back_to_draft(self):
+        # Exams archived before ``previous_status`` existed have no record.
+        Exam.objects.filter(pk=self.exam.pk).update(status=Exam.Status.ARCHIVED, previous_status="")
+        response = self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.DRAFT)
+
+    def test_cannot_unarchive_exam_that_is_not_archived(self):
+        response = self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.DRAFT)
+
+    def test_unarchived_draft_is_editable_again(self):
+        self.client.post(f"/api/exams/{self.exam.id}/archive/")
+        self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        response = self.client.patch(
+            f"/api/exams/{self.exam.id}/", {"title": "Back again"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_cannot_edit_active_exam(self):
         self.exam.status = Exam.Status.ACTIVE
         self.exam.save(update_fields=["status"])
@@ -136,9 +474,16 @@ class ExamsAPITests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_cannot_add_question_to_active_exam(self):
+    def test_cannot_add_question_to_attempted_active_exam(self):
         self.exam.status = Exam.Status.ACTIVE
         self.exam.save(update_fields=["status"])
+        student = User.objects.create_user(
+            username="attempted", email="attempted@test.local", password="TestPass123!",
+            role=User.Role.STUDENT,
+        )
+        ExamSession.objects.create(
+            exam=self.exam, user=student, status=ExamSession.Status.COMPLETED,
+        )
         response = self.client.post(
             f"/api/exams/{self.exam.id}/questions/",
             {

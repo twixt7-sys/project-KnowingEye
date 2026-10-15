@@ -1,0 +1,20 @@
+{
+  "exam_id": 38,
+  "sessions": [
+    {
+      "user": "loadtest_user_0",
+      "session_id": "02f7ee0a-c648-471c-b6d5-772cf8e7e874",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg3MzYxNzQ4LCJpYXQiOjE3ODczNTgxNDgsImp0aSI6ImNjMTI4ZTk3M2Q3MzRkOGQ4YjNhOWU1YjM3YzkzZDBhIiwidXNlcl9pZCI6IjUxIn0.S4U9hgf5CIInsV8oHJp0BC6ZjWZb_lyf6KQZOXfYCTY"
+    },
+    {
+      "user": "loadtest_user_1",
+      "session_id": "94eb576e-96e3-4a54-86c9-ebc8fc8745d8",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg3MzYxNzQ4LCJpYXQiOjE3ODczNTgxNDgsImp0aSI6IjQyYmYzYTlmYjBjODQ5OWRhMTk4NGIzZWYzMmFiZjk0IiwidXNlcl9pZCI6IjUyIn0.9wadfS2KDNnz1EEnbmAWbeXlnl8AgrRaAO3FsL6_tV8"
+    },
+    {
+      "user": "loadtest_user_2",
+      "session_id": "ce061122-db84-4182-852e-efd3e3e53a75",
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg3MzYxNzQ4LCJpYXQiOjE3ODczNTgxNDgsImp0aSI6IjA3MmVlMDQwY2YxZjRhNzc4OWQxNjkwMmM1NWI0NzRkIiwidXNlcl9pZCI6IjUzIn0.lKjYPA2jHdAhnhpt6fk3c7Xi9m9U6O3d2_VO2P0h7XE"
+    }
+  ]
+}

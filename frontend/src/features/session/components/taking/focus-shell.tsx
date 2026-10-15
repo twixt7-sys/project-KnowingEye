@@ -1,27 +1,38 @@
 import { AlertTriangle, Camera, Loader2 } from "@/shared/icons";
-import type { ClipboardEvent, MouseEvent, ReactNode } from "react";
+import type { ClipboardEvent, DragEvent, MouseEvent, ReactNode } from "react";
 
 import { ExamTimer } from "@/features/session/components/taking/exam-timer";
+import { PreviewBanner } from "@/features/session/components/taking/preview-banner";
 
 interface FocusShellProps {
   monitoringEnabled: boolean;
+  disableCopyPaste: boolean;
   webcamActive: boolean;
   behaviorAlerts: string[];
   tabSwitchWarning?: string | null;
   timeRemaining: number;
+  /** A proctor has paused the exam: the clock is stopped and submitting is disabled. */
+  paused?: boolean;
   submitting: boolean;
   onSubmitClick: () => void;
+  /** Examiner preview: no deterrents (examiners need to select and copy), a
+   * "nothing is saved" banner, and "End preview" in place of Submit. */
+  preview?: boolean;
+  onExitPreview?: () => void;
   children: ReactNode;
 }
 
 /** Directive Area 04 ("Browser-side deterrents", P2): right-click, selection,
  * and copy are disabled on the exam chrome (question text, navigator) to
  * deter casually copying exam content out - but never on an actual form
- * field, since a student must still be able to select/cut/copy/paste while
- * editing their own short-answer or essay response. These are deterrents,
- * not security: a determined user can still bypass them (browser devtools,
- * a second device) - see the disclaimer in docs/documentation/chapter2/
- * 03-system-design.html, "Browser-side deterrents." */
+ * field by default, since a student must still be able to select/cut/copy/
+ * paste while editing their own short-answer or essay response. Exams with
+ * `disable_copy_paste` set additionally block copy, cut, paste, and drag-drop
+ * inside form fields so answers must be typed, not pasted in; typing and
+ * selecting text in a field still work. These are
+ * deterrents, not security: a determined user can still bypass them (browser
+ * devtools, a second device) - see the disclaimer in docs/documentation/
+ * chapter2/03-system-design.html, "Browser-side deterrents." */
 function isEditableTarget(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
   if (!el) return false;
@@ -31,26 +42,45 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 export function FocusShell({
   monitoringEnabled,
+  disableCopyPaste,
   webcamActive,
   behaviorAlerts,
   tabSwitchWarning,
   timeRemaining,
+  paused = false,
   submitting,
   onSubmitClick,
+  preview = false,
+  onExitPreview,
   children,
 }: FocusShellProps) {
   const guard = <T extends MouseEvent | ClipboardEvent>(e: T) => {
     if (!isEditableTarget(e.target)) e.preventDefault();
   };
+  // Copy/cut are always blocked outside fields; with disableCopyPaste they're
+  // blocked inside fields too, and paste/drop are blocked everywhere.
+  const guardCopyCut = (e: ClipboardEvent) => {
+    if (disableCopyPaste || !isEditableTarget(e.target)) e.preventDefault();
+  };
+  const blockPaste = (e: ClipboardEvent | DragEvent) => {
+    if (disableCopyPaste) e.preventDefault();
+  };
 
   return (
     <div
-      className="min-h-screen bg-background select-none [&_input]:select-text [&_textarea]:select-text"
-      onContextMenu={guard}
-      onCopy={guard}
-      onCut={guard}
+      className={
+        preview
+          ? "min-h-screen bg-background"
+          : "min-h-screen bg-background select-none [&_input]:select-text [&_textarea]:select-text"
+      }
+      onContextMenu={preview ? undefined : guard}
+      onCopy={preview ? undefined : guardCopyCut}
+      onCut={preview ? undefined : guardCopyCut}
+      onPaste={preview ? undefined : blockPaste}
+      onDrop={preview ? undefined : blockPaste}
     >
       <div className="sticky top-0 z-50 bg-card border-b border-border">
+        {preview && <PreviewBanner onExit={onExitPreview} />}
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -85,14 +115,20 @@ export function FocusShell({
             </div>
 
             <div className="flex items-center gap-4">
-              <ExamTimer seconds={timeRemaining} />
+              <ExamTimer seconds={timeRemaining} paused={paused} />
               <button
                 type="button"
                 onClick={onSubmitClick}
-                disabled={submitting}
+                disabled={submitting || paused}
                 className="px-6 py-2 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Exam"}
+                {submitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : preview ? (
+                  "End preview"
+                ) : (
+                  "Submit Exam"
+                )}
               </button>
             </div>
           </div>

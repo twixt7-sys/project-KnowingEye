@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import status
@@ -35,7 +37,7 @@ class ReportsAPITests(APITestCase):
         )
         Alert.objects.create(
             session=self.session,
-            alert_type="multiple_faces",
+            alert_type="looking_away",
             severity="high",
             message="x",
             resolved=False,
@@ -89,3 +91,278 @@ class ReportsAPITests(APITestCase):
         self.assertIn("sessions", response.data)
         self.assertIn("alerts", response.data)
         self.assertIn("behaviors", response.data)
+
+
+class StudentSessionListTests(APITestCase):
+    """The examinee dashboard's "Completed" table: sort, filter, search, page."""
+
+    def setUp(self):
+        self.student = User.objects.create_user(
+            username="stu_list",
+            email="stu_list@test.local",
+            password="TestPass123!",
+            role=User.Role.STUDENT,
+        )
+        self.other = User.objects.create_user(
+            username="stu_other",
+            email="stu_other@test.local",
+            password="TestPass123!",
+            role=User.Role.STUDENT,
+        )
+        creator = User.objects.create_user(
+            username="creator_list",
+            email="creator_list@test.local",
+            password="TestPass123!",
+            role=User.Role.ADMIN,
+        )
+        self.exams = {
+            title: Exam.objects.create(
+                title=title,
+                description="",
+                duration_minutes=10,
+                passing_score=50,
+                status=Exam.Status.ACTIVE,
+                created_by=creator,
+            )
+            for title in ("Algebra", "Biology", "Chemistry", "Drawing")
+        }
+        now = timezone.now()
+        # (exam, days ago, score, passed) - Drawing is graded-pending (no score yet).
+        rows = [
+            ("Algebra", 4, 90, True),
+            ("Biology", 3, 40, False),
+            ("Chemistry", 2, 90, True),
+            ("Drawing", 1, None, None),
+        ]
+        self.sessions = {}
+        for title, days_ago, score, passed in rows:
+            session = ExamSession.objects.create(
+                exam=self.exams[title],
+                user=self.student,
+                status=ExamSession.Status.COMPLETED,
+                percentage_score=score,
+                passed=passed,
+                submitted_at=now - timedelta(days=days_ago),
+            )
+            ExamSession.objects.filter(pk=session.pk).update(
+                started_at=now - timedelta(days=days_ago, hours=1)
+            )
+            self.sessions[title] = session
+        # Another examinee's attempt must never leak into this student's list.
+        ExamSession.objects.create(
+            exam=self.exams["Algebra"],
+            user=self.other,
+            status=ExamSession.Status.COMPLETED,
+            percentage_score=100,
+            passed=True,
+        )
+        self.client.force_authenticate(user=self.student)
+
+    def _titles(self, query=""):
+        response = self.client.get(f"/api/reports/sessions/?status=completed{query}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return [row["exam_title"] for row in response.data["results"]]
+
+    def test_defaults_to_newest_first_and_is_scoped_to_the_student(self):
+        self.assertEqual(self._titles(), ["Drawing", "Chemistry", "Biology", "Algebra"])
+
+    def test_orders_by_started_at_in_both_directions(self):
+        self.assertEqual(
+            self._titles("&ordering=started_at"),
+            ["Algebra", "Biology", "Chemistry", "Drawing"],
+        )
+        self.assertEqual(
+            self._titles("&ordering=-started_at"),
+            ["Drawing", "Chemistry", "Biology", "Algebra"],
+        )
+
+    def test_orders_by_exam_title(self):
+        self.assertEqual(
+            self._titles("&ordering=exam_title"),
+            ["Algebra", "Biology", "Chemistry", "Drawing"],
+        )
+        self.assertEqual(
+            self._titles("&ordering=-exam_title"),
+            ["Drawing", "Chemistry", "Biology", "Algebra"],
+        )
+
+    def test_orders_by_score_with_unscored_rows_last_and_ties_newest_first(self):
+        # Algebra and Chemistry tie on 90; Chemistry is newer so it leads.
+        self.assertEqual(
+            self._titles("&ordering=-percentage_score"),
+            ["Chemistry", "Algebra", "Biology", "Drawing"],
+        )
+        # Ascending still pushes the unscored row to the end, not the front.
+        self.assertEqual(
+            self._titles("&ordering=percentage_score"),
+            ["Biology", "Chemistry", "Algebra", "Drawing"],
+        )
+
+    def test_unknown_ordering_falls_back_to_newest_first(self):
+        self.assertEqual(
+            self._titles("&ordering=user__password"),
+            ["Drawing", "Chemistry", "Biology", "Algebra"],
+        )
+
+    def test_passed_filter(self):
+        self.assertEqual(self._titles("&passed=true"), ["Chemistry", "Algebra"])
+        # "Not passed" means a recorded fail, not a still-pending result.
+        self.assertEqual(self._titles("&passed=false"), ["Biology"])
+        self.assertEqual(
+            self._titles("&passed=maybe"), ["Drawing", "Chemistry", "Biology", "Algebra"]
+        )
+
+    def test_filters_combine_with_search_and_pagination(self):
+        self.assertEqual(self._titles("&passed=true&search=alg"), ["Algebra"])
+
+        response = self.client.get(
+            "/api/reports/sessions/?status=completed&ordering=exam_title&page=2&page_size=3"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 4)
+        self.assertEqual([r["exam_title"] for r in response.data["results"]], ["Drawing"])
+
+
+class SessionReportPdfTests(APITestCase):
+    """GET /api/reports/sessions/<uuid>/pdf/ - examinee printable report."""
+
+    def setUp(self):
+        from features.exams.models import Question
+        from features.session.models import Response as ExamResponse
+
+        self.teacher = User.objects.create_user(
+            username="teacher_pdf",
+            email="teacher_pdf@test.local",
+            password="TestPass123!",
+            role=User.Role.ADMIN,
+        )
+        self.student = User.objects.create_user(
+            username="student_pdf",
+            email="student_pdf@test.local",
+            password="TestPass123!",
+            role=User.Role.STUDENT,
+            first_name="Ada",
+            last_name="Lovelace",
+        )
+        self.other_student = User.objects.create_user(
+            username="student_pdf_2",
+            email="student_pdf_2@test.local",
+            password="TestPass123!",
+            role=User.Role.STUDENT,
+        )
+        self.exam = Exam.objects.create(
+            title="Printable Exam",
+            description="",
+            duration_minutes=10,
+            passing_score=50,
+            status=Exam.Status.ACTIVE,
+            created_by=self.teacher,
+        )
+        question = Question.objects.create(
+            exam=self.exam,
+            question_text="2 + 2 = ?",
+            question_type=Question.QuestionType.SHORT_ANSWER,
+            correct_answer="SECRET_ANSWER_4",
+            points=1,
+        )
+        now = timezone.now()
+        self.session = ExamSession.objects.create(
+            exam=self.exam,
+            user=self.student,
+            status=ExamSession.Status.COMPLETED,
+            exam_started_at=now - timezone.timedelta(minutes=5),
+            submitted_at=now,
+            total_score=1,
+            percentage_score=100,
+            passed=True,
+            question_order=[question.id],
+        )
+        ExamResponse.objects.create(
+            session=self.session,
+            question=question,
+            answer_text="4",
+            is_correct=True,
+            points_awarded=1,
+        )
+        Alert.objects.create(
+            session=self.session,
+            alert_type="looking_away",
+            severity="low",
+            message="Looked away",
+        )
+
+    def _get(self, user, session_id=None):
+        self.client.force_authenticate(user=user)
+        return self.client.get(f"/api/reports/sessions/{session_id or self.session.id}/pdf/")
+
+    def test_student_downloads_own_report(self):
+        response = self._get(self.student)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("attachment;", response["Content-Disposition"])
+        self.assertTrue(response.content.startswith(b"%PDF"))
+
+    def test_student_cannot_download_other_students_report(self):
+        response = self._get(self.other_student)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_in_progress_session_is_rejected(self):
+        self.session.status = ExamSession.Status.IN_PROGRESS
+        self.session.save(update_fields=["status"])
+        response = self._get(self.student)
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+
+    def test_correct_answers_follow_release_policy(self):
+        from unittest import mock
+
+        with mock.patch("features.reports.pdf.build_session_report_pdf", return_value=b"%PDF-") as build:
+            self._get(self.student)
+            self.assertFalse(build.call_args.kwargs["show_correct_answers"])
+
+            self.exam.show_correct_answers = Exam.ShowCorrectAnswers.IMMEDIATELY
+            self.exam.save(update_fields=["show_correct_answers"])
+            self._get(self.student)
+            self.assertTrue(build.call_args.kwargs["show_correct_answers"])
+
+    def test_staff_can_download_any_report(self):
+        response = self._get(self.teacher)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_pending_review_hides_scores_from_student(self):
+        from unittest import mock
+
+        self.session.status = ExamSession.Status.PENDING_REVIEW
+        self.session.save(update_fields=["status"])
+        with mock.patch("features.reports.pdf.build_session_report_pdf", return_value=b"%PDF-") as build:
+            self._get(self.student)
+            self.assertTrue(build.call_args.kwargs["hide_scores"])
+            self._get(self.teacher)
+            self.assertFalse(build.call_args.kwargs["hide_scores"])
+
+    def test_pdf_download_accepts_pdf_accept_header(self):
+        """The frontend sends Accept: application/pdf; DRF must not 406 it."""
+        self.client.force_authenticate(user=self.student)
+        response = self.client.get(
+            f"/api/reports/sessions/{self.session.id}/pdf/",
+            HTTP_ACCEPT="application/pdf",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.content.startswith(b"%PDF"))
+
+    def test_pdf_download_errors_stay_json_with_pdf_accept(self):
+        self.client.force_authenticate(user=self.other_student)
+        response = self.client.get(
+            f"/api/reports/sessions/{self.session.id}/pdf/",
+            HTTP_ACCEPT="application/pdf",
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class ExportAcceptHeaderTests(ReportsAPITests):
+    def test_csv_and_pdf_exports_accept_their_own_media_type(self):
+        for path, accept in (
+            ("/api/reports/export/csv/", "text/csv"),
+            ("/api/reports/export/pdf/", "application/pdf"),
+        ):
+            response = self.client.get(path, HTTP_ACCEPT=accept)
+            self.assertEqual(response.status_code, status.HTTP_200_OK, path)

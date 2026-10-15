@@ -70,3 +70,29 @@ class JWTAuthMiddleware:
 def JWTAuthMiddlewareStack(inner):
     """Compose JWT auth with the standard Channels auth stack as a fallback."""
     return JWTAuthMiddleware(AuthMiddlewareStack(inner))
+
+
+def websocket_allowed_origins() -> list[str]:
+    """Origins allowed to open a WebSocket: the API's own hosts plus the CORS origins.
+
+    Channels' ``AllowedHostsOriginValidator`` only checks ``ALLOWED_HOSTS``,
+    which lists the API's hostnames. When the SPA is served from another
+    domain (Vercel frontend + Railway API) the browser sends the frontend's
+    Origin, so every socket was refused even though REST calls from that same
+    origin pass CORS. Trust the same origins for both.
+    """
+    from django.conf import settings
+
+    origins = list(settings.ALLOWED_HOSTS)
+    if settings.DEBUG and not origins:
+        origins = ["localhost", "127.0.0.1", "[::1]"]
+    if getattr(settings, "CORS_ALLOW_ALL_ORIGINS", False):
+        origins.append("*")
+    origins.extend(getattr(settings, "CORS_ALLOWED_ORIGINS", []))
+    return origins
+
+
+def WebsocketOriginValidator(inner):
+    from channels.security.websocket import OriginValidator
+
+    return OriginValidator(inner, websocket_allowed_origins())

@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 
 import cv2
 import numpy as np
+
+from ai.knowing_eye.detection.mp_models import cascade_path, load_cascade
+
+logger = logging.getLogger("knowing_eye.ai.detection")
 
 _MEDIAPIPE_OK = False
 try:
@@ -17,7 +22,7 @@ try:
 
     _MEDIAPIPE_OK = True
 except Exception:
-    pass
+    logger.warning("MediaPipe unavailable, face detection will use OpenCV Haar fallback", exc_info=True)
 
 
 @dataclass
@@ -63,9 +68,11 @@ class FaceDetector:
     def __init__(self) -> None:
         self._backend = "opencv"
         self._landmarker = None
-        self._cascade = cv2.CascadeClassifier(
-            cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-        )
+        # Degrades to "no detection" (instead of 500ing every frame or crashing
+        # this constructor) when the cascade can't load - see load_cascade().
+        self._cascade = load_cascade("haarcascade_frontalface_default.xml")
+        if self._cascade is None:
+            logger.error("Haar cascade unavailable: %s", cascade_path("haarcascade_frontalface_default.xml"))
 
         if _MEDIAPIPE_OK:
             try:
@@ -73,6 +80,8 @@ class FaceDetector:
                 options = vision.FaceLandmarkerOptions(
                     base_options=mp_python.BaseOptions(model_asset_path=str(model_path)),
                     running_mode=vision.RunningMode.IMAGE,
+                    # Candidate pool only: the pipeline keeps the largest face as
+                    # the examinee. Extra faces are never counted or flagged.
                     num_faces=3,
                     min_face_detection_confidence=0.62,
                     output_facial_transformation_matrixes=True,
@@ -80,7 +89,14 @@ class FaceDetector:
                 self._landmarker = vision.FaceLandmarker.create_from_options(options)
                 self._backend = "mediapipe"
             except Exception:
+                logger.warning("MediaPipe FaceLandmarker init failed, falling back to OpenCV Haar", exc_info=True)
                 self._landmarker = None
+
+    @property
+    def backend(self) -> str:
+        if self._backend == "mediapipe" and self._landmarker is not None:
+            return "mediapipe"
+        return "opencv" if self._cascade is not None else "opencv (cascade unavailable - no detection)"
 
     def detect(self, frame_bgr: np.ndarray) -> list[DetectedFace]:
         if self._backend == "mediapipe" and self._landmarker is not None:
@@ -117,6 +133,8 @@ class FaceDetector:
         return faces
 
     def _detect_opencv(self, frame_bgr: np.ndarray) -> list[DetectedFace]:
+        if self._cascade is None:
+            return []
         gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
         rects = self._cascade.detectMultiScale(gray, 1.08, 6, minSize=(72, 72))
         faces: list[DetectedFace] = []

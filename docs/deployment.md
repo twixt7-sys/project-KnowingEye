@@ -17,7 +17,7 @@ PostgreSQL persistence, and the full ML behavior pipeline.
 | Cache      | Redis 7 (Channels layer + DRF cache)                 |
 | Web server | Nginx (TLS termination, static files, WS upgrade)    |
 | ASGI       | Daphne or Uvicorn behind Nginx                       |
-| GPU        | Optional - speeds up YOLO inference (CUDA 12+)      |
+| GPU        | Optional - speeds up ArcFace embedding extraction via ONNX Runtime's CUDA execution provider (CUDA 12+); the pipeline runs CPU-only by default |
 
 ---
 
@@ -36,6 +36,15 @@ DB_PASSWORD=<strong-password>
 DB_HOST=postgres.internal
 DB_PORT=5432
 DB_CONN_MAX_AGE=60
+# ^ 60s is fine for a dedicated Postgres instance you control. If DB_HOST is
+# a shared connection pooler instead (e.g. Supabase's pgbouncer), use
+# DB_CONN_MAX_AGE=0 - a pooler caps concurrent client slots (Supabase's
+# session-mode pooler on port 5432 defaults to 15), and holding a Django
+# connection open per worker/WebSocket for 60 idle seconds exhausts that
+# cap under any real concurrency ("FATAL: max clients reached in session
+# mode"). Prefer the pooler's transaction-mode port (6543 on Supabase) for
+# an app server like this one; it tolerates far more concurrent short-lived
+# connections than session mode.
 
 # Redis (Channels + cache)
 REDIS_URL=redis://redis.internal:6379/0
@@ -225,9 +234,21 @@ curl https://exam.example.com/api/monitoring/health/
 
 ## 11. Upgrading the AI pipeline
 
-1. Place new YOLO weights under `backend/ai/training/runs/...`.
-2. Update `backend/ai/config/pipeline.yaml` → `detection.yolo_model`.
+Knowing Eye runs MediaPipe (face/pose landmarks) and ArcFace/InsightFace
+(`buffalo_l`, identity) as **frozen, pre-trained models** - there is no
+custom training pipeline or model weights checked into this repository
+(`backend/ai/training/` exists as a placeholder for future fine-tuning work
+but is currently empty). "Upgrading" the pipeline today means:
+
+1. Bump `mediapipe`/`insightface`/`onnxruntime` in `backend/requirements-cv.txt`
+   / `requirements-identity.txt` when a new upstream model release lands.
+2. Adjust thresholds in `backend/ai/config/pipeline.yaml` if re-validation
+   against the evaluation methodology in
+   `docs/documentation/chapter2/04-system-testing.html#ai-evaluation` calls
+   for it - each threshold is cited inline in that file.
 3. Restart the API processes - the adapter reloads the pipeline on next call.
 
-ArcFace is configured in `backend/ai/config/pipeline.yaml` (`recognition.embedding_backend: arcface`).
-See `backend/ai/training/TRAINING.md` for thresholds and training workflow.
+See `docs/documentation/chapter2/03-system-design.html#dataset-methodology`
+for why no training/fine-tuning currently happens, and
+`#algorithm-comparison` for why MediaPipe + ArcFace were chosen over
+alternatives (including why YOLO was evaluated but not adopted).

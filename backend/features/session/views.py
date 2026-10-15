@@ -3,6 +3,7 @@ from django.shortcuts import render
 from rest_framework.exceptions import ValidationError
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
+from rest_framework.fields import BooleanField
 from rest_framework.response import Response as APIResponse
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
@@ -21,6 +22,7 @@ from .serializers import (
     ResponseUpsertSerializer,
     ResponseGradeSerializer,
     SessionLogSerializer,
+    SessionPauseSerializer,
 )
 from .submission import submit_session_with_responses, upsert_response
 from .services import (
@@ -28,6 +30,10 @@ from .services import (
     ensure_active_session,
     finalize_grading_if_complete,
     get_or_create_setup_session,
+    pause_session,
+    refusal_body,
+    resume_session,
+    terminate_session,
 )
 
 
@@ -39,6 +45,8 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
     Start session: POST /api/sessions/start/
     Get session: GET /api/sessions/{id}/
     Submit session: POST /api/sessions/{id}/submit/
+    Pause session: POST /api/sessions/{id}/pause/
+    Resume session: POST /api/sessions/{id}/resume/
     """
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
@@ -124,6 +132,37 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
+    @action(detail=True, methods=['post'], url_path='cancel-setup')
+    def cancel_setup(self, request, pk=None):
+        """Let an examinee abandon their own not-yet-started proctoring setup.
+
+        Without this, a student who backs out of camera/identity setup has
+        to wait out SETUP_MAX_MINUTES (30 min) before assert_no_other_active_exam
+        stops treating it as blocking - which reads as "stuck" during testing
+        or when someone just changes their mind about which exam to start.
+        """
+        session = self.get_object()
+        if session.user != request.user:
+            return APIResponse({'error': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        if session.status != ExamSession.Status.SETUP:
+            return APIResponse(
+                {'error': f'Cannot cancel session with status: {session.get_status_display()}'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        session.status = ExamSession.Status.EXPIRED
+        session.submitted_at = timezone.now()
+        session.save(update_fields=['status', 'submitted_at'])
+
+        SessionLog.objects.create(
+            session=session,
+            event_type=SessionLog.EventType.EXPIRED,
+            ip_address=self._get_client_ip(request),
+            details={'reason': 'cancelled_by_examinee'},
+        )
+        return APIResponse({'message': 'Setup cancelled.'}, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'])
     def submit(self, request, pk=None):
         """
@@ -151,19 +190,17 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
         # Check if session can be submitted
         if not session.can_submit():
-            if session.status in (
+            if session.status == ExamSession.Status.PAUSED:
+                message = 'This exam is paused. Wait for your proctor to resume it before submitting.'
+            elif session.status in (
                 ExamSession.Status.EXPIRED,
                 ExamSession.Status.COMPLETED,
                 ExamSession.Status.PENDING_REVIEW,
             ):
-                return APIResponse(
-                    {'error': 'Session has expired due to time limit'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            return APIResponse(
-                {'error': f'Session cannot be submitted (status: {session.get_status_display()})'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+                message = 'Session has expired due to time limit'
+            else:
+                message = f'Session cannot be submitted (status: {session.get_status_display()})'
+            return APIResponse(refusal_body(session, message), status=status.HTTP_400_BAD_REQUEST)
 
         serializer = self.get_serializer(data=request.data)
         serializer.context['session'] = session
@@ -206,10 +243,12 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         ensure_active_session(session, ip_address=self._get_client_ip(request))
         session.refresh_from_db()
         if session.status != ExamSession.Status.IN_PROGRESS:
-            return APIResponse(
-                {'error': 'Session is not in progress.'},
-                status=status.HTTP_400_BAD_REQUEST,
+            message = (
+                'This exam is paused. Wait for your proctor to resume it.'
+                if session.status == ExamSession.Status.PAUSED
+                else 'Session is not in progress.'
             )
+            return APIResponse(refusal_body(session, message), status=status.HTTP_400_BAD_REQUEST)
 
         serializer = ResponseUpsertSerializer(
             data=request.data,
@@ -248,14 +287,21 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         ensure_active_session(session, ip_address=self._get_client_ip(request))
         session.refresh_from_db()
 
+        paused = session.status == ExamSession.Status.PAUSED
+        running = session.status == ExamSession.Status.IN_PROGRESS
         return APIResponse(
             {
                 'server_now': timezone.now().isoformat(),
+                # No running deadline unless the clock is running: not while
+                # paused, and not once the attempt is over.
                 'deadline_at': (
-                    session.timed_end_at.isoformat() if session.timed_end_at else None
+                    session.timed_end_at.isoformat()
+                    if session.timed_end_at and running
+                    else None
                 ),
                 'time_remaining_seconds': session.time_remaining_seconds,
                 'status': session.status,
+                'pause_reason': session.pause_reason if paused else '',
             },
             status=status.HTTP_200_OK,
         )
@@ -337,10 +383,76 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         return APIResponse(serializer.data)
 
     @action(detail=True, methods=['post'])
+    def pause(self, request, pk=None):
+        """
+        Pause an in-progress session without ending it.
+        POST /api/sessions/{id}/pause/
+        Body: { "reason": "optional note shown to the examinee" }
+
+        The exam clock stops, the examinee can't answer or submit, and the
+        time spent paused is added back to their deadline on resume.
+        """
+        if not security.can(request.user, "sessions.pause"):
+            return APIResponse(
+                {'error': 'You do not have permission to pause sessions.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        session = self.get_object()
+        serializer = SessionPauseSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        pause_session(
+            session,
+            paused_by=request.user,
+            reason=serializer.validated_data.get('reason', ''),
+            ip_address=self._get_client_ip(request),
+        )
+        return APIResponse(
+            {
+                'message': 'Session paused.',
+                'status': session.status,
+                'time_remaining_seconds': session.time_remaining_seconds,
+            },
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=['post'])
+    def resume(self, request, pk=None):
+        """
+        Resume a paused session.
+        POST /api/sessions/{id}/resume/
+        """
+        if not security.can(request.user, "sessions.pause"):
+            return APIResponse(
+                {'error': 'You do not have permission to resume sessions.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        session = self.get_object()
+        resume_session(
+            session,
+            resumed_by=request.user,
+            ip_address=self._get_client_ip(request),
+        )
+        return APIResponse(
+            {
+                'message': 'Session resumed.',
+                'status': session.status,
+                'time_remaining_seconds': session.time_remaining_seconds,
+            },
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=True, methods=['post'])
     def terminate(self, request, pk=None):
         """
         Terminate an active session.
         POST /api/sessions/{id}/terminate/
+
+        Ends the attempt for good and pushes the new state to the examinee's
+        open sockets, so their exam is replaced by a "terminated" screen
+        immediately rather than at their next request.
         """
         if not security.can(request.user, "sessions.terminate"):
             return APIResponse(
@@ -350,26 +462,17 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
 
         session = self.get_object()
 
-        if session.status not in (
-            ExamSession.Status.IN_PROGRESS,
-            ExamSession.Status.SETUP,
-        ):
+        try:
+            terminate_session(
+                session,
+                terminated_by=request.user,
+                ip_address=self._get_client_ip(request),
+            )
+        except ValidationError as exc:
             return APIResponse(
-                {'error': f'Cannot terminate session with status: {session.get_status_display()}'},
+                {'error': str(exc.detail[0])},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        session.status = ExamSession.Status.TERMINATED
-        session.submitted_at = timezone.now()
-        session.save()
-
-        # Log termination
-        SessionLog.objects.create(
-            session=session,
-            event_type=SessionLog.EventType.TERMINATED,
-            ip_address=self._get_client_ip(request),
-            details={'terminated_by': request.user.username}
-        )
 
         return APIResponse(
             {'message': 'Session terminated successfully'},
@@ -403,11 +506,20 @@ class ResponseViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=['patch'], url_path='grade')
     def grade(self, request, pk=None):
-        """Manually grade a response."""
+        """Manually grade a response.
+
+        Accepts an optional ``send_email`` flag (defaults to True) so the
+        grader can choose, at the moment their grading completes a
+        student's results, whether that student gets notified by email.
+        """
         if not security.can(request.user, "sessions.grade"):
             return APIResponse({'error': 'You do not have permission to grade responses.'}, status=status.HTTP_403_FORBIDDEN)
 
         response = self.get_object()
+        # BooleanField.to_internal_value (not bool()) because form/multipart
+        # requests - as sent by the API test client - arrive with this as
+        # the literal string "False", which bool() would treat as truthy.
+        send_email = BooleanField().to_internal_value(request.data.get('send_email', True))
         serializer = ResponseGradeSerializer(
             response,
             data=request.data,
@@ -422,7 +534,7 @@ class ResponseViewSet(viewsets.ReadOnlyModelViewSet):
             instance.is_correct = instance.points_awarded >= instance.question.points
             instance.flagged_for_review = False
             instance.save(update_fields=['is_correct', 'flagged_for_review'])
-            finalize_grading_if_complete(instance.session)
+            finalize_grading_if_complete(instance.session, send_email=send_email)
 
         return APIResponse(ResponseSerializer(instance).data, status=status.HTTP_200_OK)
 

@@ -7,6 +7,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { toast } from "sonner";
 import { type AccessMap, type ProfileUser, type Role, apiClient, tokenStore } from "../config/api";
 
 export interface User extends ProfileUser {
@@ -123,8 +124,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }) => {
       setIsLoading(true);
       try {
-        await apiClient.register(userData);
-        return await login(userData.username, userData.password);
+        const { verification_email_sent } = await apiClient.register(userData);
+        const user = await login(userData.username, userData.password);
+        if (!verification_email_sent) {
+          // Registration still succeeded - the OTP send itself failed (e.g.
+          // mail misconfiguration). Let the user know explicitly rather than
+          // leaving them to assume a code is already on its way.
+          toast.error("Account created, but the verification email couldn't be sent.", {
+            description: "Use \"Send verification code\" to try again.",
+          });
+        }
+        return user;
       } finally {
         setIsLoading(false);
       }

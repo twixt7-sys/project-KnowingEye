@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 from datetime import timedelta
 
@@ -13,8 +14,11 @@ from rest_framework.exceptions import ValidationError
 
 from ai.identity_store import has_reference
 from features.exams.models import ExamAssignment
+from features.monitoring.broadcast import broadcast_session_state
 from features.session.models import ExamSession, SessionLog
 from features.session.submission import auto_submit_expired_session
+
+logger = logging.getLogger(__name__)
 
 
 def build_question_order(exam) -> list[int]:
@@ -54,7 +58,11 @@ def build_option_order(exam, question_ids: list[int]) -> dict[str, list[str]]:
             shuffle = question.shuffle_options_override
         options = list(question.options or [])
         if question.question_type == 'true_false' and not options:
-            options = ['True', 'False']
+            # Match the {text, image} shape every other option uses (see
+            # exams/serializers.py option_text()) - the taking UI reads
+            # option.text, so plain strings here render as blank, unclickable
+            # choices once shuffled into option_order.
+            options = [{'text': 'True', 'image': None}, {'text': 'False', 'image': None}]
         if shuffle and len(options) > 1:
             options = options.copy()
             random.shuffle(options)
@@ -78,14 +86,22 @@ def get_assignment_accommodation(exam, user) -> tuple[int, int]:
 
 def compute_deadline(session: ExamSession) -> timezone.datetime:
     anchor = session.exam_started_at or timezone.now()
-    return anchor + timedelta(seconds=session.duration_seconds)
+    return anchor + timedelta(
+        seconds=session.duration_seconds + session.paused_total_seconds
+    )
 
 SETUP_MAX_MINUTES = 30
 
+# A paused attempt is still open - the examinee resumes it - so it counts as
+# active everywhere an in-progress one does (e.g. blocking a second exam).
 ACTIVE_STATUSES = (
     ExamSession.Status.SETUP,
     ExamSession.Status.IN_PROGRESS,
+    ExamSession.Status.PAUSED,
 )
+
+# Everything that is still open can be terminated, including a paused attempt.
+TERMINABLE_STATUSES = ACTIVE_STATUSES
 
 
 def touch_setup_activity(session: ExamSession) -> None:
@@ -165,10 +181,7 @@ def ensure_active_session(session: ExamSession, *, ip_address: str | None = None
     """Expire if timed out; return True if proctoring/exam is still active."""
     expire_setup_session_if_idle(session, ip_address=ip_address)
     expire_session_if_timed_out(session, ip_address=ip_address)
-    return session.status in (
-        ExamSession.Status.SETUP,
-        ExamSession.Status.IN_PROGRESS,
-    )
+    return session.status in ACTIVE_STATUSES
 
 
 def assert_no_other_active_exam(user, exam, *, ip_address: str | None = None) -> None:
@@ -182,11 +195,10 @@ def assert_no_other_active_exam(user, exam, *, ip_address: str | None = None) ->
     for other in others:
         if not ensure_active_session(other, ip_address=ip_address):
             continue
-        phase = (
-            "being set up"
-            if other.status == ExamSession.Status.SETUP
-            else "in progress"
-        )
+        phase = {
+            ExamSession.Status.SETUP: "being set up",
+            ExamSession.Status.PAUSED: "paused",
+        }.get(other.status, "in progress")
         raise ValidationError(
             {
                 "exam": (
@@ -214,6 +226,18 @@ def _raise_if_integrity_blocks_create(user, exam, *, ip_address: str | None = No
     )
 
 
+def _identity_check_bypassable() -> bool:
+    """True only when running with DEBUG on and the AI pipeline explicitly
+    disabled (``KE_ENABLE_PIPELINE=False``) - i.e. an environment where no
+    real camera enrollment can ever succeed (CI, a headless dev/test box).
+    Never true outside DEBUG, so this can't loosen monitoring anywhere real
+    (staging/production always run with DEBUG off)."""
+    if not settings.DEBUG:
+        return False
+    ke_settings = getattr(settings, "KNOWING_EYE", {})
+    return not ke_settings.get("ENABLE_PIPELINE", True)
+
+
 def begin_exam_session(
     session: ExamSession,
     *,
@@ -224,10 +248,28 @@ def begin_exam_session(
         raise ValidationError(
             {"status": f"Cannot begin exam with status '{session.status}'."}
         )
+
+    # Re-validate the scheduling window here, not just at session creation -
+    # a SETUP session's idle timer resets on every /begin poll (see
+    # touch_setup_activity), so it can be kept alive well past
+    # available_until without this check and still start a timed attempt on
+    # a closed exam.
+    from features.exams.services import assert_exam_available_for_user
+
+    assert_exam_available_for_user(session.exam, session.user)
+
     if session.exam.monitoring_enabled and not has_reference(session.id):
-        raise ValidationError(
-            {"identity": "Enroll a reference face before beginning the exam."}
-        )
+        if _identity_check_bypassable():
+            logger.warning(
+                "Bypassing identity enrollment check for session %s: DEBUG is on "
+                "and the AI pipeline is disabled, so no reference could ever be "
+                "enrolled here.",
+                session.id,
+            )
+        else:
+            raise ValidationError(
+                {"identity": "Enroll a reference face before beginning the exam."}
+            )
 
     extra_time, _ = get_assignment_accommodation(session.exam, session.user)
     session.accommodation_extra_minutes = extra_time
@@ -261,6 +303,164 @@ def begin_exam_session(
         },
     )
     return session
+
+
+def pause_session(
+    session: ExamSession,
+    *,
+    paused_by=None,
+    reason: str = "",
+    ip_address: str | None = None,
+) -> ExamSession:
+    """Stop an in-progress attempt's exam clock until a proctor resumes it.
+
+    The examinee cannot answer or submit while paused (those endpoints only
+    accept IN_PROGRESS), and the time spent paused is added back to their
+    deadline on resume.
+    """
+    # An attempt whose time already ran out must be closed out (auto-submitted
+    # or expired), not frozen with nothing left on the clock.
+    ensure_active_session(session, ip_address=ip_address)
+    session.refresh_from_db()
+    if session.status != ExamSession.Status.IN_PROGRESS:
+        raise ValidationError(
+            {"status": f"Cannot pause session with status: {session.get_status_display()}"}
+        )
+
+    reason = (reason or "").strip()
+    # Compare-and-set on the status so a pause that races a submit/terminate
+    # can never drag a finished session back to PAUSED.
+    updated = ExamSession.objects.filter(
+        pk=session.pk, status=ExamSession.Status.IN_PROGRESS
+    ).update(
+        status=ExamSession.Status.PAUSED,
+        paused_at=timezone.now(),
+        pause_reason=reason,
+    )
+    session.refresh_from_db()
+    if not updated:
+        raise ValidationError(
+            {"status": f"Cannot pause session with status: {session.get_status_display()}"}
+        )
+
+    SessionLog.objects.create(
+        session=session,
+        event_type=SessionLog.EventType.PAUSED,
+        ip_address=ip_address,
+        details={
+            "paused_by": getattr(paused_by, "username", None),
+            "reason": reason,
+            "time_remaining_seconds": session.time_remaining_seconds,
+        },
+    )
+    broadcast_session_state(session)
+    return session
+
+
+def resume_session(
+    session: ExamSession,
+    *,
+    resumed_by=None,
+    ip_address: str | None = None,
+) -> ExamSession:
+    """Restart a paused attempt, giving back the time it spent paused."""
+    with transaction.atomic():
+        locked = ExamSession.objects.select_for_update().get(pk=session.pk)
+        if locked.status != ExamSession.Status.PAUSED:
+            raise ValidationError(
+                {"status": f"Cannot resume session with status: {locked.get_status_display()}"}
+            )
+        paused_for = locked.fold_pause()
+        locked.status = ExamSession.Status.IN_PROGRESS
+        locked.deadline_at = compute_deadline(locked)
+        locked.save(
+            update_fields=[
+                "status",
+                "paused_at",
+                "paused_total_seconds",
+                "pause_reason",
+                "deadline_at",
+            ]
+        )
+
+    session.refresh_from_db()
+    SessionLog.objects.create(
+        session=session,
+        event_type=SessionLog.EventType.RESUMED,
+        ip_address=ip_address,
+        details={
+            "resumed_by": getattr(resumed_by, "username", None),
+            "paused_seconds": paused_for,
+            "time_remaining_seconds": session.time_remaining_seconds,
+        },
+    )
+    broadcast_session_state(session)
+    return session
+
+
+def terminate_session(
+    session: ExamSession,
+    *,
+    terminated_by=None,
+    ip_address: str | None = None,
+) -> ExamSession:
+    """End an attempt for good on a proctor's say-so, and tell the examinee at once.
+
+    The examinee's socket gets a ``session_state`` push (and is then closed);
+    anything that misses it learns from its next heartbeat, or from the
+    ``session_terminated`` refusal on its next save, submit or frame.
+    """
+    with transaction.atomic():
+        locked = ExamSession.objects.select_for_update().get(pk=session.pk)
+        if locked.status not in TERMINABLE_STATUSES:
+            raise ValidationError(f"Cannot terminate session with status: {locked.get_status_display()}")
+        now = timezone.now()
+        # A pause still running when the attempt is terminated ends with it.
+        locked.fold_pause(now)
+        locked.status = ExamSession.Status.TERMINATED
+        locked.submitted_at = now
+        locked.save(
+            update_fields=[
+                "status",
+                "submitted_at",
+                "paused_at",
+                "paused_total_seconds",
+                "pause_reason",
+            ]
+        )
+
+    session.refresh_from_db()
+    SessionLog.objects.create(
+        session=session,
+        event_type=SessionLog.EventType.TERMINATED,
+        ip_address=ip_address,
+        details={"terminated_by": getattr(terminated_by, "username", None)},
+    )
+    broadcast_session_state(session)
+    return session
+
+
+# Why a request was refused, as the examinee's browser reads it: it switches
+# screens on the ``code`` and only displays the ``error`` text, so the prose
+# can be reworded without breaking anything.
+_REFUSAL_CODES = {
+    ExamSession.Status.PAUSED: "session_paused",
+    ExamSession.Status.TERMINATED: "session_terminated",
+    ExamSession.Status.EXPIRED: "session_expired",
+    ExamSession.Status.COMPLETED: "session_submitted",
+    ExamSession.Status.PENDING_REVIEW: "session_submitted",
+}
+_TERMINATED_MESSAGE = "This exam was terminated by your proctor."
+
+
+def refusal_body(session: ExamSession, message: str) -> dict[str, str]:
+    """400 body for a request the session's current state no longer allows."""
+    if session.status == ExamSession.Status.TERMINATED:
+        message = _TERMINATED_MESSAGE
+    return {
+        "error": message,
+        "code": _REFUSAL_CODES.get(session.status, "session_not_in_progress"),
+    }
 
 
 def _create_in_progress_session(
@@ -308,7 +508,23 @@ def _create_in_progress_session(
     return session
 
 
-def finalize_grading_if_complete(session: ExamSession) -> bool:
+def send_results_ready_email(session: ExamSession) -> None:
+    """Email the examinee that their results for ``session`` are available."""
+    if not session.user.email:
+        return
+    send_mail(
+        subject="Your exam results are ready",
+        message=(
+            f'Grading for "{session.exam.title}" is complete and your results '
+            "are now available in Knowing Eye."
+        ),
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[session.user.email],
+        fail_silently=True,
+    )
+
+
+def finalize_grading_if_complete(session: ExamSession, *, send_email: bool = True) -> bool:
     """Recompute score and release results once every flagged response is graded.
 
     Directive Area 03 ("Results"): "hold essay results for manual grading
@@ -317,7 +533,12 @@ def finalize_grading_if_complete(session: ExamSession) -> bool:
     unmatched short-answer responses (see ExamSession.submit_session); this
     is the other half - called after each manual grade so the session
     flips to COMPLETED, with a fresh score, the moment the last flagged
-    response is graded, and the examinee is emailed that results are ready.
+    response is graded.
+
+    ``send_email`` lets the grader decide, at the moment grading completes,
+    whether the examinee should be emailed that results are ready - it
+    defaults to True so existing callers keep the prior always-notify
+    behavior.
 
     Returns:
         True if this call completed the session (grading just finished).
@@ -331,17 +552,8 @@ def finalize_grading_if_complete(session: ExamSession) -> bool:
     session.status = ExamSession.Status.COMPLETED
     session.save(update_fields=["status", "total_score", "percentage_score", "passed"])
 
-    if session.user.email:
-        send_mail(
-            subject="Your exam results are ready",
-            message=(
-                f'Grading for "{session.exam.title}" is complete and your results '
-                "are now available in Knowing Eye."
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[session.user.email],
-            fail_silently=True,
-        )
+    if send_email:
+        send_results_ready_email(session)
     return True
 
 
@@ -367,7 +579,7 @@ def get_or_create_setup_session(user, exam, *, ip_address: str | None, user_agen
     active = ExamSession.objects.filter(
         exam=exam,
         user=user,
-        status=ExamSession.Status.IN_PROGRESS,
+        status__in=(ExamSession.Status.IN_PROGRESS, ExamSession.Status.PAUSED),
     ).first()
     if active:
         raise ValidationError(
@@ -409,7 +621,7 @@ def _get_or_create_unmonitored_session(
     existing = ExamSession.objects.filter(
         exam=exam,
         user=user,
-        status=ExamSession.Status.IN_PROGRESS,
+        status__in=(ExamSession.Status.IN_PROGRESS, ExamSession.Status.PAUSED),
     ).first()
     if existing:
         return existing, False

@@ -89,6 +89,7 @@ export interface Exam {
   monitoring_enabled?: boolean;
   shuffle_questions?: boolean;
   shuffle_options?: boolean;
+  disable_copy_paste?: boolean;
   unanswered_counts_as_wrong?: boolean;
   requires_assignment?: boolean;
   results_release_at?: string | null;
@@ -114,12 +115,33 @@ export interface Exam {
   created_at: string;
   updated_at?: string;
   questions?: Question[];
+  sections?: ExamSection[];
   publish_readiness?: PublishReadiness;
+  /** Questions can still change: a draft, or published but not yet attempted. */
+  questions_editable?: boolean;
+}
+
+/** Student-shaped exam payload for the examiner's "Preview as student" view (no answer keys). */
+export type ExamPreview = Exam & {
+  is_preview: true;
+  questions: Question[];
+  sections: ExamSection[];
+};
+
+/** An in-exam question grouping - separate from the exam-level ExamCategory. */
+export interface ExamSection {
+  id: number;
+  exam?: number;
+  title: string;
+  instructions?: string;
+  order: number;
+  questions_per_page?: number;
+  created_at?: string;
 }
 
 export interface ExamApprovalEvent {
   id: number;
-  action: "submit" | "approve" | "reject";
+  action: "submit" | "approve" | "reject" | "unpublish";
   note: string;
   actor: number | null;
   actor_name?: string;
@@ -178,6 +200,7 @@ export interface SessionResponse {
   grader_comment?: string;
   question_text?: string;
   question_type?: string;
+  points?: number;
   correct_answer?: string;
 }
 
@@ -185,7 +208,14 @@ export interface ExamSession {
   id: string;
   user: number;
   exam: Exam;
-  status: "setup" | "in_progress" | "pending_review" | "completed" | "terminated" | "expired";
+  status:
+    | "setup"
+    | "in_progress"
+    | "paused"
+    | "pending_review"
+    | "completed"
+    | "terminated"
+    | "expired";
   started_at?: string;
   exam_started_at?: string | null;
   submitted_at?: string;
@@ -197,6 +227,10 @@ export interface ExamSession {
   deadline_at?: string | null;
   option_order?: Record<string, string[]>;
   accommodation_extra_minutes?: number;
+  /** When the current proctor pause began; null/absent unless status is "paused". */
+  paused_at?: string | null;
+  /** Optional note from the proctor, shown to the examinee while paused. */
+  pause_reason?: string;
   responses?: SessionResponse[];
 }
 
@@ -212,12 +246,24 @@ export interface SubmitSessionData {
   time_remaining: number;
 }
 
+export interface EbiComponents {
+  face_presence: number | null;
+  face_identity: number | null;
+  upper_body_presence: number | null;
+  looking_away_compliance: number | null;
+}
+
 export interface FrameMetrics {
   face_presence_pct: number;
   gaze_focus_pct: number;
   posture_compliance_pct: number;
   identity_match_pct: number | null;
   overall_compliance_pct: number;
+  /** Exam Behavior Index (0-100): equal-weight mean of the evaluated indicators. */
+  exam_behavior_index_pct?: number;
+  /** Number of indicators averaged into the EBI (3 when identity not evaluated, else 4). */
+  ebi_indicator_count?: number;
+  ebi_components?: EbiComponents;
   alert_threshold_pct: number;
   flagged_metrics: string[];
   all_compliant: boolean;
@@ -249,6 +295,7 @@ export interface FrameAnalysis {
   posture?: FrameAnalysisPosture;
   metrics: FrameMetrics;
   overall_compliance_pct: number;
+  exam_behavior_index_pct?: number;
   behavior_score: number;
   events: FrameEvent[];
   alerts: FrameAlert[];
@@ -303,6 +350,8 @@ export interface DepartmentAnalyticsRow {
   average_score: number | null;
   pass_rate: number | null;
   alert_count: number;
+  /** Mean Exam Behavior Index (0-100) across monitored sessions in this department. */
+  average_ebi?: number | null;
 }
 
 export interface SessionDepartmentAnalytics {
@@ -319,6 +368,23 @@ export interface SessionDepartmentAnalytics {
   percentile_in_department: number | null;
 }
 
+export interface SessionExamBehaviorIndex {
+  /** Mean Exam Behavior Index (0-100) across analyzed frames, or null when unmonitored. */
+  average: number | null;
+  /** Number of analyzed frames folded into the running mean. */
+  sample_count: number;
+  /** Indicators averaged per frame: 3 when identity was never evaluated, else 4. */
+  indicator_count: number;
+  components: {
+    face_presence: number | null;
+    face_identity: number | null;
+    upper_body_presence: number | null;
+    looking_away_compliance: number | null;
+  };
+  identity_sample_count: number;
+  formula: string;
+}
+
 export interface ReportSummary {
   total_sessions: number;
   active_sessions: number;
@@ -329,6 +395,10 @@ export interface ReportSummary {
   behavior_events: number;
   average_score: number | null;
   pass_rate: number | null;
+  /** Mean Exam Behavior Index (0-100) across all monitored sessions. */
+  average_ebi?: number | null;
+  /** Number of sessions with at least one analyzed frame (EBI denominator). */
+  ebi_session_count?: number;
   alerts_by_severity: { severity: string; count: number }[];
   events_by_type: { event_type: string; count: number }[];
   by_department: DepartmentAnalyticsRow[];
@@ -354,6 +424,9 @@ export interface SessionReportRow {
   alert_count: number;
   unresolved_alert_count: number;
   behavior_event_count: number;
+  /** Mean Exam Behavior Index (0-100) for this session, or null when unmonitored. */
+  ebi_average?: number | null;
+  ebi_sample_count?: number;
 }
 
 export interface PaginatedResponse<T> {

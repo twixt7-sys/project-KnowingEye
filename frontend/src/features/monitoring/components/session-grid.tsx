@@ -10,20 +10,20 @@ const COLS = 2;
 
 type SessionGridProps = {
   sessions: SessionReportRow[];
-  onTerminated: () => void;
+  onChanged: () => void;
 };
 
-function SessionGridStatic({ sessions, onTerminated }: SessionGridProps) {
+function SessionGridStatic({ sessions, onChanged }: SessionGridProps) {
   return (
     <div className="grid gap-4 p-4 sm:grid-cols-2">
       {sessions.map((s) => (
-        <LiveSessionCard key={s.id} session={s} onTerminated={onTerminated} />
+        <LiveSessionCard key={s.id} session={s} onChanged={onChanged} />
       ))}
     </div>
   );
 }
 
-function SessionGridVirtual({ sessions, onTerminated }: SessionGridProps) {
+function SessionGridVirtual({ sessions, onChanged }: SessionGridProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const rowCount = Math.ceil(sessions.length / COLS);
 
@@ -47,7 +47,7 @@ function SessionGridVirtual({ sessions, onTerminated }: SessionGridProps) {
               style={{ transform: `translateY(${virtualRow.start}px)` }}
             >
               {rowSessions.map((s) => (
-                <LiveSessionCard key={s.id} session={s} onTerminated={onTerminated} />
+                <LiveSessionCard key={s.id} session={s} onChanged={onChanged} />
               ))}
             </div>
           );
@@ -57,9 +57,9 @@ function SessionGridVirtual({ sessions, onTerminated }: SessionGridProps) {
   );
 }
 
-export function SessionGrid({ sessions, onTerminated }: SessionGridProps) {
+export function SessionGrid({ sessions, onChanged }: SessionGridProps) {
   if (sessions.length < VIRTUAL_THRESHOLD) {
-    return <SessionGridStatic sessions={sessions} onTerminated={onTerminated} />;
+    return <SessionGridStatic sessions={sessions} onChanged={onChanged} />;
   }
-  return <SessionGridVirtual sessions={sessions} onTerminated={onTerminated} />;
+  return <SessionGridVirtual sessions={sessions} onChanged={onChanged} />;
 }

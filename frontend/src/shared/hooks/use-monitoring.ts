@@ -6,6 +6,7 @@ import {
   type FrameAlert,
   type FrameAnalysis,
 } from "../../core/config/api";
+import { isSessionOver } from "../lib/api-error";
 
 export type MonitoringStatus =
   | "idle"
@@ -16,6 +17,20 @@ export type MonitoringStatus =
   | "error"
   | "closed";
 
+/**
+ * Close codes the server ends the monitoring socket with on purpose because the
+ * session is over for good: 4408 ran out of time, 4410 a proctor terminated it.
+ * (See CLOSE_SESSION_* in backend/features/monitoring/consumers.py.)
+ */
+const SESSION_OVER_CLOSE_CODES = [4408, 4410];
+
+/** Pushed over the monitoring socket when a proctor pauses, resumes or terminates the session. */
+export interface SessionStateMessage {
+  status: string;
+  time_remaining_seconds?: number | null;
+  pause_reason?: string;
+}
+
 export interface UseMonitoringOptions {
   sessionId: string | undefined;
   intervalMs?: number;
@@ -25,8 +40,14 @@ export interface UseMonitoringOptions {
   videoConstraints?: MediaStreamConstraints["video"];
   /** Force REST POSTs even if a WebSocket would work. */
   forceRest?: boolean;
-  /** Called when the backend rejects frames because the session is no longer active. */
+  /**
+   * Called when the session is over - the server closed the socket on purpose
+   * or refused a frame because it was terminated or out of time. Streaming has
+   * already stopped; the camera is left for the caller to release.
+   */
   onSessionInactive?: () => void;
+  /** Called when the server pushes a session state change (pause / resume / terminate). */
+  onSessionState?: (state: SessionStateMessage) => void;
 }
 
 export interface UseMonitoringResult {
@@ -43,6 +64,8 @@ export interface UseMonitoringResult {
 const DEFAULT_INTERVAL = 1000; // ms - 1 fps is plenty for behaviour scoring
 const DEFAULT_QUALITY = 0.6;
 const DEFAULT_CAPTURE_MAX_WIDTH = 480;
+const ENROLL_EXTRA_FRAMES = 2; // + the first frame = 3 enrollment samples
+const ENROLL_FRAME_GAP_MS = 300;
 const DEFAULT_VIDEO: MediaStreamConstraints["video"] = {
   width: { ideal: 640 },
   height: { ideal: 480 },
@@ -61,6 +84,7 @@ export function useMonitoring({
   videoConstraints = DEFAULT_VIDEO,
   forceRest = false,
   onSessionInactive,
+  onSessionState,
 }: UseMonitoringOptions): UseMonitoringResult {
   const [status, setStatus] = useState<MonitoringStatus>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -74,15 +98,33 @@ export function useMonitoring({
   const frameTimerRef = useRef<number | null>(null);
   const sendingRef = useRef(false);
   const frameBusyRef = useRef(false);
+  // Tracks whether the last frame sent over the WS is still awaiting an "analysis"/"error"
+  // reply. Without this, the fixed send timer keeps firing every `intervalMs` regardless of
+  // how long the backend takes, so slow inference builds an ever-growing backlog and the
+  // bounding box falls further behind the live video every frame. Gating on the previous
+  // reply paces sending to the server's real throughput instead.
+  const pendingAckRef = useRef(false);
+  const ackTimeoutRef = useRef<number | null>(null);
+  const lastSentAtRef = useRef(0);
   const closedRef = useRef(false);
   const enrollingRef = useRef(false);
   const onSessionInactiveRef = useRef(onSessionInactive);
   onSessionInactiveRef.current = onSessionInactive;
+  const onSessionStateRef = useRef(onSessionState);
+  onSessionStateRef.current = onSessionState;
 
   const clearFrameTimer = useCallback(() => {
     if (frameTimerRef.current !== null) {
       window.clearTimeout(frameTimerRef.current);
       frameTimerRef.current = null;
+    }
+  }, []);
+
+  const clearAck = useCallback(() => {
+    pendingAckRef.current = false;
+    if (ackTimeoutRef.current !== null) {
+      window.clearTimeout(ackTimeoutRef.current);
+      ackTimeoutRef.current = null;
     }
   }, []);
 
@@ -126,23 +168,41 @@ export function useMonitoring({
 
   const sendFrameOverWs = useCallback(() => {
     const ws = wsRef.current;
-    if (!ws || ws.readyState !== WebSocket.OPEN || frameBusyRef.current || enrollingRef.current) {
+    if (
+      !ws ||
+      ws.readyState !== WebSocket.OPEN ||
+      frameBusyRef.current ||
+      enrollingRef.current ||
+      pendingAckRef.current
+    ) {
       return;
     }
     frameBusyRef.current = true;
     try {
       const image = captureFrame();
       if (image) {
+        pendingAckRef.current = true;
+        lastSentAtRef.current = performance.now();
+        // Safety valve: if a reply never arrives (dropped message, server hiccup) don't
+        // stall the loop forever - resume sending after a few missed intervals.
+        ackTimeoutRef.current = window.setTimeout(
+          () => {
+            ackTimeoutRef.current = null;
+            pendingAckRef.current = false;
+          },
+          Math.max(intervalMs * 4, 4000),
+        );
         ws.send(JSON.stringify({ type: "frame", image }));
       }
     } finally {
       frameBusyRef.current = false;
     }
-  }, [captureFrame]);
+  }, [captureFrame, intervalMs]);
 
   const stop = useCallback(() => {
     closedRef.current = true;
     clearFrameTimer();
+    clearAck();
     if (wsRef.current) {
       try {
         wsRef.current.close();
@@ -156,7 +216,7 @@ export function useMonitoring({
       streamRef.current = null;
     }
     setStatus("closed");
-  }, [clearFrameTimer]);
+  }, [clearFrameTimer, clearAck]);
 
   const sendViaRest = useCallback(async () => {
     if (!sessionId || sendingRef.current) return;
@@ -172,7 +232,9 @@ export function useMonitoring({
     } catch (e) {
       if (e instanceof ApiError && e.status === 400) {
         const msg = e.detail().toLowerCase();
-        if (msg.includes("expired") || msg.includes("not active")) {
+        // The code is the contract; the text match covers a server that
+        // predates it.
+        if (isSessionOver(e) || msg.includes("expired") || msg.includes("not active")) {
           handleSessionInactive();
           return;
         }
@@ -184,14 +246,14 @@ export function useMonitoring({
   }, [captureFrame, handleSessionInactive, sessionId]);
 
   const scheduleNextFrame = useCallback(
-    (tick: () => void) => {
+    (tick: () => void, delayMs: number = intervalMs) => {
       clearFrameTimer();
       if (closedRef.current) return;
       frameTimerRef.current = window.setTimeout(() => {
         frameTimerRef.current = null;
         tick();
         scheduleNextFrame(tick);
-      }, intervalMs);
+      }, delayMs);
     },
     [clearFrameTimer, intervalMs]
   );
@@ -238,6 +300,14 @@ export function useMonitoring({
         ws.onmessage = (event) => {
           try {
             const msg = JSON.parse(event.data);
+            if (msg.type === "analysis" || msg.type === "error") {
+              clearAck();
+              // Send the next frame as soon as the server is free (but no sooner than
+              // intervalMs after the last send). With a fixed timer, a reply landing just
+              // after a skipped tick left the loop idle for almost a whole extra interval.
+              const elapsed = performance.now() - lastSentAtRef.current;
+              scheduleNextFrame(sendFrameOverWs, Math.max(0, intervalMs - elapsed));
+            }
             if (msg.type === "analysis") {
               setAnalysis(msg.payload as FrameAnalysis);
               const incoming = (msg.payload as FrameAnalysis).alerts;
@@ -251,6 +321,8 @@ export function useMonitoring({
               }
             } else if (msg.type === "alert") {
               setAlerts((prev) => [msg.payload as FrameAlert, ...prev].slice(0, 50));
+            } else if (msg.type === "session_state") {
+              onSessionStateRef.current?.(msg as SessionStateMessage);
             }
           } catch (e) {
             console.warn("ws message parse failed", e);
@@ -259,15 +331,24 @@ export function useMonitoring({
         ws.onerror = () => {
           // Will likely be followed by close → fallback below.
         };
-        ws.onclose = () => {
+        ws.onclose = (event) => {
           clearFrameTimer();
+          clearAck();
           wsRef.current = null;
-          if (!closedRef.current) {
-            setStatus("fallback-rest");
-            scheduleNextFrame(() => {
-              void sendViaRest();
-            });
+          if (closedRef.current) return;
+          if (SESSION_OVER_CLOSE_CODES.includes(event.code)) {
+            // The server hung up on purpose: the session is over. Falling back
+            // to REST frames would only be refused, and keep the camera
+            // streaming into a session that no longer exists.
+            closedRef.current = true;
+            setStatus("closed");
+            handleSessionInactive();
+            return;
           }
+          setStatus("fallback-rest");
+          scheduleNextFrame(() => {
+            void sendViaRest();
+          });
         };
 
         scheduleNextFrame(sendFrameOverWs);
@@ -284,11 +365,13 @@ export function useMonitoring({
   }, [
     attachStreamToVideo,
     clearFrameTimer,
+    clearAck,
     forceRest,
     scheduleNextFrame,
     sendFrameOverWs,
     sendViaRest,
     handleSessionInactive,
+    intervalMs,
     sessionId,
     videoConstraints,
     status,
@@ -314,8 +397,17 @@ export function useMonitoring({
         return { ok: false, message: "Camera is not ready - check that your webcam is on." };
       }
 
+      // A few extra frames a moment apart let the backend average them into a
+      // steadier identity template than a single snapshot.
+      const extra: string[] = [];
+      for (let i = 0; i < ENROLL_EXTRA_FRAMES; i += 1) {
+        await new Promise((r) => window.setTimeout(r, ENROLL_FRAME_GAP_MS));
+        const next = captureFrame();
+        if (next) extra.push(next);
+      }
+
       // REST enroll avoids WS timeout races with the frame loop (first ML inference can take 30s+).
-      const res = await apiClient.enrollReference({ image, session_id: sessionId });
+      const res = await apiClient.enrollReference({ image, images: extra, session_id: sessionId });
       return { ok: !!res.ok, message: res.message };
     } catch (e) {
       console.warn("enroll failed", e);

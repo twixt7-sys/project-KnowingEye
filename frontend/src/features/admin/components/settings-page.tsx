@@ -26,6 +26,7 @@ import { ScrollableDataTable } from "@/shared/components/common/scrollable-data-
 import { PageShell } from "@/shared/components/layout/page-shell";
 import { SectionPanel } from "@/shared/components/layout/section-panel";
 import { EmptyState } from "@/shared/components/patterns/empty-state";
+import { TableLoadingRow } from "@/shared/components/patterns/loading-state";
 import { PageHeaderV2 } from "@/shared/components/patterns/page-header-v2";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
@@ -169,6 +170,9 @@ export function SettingsPage() {
               </tr>
             </thead>
             <tbody>
+              {departmentsQuery.isLoading && (
+                <TableLoadingRow colSpan={5} label="Loading departments…" />
+              )}
               {departments.length === 0 && !departmentsQuery.isLoading && (
                 <tr>
                   <td colSpan={5}>

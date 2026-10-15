@@ -10,7 +10,6 @@ class BehaviorLog(models.Model):
 
     class EventType(models.TextChoices):
         NO_FACE = "no_face", "No Face Detected"
-        MULTIPLE_FACES = "multiple_faces", "Multiple Faces"
         LOOKING_AWAY = "looking_away", "Looking Away"
         BAD_POSTURE = "bad_posture", "Bad Posture"
         LEAVING_SEAT = "leaving_seat", "Leaving Seat"

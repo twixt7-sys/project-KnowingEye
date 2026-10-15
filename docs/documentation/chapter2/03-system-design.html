@@ -93,7 +93,8 @@ erDiagram
     <p>The API response contract for frame analysis (used by the frontend and WebSocket) follows this structure:</p>
     <pre><code>{
   "metrics": { "face_presence_pct", "gaze_focus_pct", "posture_compliance_pct",
-               "identity_match_pct", "overall_compliance_pct" },
+               "identity_match_pct", "overall_compliance_pct",
+               "exam_behavior_index_pct", "ebi_indicator_count", "ebi_components" },
   "events": [{ "event_type", "score_pct", "confidence_pct", "metadata" }],
   "alerts": [{ "type", "severity", "message", "metric_pct" }]
 }</code></pre>
@@ -428,19 +429,19 @@ erDiagram
         </tr>
         <tr>
           <td>Posture</td>
-          <td>Shoulder-line tilt and spine lean ratios from body-pose landmarks</td>
-          <td>Extreme lean/tilt is consistent with reaching for hidden material or a second person entering frame</td>
+          <td>Shoulder-line tilt and head-over-shoulder lean ratios from body-pose landmarks</td>
+          <td>Extreme lean/tilt is consistent with reaching for hidden material</td>
           <td>Normal: within threshold. Suspicious: exceeds it.</td>
-          <td>MediaPipe Pose Landmarker Lite, shoulder (11/12) + nose (0) + hip (23) landmarks (<code>pose_detector.py</code>)</td>
-          <td><code>posture_shoulder_tilt_max: 0.18</code>, <code>posture_spine_lean_max: 0.55</code></td>
+          <td>MediaPipe Pose Landmarker Full, shoulder (11/12) + ear (7/8, nose 0 as fallback) landmarks, visibility-gated (<code>pose_detector.py</code>). Hips are not used - they are below the frame edge at webcam framing.</td>
+          <td><code>posture_shoulder_tilt_max: 0.18</code>, <code>posture_spine_lean_max: 0.30</code></td>
           <td><code>bad_posture</code> event, weight <code>0.6</code>, severity <code>low</code></td>
         </tr>
         <tr>
           <td>Upper-body visibility</td>
-          <td>Whether shoulder/hip pose landmarks are detected at all</td>
+          <td>Whether both shoulder pose landmarks are visible (visibility &ge; 0.5)</td>
           <td>Absence of the upper body (not just the face) indicates the examinee has left the seat entirely</td>
           <td>Normal: landmarks present. Suspicious: absent beyond the grace period.</td>
-          <td>MediaPipe Pose Landmarker Lite landmark-presence check</td>
+          <td>MediaPipe Pose Landmarker Full shoulder-visibility check</td>
           <td><code>leaving_seat_grace_seconds: 3.0</code></td>
           <td><code>leaving_seat</code> event, weight <code>0.75</code>, severity <code>medium</code></td>
         </tr>
@@ -455,7 +456,7 @@ erDiagram
       <tbody>
         <tr><td><code>identity_match_threshold</code></td><td>0.42 cosine distance (≈0.58 similarity)</td><td>InsightFace's own model-selection guide gives a worked example verification threshold of <strong>0.40 cosine similarity</strong> for <code>buffalo_l</code>-family embeddings <a href="https://www.insightface.ai/guides/choose-face-recognition-model-and-evaluate">(InsightFace, "Choosing a Face Recognition Model")</a>. Knowing Eye's 0.42-distance / 0.58-similarity bar is <em>stricter</em> than that reference example - a deliberate choice, since a false accept (letting an impersonator through) is a worse failure mode for exam integrity than a false reject (prompting a legitimate examinee to re-center in frame).</td></tr>
         <tr><td><code>gaze_yaw_threshold_deg</code> / <code>gaze_pitch_threshold_deg</code></td><td>40° / 35°</td><td>Published proctoring-CV literature confirms gaze/head-pose deviation as the standard cheating-detection signal but does not converge on one universal degree threshold - published systems tune it per camera geometry and typically pair it with a duration requirement rather than a single angle <a href="https://arxiv.org/pdf/2409.16923">(Yassine et al., "AI-assisted Gaze Detection for Proctoring Online Exams")</a>. Knowing Eye follows that duration-pairing practice: 40°/35° alone does not flag anything - it must also persist across the temporal window (see Anomaly, above) before it becomes an event.</td></tr>
-        <tr><td><code>posture_shoulder_tilt_max</code> / <code>posture_spine_lean_max</code></td><td>0.18 / 0.55</td><td>These are geometric ratios (landmark-distance ratios, not literature-standardized units), so they are tuned against MediaPipe's own BlazePose landmark topology rather than an external paper - documented here as an internally-derived value, not misrepresented as externally cited.</td></tr>
+        <tr><td><code>posture_shoulder_tilt_max</code> / <code>posture_spine_lean_max</code></td><td>0.18 / 0.30</td><td>These are geometric ratios (landmark-distance ratios, not literature-standardized units), so they are tuned against MediaPipe's own BlazePose landmark topology rather than an external paper - documented here as an internally-derived value, not misrepresented as externally cited. Tilt is tan(shoulder-line angle), so 0.18 &asymp; 10&deg;; lean is the ear-midpoint offset from the shoulder midpoint along the shoulder axis divided by shoulder width (0 = centred, 0.5 = head above one shoulder). Both are scale-invariant and re-derivable from labelled captures with <code>scripts/calibrate_monitoring.py posture</code>.</td></tr>
         <tr><td><code>suspicious_pattern.window_seconds</code> / <code>min_flags</code></td><td>60s / 3 flags</td><td>Sliding-window temporal aggregation to suppress single-frame false positives is an established anomaly-detection technique in video surveillance literature <a href="https://www.nature.com/articles/s41598-025-12388-7">(Nature Sci. Rep., multi-camera spatiotemporal anomaly detection, 2025)</a>; the specific 60s/3-flag parameterization is a project-tuned instance of that general technique, consistent with the literature's finding that combining temporal reasoning with confidence-based filtering reduces false positives versus per-frame flagging.</td></tr>
         <tr><td>Appearance-fallback identity threshold</td><td>0.15 cosine distance</td><td><strong>Explicitly not research-derived</strong> - the code comment (<code>identity.py:18-20</code>) says so directly: tuned so a matching crop scores near-zero distance and a different face exceeds it. This only activates in the degraded "stub"/no-ML-dependencies fallback path, never in production with MediaPipe+InsightFace installed - documented honestly rather than dressed up with a citation it doesn't have.</td></tr>
       </tbody>
@@ -470,7 +471,7 @@ erDiagram
       <div class="card"><h4>Critical</h4><p class="muted" style="font-size:0.9rem">Weighted total crosses a second, higher bar, or an <code>identity_mismatch</code> occurs at all (single-occurrence critical, per its 0.95 weight). Raises a <code>high</code>-severity <code>Alert</code> explicitly flagged <em>recommend intervention</em>.</p></div>
       <div class="card"><h4>Action</h4><p class="muted" style="font-size:0.9rem"><strong>Deliberately kept manual.</strong> Critical surfaces a recommendation on the live monitoring dashboard; a proctor still clicks the existing <code>sessions.terminate</code> action to end a session. Auto-terminating a student's exam from a CV heuristic alone - with no human in the loop - is a consequential, hard-to-reverse action against a real person, and false positives are possible by design (that's what "suspicious" vs "certain" means). The Directive asks the ladder to define what happens at each tier, not that every tier act autonomously.</p></div>
     </div>
-    <p class="doc-lead" style="font-size:0.85rem">Combined-signal weighting reuses <code>pipeline.yaml</code>'s existing <code>metric_weights</code> (face/gaze/posture/identity) rather than inventing a second weighting scheme, per the Directive's instruction to weight combined signals higher than one isolated signal. Covered by <code>backend/features/behavior/tests/test_escalation.py</code> with synthetic event streams - deterministic, no webcam or ML dependency required, so it runs in every CI pass.</p>
+    <p class="doc-lead" style="font-size:0.85rem">Combined-signal weighting reuses <code>pipeline.yaml</code>'s per-event <code>behavior.weights</code> (no_face, looking_away, identity_mismatch, …) rather than inventing a second weighting scheme, per the Directive's instruction to weight combined signals higher than one isolated signal. (This is separate from the composite compliance score, which is the equal-weight <a href="04-system-testing.html#ebi">Exam Behavior Index</a>.) Covered by <code>backend/features/behavior/tests/test_escalation.py</code> with synthetic event streams - deterministic, no webcam or ML dependency required, so it runs in every CI pass.</p>
 
     <h2 id="algorithm-comparison">Algorithm Comparison</h2>
     <p>Directive Area 04 ("Algorithm comparison", P0): benchmark the current stack against at least one alternative each, on accuracy, speed, and resource cost, and justify the pick. <strong>Correction alongside this comparison:</strong> four documentation pages previously described the pipeline as using MediaPipe, <strong>YOLOv8</strong>, and ArcFace. <code>backend/requirements-cv.txt</code> and every import in <code>backend/ai/knowing_eye/</code> were checked directly - there is no <code>ultralytics</code> dependency and no YOLO code anywhere in this repository. That claim was inaccurate and has been corrected in Part B, Part C, Part D, and Part E of this chapter. Knowing Eye has never run YOLO; the two questions below are the honest reason why.</p>
@@ -490,7 +491,7 @@ erDiagram
           <td>Person/object detection (why not YOLO)</td>
           <td><em>Not used - landmark models cover the requirement</em></td>
           <td>YOLOv8 (object detection)</td>
-          <td colspan="2">YOLO is an <strong>object detector</strong> (bounding boxes + class labels) - it does not natively produce the face-landmark, head-pose, or body-keypoint outputs Knowing Eye's behavior scoring is built on. It is the right tool for a different sub-problem (e.g., detecting a phone or a second person as a discrete object in frame), which is real future scope, not a substitute for MediaPipe's landmark output.</td>
+          <td colspan="2">YOLO is an <strong>object detector</strong> (bounding boxes + class labels) - it does not natively produce the face-landmark, head-pose, or body-keypoint outputs Knowing Eye's behavior scoring is built on. It is the right tool for a different sub-problem (e.g., detecting a phone as a discrete object in frame), which is real future scope, not a substitute for MediaPipe's landmark output.</td>
           <td>Adding a GPU-oriented detector for a CPU-first deployment target would work against the stack's own design constraint above.</td>
           <td>Several RRL sources reviewed for Chapter 1 use YOLO for prohibited-object detection specifically (phones, notes) rather than identity/gaze/posture - a legitimate <em>future</em> addition (see docs/todo Sprint scope), not a replacement for the landmark pipeline that already exists.</td>
         </tr>
@@ -525,12 +526,52 @@ erDiagram
     <p>Directive Area 04 ("Browser-side deterrents", P2). Right-click, text selection, and copy/cut are disabled on the exam-taking chrome (question text, navigator) - but explicitly <strong>not</strong> inside an answer <code>&lt;input&gt;</code>/<code>&lt;textarea&gt;</code>, since a student must still be able to select, cut, and rewrite their own response (<code>focus-shell.tsx</code>, <code>isEditableTarget</code> guard). Tab-switch detection was already wired end-to-end at the logging layer (<code>ExamSessionViewSet.log_event</code>, <code>SessionLog.EventType.TAB_HIDDEN</code>) but nothing compared the count against <code>Exam.max_tab_switches</code> - the exam-taking hook now counts hidden-tab events client-side and surfaces a warning banner once the configured limit is exceeded, in addition to the existing raw event log.</p>
     <p class="doc-lead" style="font-size:0.85rem"><strong>These are deterrents, not security controls, and are documented as such per the Directive's explicit instruction not to overclaim.</strong> A student using a second physical device, a phone, or printed notes is not stopped by any of the above - disabling the browser context menu does not prevent screenshotting with an OS tool, and tab-switch detection only observes the tab hosting the exam, not what's visible on a second monitor. The identity/gaze/posture CV pipeline and human proctor review remain the actual integrity controls; these browser affordances raise the effort required for the most casual attempts (copy-pasting exam text, alt-tabbing to a browser search) and nothing stronger is claimed for them here.</p>
 
+    <h2 id="capacity">Capacity, Hardware &amp; Load Testing</h2>
+    <p>Directive Area 04: <em>"'It's web-based' is not a technical requirements section - camera processing still has real hardware demands."</em> Every field below is derived from the CV pipeline's actual input constraints and from real load-test measurements (<code>scripts/load/</code>) - not guessed, which was the same failure the panel named for the CV thresholds.</p>
+
+    <h3>Technical requirements specification</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Layer</th><th>Field</th><th>Requirement</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="5">Camera</td><td>Position</td><td>Eye-level or slightly above, facing the examinee directly</td></tr>
+        <tr><td>Angle</td><td>Within ~15° of directly facing the camera - head-pose/gaze scoring (<code>gaze_yaw_threshold_deg</code>/<code>gaze_pitch_threshold_deg</code>) treats "facing camera" as the zero-baseline; a mounted-off-axis camera biases every reading</td></tr>
+        <tr><td>Distance / field of view</td><td>~40-70cm (arm's length), standard laptop-webcam FOV (~60-78°), framing head <strong>and</strong> shoulders - derived from <code>face_detector.py</code>'s minimum detectable face size (<code>_MIN_FACE_PX=56</code> at the pipeline's 480px capture width, ≈12% of frame width minimum) and from the upper-body-visibility signal needing shoulder landmarks in frame</td></tr>
+        <tr><td>Resolution</td><td>640×480 minimum/recommended - matches the frontend's capture request and <code>preprocessing.max_width: 640</code>; higher source resolution is downscaled before inference, so it doesn't improve accuracy</td></tr>
+        <tr><td>Lighting</td><td>Even, front-facing illumination; avoid backlighting (light source behind the examinee) - a general face-detection failure mode, not project-specific research</td></tr>
+        <tr><td rowspan="5">Client device</td><td>RAM</td><td>≥4GB - one browser tab encoding a 480px JPEG at 1fps is not resource-heavy; this is a generic modern-browser floor, not a pipeline-specific figure</td></tr>
+        <tr><td>Processor</td><td>Dual-core 1.6GHz+</td></tr>
+        <tr><td>OS / Browser</td><td>Any OS running an evergreen browser with <code>getUserMedia</code>, WebSocket, and Canvas 2D support (Chrome/Edge/Firefox/Safari, current)</td></tr>
+        <tr><td>Camera</td><td>Any UVC-compliant webcam meeting the camera requirements above</td></tr>
+        <tr><td>Internet</td><td>≥1 Mbps upload recommended - measured frame payload is ~5.4KB (see below), ≈43 kbps sustained at 1fps per examinee; 1 Mbps leaves headroom for TLS/WS overhead and shared classroom network load</td></tr>
+        <tr><td rowspan="6">Server</td><td>CPU</td><td>≥4 dedicated vCPUs for a single-process deployment - <strong>measured:</strong> 3 concurrent WebSocket connections drove one Django/Daphne process to 100% of a single logical core; inference is unparallelized per frame, so CPU scales roughly with concurrent connections (see load-test results below for the honest limits of this extrapolation)</td></tr>
+        <tr><td>RAM</td><td>Several GB of true free headroom beyond the app's own footprint - <strong>measured:</strong> the server process itself used ~271MB RSS regardless of host memory pressure, but running with &lt;0.5GB of total system-free RAM caused catastrophic OS-level latency degradation (p95 response time 164s vs. 1.9s with adequate headroom) even at only 3 concurrent connections. The app's footprint alone underrepresents what to provision.</td></tr>
+        <tr><td>Storage</td><td>Minimal - raw frames are not stored by default (<code>KE_STORE_FRAMES=False</code>, see <a href="#snapshot-monitoring">Snapshot Monitoring</a>); standard footprint for code/logs/DB</td></tr>
+        <tr><td>Network</td><td>Scales with the client estimate above: ≈1.3 Mbps for 30 concurrent examinees, ≈4.3 Mbps for 100, plus REST/DB/broadcast overhead - provision generously</td></tr>
+        <tr><td>Hosting environment</td><td>Daphne/ASGI behind Nginx (see <code>docs/deployment.md</code>). <strong>Correction from this sprint's testing:</strong> the project's actual configured database engine is PostgreSQL, not SQLite - discovered because the load-test harness's direct-database seeding command failed against an unmigrated Postgres instance. The Channels layer defaults to <code>InMemoryChannelLayer</code> (single-process only) unless <code>REDIS_URL</code> is set and <code>channels-redis</code> installed (documented as an optional production step in <code>docs/deployment.md</code>) - multi-worker horizontal scaling requires that step, and was not exercised by this load test (a single Daphne process was the test target).</td></tr>
+        <tr><td>Concurrent-user target</td><td>See "Answering the Directive's question" below</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>Load testing</h3>
+    <p>Harness: <code>scripts/load/</code> (Locust, driving both the REST health endpoint and the WebSocket snapshot channel at the real ~1fps frontend cadence). Full methodology and how to re-run it: <code>scripts/load/README.md</code>.</p>
+    <p><strong>What was actually run:</strong> the Directive's 5→10→20→30→50→100 concurrency ladder was <strong>not completed at target scale</strong> on this development machine, and that is reported honestly rather than papered over. The development laptop available for this sprint had well under 1GB of free system RAM throughout testing (0.19-0.94GB, fluctuating for reasons unrelated to this test - other work already running on a shared machine), which is not a safe or representative environment to push to 100 simulated concurrent ML-inference connections. Two validation runs at n=3 were completed instead, deliberately, to prove the harness itself works correctly before ever attempting higher rungs:</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Concurrent examinees</th><th>Host free RAM</th><th>Requests</th><th>Failures</th><th>Median</th><th>p95</th><th>Peak CPU</th><th>Peak RSS</th></tr></thead>
+      <tbody>
+        <tr><td>3</td><td>0.55GB (comfortable)</td><td>90</td><td>0</td><td>670ms</td><td>1.9s</td><td>-</td><td>272MB</td></tr>
+        <tr><td>3</td><td>0.44GB, dropping to 0.27GB during the run</td><td>12</td><td>2</td><td>98ms</td><td><strong>164s</strong></td><td>100.1%</td><td>271MB</td></tr>
+      </tbody>
+    </table></div>
+    <p class="doc-lead" style="font-size:0.85rem">The two runs' near-identical RSS with wildly different latency is itself the finding: at n=3, the application's own resource use is stable and modest - the second run's collapse was the <em>host</em> running out of memory underneath it, not the app scaling badly. That distinction is exactly why the server RAM requirement above is stated as "headroom beyond the app's footprint," not just "the app's footprint."</p>
+    <h4>Answering the Directive's question</h4>
+    <p><em>"Can it handle ~30 examinees in a room, and ~100 overall?"</em> Honest answer: <strong>not established empirically at that scale yet.</strong> What is established: the harness that measures it is built, debugged (three real bugs were found and fixed while validating it - see <code>scripts/load/README.md</code>), and ready to run the full ladder in one command against hardware with confirmed free CPU/RAM headroom - a dedicated test VM or server, not a shared development laptop mid other work. Reporting "yes, 100" without having run that test would be exactly the kind of unresearched claim this whole sprint exists to eliminate. The n=3 result plus the memory-pressure finding are real, defensible data; the 30/100 target-scale numbers are the next, mechanically straightforward step once suitable hardware is available.</p>
+
     <h3>CV Pipeline Stages</h3>
     <div class="two-col">
       <div class="card"><h4>1. Data Collection</h4><p class="muted" style="font-size:0.9rem">Browser <code>getUserMedia()</code> captures webcam video; canvas encodes JPEG/base64 at ~1 FPS. Transport: WebSocket <code>/ws/monitoring/{session_id}/</code> (REST <code>/api/monitoring/frame/</code> fallback).</p></div>
       <div class="card"><h4>2. Pre-processing</h4><p class="muted" style="font-size:0.9rem">Base64 → BGR; resize to ≤640px; optional denoise; YCbCr histogram equalization. Config: <code>backend/ai/config/pipeline.yaml</code>.</p></div>
       <div class="card"><h4>3. Feature Extraction</h4><p class="muted" style="font-size:0.9rem">MediaPipe (468 face landmarks, head yaw/pitch, posture ratios) and ArcFace identity embedding.</p></div>
-      <div class="card"><h4>4. Classification &amp; Scoring</h4><p class="muted" style="font-size:0.9rem">Threshold-based 0–100% metrics, rule-based event flags, sliding-window temporal patterns, and weighted aggregation into <code>overall_compliance_pct</code>.</p></div>
+      <div class="card"><h4>4. Classification &amp; Scoring</h4><p class="muted" style="font-size:0.9rem">Threshold-based 0–100% metrics, rule-based event flags, sliding-window temporal patterns, and equal-weight aggregation into the <a href="04-system-testing.html#ebi">Exam Behavior Index</a> (<code>exam_behavior_index_pct</code>, also exposed as <code>overall_compliance_pct</code>).</p></div>
     </div>
 
     <div class="doc-nav" style="margin-top:2.5rem">

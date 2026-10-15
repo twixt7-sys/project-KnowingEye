@@ -23,10 +23,10 @@ import { ScrollableDataTable } from "@/shared/components/common/scrollable-data-
 import { PageShell } from "@/shared/components/layout/page-shell";
 import { SectionPanel } from "@/shared/components/layout/section-panel";
 import { EmptyState } from "@/shared/components/patterns/empty-state";
+import { TableLoadingRow } from "@/shared/components/patterns/loading-state";
 import { PageHeaderV2 } from "@/shared/components/patterns/page-header-v2";
 import { StatGrid } from "@/shared/components/patterns/stat-grid";
 import { Button } from "@/shared/components/ui/button";
-import { Input } from "@/shared/components/ui/input";
 import { useDebounce } from "@/shared/hooks/use-debounce";
 import { usePagination } from "@/shared/hooks/use-pagination";
 
@@ -174,14 +174,14 @@ export function UsersPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative min-w-0 flex-1 sm:max-w-sm">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <input
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
                 placeholder="Search username or email…"
-                className="py-2 pl-9"
+                className="form-field w-full py-2 pl-9 pr-3 text-sm"
               />
             </div>
             <select
@@ -190,7 +190,7 @@ export function UsersPage() {
                 setRoleFilter(e.target.value as "" | Role);
                 setPage(1);
               }}
-              className="form-field text-sm"
+              className="form-field w-full py-2 text-sm sm:w-auto"
             >
               <option value="">All roles</option>
               {ROLES.map((role) => (
@@ -214,6 +214,7 @@ export function UsersPage() {
               </tr>
             </thead>
             <tbody>
+              {usersQuery.isLoading && <TableLoadingRow colSpan={5} label="Loading users…" />}
               {users.length === 0 && !usersQuery.isLoading && (
                 <tr>
                   <td colSpan={5}>
@@ -231,7 +232,13 @@ export function UsersPage() {
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-primary/10 font-serif text-sm font-semibold text-primary ring-1 ring-border">
                         {u.avatar_url ? (
-                          <img src={u.avatar_url} alt="" className="h-full w-full object-cover" />
+                          <img
+                            src={u.avatar_url}
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
                           (u.first_name?.[0] ?? u.username[0] ?? "?").toUpperCase()
                         )}

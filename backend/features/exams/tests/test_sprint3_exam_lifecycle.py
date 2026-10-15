@@ -12,6 +12,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -238,6 +239,183 @@ class QuestionLockDuringActiveSessionTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
 
 
+class PublishedExamQuestionEditingTests(APITestCase):
+    """A published exam's questions stay editable until its first attempt."""
+
+    def setUp(self):
+        self.faculty = make_user(User.Role.FACULTY, "pub_faculty")
+        self.student = make_user(User.Role.STUDENT, "pub_student")
+        self.exam = Exam.objects.create(
+            title="Published exam", department=make_department("PUB"),
+            created_by=self.faculty, status=Exam.Status.ACTIVE,
+        )
+        self.question = Question.objects.create(
+            exam=self.exam, question_text="Q1", question_type=Question.QuestionType.SHORT_ANSWER,
+            correct_answer="x", points=1, order=1,
+        )
+        self.client.force_authenticate(user=self.faculty)
+
+    def _patch_question(self):
+        return self.client.patch(
+            f"/api/exams/{self.exam.id}/questions/{self.question.id}/",
+            {"question_text": "Fixed typo"},
+        )
+
+    def test_owner_can_edit_question_before_any_attempt(self):
+        res = self._patch_question()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.question.refresh_from_db()
+        self.assertEqual(self.question.question_text, "Fixed typo")
+
+    def test_owner_can_add_question_before_any_attempt(self):
+        res = self.client.post(
+            f"/api/exams/{self.exam.id}/questions/",
+            {"question_text": "Q2", "question_type": "short_answer", "correct_answer": "y", "points": 1},
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+    def test_locked_once_an_attempt_exists(self):
+        ExamSession.objects.create(
+            exam=self.exam, user=self.student, status=ExamSession.Status.COMPLETED,
+        )
+        res = self._patch_question()
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already started", str(res.data))
+
+    def test_archived_exam_stays_locked(self):
+        self.exam.status = Exam.Status.ARCHIVED
+        self.exam.save(update_fields=["status"])
+        self.assertEqual(self._patch_question().status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_delete_last_question_of_published_exam(self):
+        res = self.client.delete(f"/api/exams/{self.exam.id}/questions/{self.question.id}/")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(Question.objects.filter(pk=self.question.pk).exists())
+
+    def test_exam_settings_stay_draft_only(self):
+        res = self.client.patch(f"/api/exams/{self.exam.id}/", {"title": "Renamed"})
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_detail_reports_questions_editable(self):
+        res = self.client.get(f"/api/exams/{self.exam.id}/")
+        self.assertTrue(res.data["questions_editable"])
+        ExamSession.objects.create(
+            exam=self.exam, user=self.student, status=ExamSession.Status.COMPLETED,
+        )
+        res = self.client.get(f"/api/exams/{self.exam.id}/")
+        self.assertFalse(res.data["questions_editable"])
+
+
+class UnpublishExamTests(APITestCase):
+    """A published exam can return to draft until its first attempt."""
+
+    def setUp(self):
+        self.faculty = make_user(User.Role.FACULTY, "unpub_faculty")
+        self.other_faculty = make_user(User.Role.FACULTY, "unpub_other")
+        self.student = make_user(User.Role.STUDENT, "unpub_student")
+        self.exam = Exam.objects.create(
+            title="Live exam", department=make_department("UNP"),
+            created_by=self.faculty, status=Exam.Status.ACTIVE,
+            approval_status=Exam.ApprovalStatus.APPROVED,
+            reviewed_by=self.faculty, reviewed_at=timezone.now(),
+        )
+        self.client.force_authenticate(user=self.faculty)
+
+    def _unpublish(self):
+        return self.client.post(f"/api/exams/{self.exam.id}/unpublish/")
+
+    def test_owner_can_unpublish_before_any_attempt(self):
+        res = self._unpublish()
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data["exam"]["status"], "draft")
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.DRAFT)
+
+    def test_resets_approval_and_records_event(self):
+        self._unpublish()
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.approval_status, Exam.ApprovalStatus.NOT_SUBMITTED)
+        self.assertIsNone(self.exam.reviewed_by)
+        self.assertIsNone(self.exam.reviewed_at)
+        event = self.exam.approval_events.get()
+        self.assertEqual(event.action, "unpublish")
+        self.assertEqual(event.actor, self.faculty)
+
+    def test_settings_editable_afterwards(self):
+        self._unpublish()
+        res = self.client.patch(f"/api/exams/{self.exam.id}/", {"title": "Renamed"})
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+    def test_non_admin_cannot_republish_without_new_approval(self):
+        Question.objects.create(
+            exam=self.exam, question_text="Q1", question_type=Question.QuestionType.SHORT_ANSWER,
+            correct_answer="x", points=1, order=1,
+        )
+        self._unpublish()
+        res = self.client.post(f"/api/exams/{self.exam.id}/publish/")
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("approval_status", res.data["error"]["details"])
+
+    def test_blocked_once_an_attempt_exists(self):
+        ExamSession.objects.create(
+            exam=self.exam, user=self.student, status=ExamSession.Status.COMPLETED,
+        )
+        res = self._unpublish()
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("already started", str(res.data))
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ACTIVE)
+
+    def test_draft_exam_cannot_be_unpublished(self):
+        self.exam.status = Exam.Status.DRAFT
+        self.exam.save(update_fields=["status"])
+        self.assertEqual(self._unpublish().status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_archived_exam_cannot_be_unpublished(self):
+        self.exam.status = Exam.Status.ARCHIVED
+        self.exam.save(update_fields=["status"])
+        self.assertEqual(self._unpublish().status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_non_owner_forbidden(self):
+        self.client.force_authenticate(user=self.other_faculty)
+        res = self._unpublish()
+        self.assertIn(res.status_code, (status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND))
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ACTIVE)
+
+    def test_student_cannot_unpublish(self):
+        self.client.force_authenticate(user=self.student)
+        res = self._unpublish()
+        self.assertIn(res.status_code, (status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND))
+
+
+class UnarchiveExamPermissionTests(APITestCase):
+    """Unarchiving follows the same ownership rule as archiving."""
+
+    def setUp(self):
+        self.owner = make_user(User.Role.FACULTY, "unarch_owner")
+        self.other = make_user(User.Role.FACULTY, "unarch_other")
+        self.exam = Exam.objects.create(
+            title="Archived exam", department=make_department("UNA"),
+            created_by=self.owner, status=Exam.Status.ARCHIVED,
+            previous_status=Exam.Status.ACTIVE,
+        )
+
+    def test_owner_can_unarchive(self):
+        self.client.force_authenticate(user=self.owner)
+        res = self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ACTIVE)
+
+    def test_non_owner_cannot_unarchive(self):
+        self.client.force_authenticate(user=self.other)
+        res = self.client.post(f"/api/exams/{self.exam.id}/unarchive/")
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ARCHIVED)
+
+
 class QuestionOptionImageShapeTests(APITestCase):
     """Options moved from plain strings to {"text", "image"} objects."""
 
@@ -380,3 +558,40 @@ class EssayGradingReleaseGateTests(APITestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
         self.session.refresh_from_db()
         self.assertEqual(self.session.status, ExamSession.Status.COMPLETED)
+
+    def test_finalize_grading_emails_student_by_default(self):
+        self.response.points_awarded = 8
+        self.response.flagged_for_review = False
+        self.response.save(update_fields=["points_awarded", "flagged_for_review"])
+
+        finalize_grading_if_complete(self.session)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.student.email])
+
+    def test_finalize_grading_skips_email_when_declined(self):
+        self.response.points_awarded = 8
+        self.response.flagged_for_review = False
+        self.response.save(update_fields=["points_awarded", "flagged_for_review"])
+
+        finalize_grading_if_complete(self.session, send_email=False)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_grade_endpoint_sends_email_by_default(self):
+        self.client.force_authenticate(user=self.faculty)
+        res = self.client.patch(
+            f"/api/responses/{self.response.id}/grade/",
+            {"points_awarded": 10, "grader_comment": "Great answer"},
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_grade_endpoint_send_email_false_skips_email(self):
+        self.client.force_authenticate(user=self.faculty)
+        res = self.client.patch(
+            f"/api/responses/{self.response.id}/grade/",
+            {"points_awarded": 10, "grader_comment": "Great answer", "send_email": False},
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.status, ExamSession.Status.COMPLETED)
+        self.assertEqual(len(mail.outbox), 0)

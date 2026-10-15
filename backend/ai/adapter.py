@@ -129,12 +129,15 @@ def _apply_temporal_stub(session_id: str, payload: dict[str, Any]) -> dict[str, 
     face_raw = payload.get("face", {})
     posture_raw = payload.get("posture", {})
 
+    _ebi_raw = metrics_raw.get("exam_behavior_index_pct")
     metrics = MetricScores(
         face_presence_pct=float(metrics_raw.get("face_presence_pct", 0)),
         gaze_focus_pct=float(metrics_raw.get("gaze_focus_pct", 0)),
         posture_compliance_pct=float(metrics_raw.get("posture_compliance_pct", 0)),
         identity_match_pct=metrics_raw.get("identity_match_pct"),
         overall_compliance_pct=float(metrics_raw.get("overall_compliance_pct", 0)),
+        exam_behavior_index_pct=float(_ebi_raw) if _ebi_raw is not None else None,
+        ebi_indicator_count=int(metrics_raw.get("ebi_indicator_count", 0)),
         alert_threshold_pct=float(metrics_raw.get("alert_threshold_pct", 80)),
     )
     face = FaceAnalysis(
@@ -198,20 +201,26 @@ def _stub_detect_face_count(frame_bgr) -> int:
         import cv2
 
         if _STUB_CASCADE is None:
-            _STUB_CASCADE = cv2.CascadeClassifier(
-                cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-            )
+            from ai.knowing_eye.detection.mp_models import load_cascade
+
+            loaded = load_cascade("haarcascade_frontalface_default.xml")
+            if loaded is None:
+                logger.error("Stub face cascade failed to load - face detection disabled.")
+                return 0
+            _STUB_CASCADE = loaded
         gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
         if float(gray.mean()) < 10:
             return 0
         h, w = gray.shape[:2]
         rects = _STUB_CASCADE.detectMultiScale(gray, 1.08, 6, minSize=(72, 72))
-        count = 0
-        for x, y, bw, bh in rects:
-            if _is_plausible_face_stub((int(x), int(y), int(bw), int(bh)), w, h):
-                count += 1
-        return count
+        return int(
+            any(
+                _is_plausible_face_stub((int(x), int(y), int(bw), int(bh)), w, h)
+                for x, y, bw, bh in rects
+            )
+        )
     except Exception:  # noqa: BLE001
+        logger.exception("Stub face detection failed")
         return 0
 
 
@@ -261,19 +270,21 @@ class _StubPipeline:
     ) -> dict[str, Any]:
         face_count = _stub_detect_face_count(frame_bgr)
         from ai.knowing_eye.behavior.normalize import (
+            exam_behavior_index_pct,
             face_presence_pct,
             gaze_focus_pct,
-            overall_compliance_pct,
-            posture_compliance_pct,
+            upper_body_presence_pct,
         )
 
-        face_presence = face_presence_pct(face_count)
-        gaze = gaze_focus_pct(0.0 if face_count else None, 0.0 if face_count else None, 40, 35)
-        posture = posture_compliance_pct(face_count > 0, None, None, 0.18)
-
         identity_pct, identity_distance = self._identity_score(frame_bgr, reference_embedding)
+        # Identity detected (matches the enrolled face) => face present, always 100%.
+        identity_detected = identity_pct is not None and identity_pct >= _ALERT_THRESHOLD_PCT
 
-        overall = overall_compliance_pct(face_presence, gaze, posture, identity_pct)
+        face_presence = face_presence_pct(face_count, identity_detected=identity_detected)
+        gaze = gaze_focus_pct(0.0 if face_count else None, 0.0 if face_count else None, 40, 35)
+        posture = upper_body_presence_pct(face_count > 0)
+
+        overall, ebi_count = exam_behavior_index_pct(face_presence, gaze, posture, identity_pct)
 
         t = _ALERT_THRESHOLD_PCT
         flagged: list[str] = []
@@ -292,6 +303,14 @@ class _StubPipeline:
             "posture_compliance_pct": posture,
             "identity_match_pct": identity_pct,
             "overall_compliance_pct": overall,
+            "exam_behavior_index_pct": overall,
+            "ebi_indicator_count": ebi_count,
+            "ebi_components": {
+                "face_presence": face_presence,
+                "face_identity": identity_pct,
+                "upper_body_presence": posture,
+                "looking_away_compliance": gaze,
+            },
             "alert_threshold_pct": t,
             "flagged_metrics": flagged,
             "all_compliant": len(flagged) == 0,
@@ -302,7 +321,7 @@ class _StubPipeline:
 
         events: list[dict[str, Any]] = []
         alerts: list[dict[str, Any]] = []
-        if face_count == 0:
+        if face_presence < t:
             events.append(
                 {
                     "event_type": "no_face",
@@ -369,6 +388,7 @@ class _StubPipeline:
             "frame_size": [w, h] if w and h else None,
             "metrics": metrics,
             "overall_compliance_pct": overall,
+            "exam_behavior_index_pct": overall,
             "behavior_score": round(overall / 100.0, 4),
             "events": events,
             "alerts": alerts,
@@ -392,8 +412,9 @@ class _StubPipeline:
                 return None, None
             cosine = float(np.clip(np.dot(ref, cur), -1.0, 1.0))
             distance = max(0.0, 1.0 - cosine)
-            pct = 100.0 * (1.0 - distance / _STUB_IDENTITY_THRESHOLD)
-            pct = round(max(0.0, min(100.0, pct)), 1)
+            from ai.knowing_eye.behavior.normalize import threshold_compliance_pct
+
+            pct = threshold_compliance_pct(distance, _STUB_IDENTITY_THRESHOLD, _ALERT_THRESHOLD_PCT)
             return pct, round(distance, 6)
         except Exception:  # noqa: BLE001
             return None, None
@@ -467,13 +488,46 @@ def _guaranteed_setup_embedding(frame_bgr) -> list[float] | None:
         return None
 
 
+def _compute_enrollment_embedding(frames: list) -> list[float] | None:
+    """Fuse several enrollment frames into one template when the pipeline can."""
+    pipeline = _get_pipeline()
+    if len(frames) > 1 and hasattr(pipeline, "compute_enrollment_embedding"):
+        try:
+            emb = pipeline.compute_enrollment_embedding(frames)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("compute_enrollment_embedding failed: %s", exc)
+            emb = None
+        if emb:
+            return [float(x) for x in emb]
+    for frame in frames:
+        emb = compute_embedding(frame)
+        if emb:
+            return emb
+    return None
+
+
 def enroll_reference(frame_bgr, session=None) -> dict[str, Any]:
+    """Enroll a session's reference face from one frame or a list of frames.
+
+    Several frames captured a moment apart give a much steadier ArcFace
+    template than a single snapshot (see ``fuse_embeddings``).
+    """
     mode = get_pipeline_mode()
     embedding: list[float] | None = None
     embedding_backend = mode
 
+    frames = [f for f in (frame_bgr if isinstance(frame_bgr, (list, tuple)) else [frame_bgr]) if f is not None]
+    if not frames:
+        return {
+            "ok": False,
+            "enrolled": False,
+            "pipeline_mode": mode,
+            "message": "No face detected - please face the camera and try again.",
+        }
+    frame_bgr = frames[0]
+
     try:
-        embedding = compute_embedding(frame_bgr)
+        embedding = _compute_enrollment_embedding(frames)
     except Exception as exc:  # noqa: BLE001
         logger.warning("compute_embedding failed during enroll: %s", exc)
 

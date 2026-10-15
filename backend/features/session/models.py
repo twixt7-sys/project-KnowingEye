@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
+import math
 import uuid
 
 from features.exams.models import Exam
@@ -19,6 +20,7 @@ class ExamSession(models.Model):
     class Status(models.TextChoices):
         SETUP = 'setup', 'Setup'
         IN_PROGRESS = 'in_progress', 'In Progress'
+        PAUSED = 'paused', 'Paused'
         PENDING_REVIEW = 'pending_review', 'Pending Review'
         COMPLETED = 'completed', 'Completed'
         TERMINATED = 'terminated', 'Terminated'
@@ -108,6 +110,53 @@ class ExamSession(models.Model):
         help_text='Extra time granted for this attempt (minutes)',
     )
 
+    # --- Proctor pause -----------------------------------------------------
+    # A proctor can pause an in-progress attempt (status PAUSED). The exam
+    # clock stops while paused: ``paused_at`` marks when the current pause
+    # began, and each finished pause is folded into ``paused_total_seconds``,
+    # which pushes the end of the timed exam out by the same amount so the
+    # examinee loses no exam time. See fold_pause() and timed_end_at.
+    paused_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='When the current pause began (null unless status is paused)',
+    )
+    paused_total_seconds = models.PositiveIntegerField(
+        default=0,
+        help_text='Total seconds this attempt has spent paused (finished pauses)',
+    )
+    pause_reason = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        help_text='Optional note from the proctor, shown to the examinee while paused',
+    )
+
+    # --- Exam Behavior Index (EBI) running aggregates -------------------
+    # Session-level EBI is the mean of every analyzed frame's Exam Behavior
+    # Index (0-100). Stored as an incremental running mean so the value is
+    # reproducible and provable: ebi_average == mean(frame EBI over
+    # ebi_sample_count frames). Component means let a report show which
+    # indicator (face presence, identity, upper-body presence, looking-away
+    # compliance) drove a low index. See features.behavior.services.
+    ebi_average = models.FloatField(
+        null=True,
+        blank=True,
+        help_text='Mean Exam Behavior Index (0-100) across all analyzed frames',
+    )
+    ebi_face_presence_avg = models.FloatField(null=True, blank=True)
+    ebi_face_identity_avg = models.FloatField(null=True, blank=True)
+    ebi_upper_body_avg = models.FloatField(null=True, blank=True)
+    ebi_looking_away_avg = models.FloatField(null=True, blank=True)
+    ebi_sample_count = models.PositiveIntegerField(
+        default=0,
+        help_text='Number of analyzed frames folded into the EBI running mean',
+    )
+    ebi_identity_sample_count = models.PositiveIntegerField(
+        default=0,
+        help_text='Frames where identity was evaluated (denominator for identity mean)',
+    )
+
     class Meta:
         db_table = 'user_sessions_exam_session'
         verbose_name = 'Exam Session'
@@ -119,10 +168,12 @@ class ExamSession(models.Model):
             models.Index(fields=['user', 'started_at']),
         ]
         constraints = [
-            # One active (setup / in-progress) session per examinee across all exams.
+            # One active (setup / in-progress / paused) session per examinee
+            # across all exams. A paused attempt is still open, so it must keep
+            # blocking a fresh attempt - otherwise pausing would be a way out.
             models.UniqueConstraint(
                 fields=['user'],
-                condition=models.Q(status__in=['in_progress', 'setup']),
+                condition=models.Q(status__in=['in_progress', 'setup', 'paused']),
                 name='unique_active_session_per_user',
             ),
         ]
@@ -132,9 +183,17 @@ class ExamSession(models.Model):
 
     @property
     def timed_end_at(self):
-        """Authoritative end time for the timed exam portion."""
+        """Authoritative end time for the timed exam portion.
+
+        Every finished pause pushes the end out by its length. A pause that is
+        still running is not included here - ``time_remaining_seconds``
+        measures a paused session from ``paused_at`` instead, so the remaining
+        time stays frozen for as long as the pause lasts.
+        """
         if self.exam_started_at:
-            return self.exam_started_at + timedelta(seconds=self.duration_seconds)
+            return self.exam_started_at + timedelta(
+                seconds=self.duration_seconds + self.paused_total_seconds
+            )
         return self.deadline_at
 
     @property
@@ -144,14 +203,25 @@ class ExamSession(models.Model):
         return base + (self.accommodation_extra_minutes * 60)
 
     @property
+    def paused_seconds(self):
+        """Seconds spent paused so far, including a pause still in progress."""
+        total = float(self.paused_total_seconds)
+        if self.paused_at:
+            total += max(0.0, (timezone.now() - self.paused_at).total_seconds())
+        return total
+
+    @property
     def time_elapsed(self):
-        """Time elapsed since the timed exam began (or since record creation in setup)."""
+        """Exam time elapsed since the timed exam began (pauses excluded).
+
+        In setup this is the time since the record was created.
+        """
         anchor = self.exam_started_at or self.started_at
         if self.submitted_at:
-            return (self.submitted_at - anchor).total_seconds()
+            return max(0.0, (self.submitted_at - anchor).total_seconds() - self.paused_seconds)
         if self.status == self.Status.SETUP:
             return 0.0
-        return (timezone.now() - anchor).total_seconds()
+        return max(0.0, (timezone.now() - anchor).total_seconds() - self.paused_seconds)
 
     @property
     def time_remaining_seconds(self):
@@ -162,7 +232,14 @@ class ExamSession(models.Model):
             return self.duration_seconds
         end_at = self.timed_end_at
         if end_at:
-            remaining = (end_at - timezone.now()).total_seconds()
+            # A paused exam's clock is stopped, so measure from the moment it
+            # was paused rather than from now.
+            reference = (
+                self.paused_at
+                if self.status == self.Status.PAUSED and self.paused_at
+                else timezone.now()
+            )
+            remaining = (end_at - reference).total_seconds()
             return max(0, int(remaining))
         elapsed = self.time_elapsed
         total = self.duration_seconds
@@ -180,6 +257,22 @@ class ExamSession(models.Model):
 
     def can_begin_exam(self):
         return self.status == self.Status.SETUP
+
+    def fold_pause(self, now=None):
+        """Close the running pause, adding its length to ``paused_total_seconds``.
+
+        Rounds up to the next whole second so the examinee is never
+        shortchanged by the fractional part of a pause. Returns the seconds
+        added (0 when no pause was running). Does not save.
+        """
+        if not self.paused_at:
+            return 0
+        now = now or timezone.now()
+        seconds = max(0, math.ceil((now - self.paused_at).total_seconds()))
+        self.paused_total_seconds += seconds
+        self.paused_at = None
+        self.pause_reason = ''
+        return seconds
 
     def submit_session(self, time_remaining=None):
         """Mark session as completed (or pending review) and calculate final score."""
@@ -209,7 +302,14 @@ class ExamSession(models.Model):
         )
 
     def calculate_score(self):
-        """Calculate total score and percentage from all presented questions."""
+        """Calculate total score and percentage from all presented questions.
+
+        ``exam.unanswered_counts_as_wrong`` (default True) controls whether a
+        question the examinee never answered still counts toward the total:
+        True (default) - it does, at zero points, same as answering wrong.
+        False - it's excluded from both earned and total points entirely, so
+        the percentage reflects only what was actually attempted.
+        """
         presented_ids = self.presented_question_ids()
         if not presented_ids:
             self.total_score = 0
@@ -222,6 +322,7 @@ class ExamSession(models.Model):
             for q in self.exam.questions.filter(id__in=presented_ids)
         }
         responses_by_q = {r.question_id: r for r in self.responses.all()}
+        count_unanswered = self.exam.unanswered_counts_as_wrong
 
         total_points = 0
         earned_points = 0
@@ -230,8 +331,16 @@ class ExamSession(models.Model):
             question = questions_by_id.get(qid)
             if not question:
                 continue
-            total_points += question.points
             response = responses_by_q.get(qid)
+            # A manually-awarded grade always counts, even over a blank
+            # answer_text, so a grader's override is never silently dropped.
+            answered = bool(
+                response
+                and ((response.answer_text or '').strip() or response.points_awarded is not None)
+            )
+            if not answered and not count_unanswered:
+                continue
+            total_points += question.points
             if response:
                 if response.points_awarded is not None:
                     earned_points += response.points_awarded

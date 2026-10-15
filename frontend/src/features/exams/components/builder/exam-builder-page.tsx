@@ -1,11 +1,13 @@
 import { Link, useParams } from "react-router";
-import { ArrowLeft, Loader2 } from "@/shared/icons";
+import { ArrowLeft, Loader2, PlayCircle } from "@/shared/icons";
 
 import { BuilderCandidatesTab } from "@/features/exams/components/builder/builder-candidates-tab";
 import { BuilderPublishTab } from "@/features/exams/components/builder/builder-publish-tab";
 import { BuilderQuestionsTab } from "@/features/exams/components/builder/builder-questions-tab";
 import { BuilderSettingsTab } from "@/features/exams/components/builder/builder-settings-tab";
+import { useCanPreviewExam } from "@/features/exams/hooks/use-can-preview-exam";
 import { useExamBuilder } from "@/features/exams/hooks/use-exam-builder";
+import { examPreviewPath } from "@/features/exams/lib/exam-paths";
 import type { BuilderTab } from "@/features/exams/schemas/builder-schemas";
 
 const TABS: { key: BuilderTab; label: string }[] = [
@@ -19,6 +21,8 @@ export function ExamBuilderPage() {
   const { examId } = useParams();
   const id = Number(examId);
   const builder = useExamBuilder(id);
+  const canPreviewExam = useCanPreviewExam();
+  const canPreview = canPreviewExam(builder.exam?.created_by);
 
   if (builder.loading) {
     return (
@@ -71,6 +75,14 @@ export function ExamBuilderPage() {
             {builder.exam.status}
           </p>
         </div>
+        {canPreview && (
+          <Link
+            to={examPreviewPath(builder.exam.id)}
+            className="inline-flex items-center gap-2 self-start sm:self-auto px-4 py-2 rounded-lg border border-border text-sm hover:bg-accent"
+          >
+            <PlayCircle className="w-4 h-4" /> Preview as student
+          </Link>
+        )}
       </div>
 
       {builder.error && (
@@ -114,8 +126,12 @@ export function ExamBuilderPage() {
 
       {builder.tab === "questions" && (
         <BuilderQuestionsTab
+          examId={builder.exam.id}
           questions={builder.questions}
-          isDraft={builder.isDraft}
+          sections={builder.sections}
+          status={builder.exam.status}
+          editable={builder.questionsEditable}
+          canPreview={canPreview}
           saving={builder.saving}
           showQuestionForm={builder.showQuestionForm}
           editingQuestion={builder.editingQuestion}
@@ -125,21 +141,29 @@ export function ExamBuilderPage() {
           pendingFiles={builder.pendingFiles}
           setPendingFiles={builder.setPendingFiles}
           attachmentBusy={builder.attachmentBusy}
-          importCsv={builder.importCsv}
-          setImportCsv={builder.setImportCsv}
-          importErrors={builder.importErrors}
+          questionError={builder.questionError}
+          importForm={builder.importForm}
+          importStatus={builder.importStatus}
+          importProblems={builder.importProblems}
           importBusy={builder.importBusy}
+          formDownloadBusy={builder.formDownloadBusy}
           onOpenNew={builder.openNewQuestion}
-          onAddSection={() => void builder.addSection()}
+          onAddSection={builder.addSection}
+          onRenameSection={builder.renameSection}
+          onRemoveSection={builder.removeSection}
           onEdit={builder.openEditQuestion}
-          onDelete={(q) => void builder.removeQuestion(q)}
+          onDelete={builder.removeQuestion}
           onReorder={builder.reorderQuestionsByIds}
-          onCloseQuestionForm={() => builder.setShowQuestionForm(false)}
+          onCloseQuestionForm={builder.closeQuestionForm}
           onSaveQuestion={builder.saveQuestion}
-          onAttachmentPick={(files) => void builder.handleAttachmentPick(files)}
-          onRemoveAttachment={(a) => void builder.removeAttachment(a)}
+          onAttachmentPick={builder.handleAttachmentPick}
+          onRemoveAttachment={builder.removeAttachment}
           onUploadOptionImage={builder.uploadOptionImageForQuestion}
-          onImportFile={(file) => void builder.handleImportFile(file)}
+          onCreateSection={builder.createSectionForQuestion}
+          onDownloadImportForm={builder.downloadImportForm}
+          onImportFile={builder.handleImportFile}
+          onRecheckImport={builder.recheckImport}
+          onClearImport={builder.clearImport}
           onRunImport={builder.runImport}
         />
       )}
@@ -165,6 +189,8 @@ export function ExamBuilderPage() {
           isDraft={builder.isDraft}
           saving={builder.saving}
           onPublish={builder.publish}
+          onUnpublish={builder.unpublish}
+          unpublishPending={builder.unpublishPending}
           onSubmitForReview={builder.submitForReview}
           submitPending={builder.submitPending}
           onApprove={builder.approveReview}

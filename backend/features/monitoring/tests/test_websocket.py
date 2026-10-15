@@ -14,7 +14,7 @@ import numpy as np
 from asgiref.sync import async_to_sync
 from channels.testing import WebsocketCommunicator
 from django.contrib.auth import get_user_model
-from django.test import TransactionTestCase
+from django.test import TransactionTestCase, override_settings
 
 from core.config.asgi import application
 from features.exams.models import Exam
@@ -171,7 +171,7 @@ class SessionObserverWebsocketTests(TransactionTestCase):
                 await examinee.send_to(
                     text_data=json.dumps({"type": "frame", "image": _tiny_jpeg()})
                 )
-                await examinee.receive_from()  # direct analysis to examinee
+                await examinee.receive_from(timeout=30)  # direct analysis to examinee
 
                 msg = json.loads(await observer.receive_from(timeout=30))
                 self.assertEqual(msg["type"], "analysis")
@@ -179,6 +179,78 @@ class SessionObserverWebsocketTests(TransactionTestCase):
                 self.assertIn("metrics", msg["payload"])
             finally:
                 await examinee.disconnect()
+                await observer.disconnect()
+
+        async_to_sync(run)()
+
+    async def _receive_until(self, communicator, msg_type: str, timeout: float = 30):
+        """Drain observer messages until one of ``msg_type`` arrives."""
+        while True:
+            msg = json.loads(await communicator.receive_from(timeout=timeout))
+            if msg["type"] == msg_type:
+                return msg
+
+    def _observer(self) -> WebsocketCommunicator:
+        return WebsocketCommunicator(
+            application,
+            f"/ws/monitoring/observe/{self.session.id}/?token={self.admin_token}",
+            headers=[(b"origin", b"http://127.0.0.1")],
+        )
+
+    def test_observer_receives_snapshot_from_websocket_frame(self):
+        async def run():
+            observer = self._observer()
+            examinee = WebsocketCommunicator(
+                application,
+                f"/ws/monitoring/{self.session.id}/?token={self.user_token}",
+                headers=[(b"origin", b"http://127.0.0.1")],
+            )
+            try:
+                connected, _ = await observer.connect()
+                self.assertTrue(connected)
+                await observer.receive_from()  # welcome
+                connected, _ = await examinee.connect()
+                self.assertTrue(connected)
+                await examinee.receive_from()  # welcome
+
+                await examinee.send_to(
+                    text_data=json.dumps({"type": "frame", "image": _tiny_jpeg()})
+                )
+                msg = await self._receive_until(observer, "snapshot")
+                self.assertTrue(msg["image"].startswith("data:image/jpeg;base64,"))
+            finally:
+                await examinee.disconnect()
+                await observer.disconnect()
+
+        async_to_sync(run)()
+
+    def test_observer_receives_snapshot_from_rest_fallback_frame(self):
+        """Examinees on the REST fallback must still feed the proctor's live view."""
+        from asgiref.sync import sync_to_async
+        from rest_framework.test import APIClient
+
+        def post_frame():
+            client = APIClient()
+            client.force_authenticate(self.user)
+            return client.post(
+                "/api/monitoring/frame/",
+                {"image": _tiny_jpeg(), "session_id": str(self.session.id)},
+                format="json",
+            )
+
+        async def run():
+            observer = self._observer()
+            try:
+                connected, _ = await observer.connect()
+                self.assertTrue(connected)
+                await observer.receive_from()  # welcome
+
+                response = await sync_to_async(post_frame)()
+                self.assertEqual(response.status_code, 200, response.content)
+
+                msg = await self._receive_until(observer, "snapshot", timeout=5)
+                self.assertTrue(msg["image"].startswith("data:image/jpeg;base64,"))
+            finally:
                 await observer.disconnect()
 
         async_to_sync(run)()
@@ -230,3 +302,58 @@ class AdminAlertsWebsocketTests(TransactionTestCase):
                 await communicator.disconnect()
 
         async_to_sync(run)()
+
+
+class WebsocketOriginTests(TransactionTestCase):
+    """Production serves the SPA and the API from different domains."""
+
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            username="ws_origin_admin",
+            email="ws_origin_admin@test.local",
+            password="TestPass123!",
+            role=User.Role.ADMIN,
+        )
+        self.admin_token = _issue_token(self.admin)
+
+    def _connects_from(self, origin: bytes) -> bool:
+        from channels.routing import URLRouter
+
+        from features.monitoring.middleware import (
+            JWTAuthMiddlewareStack,
+            WebsocketOriginValidator,
+        )
+        from features.monitoring.routing import websocket_urlpatterns
+
+        app = WebsocketOriginValidator(JWTAuthMiddlewareStack(URLRouter(websocket_urlpatterns)))
+
+        async def run():
+            communicator = WebsocketCommunicator(
+                app,
+                f"/ws/monitoring/alerts/?token={self.admin_token}",
+                headers=[(b"origin", origin)],
+            )
+            connected, _ = await communicator.connect()
+            await communicator.disconnect()
+            return connected
+
+        return async_to_sync(run)()
+
+    @override_settings(
+        DEBUG=False,
+        ALLOWED_HOSTS=["api.example.com"],
+        CORS_ALLOW_ALL_ORIGINS=False,
+        CORS_ALLOWED_ORIGINS=["https://app.example.com"],
+    )
+    def test_cors_frontend_origin_accepted(self):
+        self.assertTrue(self._connects_from(b"https://app.example.com"))
+        self.assertTrue(self._connects_from(b"https://api.example.com"))
+
+    @override_settings(
+        DEBUG=False,
+        ALLOWED_HOSTS=["api.example.com"],
+        CORS_ALLOW_ALL_ORIGINS=False,
+        CORS_ALLOWED_ORIGINS=["https://app.example.com"],
+    )
+    def test_unlisted_origin_rejected(self):
+        self.assertFalse(self._connects_from(b"https://evil.example.com"))

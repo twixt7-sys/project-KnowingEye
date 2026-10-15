@@ -12,6 +12,14 @@ export function fetchMyExams() {
   return apiClient.getMyExams();
 }
 
-export function fetchCompletedSessions() {
-  return apiClient.listSessionReports({ status: "completed" });
+export type CompletedSessionParams = {
+  search?: string;
+  passed?: boolean;
+  ordering?: string;
+  page: number;
+  page_size: number;
+};
+
+export function fetchCompletedSessions(params: CompletedSessionParams) {
+  return apiClient.listSessionReports({ ...params, status: "completed" });
 }

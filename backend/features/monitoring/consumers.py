@@ -8,22 +8,71 @@ Client → server messages
 Server → client messages
     {"type": "analysis", "payload": {...}}
     {"type": "alert", "payload": {...}}
+    {"type": "session_state", "status": "paused" | "in_progress" | ..., ...}
     {"type": "enroll_result", "ok": true/false}
     {"type": "pong"}
     {"type": "error", "message": "..."}
+
+Close codes (examinee socket). Each means "the exam is over for this session":
+the browser must stop streaming, not fall back to REST frames.
+    4408  the session ran out of time (or otherwise ended on its own)
+    4410  a proctor terminated the session
+A ``session_state`` message with the final status always precedes the close.
 """
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import time
 from typing import Any
 
+from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 logger = logging.getLogger("knowing_eye.monitoring.consumer")
 
 ADMIN_ALERTS_GROUP = "monitoring.admin.alerts"
+
+CLOSE_SESSION_EXPIRED = 4408
+CLOSE_SESSION_TERMINATED = 4410
+
+# Session expiry / setup-idle bookkeeping is a DB round trip (two during setup).
+# Doing it on every frame put that latency in front of every analysis reply;
+# timeouts are measured in minutes, so re-checking every few seconds is plenty.
+_ACTIVE_CHECK_INTERVAL_S = 5.0
+
+# The examinee streams ~5 frames/s, so per-frame side effects that don't feed
+# the examinee's own reply are rate limited: the session's EBI running means are
+# still folded every frame (so the averages stay exact) but written back at most
+# this often, and the proctor's live snapshot is pushed at most this often.
+_EBI_FLUSH_INTERVAL_S = 1.0
+_SNAPSHOT_INTERVAL_S = 1.0
+
+# The lifecycle columns a proctor can change while a socket is open (pause,
+# resume, terminate). The cached session row is refreshed from just these:
+# a full refresh would also reload the EBI running means, discarding frames
+# folded in memory but not yet flushed to the database.
+_SESSION_STATE_FIELDS = [
+    "status",
+    "paused_at",
+    "paused_total_seconds",
+    "pause_reason",
+    "deadline_at",
+    "submitted_at",
+]
+
+
+def _decode_and_analyze(image_data: str, session_id: str):
+    """CPU-bound decode + inference. Runs on a worker thread, not the shared DB thread."""
+    from ai.adapter import analyze_frame_bgr
+    from ai.frame_utils import decode_base64_image
+
+    frame = decode_base64_image(image_data)
+    if frame is None:
+        return None, None
+    return frame, analyze_frame_bgr(frame, session_id=session_id)
 
 
 class MonitoringConsumer(AsyncJsonWebsocketConsumer):
@@ -59,12 +108,21 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
 
         self._session = session
         self._user = user
+        self._last_active_check = float("-inf")
+        self._post_task: asyncio.Task | None = None
+        self._ebi_dirty = False
+        self._last_ebi_flush = float("-inf")
+        self._last_snapshot = float("-inf")
         self._group_name = f"monitoring.session.{self.session_id}"
-        self._frame_counter = 0
         await self.channel_layer.group_add(self._group_name, self.channel_name)
         await self.accept()
 
         from ai.adapter import get_pipeline_mode
+        from ai.identity_store import get_reference_embedding
+
+        # Warm the in-process reference cache here (DB thread) so the per-frame
+        # inference, which runs on a worker thread, never has to touch the DB.
+        await database_sync_to_async(get_reference_embedding)(self.session_id)
 
         await self.send_json(
             {
@@ -75,6 +133,9 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         )
 
     async def disconnect(self, close_code: int) -> None:
+        await self._await_post_work()
+        if getattr(self, "_ebi_dirty", False):
+            await self._flush_ebi()
         group = getattr(self, "_group_name", None)
         if group:
             await self.channel_layer.group_discard(group, self.channel_name)
@@ -97,40 +158,63 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({"type": "error", "message": f"unknown message type '{msg_type}'"})
 
     async def _handle_frame(self, content: dict[str, Any]) -> None:
-        from ai.adapter import analyze_frame_bgr
-        from ai.frame_utils import decode_base64_image
         from features.session.models import ExamSession
-        from features.session.services import ensure_active_session, touch_setup_activity
+        from features.session.services import touch_setup_activity
 
-        if self._session.status == ExamSession.Status.SETUP:
-            await database_sync_to_async(touch_setup_activity)(self._session)
+        now = time.monotonic()
+        if now - self._last_active_check >= _ACTIVE_CHECK_INTERVAL_S:
+            self._last_active_check = now
+            if self._session.status == ExamSession.Status.SETUP:
+                await database_sync_to_async(touch_setup_activity)(self._session)
 
-        still_active = await database_sync_to_async(ensure_active_session)(self._session)
-        if not still_active:
-            await self.send_json({"type": "error", "message": "session expired"})
-            await self.close(code=4408)
-            return
+            still_active = await database_sync_to_async(self._refresh_and_check_active)()
+            if not still_active:
+                await self._close_inactive()
+                return
 
-        image_data = content.get("image") or ""
-        frame = await database_sync_to_async(decode_base64_image)(image_data)
+        # database_sync_to_async is thread_sensitive: every call in the process
+        # shares ONE thread, so inference used to queue behind every other
+        # session's DB work (and block it in turn). Decode + inference touch no
+        # DB, so they run on the general worker pool instead.
+        frame, analysis = await sync_to_async(_decode_and_analyze, thread_sensitive=False)(
+            content.get("image") or "", str(self.session_id)
+        )
         if frame is None:
             await self.send_json({"type": "error", "message": "invalid image"})
             return
 
-        analysis = await database_sync_to_async(analyze_frame_bgr)(
-            frame, session_id=str(self.session_id)
-        )
-        persisted = await self._persist(analysis)
+        if self._session.status == ExamSession.Status.PAUSED:
+            # Nothing is being examined while the exam is paused: keep the live
+            # picture flowing to the proctor, but raise no alerts.
+            analysis = {**analysis, "alerts": []}
 
-        await self.send_json(
-            {
-                "type": "analysis",
-                "payload": analysis,
-                "persisted": persisted,
-            }
-        )
+        # Reply before persisting: the client paces its next frame on this
+        # message, and the bounding box shouldn't wait on DB writes.
+        await self.send_json({"type": "analysis", "payload": analysis})
 
-        self._frame_counter += 1
+        # Persistence + fan-out overlap with the next frame's inference. Only
+        # one batch is in flight at a time, so DB writes can't pile up.
+        await self._await_post_work()
+        self._post_task = asyncio.create_task(self._after_frame(frame, analysis))
+
+    async def _await_post_work(self) -> None:
+        task = getattr(self, "_post_task", None)
+        if task is None:
+            return
+        self._post_task = None
+        try:
+            await task
+        except Exception:  # noqa: BLE001 - never let bookkeeping kill the stream
+            logger.exception("monitoring post-frame work failed session=%s", self.session_id)
+
+    async def _after_frame(self, frame, analysis: dict[str, Any]) -> None:
+        now = time.monotonic()
+        flush_ebi = now - self._last_ebi_flush >= _EBI_FLUSH_INTERVAL_S
+        await self._persist(analysis, save_metrics=flush_ebi)
+        if flush_ebi:
+            self._last_ebi_flush = now
+        self._ebi_dirty = not flush_ebi
+
         await self.channel_layer.group_send(
             self._group_name,
             {
@@ -139,18 +223,22 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
                 "session_id": str(self.session_id),
             },
         )
-        if self._frame_counter % 3 == 0:
-            snapshot = await database_sync_to_async(self._encode_snapshot)(frame)
-            if snapshot:
-                await self.channel_layer.group_send(
-                    self._group_name,
-                    {
-                        "type": "snapshot.broadcast",
-                        "image": snapshot,
-                        "session_id": str(self.session_id),
-                        "analysis": analysis,
-                    },
-                )
+        # Observers get a fresh snapshot about once a second; the examinee's
+        # frame rate is much higher than a proctor's live tile needs.
+        snapshot = None
+        if now - self._last_snapshot >= _SNAPSHOT_INTERVAL_S:
+            self._last_snapshot = now
+            snapshot = await sync_to_async(self._encode_snapshot, thread_sensitive=False)(frame)
+        if snapshot:
+            await self.channel_layer.group_send(
+                self._group_name,
+                {
+                    "type": "snapshot.broadcast",
+                    "image": snapshot,
+                    "session_id": str(self.session_id),
+                    "analysis": analysis,
+                },
+            )
 
         for alert in analysis.get("alerts", []):
             enriched = {
@@ -176,18 +264,54 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         from ai.frame_utils import decode_base64_image
 
         log = logging.getLogger("knowing_eye.monitoring.consumers")
-        frame = await database_sync_to_async(decode_base64_image)(content.get("image") or "")
-        if frame is None:
+        images = content.get("images") if isinstance(content.get("images"), list) else []
+        if content.get("image"):
+            images = [content["image"], *images]
+
+        def _decode_all() -> list:
+            return [f for f in (decode_base64_image(img or "") for img in images[:5]) if f is not None]
+
+        frames = await database_sync_to_async(_decode_all)()
+        if not frames:
             await self.send_json({"type": "enroll_result", "ok": False, "message": "invalid image"})
             return
 
-        log.info("ws enroll session=%s shape=%s", self._session.id, getattr(frame, "shape", None))
-        result = await database_sync_to_async(enroll_reference)(frame, self._session)
+        log.info("ws enroll session=%s frames=%d", self._session.id, len(frames))
+        result = await database_sync_to_async(enroll_reference)(frames, self._session)
         log.info("ws enroll session=%s ok=%s", self._session.id, result.get("ok"))
         await self.send_json({"type": "enroll_result", **result})
 
     async def alert_broadcast(self, event: dict[str, Any]) -> None:
         await self.send_json({"type": "alert", "payload": event.get("payload", {})})
+
+    async def session_state(self, event: dict[str, Any]) -> None:
+        """A proctor paused/resumed/terminated this session: sync our copy, then tell the browser."""
+        from features.session.models import ExamSession
+
+        await database_sync_to_async(self._refresh_session_state)()
+        await self.send_json(_session_state_message(event))
+        # Judge by the refreshed row, not the event: a terminate is final, and
+        # nothing more is coming for this socket.
+        if self._session.status == ExamSession.Status.TERMINATED:
+            await self.close(code=CLOSE_SESSION_TERMINATED)
+
+    async def _close_inactive(self) -> None:
+        """The session is over without a push having told us: say how, then end the socket.
+
+        The state message comes first so the browser can pick the right screen
+        (terminated vs. out of time); the close code keeps it from falling back
+        to streaming frames over REST for a session that no longer exists.
+        """
+        from features.monitoring.broadcast import session_state_event
+        from features.session.models import ExamSession
+
+        event = await database_sync_to_async(session_state_event)(self._session)
+        await self.send_json(_session_state_message(event))
+        if self._session.status == ExamSession.Status.TERMINATED:
+            await self.close(code=CLOSE_SESSION_TERMINATED)
+            return
+        await self.send_json({"type": "error", "message": "session expired"})
+        await self.close(code=CLOSE_SESSION_EXPIRED)
 
     async def analysis_broadcast(self, event: dict[str, Any]) -> None:
         """Ignore group fan-out; examinee already received the direct analysis reply."""
@@ -195,11 +319,33 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
     async def snapshot_broadcast(self, event: dict[str, Any]) -> None:
         """Snapshots are for observer consumers only."""
 
+    def _refresh_session_state(self) -> None:
+        self._session.refresh_from_db(fields=_SESSION_STATE_FIELDS)
+
+    def _refresh_and_check_active(self) -> bool:
+        from features.session.services import ensure_active_session
+
+        # The row cached at connect time goes stale when a proctor pauses,
+        # resumes or terminates the session; without this, a resumed examinee
+        # (whose deadline moved out) would still be timed out by the old one.
+        self._refresh_session_state()
+        return ensure_active_session(self._session)
+
     @database_sync_to_async
-    def _persist(self, analysis: dict[str, Any]) -> dict[str, int]:
+    def _persist(self, analysis: dict[str, Any], *, save_metrics: bool) -> dict[str, int]:
         from features.behavior.services import persist_analysis
 
-        return persist_analysis(self._session, analysis)
+        return persist_analysis(self._session, analysis, save_metrics=save_metrics)
+
+    @database_sync_to_async
+    def _flush_ebi(self) -> None:
+        from features.behavior.services import EBI_UPDATE_FIELDS
+
+        try:
+            self._session.save(update_fields=EBI_UPDATE_FIELDS)
+            self._ebi_dirty = False
+        except Exception:  # noqa: BLE001 - never fail a disconnect over this
+            logger.exception("EBI flush failed for session %s", self.session_id)
 
     @staticmethod
     def _encode_snapshot(frame) -> str | None:
@@ -231,6 +377,17 @@ def _has_monitoring_module(user) -> bool:
     from core.security import service as security
 
     return security.has_module(user, "monitoring")
+
+
+def _session_state_message(event: dict[str, Any]) -> dict[str, Any]:
+    """Client-facing form of a ``session.state`` group event."""
+    return {
+        "type": "session_state",
+        "session_id": event.get("session_id"),
+        "status": event.get("status"),
+        "time_remaining_seconds": event.get("time_remaining_seconds"),
+        "pause_reason": event.get("pause_reason", ""),
+    }
 
 
 class SessionObserverConsumer(AsyncJsonWebsocketConsumer):
@@ -302,6 +459,9 @@ class SessionObserverConsumer(AsyncJsonWebsocketConsumer):
     async def alert_broadcast(self, event: dict[str, Any]) -> None:
         await self.send_json({"type": "alert", "payload": event.get("payload", {})})
 
+    async def session_state(self, event: dict[str, Any]) -> None:
+        await self.send_json(_session_state_message(event))
+
 
 class AdminAlertsConsumer(AsyncJsonWebsocketConsumer):
     """Fan-in feed of every monitoring alert across all live sessions.
@@ -335,3 +495,6 @@ class AdminAlertsConsumer(AsyncJsonWebsocketConsumer):
 
     async def alert_broadcast(self, event: dict[str, Any]) -> None:
         await self.send_json({"type": "alert", "payload": event.get("payload", {})})
+
+    async def session_state(self, event: dict[str, Any]) -> None:
+        await self.send_json(_session_state_message(event))

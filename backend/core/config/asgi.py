@@ -17,16 +17,18 @@ django_asgi_app = get_asgi_application()
 
 # Imported *after* Django is configured so that apps + models are loadable.
 from channels.routing import ProtocolTypeRouter, URLRouter  # noqa: E402
-from channels.security.websocket import AllowedHostsOriginValidator  # noqa: E402
 
 from features.monitoring.routing import websocket_urlpatterns  # noqa: E402
-from features.monitoring.middleware import JWTAuthMiddlewareStack  # noqa: E402
+from features.monitoring.middleware import (  # noqa: E402
+    JWTAuthMiddlewareStack,
+    WebsocketOriginValidator,
+)
 
 
 application = ProtocolTypeRouter(
     {
         "http": django_asgi_app,
-        "websocket": AllowedHostsOriginValidator(
+        "websocket": WebsocketOriginValidator(
             JWTAuthMiddlewareStack(URLRouter(websocket_urlpatterns))
         ),
     }

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowing Eye - Project Gantt Chart</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --ink:#000000;
+    --line:#000000;
+    --grid-line:#bbbbbb;
+    --phase-bg:#d9d9d9;
+    --task-bg:#000000;
+    --weekend-bg:#f0f0f0;
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:Arial,Helvetica,sans-serif;
+  }
+
+  body{
+    padding:24px 26px 40px;
+  }
+
+  .page{
+    max-width:1260px;
+    margin:0 auto;
+  }
+
+  /* ---------- Title ---------- */
+  .root-wrap{
+    display:flex;
+    justify-content:center;
+    margin-bottom:14px;
+  }
+  .root-box{
+    background:var(--bg);
+    border:1.5px solid var(--line);
+    border-radius:6px;
+    padding:12px 28px;
+    text-align:center;
+    max-width:700px;
+  }
+  .root-box .title{
+    font-size:14px;
+    font-weight:700;
+    line-height:1.3;
+  }
+  .root-box .sub{
+    font-size:10.5px;
+    font-weight:400;
+    margin-top:4px;
+    color:#333;
+  }
+
+  /* ---------- Legend ---------- */
+  .legend{
+    display:flex;
+    justify-content:center;
+    gap:18px;
+    flex-wrap:wrap;
+    margin:14px 0 24px;
+    font-size:9.5px;
+  }
+  .legend .item{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    white-space:nowrap;
+  }
+  .legend .swatch{
+    width:17px;
+    height:11px;
+    border:1px solid var(--line);
+    display:inline-block;
+  }
+  .legend .swatch.phase{ background:var(--phase-bg); }
+  .legend .swatch.task{ background:var(--task-bg); }
+  .legend .swatch.backlog{ background:repeating-linear-gradient(45deg,#fff 0 3px,#c9c9c9 3px 6px); }
+  .legend .swatch.ceremony{ background:repeating-linear-gradient(45deg,#000 0 3px,#fff 3px 6px); }
+  .legend .swatch.weekend{ background:var(--weekend-bg); }
+  .legend .diamond{
+    width:9px;
+    height:9px;
+    border:1.4px solid var(--line);
+    background:#fff;
+    transform:rotate(45deg);
+    display:inline-block;
+  }
+  .legend .diamond.solid{ background:var(--line); }
+
+  /* ---------- Page sections ---------- */
+  .gantt-page{
+    margin-bottom:30px;
+  }
+  .page-label{
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    border-bottom:1.5px solid var(--line);
+    padding-bottom:5px;
+    margin-bottom:10px;
+  }
+  .page-label .range{
+    font-weight:400;
+    text-transform:none;
+    color:#333;
+  }
+
+  table.gantt{
+    border-collapse:collapse;
+    table-layout:fixed;
+    font-size:9.5px;
+  }
+
+  col.col-label{ width:248px; }
+  col.day{ width:32px; }
+  col.week{ width:66px; }
+  col.week-sm{ width:46px; }
+
+  table.gantt thead th{
+    border:1px solid var(--line);
+    padding:3px 2px;
+    font-weight:700;
+    font-size:9px;
+    background:#fff;
+    white-space:nowrap;
+  }
+  table.gantt thead th.col-label{ border-bottom-width:1.5px; }
+  table.gantt thead tr.month-head th{
+    font-size:8.5px;
+    letter-spacing:.05em;
+  }
+
+  table.gantt tbody td{
+    border:1px solid var(--grid-line);
+    padding:0;
+    height:22px;
+  }
+  table.gantt tbody td.col-label{
+    border:1px solid var(--line);
+    text-align:left;
+    padding:0 8px;
+    font-size:10px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  tr.row-phase td.col-label{ font-weight:700; }
+  tr.row-backlog td.col-label{ font-weight:700; font-style:italic; }
+  tr.row-defense td.col-label{ font-weight:700; font-style:italic; }
+
+  td.wknd{ background:var(--weekend-bg); }
+
+  td.bar{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  td.bar.start{ border-left:1.5px solid var(--line); }
+  td.bar.end{ border-right:1.5px solid var(--line); }
+
+  td.bar.phase{ background:var(--phase-bg); }
+  td.bar.task{ background:var(--task-bg); }
+  td.bar.backlog{ background:repeating-linear-gradient(45deg,#fff 0 3px,#c9c9c9 3px 6px); }
+  td.bar.ceremony{ background:repeating-linear-gradient(45deg,#000 0 3px,#fff 3px 6px); }
+
+  td.arrow{
+    color:#fff;
+    font-size:11px;
+    font-weight:700;
+    line-height:20px;
+    text-align:center;
+  }
+  td.bar.backlog.arrow{ color:#555; }
+
+  td.diamond-cell{ position:relative; }
+  td.diamond-cell .diamond{
+    width:10px;
+    height:10px;
+    border:1.4px solid var(--line);
+    background:#fff;
+    display:block;
+    margin:5px auto 0;
+    transform:rotate(45deg);
+  }
+  td.diamond-cell .diamond.solid{ background:var(--line); }
+
+  @media print{
+    body{ padding:10px 12px; }
+    @page{ size:landscape; margin:9mm; }
+    .gantt-page{ page-break-after:always; }
+    .gantt-page:last-of-type{ page-break-after:auto; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="root-wrap">
+    <div class="root-box">
+      <div class="title">Knowing Eye: A Web-Based Examination Platform with Behavior Monitoring Using Facial and Postural Analysis</div>
+      <div class="sub">Agile Project Gantt Chart &nbsp;|&nbsp; Apr 16 - Sep 25, 2026 &nbsp;|&nbsp; Pre-Deployment Defense: Sep 25, 2026</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span class="item"><span class="swatch phase"></span>Sprint / Phase</span>
+    <span class="item"><span class="swatch task"></span>Task</span>
+    <span class="item"><span class="swatch backlog"></span>Product Backlog (continuous)</span>
+    <span class="item"><span class="swatch ceremony"></span>Recurring Ceremony</span>
+    <span class="item"><span class="swatch weekend"></span>Weekend</span>
+    <span class="item"><span class="diamond"></span>Sprint Review &amp; Retro</span>
+    <span class="item"><span class="diamond solid"></span>Defense Milestone</span>
+    <span class="item">&rarr; / &larr; continues on next / previous page</span>
+  </div>
+
+  <!-- ================= PAGE 1 ================= -->
+  <div class="gantt-page">
+    <div class="page-label">Page 1 of 3 <span class="range">&nbsp;-&nbsp; Apr 16 to May 2, 2026 &nbsp;-&nbsp; Product Backlog &amp; Sprint 0 (Inception)</span></div>
+
+    <table class="gantt">
+      <colgroup>
+        <col class="col-label">
+        <col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day">
+      </colgroup>
+      <thead>
+        <tr class="month-head">
+          <th class="col-label"></th>
+          <th colspan="15">APRIL 2026</th>
+          <th colspan="2">MAY 2026</th>
+        </tr>
+        <tr>
+          <th class="col-label">Phase / Task</th>
+          <th>16</th><th>17</th><th>18</th><th>19</th><th>20</th><th>21</th><th>22</th><th>23</th><th>24</th><th>25</th><th>26</th><th>27</th><th>28</th><th>29</th><th>30</th><th>1</th><th>2</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-backlog">
+          <td class="col-label">Product Backlog</td>
+          <td class="bar backlog start"></td><td class="bar backlog"></td><td class="bar backlog wknd"></td><td class="bar backlog wknd"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog wknd"></td><td class="bar backlog wknd"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog arrow end">&rarr;</td>
+        </tr>
+        <tr class="row-phase">
+          <td class="col-label">Sprint 0 - Inception</td>
+          <td class="bar phase start"></td><td class="bar phase"></td><td class="bar phase wknd"></td><td class="bar phase wknd"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase wknd"></td><td class="bar phase wknd"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase end"></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Define Core Product Goals &amp; Scope</td>
+          <td class="bar task start"></td><td class="bar task"></td><td class="bar task wknd"></td><td class="bar task wknd"></td><td class="bar task end"></td><td></td><td></td><td></td><td></td><td class="wknd"></td><td class="wknd"></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Capture Requirements from Documentation</td>
+          <td class="bar task start"></td><td class="bar task"></td><td class="bar task wknd"></td><td class="bar task wknd"></td><td class="bar task"></td><td class="bar task end"></td><td></td><td></td><td></td><td class="wknd"></td><td class="wknd"></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Sprint Planning &amp; Backlog Grooming</td>
+          <td></td><td></td><td class="wknd"></td><td class="wknd"></td><td class="bar task start"></td><td class="bar task"></td><td class="bar task end"></td><td></td><td></td><td class="wknd"></td><td class="wknd"></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;System Architecture Design</td>
+          <td></td><td></td><td class="wknd"></td><td class="wknd"></td><td></td><td></td><td></td><td></td><td></td><td class="wknd"></td><td class="wknd"></td><td class="bar task start"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task end"></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ================= PAGE 2 ================= -->
+  <div class="gantt-page">
+    <div class="page-label">Page 2 of 3 <span class="range">&nbsp;-&nbsp; May 3 to Sep 15, 2026 &nbsp;-&nbsp; Sprint 1-2 (Backend &amp; AI), Sprint 3 (Frontend &amp; UX) and Sprint 4 (System Refinement &amp; Documentation)</span></div>
+
+    <table class="gantt">
+      <colgroup>
+        <col class="col-label">
+        <col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm"><col class="week-sm">
+      </colgroup>
+      <thead>
+        <tr class="month-head">
+          <th class="col-label"></th>
+          <th colspan="4">MAY 2026</th>
+          <th colspan="4">JUN 2026</th>
+          <th colspan="4">JUL 2026</th>
+          <th colspan="4">AUG 2026</th>
+          <th colspan="4">SEP 2026</th>
+        </tr>
+        <tr>
+          <th class="col-label">Phase / Task</th>
+          <th>5/3</th><th>5/10</th><th>5/17</th><th>5/24</th><th>5/31</th><th>6/7</th><th>6/14</th><th>6/22</th><th>6/29</th><th>7/6</th><th>7/13</th><th>7/20</th><th>7/27</th><th>8/3</th><th>8/10</th><th>8/17</th><th>8/24</th><th>8/31</th><th>9/7</th><th>9/14</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-backlog">
+          <td class="col-label">Product Backlog (cont.)</td>
+          <td class="bar backlog arrow start">&larr;</td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog arrow end">&rarr;</td>
+        </tr>
+
+        <tr class="row-phase">
+          <td class="col-label">Sprint 1-2 - Backend &amp; AI</td>
+          <td class="bar phase start"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase end"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Backend Development (Auth &amp; API)</td>
+          <td></td><td class="bar task start"></td><td class="bar task end"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;AI Module Development</td>
+          <td></td><td></td><td class="bar task start"></td><td class="bar task"></td><td class="bar task end"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Daily Scrum Standups</td>
+          <td class="bar ceremony start"></td><td class="bar ceremony"></td><td class="bar ceremony"></td><td class="bar ceremony"></td><td class="bar ceremony end"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Sprint Review &amp; Retrospective</td>
+          <td></td><td></td><td></td><td></td><td class="diamond-cell"><span class="diamond"></span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+
+        <tr class="row-phase">
+          <td class="col-label">Sprint 3 - Frontend &amp; UX</td>
+          <td></td><td></td><td></td><td></td><td class="bar phase start"></td><td class="bar phase"></td><td class="bar phase end"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Frontend Development</td>
+          <td></td><td></td><td></td><td></td><td class="bar task start"></td><td class="bar task"></td><td class="bar task end"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;User Interface &amp; User Experience</td>
+          <td></td><td></td><td></td><td></td><td></td><td class="bar task start"></td><td class="bar task end"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Examination Management &amp; LMS Workflow</td>
+          <td></td><td></td><td></td><td></td><td></td><td class="bar task start"></td><td class="bar task end"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Sprint Review &amp; Retrospective</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td><td class="diamond-cell"><span class="diamond"></span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+
+        <tr class="row-phase">
+          <td class="col-label">Sprint 4 - System Refinement &amp; Docs</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="bar phase start"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase end"></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;System Refinement &amp; Bug Fixes</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="bar task start"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task end"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Regression &amp; Peer Testing</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="bar task start"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task end"></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Paperwork &amp; Documentation Revisions</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="bar task start"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task end"></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Sprint Review &amp; Retrospective</td>
+          <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="diamond-cell"><span class="diamond"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ================= PAGE 3 ================= -->
+  <div class="gantt-page">
+    <div class="page-label">Page 3 of 3 <span class="range">&nbsp;-&nbsp; Sep 16 to Sep 25, 2026 &nbsp;-&nbsp; Sprint 5 (Monitoring &amp; Hardening) and Sprint 6 (Release)</span></div>
+
+    <table class="gantt">
+      <colgroup>
+        <col class="col-label">
+        <col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day"><col class="day">
+      </colgroup>
+      <thead>
+        <tr class="month-head">
+          <th class="col-label"></th>
+          <th colspan="10">SEPTEMBER 2026</th>
+        </tr>
+        <tr>
+          <th class="col-label">Phase / Task</th>
+          <th>16</th><th>17</th><th>18</th><th>19</th><th>20</th><th>21</th><th>22</th><th>23</th><th>24</th><th>25</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-backlog">
+          <td class="col-label">Product Backlog (cont.)</td>
+          <td class="bar backlog arrow start">&larr;</td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog wknd"></td><td class="bar backlog wknd"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog"></td><td class="bar backlog end"></td>
+        </tr>
+
+        <tr class="row-phase">
+          <td class="col-label">Sprint 5 - Monitoring &amp; Hardening</td>
+          <td class="bar phase start"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase wknd"></td><td class="bar phase end wknd"></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Computer Vision &amp; Exam Monitoring</td>
+          <td class="bar task start"></td><td class="bar task"></td><td class="bar task end"></td><td class="wknd"></td><td class="wknd"></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Documentation &amp; Research</td>
+          <td class="bar task start"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task wknd"></td><td class="bar task end wknd"></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Deployment Readiness &amp; Validation</td>
+          <td></td><td class="bar task start"></td><td class="bar task"></td><td class="bar task wknd"></td><td class="bar task end wknd"></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Sprint Review &amp; Retrospective</td>
+          <td></td><td></td><td></td><td class="wknd"></td><td class="diamond-cell wknd"><span class="diamond"></span></td><td></td><td></td><td></td><td></td><td></td>
+        </tr>
+
+        <tr class="row-phase">
+          <td class="col-label">Sprint 6 - Release</td>
+          <td></td><td></td><td></td><td class="wknd"></td><td class="bar phase start wknd"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase"></td><td class="bar phase end"></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;User Acceptance &amp; Peer Testing</td>
+          <td></td><td></td><td></td><td class="wknd"></td><td class="bar task start wknd"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task end"></td><td></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Six-Week Deployment Preparation</td>
+          <td></td><td></td><td></td><td class="wknd"></td><td class="wknd"></td><td class="bar task start"></td><td class="bar task"></td><td class="bar task"></td><td class="bar task end"></td><td></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Production Launch</td>
+          <td></td><td></td><td></td><td class="wknd"></td><td class="wknd"></td><td></td><td></td><td></td><td class="bar task start"></td><td class="bar task end"></td>
+        </tr>
+        <tr>
+          <td class="col-label">&nbsp;&nbsp;Sprint Review &amp; Retrospective</td>
+          <td></td><td></td><td></td><td class="wknd"></td><td class="wknd"></td><td></td><td></td><td></td><td class="diamond-cell"><span class="diamond"></span></td><td></td>
+        </tr>
+
+        <tr class="row-defense">
+          <td class="col-label">&#9670; Pre-Deployment Defense</td>
+          <td></td><td></td><td></td><td class="wknd"></td><td class="wknd"></td><td></td><td></td><td></td><td></td><td class="diamond-cell"><span class="diamond solid"></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>

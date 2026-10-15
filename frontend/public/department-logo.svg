@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Wellness and Care Center — placeholder department seal.
+       Replace this file with the official logo (same filename) to rebrand. -->
+  <circle cx="60" cy="60" r="57" fill="#f7f5ea" stroke="#1b4d36" stroke-width="5"/>
+  <circle cx="60" cy="60" r="46" fill="none" stroke="#b08a28" stroke-width="1.5"/>
+
+  <!-- Cupped hands -->
+  <path d="M28 78c6 8 16 13 32 13s26-5 32-13c-4-2-9-1-13 1-5 3-12 4-19 4s-14-1-19-4c-4-2-9-3-13-1z"
+        fill="#1b4d36"/>
+
+  <!-- Heart -->
+  <path d="M60 74C49 65 42 58.5 42 50.5 42 44.5 46.5 40 52.5 40c3.2 0 6 1.6 7.5 4 1.5-2.4 4.3-4 7.5-4 6 0 10.5 4.5 10.5 10.5C78 58.5 71 65 60 74z"
+        fill="#c26d5a"/>
+
+  <!-- Leaf sprout -->
+  <path d="M60 40c0-7 3-12 9-14-1 7-4 11-9 14z" fill="#2c6e5e"/>
+  <path d="M60 40c0-7-3-12-9-14 1 7 4 11 9 14z" fill="#3f8763"/>
+  <line x1="60" y1="40" x2="60" y2="47" stroke="#2c6e5e" stroke-width="2" stroke-linecap="round"/>
+</svg>

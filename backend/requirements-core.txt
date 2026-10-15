@@ -7,6 +7,5 @@ python-decouple>=3.8
 channels>=4.0
 daphne>=4.1
 django-cors-headers>=4.3
-python-dotenv>=1.0
 Pillow>=10.0
 reportlab>=4.0

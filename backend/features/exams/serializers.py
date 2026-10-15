@@ -94,8 +94,11 @@ class QuestionAttachmentSerializer(serializers.ModelSerializer):
     def get_url(self, obj) -> str | None:
         if not obj.file:
             return None
+        # Absolute - see get_avatar_url() in features.authentication.serializers:
+        # the frontend and API are separate origins in this deployment, so a
+        # root-relative path resolves against the wrong host.
         request = self.context.get("request")
-        if request:
+        if request is not None:
             return request.build_absolute_uri(obj.file.url)
         return obj.file.url
 
@@ -115,6 +118,7 @@ class QuestionTakeSerializer(serializers.ModelSerializer):
             "points",
             "order",
             "attachments",
+            "section",
         ]
         read_only_fields = fields
 
@@ -192,12 +196,20 @@ def option_text(opt) -> str:
     return str(opt or "")
 
 
+# Mirrors MIN_OPTIONS / MAX_OPTIONS in the frontend's lib/question-options.ts.
+MIN_CHOICES = 2
+MAX_CHOICES = 10
+
+
 class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
     """Serializer for creating and updating questions."""
 
     class Meta:
         model = Question
         fields = [
+            # The client needs the new question's id to upload its attachments
+            # straight after creating it.
+            "id",
             "question_text",
             "question_type",
             "options",
@@ -211,12 +223,13 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
             "trim_whitespace",
             "shuffle_options_override",
         ]
+        read_only_fields = ["id"]
 
     def validate_options(self, value):
         if value and not isinstance(value, list):
             raise serializers.ValidationError("Options must be a list.")
         normalized = []
-        for item in value or []:
+        for index, item in enumerate(value or [], start=1):
             if isinstance(item, dict):
                 text = str(item.get("text", "") or "").strip()
                 image = item.get("image") or None
@@ -224,6 +237,10 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         "An option's image must be a URL string."
                     )
+                if not text and image:
+                    # A picture can stand in for the text, but answers are
+                    # recorded and graded by option text, so give it a label.
+                    text = f"Option {index}"
                 normalized.append({"text": text, "image": image})
             else:
                 normalized.append({"text": str(item or "").strip(), "image": None})
@@ -250,9 +267,20 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
 
         if qtype == Question.QuestionType.MULTIPLE_CHOICE:
             option_texts = [option_text(o) for o in options]
-            if len([t for t in option_texts if t]) < 2:
+            filled = [t.strip().casefold() for t in option_texts if t.strip()]
+            if len(filled) < MIN_CHOICES:
                 raise serializers.ValidationError(
                     {"options": "Multiple choice needs at least two options."}
+                )
+            if len(filled) > MAX_CHOICES:
+                raise serializers.ValidationError(
+                    {"options": f"Multiple choice allows at most {MAX_CHOICES} options."}
+                )
+            # Answers are graded by option text, so two options that read the
+            # same would both count as correct.
+            if len(set(filled)) != len(filled):
+                raise serializers.ValidationError(
+                    {"options": "Each option must be different from the others."}
                 )
             if not correct:
                 raise serializers.ValidationError(
@@ -280,7 +308,7 @@ class QuestionCreateUpdateSerializer(serializers.ModelSerializer):
 class ExamListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for exam lists."""
 
-    created_by_name = serializers.CharField(source="created_by.get_full_name", read_only=True)
+    created_by_name = serializers.SerializerMethodField()
     question_count = serializers.SerializerMethodField()
     is_open = serializers.SerializerMethodField()
     schedule_state = serializers.SerializerMethodField()
@@ -307,6 +335,7 @@ class ExamListSerializer(serializers.ModelSerializer):
             "monitoring_enabled",
             "shuffle_questions",
             "shuffle_options",
+            "disable_copy_paste",
             "unanswered_counts_as_wrong",
             "requires_assignment",
             "results_release_at",
@@ -320,6 +349,7 @@ class ExamListSerializer(serializers.ModelSerializer):
             "submitted_at",
             "reviewed_at",
             "rejection_note",
+            "created_by",
             "created_by_name",
             "created_at",
             "question_count",
@@ -328,6 +358,7 @@ class ExamListSerializer(serializers.ModelSerializer):
             "id",
             "created_at",
             "total_questions",
+            "created_by",
             "created_by_name",
             "question_count",
             "is_open",
@@ -337,6 +368,10 @@ class ExamListSerializer(serializers.ModelSerializer):
             "reviewed_at",
             "rejection_note",
         ]
+
+    def get_created_by_name(self, obj):
+        creator = obj.created_by
+        return creator.get_full_name() or creator.username
 
     def get_question_count(self, obj):
         return obj.questions.count()
@@ -356,6 +391,16 @@ class ExamTakeSerializer(serializers.ModelSerializer):
     """Examinee-safe exam detail - questions without answer keys."""
 
     questions = QuestionTakeSerializer(many=True, read_only=True)
+    # Shown to examinees so they can see who authored the exam (name only -
+    # the email stays staff-side in ExamDetailSerializer).
+    created_by_name = serializers.SerializerMethodField()
+    # Section grouping for in-exam navigation (Question.section). A plain
+    # SerializerMethodField (rather than ExamSectionSerializer(many=True))
+    # because ExamSectionSerializer is defined later in this module - a
+    # declared field would be evaluated at class-body time and NameError;
+    # a method is only called at request time, after the whole module has
+    # loaded.
+    sections = serializers.SerializerMethodField()
     is_open = serializers.SerializerMethodField()
     schedule_state = serializers.SerializerMethodField()
     department = DepartmentSummarySerializer(read_only=True)
@@ -383,6 +428,7 @@ class ExamTakeSerializer(serializers.ModelSerializer):
             "monitoring_enabled",
             "shuffle_questions",
             "shuffle_options",
+            "disable_copy_paste",
             "unanswered_counts_as_wrong",
             "requires_assignment",
             "results_release_at",
@@ -392,9 +438,18 @@ class ExamTakeSerializer(serializers.ModelSerializer):
             "max_tab_switches",
             "is_open",
             "schedule_state",
+            "created_by_name",
+            "sections",
             "questions",
         ]
         read_only_fields = fields
+
+    def get_created_by_name(self, obj):
+        creator = obj.created_by
+        return creator.get_full_name() or creator.username
+
+    def get_sections(self, obj):
+        return ExamSectionSerializer(obj.sections.order_by("order"), many=True).data
 
     def get_is_open(self, obj):
         from . import services
@@ -428,6 +483,7 @@ class ExamDetailSerializer(serializers.ModelSerializer):
     reviewed_by_name = serializers.CharField(source="reviewed_by.get_full_name", read_only=True)
     publish_readiness = serializers.SerializerMethodField()
     schedule_state = serializers.SerializerMethodField()
+    questions_editable = serializers.SerializerMethodField()
     department = DepartmentSummarySerializer(read_only=True)
     departments = DepartmentSummarySerializer(many=True, read_only=True)
     category = ExamCategorySummarySerializer(read_only=True)
@@ -454,6 +510,7 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "monitoring_enabled",
             "shuffle_questions",
             "shuffle_options",
+            "disable_copy_paste",
             "unanswered_counts_as_wrong",
             "requires_assignment",
             "results_release_at",
@@ -476,6 +533,7 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "questions",
             "publish_readiness",
             "schedule_state",
+            "questions_editable",
             "created_at",
             "updated_at",
         ]
@@ -488,6 +546,7 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "created_by_email",
             "publish_readiness",
             "schedule_state",
+            "questions_editable",
             "approval_status",
             "submitted_by",
             "submitted_by_name",
@@ -508,6 +567,11 @@ class ExamDetailSerializer(serializers.ModelSerializer):
         from . import services
 
         return services.exam_schedule_state(obj)
+
+    def get_questions_editable(self, obj):
+        from . import services
+
+        return services.questions_editable(obj)
 
 
 class ExamCreateUpdateSerializer(serializers.ModelSerializer):
@@ -565,6 +629,7 @@ class ExamCreateUpdateSerializer(serializers.ModelSerializer):
             "monitoring_enabled",
             "shuffle_questions",
             "shuffle_options",
+            "disable_copy_paste",
             "unanswered_counts_as_wrong",
             "requires_assignment",
             "results_release_at",
@@ -574,7 +639,12 @@ class ExamCreateUpdateSerializer(serializers.ModelSerializer):
             "max_tab_switches",
             "status",
         ]
-        read_only_fields = ["id", "exam_code"]
+        # "status" is included so it's readable in the response, but must
+        # stay read-only here: the lifecycle actions (publish/archive/
+        # submit/approve/reject) are the only path that's allowed to change
+        # it, since they enforce readiness checks and the program-head
+        # approval gate that a bare PATCH must not be able to bypass.
+        read_only_fields = ["id", "exam_code", "status"]
 
     def validate_duration_minutes(self, value):
         if value < 1:
@@ -630,10 +700,15 @@ class ExamCreateUpdateSerializer(serializers.ModelSerializer):
 
 
 class QuestionImportSerializer(serializers.Serializer):
-    """Bulk import questions from a CSV string or JSON list."""
+    """Bulk import questions from a CSV string or JSON list.
+
+    ``dry_run`` validates every row and reports problems without saving, so
+    the builder can check an uploaded form before the examiner commits it.
+    """
 
     csv = serializers.CharField(required=False, allow_blank=True)
     questions = serializers.ListField(child=serializers.DictField(), required=False)
+    dry_run = serializers.BooleanField(required=False, default=False)
 
     def validate(self, attrs):
         if not attrs.get("csv") and not attrs.get("questions"):

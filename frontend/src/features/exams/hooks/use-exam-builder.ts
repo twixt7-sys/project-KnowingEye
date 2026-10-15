@@ -1,37 +1,72 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router";
 
-import { ApiError, formatApiError, type Question, type QuestionAttachment } from "@/core/config/api";
 import {
+  ApiError,
+  formatApiError,
+  type ExamSection,
+  type Question,
+  type QuestionAttachment,
+} from "@/core/config/api";
+import {
+  type ExamAssignment,
   approveExam,
   createExamAssignment,
   createExamSection,
   createQuestion,
+  deleteExamSection,
   deleteQuestion,
   deleteQuestionAttachment,
+  checkQuestionRows,
   importExamAssignments,
-  importQuestionsCsv,
+  importQuestionRows,
   publishExam,
+  unpublishExam,
   rejectExam,
   reorderQuestions,
   submitExamForReview,
   updateExam,
+  updateExamSection,
   updateQuestion,
   uploadOptionImage,
   uploadQuestionAttachment,
 } from "@/features/exams/api/exam-api";
+import { validateAttachment } from "@/features/exams/lib/attachment-rules";
+import { optionsToDraft, optionsToPayload } from "@/features/exams/lib/question-options";
 import { examBuilderKeys } from "@/features/exams/queries/keys";
 import { examBuilderQueries } from "@/features/exams/queries/queries";
-import { CSV_TEMPLATE, readImportFileAsCsv } from "@/features/exams/lib/question-import-template";
+import {
+  downloadQuestionForm,
+  type ParsedQuestionForm,
+  parseQuestionImportFile,
+  QuestionFormError,
+} from "@/features/exams/lib/question-import-form";
+import {
+  extractImportProblems,
+  type ImportProblems,
+} from "@/features/exams/lib/question-import-issues";
 import {
   EMPTY_QUESTION,
+  builderTabSchema,
   examFormToPayload,
   examToForm,
+  toDatetimeLocal,
   type BuilderTab,
   type ExamForm,
   type QuestionDraft,
 } from "@/features/exams/schemas/builder-schemas";
 import { useConfirm } from "@/shared/components/common/confirm-dialog";
+
+/** Where the uploaded question form is in the check → import flow. */
+export type ImportCheckStatus = "idle" | "checking" | "valid" | "invalid";
+
+const NO_PROBLEMS: ImportProblems = { issues: [], general: [] };
+
+// Module-level so `data ?? EMPTY` keeps a stable reference while a query has no data yet.
+const NO_QUESTIONS: Question[] = [];
+const NO_ASSIGNMENTS: ExamAssignment[] = [];
+const NO_SECTIONS: ExamSection[] = [];
 
 function formatQueryError(err: unknown, fallback: string): string {
   if (err instanceof ApiError) return err.detail();
@@ -43,10 +78,21 @@ export function useExamBuilder(examId: number) {
   const confirm = useConfirm();
   const queryClient = useQueryClient();
 
-  const [tab, setTab] = useState<BuilderTab>("settings");
+  // The tab lives in the URL so leaving the builder (e.g. to preview the exam)
+  // and coming back lands on the tab the author was on.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const parsedTab = builderTabSchema.safeParse(searchParams.get("tab"));
+  const tab: BuilderTab = parsedTab.success ? parsedTab.data : "settings";
+  const setTab = useCallback(
+    (next: BuilderTab) => setSearchParams({ tab: next }, { replace: true }),
+    [setSearchParams]
+  );
   const [form, setForm] = useState<ExamForm | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  // Errors raised while the question dialog is open. The page-level banner sits
+  // underneath the modal overlay, so these are rendered inside the dialog.
+  const [questionError, setQuestionError] = useState<string | null>(null);
 
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
@@ -55,8 +101,10 @@ export function useExamBuilder(examId: number) {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [attachmentBusy, setAttachmentBusy] = useState(false);
 
-  const [importCsv, setImportCsv] = useState(CSV_TEMPLATE);
-  const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [importForm, setImportForm] = useState<ParsedQuestionForm | null>(null);
+  const [importStatus, setImportStatus] = useState<ImportCheckStatus>("idle");
+  const [importProblems, setImportProblems] = useState<ImportProblems>(NO_PROBLEMS);
+  const [formDownloadBusy, setFormDownloadBusy] = useState(false);
   const [candidateEmail, setCandidateEmail] = useState("");
   const [candidateCsv, setCandidateCsv] = useState("email,extra_time_minutes,seat_label\n");
 
@@ -64,11 +112,13 @@ export function useExamBuilder(examId: number) {
   const questionsQuery = useQuery(examBuilderQueries.questions(examId));
   const readinessQuery = useQuery(examBuilderQueries.readiness(examId));
   const assignmentsQuery = useQuery(examBuilderQueries.assignments(examId));
+  const sectionsQuery = useQuery(examBuilderQueries.sections(examId));
 
   const exam = examQuery.data ?? null;
-  const questions = questionsQuery.data ?? [];
+  const questions = questionsQuery.data ?? NO_QUESTIONS;
   const readiness = readinessQuery.data ?? null;
-  const assignments = assignmentsQuery.data ?? [];
+  const assignments = assignmentsQuery.data ?? NO_ASSIGNMENTS;
+  const sections = sectionsQuery.data ?? NO_SECTIONS;
 
   const loading =
     examQuery.isLoading ||
@@ -94,10 +144,13 @@ export function useExamBuilder(examId: number) {
       queryClient.invalidateQueries({ queryKey: examBuilderKeys.questions(examId) }),
       queryClient.invalidateQueries({ queryKey: examBuilderKeys.readiness(examId) }),
       queryClient.invalidateQueries({ queryKey: examBuilderKeys.assignments(examId) }),
+      queryClient.invalidateQueries({ queryKey: examBuilderKeys.sections(examId) }),
     ]);
   }, [examId, queryClient]);
 
   const isDraft = exam?.status === "draft";
+  // Wider than isDraft: a published exam's questions stay editable until its first attempt.
+  const questionsEditable = exam?.questions_editable ?? isDraft;
   const totalPoints = useMemo(
     () => questions.reduce((sum, q) => sum + (q.points || 0), 0),
     [questions]
@@ -129,30 +182,46 @@ export function useExamBuilder(examId: number) {
       const payload = {
         question_text: draft.question_text,
         question_type: draft.question_type,
-        options:
-          draft.question_type === "multiple_choice"
-            ? draft.options.filter((o) => o.text.trim())
-            : [],
+        options: draft.question_type === "multiple_choice" ? optionsToPayload(draft.options) : [],
         correct_answer: draft.correct_answer,
         points: draft.points,
+        section: draft.section,
       };
       if (editing) {
         await updateQuestion(examId, editing.id, payload);
-        return { created: false };
+        return { created: false, failedUploads: [] as string[] };
       }
       const created = await createQuestion(examId, payload);
+      // The question now exists, so an upload failure must not fail the whole
+      // save - a retry would create a duplicate question. Report it instead.
+      const failedUploads: string[] = [];
       for (const file of pending) {
-        await uploadQuestionAttachment(examId, created.id, file);
+        try {
+          await uploadQuestionAttachment(examId, created.id, file);
+        } catch {
+          failedUploads.push(file.name);
+        }
       }
-      return { created: true };
+      return { created: true, failedUploads };
     },
-    onMutate: () => setActionError(null),
-    onSuccess: async ({ created }) => {
+    onMutate: () => {
+      setActionError(null);
+      setQuestionError(null);
+    },
+    onSuccess: async ({ created, failedUploads }) => {
       setShowQuestionForm(false);
-      setMessage(created ? "Question added." : "Question updated.");
+      if (failedUploads.length) {
+        setMessage(null);
+        setActionError(
+          `Question added, but ${failedUploads.length} file(s) could not be uploaded ` +
+            `(${failedUploads.join(", ")}). Edit the question to attach them again.`
+        );
+      } else {
+        setMessage(created ? "Question added." : "Question updated.");
+      }
       await invalidateBuilder();
     },
-    onError: (e) => setActionError(formatApiError(e)),
+    onError: (e) => setQuestionError(formatApiError(e)),
   });
 
   const deleteQuestionMutation = useMutation({
@@ -189,25 +258,38 @@ export function useExamBuilder(examId: number) {
     },
   });
 
+  const checkImportMutation = useMutation({
+    mutationFn: (form: ParsedQuestionForm) => checkQuestionRows(examId, form.rows),
+    onMutate: () => {
+      setImportStatus("checking");
+      setImportProblems(NO_PROBLEMS);
+    },
+    onSuccess: () => setImportStatus("valid"),
+    onError: (e) => {
+      setImportProblems(extractImportProblems(e));
+      setImportStatus("invalid");
+    },
+  });
+
   const importQuestionsMutation = useMutation({
-    mutationFn: (csv: string) => importQuestionsCsv(examId, csv),
+    mutationFn: (form: ParsedQuestionForm) => importQuestionRows(examId, form.rows),
     onMutate: () => {
       setActionError(null);
       setMessage(null);
-      setImportErrors([]);
     },
-    onSuccess: async (res) => {
-      setMessage(`Imported ${res.imported} question(s).`);
+    onSuccess: async (res, form) => {
+      setImportForm(null);
+      setImportStatus("idle");
+      setImportProblems(NO_PROBLEMS);
+      setMessage(
+        `Imported ${res.imported} question${res.imported === 1 ? "" : "s"} from "${form.fileName}".`
+      );
       await invalidateBuilder();
     },
     onError: (e) => {
-      const payload = (e as { payload?: { errors?: unknown } } | null)?.payload;
-      const rowErrors = payload?.errors;
-      if (Array.isArray(rowErrors) && rowErrors.length) {
-        setImportErrors(rowErrors.map((m) => String(m)));
-      } else {
-        setActionError(formatApiError(e, "Import failed"));
-      }
+      // The exam can change between the check and the import; show what's wrong now.
+      setImportProblems(extractImportProblems(e));
+      setImportStatus("invalid");
     },
   });
 
@@ -225,6 +307,19 @@ export function useExamBuilder(examId: number) {
       setActionError(formatApiError(e, "Publish failed"));
       await queryClient.invalidateQueries({ queryKey: examBuilderKeys.readiness(examId) });
     },
+  });
+
+  const unpublishMutation = useMutation({
+    mutationFn: () => unpublishExam(examId),
+    onMutate: () => {
+      setActionError(null);
+      setMessage(null);
+    },
+    onSuccess: async (res) => {
+      setMessage(res.message);
+      await invalidateBuilder();
+    },
+    onError: (e) => setActionError(formatApiError(e, "Unpublish failed")),
   });
 
   const submitMutation = useMutation({
@@ -267,8 +362,34 @@ export function useExamBuilder(examId: number) {
   });
 
   const createSectionMutation = useMutation({
-    mutationFn: (title: string) => createExamSection(examId, { title }),
-    onSuccess: () => setMessage("Section created. Assign questions to it when editing."),
+    mutationFn: (payload: { title: string; instructions?: string }) =>
+      createExamSection(examId, payload),
+    onSuccess: async () => {
+      await invalidateBuilder();
+    },
+  });
+
+  const updateSectionMutation = useMutation({
+    mutationFn: ({
+      sectionId,
+      payload,
+    }: {
+      sectionId: number;
+      payload: { title?: string; instructions?: string; order?: number };
+    }) => updateExamSection(examId, sectionId, payload),
+    onSuccess: async () => {
+      setMessage("Section updated.");
+      await invalidateBuilder();
+    },
+    onError: (e) => setActionError(formatApiError(e)),
+  });
+
+  const deleteSectionMutation = useMutation({
+    mutationFn: (sectionId: number) => deleteExamSection(examId, sectionId),
+    onSuccess: async () => {
+      setMessage("Section removed. Its questions are now unsectioned.");
+      await invalidateBuilder();
+    },
     onError: (e) => setActionError(formatApiError(e)),
   });
 
@@ -296,53 +417,95 @@ export function useExamBuilder(examId: number) {
     saveQuestionMutation.isPending ||
     publishMutation.isPending;
 
-  const saveSettings = () => {
-    if (!form) return;
-    saveSettingsMutation.mutate(form);
-  };
+  // `mutate` is referentially stable in react-query v5, unlike the mutation result object.
+  const saveSettingsMutate = saveSettingsMutation.mutate;
+  const saveQuestionMutate = saveQuestionMutation.mutate;
+  const deleteQuestionMutate = deleteQuestionMutation.mutate;
+  const reorderMutate = reorderMutation.mutate;
+  const checkImportMutate = checkImportMutation.mutate;
+  const importQuestionsMutate = importQuestionsMutation.mutate;
+  const publishMutate = publishMutation.mutate;
+  const unpublishMutate = unpublishMutation.mutate;
+  const submitMutate = submitMutation.mutate;
+  const approveMutate = approveMutation.mutate;
+  const rejectMutate = rejectMutation.mutate;
+  const createSectionMutateAsync = createSectionMutation.mutateAsync;
+  const createSectionMutate = createSectionMutation.mutate;
+  const updateSectionMutate = updateSectionMutation.mutate;
+  const deleteSectionMutate = deleteSectionMutation.mutate;
+  const addCandidateMutate = addCandidateMutation.mutate;
+  const importCandidatesMutate = importCandidatesMutation.mutate;
 
-  const openNewQuestion = () => {
+  const saveSettings = useCallback(() => {
+    if (!form) return;
+    if (!form.available_from) {
+      setActionError("Set an opening date before saving.");
+      return;
+    }
+    if (!form.available_until) {
+      setActionError("Set a closing date before saving.");
+      return;
+    }
+    const openingChanged = !exam || toDatetimeLocal(exam.available_from) !== form.available_from;
+    if (openingChanged && new Date(form.available_from) < new Date()) {
+      setActionError("The opening date can't be in the past.");
+      return;
+    }
+    if (new Date(form.available_until) <= new Date(form.available_from)) {
+      setActionError("The closing date must be after the opening date.");
+      return;
+    }
+    saveSettingsMutate(form);
+  }, [form, exam, saveSettingsMutate]);
+
+  const openNewQuestion = useCallback(() => {
+    setQuestionError(null);
     setEditingQuestion(null);
     setQuestionDraft({ ...EMPTY_QUESTION, options: EMPTY_QUESTION.options.map((o) => ({ ...o })) });
     setQuestionAttachments([]);
     setPendingFiles([]);
     setShowQuestionForm(true);
-  };
+  }, []);
 
-  const openEditQuestion = (q: Question) => {
+  const openEditQuestion = useCallback((q: Question) => {
+    setQuestionError(null);
     setEditingQuestion(q);
+    const saved = optionsToDraft(q.options ?? [], q.correct_answer ?? "");
     setQuestionDraft({
       question_text: q.question_text,
       question_type: q.question_type,
-      options: q.options?.length
-        ? q.options.map((o) => ({ ...o }))
+      options: saved.options.length
+        ? saved.options
         : [{ text: "", image: null }, { text: "", image: null }],
-      correct_answer: q.correct_answer ?? "",
+      correct_answer: saved.correct_answer,
       points: q.points,
+      section: q.section ?? null,
     });
     setQuestionAttachments(q.attachments ?? []);
     setPendingFiles([]);
     setShowQuestionForm(true);
-  };
+  }, []);
 
-  const uploadOptionImageForQuestion = async (questionId: number, file: File) => {
-    const { url } = await uploadOptionImage(examId, questionId, file);
+  const closeQuestionForm = useCallback(() => setShowQuestionForm(false), []);
+
+  const uploadOptionImageForQuestion = useCallback(async (file: File) => {
+    const { url } = await uploadOptionImage(examId, file);
     return url;
-  };
+  }, [examId]);
 
-  const uploadAttachment = async (questionId: number, file: File) => {
+  const uploadAttachment = useCallback(async (questionId: number, file: File) => {
     setAttachmentBusy(true);
     try {
       const attachment = await uploadQuestionAttachment(examId, questionId, file);
       setQuestionAttachments((prev) => [...prev, attachment]);
     } catch (e: unknown) {
-      setActionError(formatApiError(e));
+      setQuestionError(formatApiError(e, `Could not upload "${file.name}".`));
     } finally {
       setAttachmentBusy(false);
     }
-  };
+  }, [examId]);
 
-  const removeAttachment = async (attachment: QuestionAttachment) => {
+  const removeAttachment = useCallback(async (attachment: QuestionAttachment) => {
     if (!editingQuestion) return;
     const confirmed = await confirm({
       title: "Remove attachment?",
@@ -356,15 +519,22 @@ export function useExamBuilder(examId: number) {
       await deleteQuestionAttachment(examId, editingQuestion.id, attachment.id);
       setQuestionAttachments((prev) => prev.filter((a) => a.id !== attachment.id));
     } catch (e: unknown) {
-      setActionError(formatApiError(e));
+      setQuestionError(formatApiError(e));
     } finally {
       setAttachmentBusy(false);
     }
-  };
+  }, [confirm, editingQuestion, examId]);
 
-  const handleAttachmentPick = async (files: FileList | null) => {
+  const handleAttachmentPick = useCallback(async (files: FileList | null) => {
     if (!files?.length) return;
-    const picked = Array.from(files);
+    setQuestionError(null);
+    const problems: string[] = [];
+    const picked = Array.from(files).filter((file) => {
+      const problem = validateAttachment(file);
+      if (problem) problems.push(problem);
+      return !problem;
+    });
+    if (problems.length) setQuestionError(problems.join(" "));
     if (editingQuestion) {
       for (const file of picked) {
         await uploadAttachment(editingQuestion.id, file);
@@ -372,17 +542,17 @@ export function useExamBuilder(examId: number) {
     } else {
       setPendingFiles((prev) => [...prev, ...picked]);
     }
-  };
+  }, [editingQuestion, uploadAttachment]);
 
-  const saveQuestion = () => {
-    saveQuestionMutation.mutate({
+  const saveQuestion = useCallback(() => {
+    saveQuestionMutate({
       draft: questionDraft,
       editing: editingQuestion,
       pending: pendingFiles,
     });
-  };
+  }, [saveQuestionMutate, questionDraft, editingQuestion, pendingFiles]);
 
-  const removeQuestion = async (q: Question) => {
+  const removeQuestion = useCallback(async (q: Question) => {
     const confirmed = await confirm({
       title: `Delete question ${q.order}?`,
       description: "This permanently removes the question and its attachments.",
@@ -390,55 +560,144 @@ export function useExamBuilder(examId: number) {
       destructive: true,
     });
     if (!confirmed) return;
-    deleteQuestionMutation.mutate(q.id);
-  };
+    deleteQuestionMutate(q.id);
+  }, [confirm, deleteQuestionMutate]);
 
-  const reorderQuestionsByIds = (questionIds: number[]) => {
-    reorderMutation.mutate(questionIds);
-  };
+  const reorderQuestionsByIds = useCallback((questionIds: number[]) => {
+    reorderMutate(questionIds);
+  }, [reorderMutate]);
 
-  const handleImportFile = async (file: File) => {
+  const downloadImportForm = useCallback(async () => {
+    if (!exam) return;
     setActionError(null);
-    setImportErrors([]);
+    setFormDownloadBusy(true);
     try {
-      const text = await readImportFileAsCsv(file);
-      setImportCsv(text);
-      setMessage(`Loaded "${file.name}". Review the rows below, then import.`);
-    } catch (e: unknown) {
-      setActionError(
-        e instanceof Error
-          ? e.message
-          : "Could not read that file. Upload the worksheet (.xlsx) or a .csv file."
-      );
+      await downloadQuestionForm(exam);
+    } catch {
+      setActionError("Could not generate the question form. Please try again.");
+    } finally {
+      setFormDownloadBusy(false);
     }
-  };
+  }, [exam]);
 
-  const runImport = () => {
-    setImportErrors([]);
-    if (!importCsv.trim()) {
-      setImportErrors(["Add at least one question row, or download the template to get started."]);
+  const handleImportFile = useCallback(async (file: File) => {
+    setActionError(null);
+    setMessage(null);
+    setImportForm(null);
+    setImportProblems(NO_PROBLEMS);
+    setImportStatus("checking");
+    let parsed: ParsedQuestionForm;
+    try {
+      parsed = await parseQuestionImportFile(file);
+    } catch (e: unknown) {
+      setImportForm({ fileName: file.name, rows: [], formExamId: null, formExamLabel: null });
+      setImportProblems({
+        issues: [],
+        general: [
+          e instanceof QuestionFormError
+            ? e.message
+            : "Could not read that file. Upload the completed question form (.xlsx).",
+        ],
+      });
+      setImportStatus("invalid");
       return;
     }
-    importQuestionsMutation.mutate(importCsv);
-  };
+    setImportForm(parsed);
+    if (!parsed.rows.length) {
+      setImportProblems({
+        issues: [],
+        general: ["The form has no questions filled in. Add at least one row, then upload it again."],
+      });
+      setImportStatus("invalid");
+      return;
+    }
+    checkImportMutate(parsed);
+  }, [checkImportMutate]);
 
-  const publish = () => publishMutation.mutate();
-  const submitForReview = () => submitMutation.mutate();
-  const approveReview = () => approveMutation.mutate();
-  const rejectReview = (note: string) => rejectMutation.mutate(note);
+  const recheckImport = useCallback(() => {
+    if (importForm?.rows.length) checkImportMutate(importForm);
+  }, [importForm, checkImportMutate]);
 
-  const addCandidate = () => {
+  const clearImport = useCallback(() => {
+    setImportForm(null);
+    setImportStatus("idle");
+    setImportProblems(NO_PROBLEMS);
+  }, []);
+
+  const runImport = useCallback(() => {
+    if (!importForm || importStatus !== "valid") return;
+    importQuestionsMutate(importForm);
+  }, [importForm, importStatus, importQuestionsMutate]);
+
+  const publish = useCallback(() => publishMutate(), [publishMutate]);
+
+  const unpublish = useCallback(async () => {
+    const confirmed = await confirm({
+      title: "Unpublish exam?",
+      description:
+        "The exam returns to draft and examinees can no longer see it. You can edit it, but a non-admin creator needs it re-approved before publishing again.",
+      confirmLabel: "Unpublish",
+    });
+    if (!confirmed) return;
+    unpublishMutate();
+  }, [confirm, unpublishMutate]);
+
+  const submitForReview = useCallback(() => submitMutate(), [submitMutate]);
+
+  const approveReview = useCallback(() => approveMutate(), [approveMutate]);
+
+  const rejectReview = useCallback((note: string) => rejectMutate(note), [rejectMutate]);
+
+  const addCandidate = useCallback(() => {
     if (!candidateEmail.trim()) return;
-    addCandidateMutation.mutate(candidateEmail.trim());
-  };
+    addCandidateMutate(candidateEmail.trim());
+  }, [candidateEmail, addCandidateMutate]);
 
-  const importCandidates = () => importCandidatesMutation.mutate(candidateCsv);
+  const importCandidates = useCallback(
+    () => importCandidatesMutate(candidateCsv),
+    [candidateCsv, importCandidatesMutate]
+  );
 
-  const addSection = async () => {
-    const title = window.prompt("Section title?");
-    if (!title?.trim()) return;
-    createSectionMutation.mutate(title.trim());
-  };
+  const addSection = useCallback((title: string, instructions?: string) => {
+    if (!title.trim()) return;
+    createSectionMutate(
+      { title: title.trim(), instructions: instructions?.trim() },
+      {
+        onSuccess: () =>
+          setMessage("Section created. Assign questions to it from the question editor."),
+        onError: (e) => setActionError(formatApiError(e)),
+      }
+    );
+  }, [createSectionMutate]);
+
+  /** Creates a section from inside the question dialog; resolves to it (or null on failure). */
+  const createSectionForQuestion = useCallback(async (title: string): Promise<ExamSection | null> => {
+    const trimmed = title.trim();
+    if (!trimmed) return null;
+    setQuestionError(null);
+    try {
+      return await createSectionMutateAsync({ title: trimmed });
+    } catch (e) {
+      setQuestionError(formatApiError(e, "Could not create the section."));
+      return null;
+    }
+  }, [createSectionMutateAsync]);
+
+  const renameSection = useCallback((sectionId: number, title: string) => {
+    if (!title.trim()) return;
+    updateSectionMutate({ sectionId, payload: { title: title.trim() } });
+  }, [updateSectionMutate]);
+
+  const removeSection = useCallback(async (sectionId: number, title: string) => {
+    const confirmed = await confirm({
+      title: `Remove section "${title}"?`,
+      description: "Questions in this section become unsectioned - they are not deleted.",
+      confirmLabel: "Remove",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    deleteSectionMutate(sectionId);
+  }, [confirm, deleteSectionMutate]);
 
   return {
     tab,
@@ -449,21 +708,24 @@ export function useExamBuilder(examId: number) {
     questions,
     readiness,
     assignments,
+    sections,
     loading,
     loadError,
     error,
     message,
     setMessage,
     isDraft,
+    questionsEditable,
     totalPoints,
     saving,
     saveSettings,
     showQuestionForm,
-    setShowQuestionForm,
+    closeQuestionForm,
     editingQuestion,
     questionDraft,
     setQuestionDraft,
     questionAttachments,
+    questionError,
     pendingFiles,
     setPendingFiles,
     attachmentBusy,
@@ -475,13 +737,19 @@ export function useExamBuilder(examId: number) {
     saveQuestion,
     removeQuestion,
     reorderQuestionsByIds,
-    importCsv,
-    setImportCsv,
-    importErrors,
+    importForm,
+    importStatus,
+    importProblems,
     importBusy: importQuestionsMutation.isPending,
+    formDownloadBusy,
+    downloadImportForm,
     handleImportFile,
+    recheckImport,
+    clearImport,
     runImport,
     publish,
+    unpublish,
+    unpublishPending: unpublishMutation.isPending,
     submitForReview,
     submitPending: submitMutation.isPending,
     approveReview,
@@ -495,7 +763,12 @@ export function useExamBuilder(examId: number) {
     addCandidate,
     importCandidates,
     addSection,
+    createSectionForQuestion,
+    renameSection,
+    removeSection,
     createSectionPending: createSectionMutation.isPending,
+    updateSectionPending: updateSectionMutation.isPending,
+    deleteSectionPending: deleteSectionMutation.isPending,
     addCandidatePending: addCandidateMutation.isPending,
     importCandidatesPending: importCandidatesMutation.isPending,
   };

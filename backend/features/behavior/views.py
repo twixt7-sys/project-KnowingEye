@@ -59,8 +59,11 @@ class AlertViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
         session = request.data.get("session")
-        qs = Alert.objects.filter(resolved=False)
+        alert_type = request.data.get("alert_type")
+        qs = self.get_queryset().filter(resolved=False)
         if session:
             qs = qs.filter(session=session)
+        if alert_type:
+            qs = qs.filter(alert_type=alert_type)
         updated = qs.update(resolved=True)
         return Response({"updated": updated})

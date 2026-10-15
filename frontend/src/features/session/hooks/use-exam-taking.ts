@@ -9,11 +9,21 @@ import {
   type Question,
 } from "@/core/config/api";
 import { useMonitoring } from "@/shared/hooks/use-monitoring";
+import { isProctorHalt } from "@/shared/lib/api-error";
 import { useExamAttempt } from "@/features/session/hooks/use-exam-attempt";
 
-export type MonitoringDockPosition = "bottom-right" | "bottom-left" | "top-right" | "top-left";
+export type MonitoringDockPosition =
+  | "bottom-right"
+  | "bottom-left"
+  | "top-right"
+  | "top-left"
+  | "inline";
 
 export const DOCK_STORAGE_KEY = "knowing-eye-monitoring-dock-position";
+
+/** A session the examinee can still be in: running, or paused by a proctor. */
+const isLiveStatus = (status: ExamSession["status"] | undefined) =>
+  status === "in_progress" || status === "paused";
 
 export function useExamTaking() {
   const { examId } = useParams();
@@ -36,21 +46,47 @@ export function useExamTaking() {
   const [enrollMessage, setEnrollMessage] = useState<string | null>(null);
   const [dockPosition, setDockPosition] = useState<MonitoringDockPosition>(() => {
     const saved = localStorage.getItem(DOCK_STORAGE_KEY);
-    if (saved === "bottom-left" || saved === "top-right" || saved === "top-left") return saved;
+    if (
+      saved === "bottom-left" ||
+      saved === "top-right" ||
+      saved === "top-left" ||
+      saved === "inline"
+    )
+      return saved;
     return "bottom-right";
   });
 
+  // 5 fps (pipeline.target_fps). Sending is gated on the previous reply, so on
+  // a slower server this just runs at whatever rate inference keeps up with.
   const monitoring = useMonitoring({
     sessionId: session?.id,
-    intervalMs: 1000,
+    intervalMs: 200,
+    // A proctor paused, resumed or terminated the exam: show it at once, then
+    // re-read the server's state in case something newer happened.
+    onSessionState: (state) => {
+      attempt.applySessionState(state);
+      void attempt.syncNow();
+    },
+    // The socket was closed or a frame refused because the session is over:
+    // find out how (terminated, timed out) so the right screen is shown.
+    onSessionInactive: () => void attempt.syncNow(),
   });
 
+  // A terminated attempt is over for good: release the camera.
+  const terminated = attempt.terminated;
+  const stopMonitoring = monitoring.stop;
+  useEffect(() => {
+    if (terminated) stopMonitoring();
+  }, [terminated, stopMonitoring]);
+
   const monitoringEnabled = session?.exam?.monitoring_enabled !== false;
+  const disableCopyPaste = session?.exam?.disable_copy_paste === true;
   const webcamActive =
     monitoringEnabled &&
     (monitoring.status === "live" || monitoring.status === "fallback-rest");
 
   const questions = (session?.exam.questions ?? []) as Question[];
+  const sections = session?.exam.sections ?? [];
   const activeQuestion = questions[currentQuestion];
   const answeredCount = questions.filter(
     (q) => (attempt.answers[q.id]?.answer_text ?? "").trim().length > 0
@@ -70,6 +106,12 @@ export function useExamTaking() {
         state: { autoSubmitted: true },
       });
     } catch (err) {
+      if (isProctorHalt(err)) {
+        // A proctor paused or terminated the exam as the clock ran out. That is
+        // not a failed submission: show the matching screen instead.
+        await attempt.syncNow();
+        return;
+      }
       console.error("Auto-submit failed:", err);
       navigate(`/examinee/exam/${examId}/submitted`, {
         state: { autoSubmitted: true, error: true },
@@ -84,17 +126,24 @@ export function useExamTaking() {
         setLoading(true);
         const fromState = (location.state as { session?: ExamSession } | null)?.session;
         let examSession = fromState;
-        if (!examSession || examSession.status !== "in_progress") {
-          const sessions = await apiClient.listSessions({
-            exam: eid,
-            status: "in_progress",
-          });
-          examSession = sessions[0];
+        if (!examSession || !isLiveStatus(examSession.status)) {
+          // A reload while a proctor has the exam paused must land back on
+          // the paused screen, not bounce to setup.
+          const [running, paused] = await Promise.all([
+            apiClient.listSessions({ exam: eid, status: "in_progress" }),
+            apiClient.listSessions({ exam: eid, status: "paused" }),
+          ]);
+          const found = running[0] ?? paused[0];
+          // listSessions returns lightweight summaries without a nested
+          // exam.questions - fetch the full session so the fields below
+          // (and everything downstream) have real data to work with.
+          examSession = found ? await apiClient.getSession(found.id) : undefined;
         }
-        if (!examSession || examSession.status !== "in_progress") {
+        if (!examSession || !isLiveStatus(examSession.status)) {
           navigate(`/examinee/exam/${eid}/setup`, { replace: true });
           return;
         }
+        attempt.hydrateFromSession(examSession);
         setSessionId(examSession.id);
         const initialTimeSpent: Record<number, number> = {};
         examSession.exam.questions?.forEach((_q, index) => {
@@ -109,6 +158,7 @@ export function useExamTaking() {
     };
 
     if (examId) void loadExamSession();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [examId, location.state, navigate]);
 
   useEffect(() => {
@@ -121,8 +171,15 @@ export function useExamTaking() {
   const maxTabSwitches = session?.exam?.max_tab_switches ?? null;
   const [tabSwitchWarning, setTabSwitchWarning] = useState<string | null>(null);
 
+  // An open submit confirmation must not outlive the pause and reappear on resume.
   useEffect(() => {
-    if (!sessionId) return;
+    if (attempt.paused || terminated) setShowSubmitModal(false);
+  }, [attempt.paused, terminated]);
+
+  useEffect(() => {
+    // Leaving the tab during a proctor pause isn't leaving the exam, and a
+    // terminated attempt has nothing left to record against.
+    if (!sessionId || attempt.paused || terminated) return;
     const onVisibility = () => {
       const hidden = document.hidden;
       const event = hidden ? "tab_hidden" : "tab_visible";
@@ -141,9 +198,10 @@ export function useExamTaking() {
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, [sessionId, maxTabSwitches]);
+  }, [sessionId, maxTabSwitches, attempt.paused, terminated]);
 
   useEffect(() => {
+    if (attempt.paused || terminated) return;
     const questionTimer = setInterval(() => {
       setTimeSpent((prev) => ({
         ...prev,
@@ -151,7 +209,7 @@ export function useExamTaking() {
       }));
     }, 1000);
     return () => clearInterval(questionTimer);
-  }, [currentQuestion]);
+  }, [currentQuestion, attempt.paused, terminated]);
 
   useEffect(() => {
     if (!session?.id || !monitoringEnabled) return;
@@ -209,7 +267,13 @@ export function useExamTaking() {
         state: { session: result.session, results: result.results },
       });
     } catch (err) {
-      setError(formatApiError(err, "Failed to submit exam"));
+      if (isProctorHalt(err)) {
+        // Paused or terminated while the submit was in flight. Say so with the
+        // matching screen rather than a raw "failed to submit" error.
+        await attempt.syncNow();
+      } else {
+        setError(formatApiError(err, "Failed to submit exam"));
+      }
     } finally {
       setSubmitting(false);
       setShowSubmitModal(false);
@@ -229,7 +293,11 @@ export function useExamTaking() {
     submitting,
     session,
     attempt,
+    paused: attempt.paused,
+    terminated,
+    pauseReason: attempt.pauseReason,
     questions,
+    sections,
     activeQuestion,
     currentQuestion,
     setCurrentQuestion,
@@ -240,6 +308,7 @@ export function useExamTaking() {
     setShowSubmitModal,
     monitoring,
     monitoringEnabled,
+    disableCopyPaste,
     webcamActive,
     behaviorAlerts,
     tabSwitchCount,

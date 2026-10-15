@@ -1,6 +1,7 @@
 """Cross-feature API smoke tests - critical user journeys."""
 
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -60,6 +61,8 @@ class SystemSmokeTests(APITestCase):
                 "passing_score": 60,
                 "department_id": self.department.id,
                 "status": "draft",
+                "available_from": timezone.now().isoformat(),
+                "available_until": (timezone.now() + timezone.timedelta(days=90)).isoformat(),
             },
             format="json",
         )

@@ -5,20 +5,25 @@ from __future__ import annotations
 import csv
 from io import BytesIO, StringIO
 
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, F, Q
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from core.utils.api_cache import cache_get_response
 from core.utils.constants import MAX_REPORT_EXPORT_ROWS
 
 from core.pagination import StandardResultsPagination
 from features.behavior.models import Alert, BehaviorLog
 from features.exams.models import ExamAssignment
+from features.reports.negotiation import IgnoreClientContentNegotiation
 from features.session.models import ExamSession
-from features.session.serializers import ExamSessionDetailSerializer
+from features.session.serializers import (
+    ExamSessionDetailSerializer,
+    _requester_is_grader,
+)
 
 
 def _session_queryset(user):
@@ -30,6 +35,15 @@ def _session_queryset(user):
     return qs.filter(user=user)
 
 
+def _report_cache_scope(request) -> str:
+    """Callers share a cache entry only if they see the same sessions."""
+    from core.security import service as security
+
+    if security.has_module(request.user, "reports"):
+        return "reports"
+    return f"user:{request.user.pk}"
+
+
 def _annotate_sessions(qs):
     return qs.annotate(
         _alert_count=Count("alerts", distinct=True),
@@ -39,9 +53,19 @@ def _annotate_sessions(qs):
 
 
 def _department_analytics(sessions):
-    """Aggregate completed-session KPIs grouped by exam department."""
+    """Aggregate completed-session KPIs grouped by exam department.
+
+    Run as two separate GROUP BY queries rather than one combined
+    ``.annotate()``: mixing the plain per-session ``Count("id")``/``Avg(...)``
+    with a to-many join on ``alerts`` in a single query fans the join out
+    (a completed session with N alerts contributes N duplicate rows), which
+    silently inflates ``completed_sessions``/``passed_count`` and skews both
+    averages toward sessions with more alerts. Keeping the alert count in
+    its own query avoids that join entirely for the session-level query.
+    """
     completed = sessions.filter(status=ExamSession.Status.COMPLETED)
-    rows = (
+
+    stats_rows = (
         completed.values(
             "exam__department_id",
             "exam__department__name",
@@ -51,13 +75,20 @@ def _department_analytics(sessions):
             completed_sessions=Count("id"),
             average_score=Avg("percentage_score"),
             passed_count=Count("id", filter=Q(passed=True)),
-            alert_count=Count("alerts", distinct=True),
+            average_ebi=Avg("ebi_average", filter=Q(ebi_average__isnull=False)),
         )
         .order_by("exam__department__name")
     )
 
+    alert_counts = {
+        row["exam__department_id"]: row["alert_count"]
+        for row in completed.values("exam__department_id").annotate(
+            alert_count=Count("alerts", distinct=True)
+        )
+    }
+
     result = []
-    for row in rows:
+    for row in stats_rows:
         completed_count = row["completed_sessions"] or 0
         dept_id = row["exam__department_id"]
         result.append(
@@ -72,7 +103,12 @@ def _department_analytics(sessions):
                 "pass_rate": (
                     row["passed_count"] / completed_count * 100.0 if completed_count else None
                 ),
-                "alert_count": row["alert_count"] or 0,
+                "alert_count": alert_counts.get(dept_id, 0),
+                "average_ebi": (
+                    round(float(row["average_ebi"]), 2)
+                    if row["average_ebi"] is not None
+                    else None
+                ),
             }
         )
     return result
@@ -122,6 +158,10 @@ def _serialize_session_rows(sessions):
             "alert_count": s._alert_count,
             "unresolved_alert_count": s._unresolved,
             "behavior_event_count": s._behavior_count,
+            "ebi_average": (
+                round(float(s.ebi_average), 2) if s.ebi_average is not None else None
+            ),
+            "ebi_sample_count": s.ebi_sample_count,
         }
         for s in sessions
     ]
@@ -129,11 +169,14 @@ def _serialize_session_rows(sessions):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@cache_get_response("reports", scope=_report_cache_scope)
 def report_summary(request):
     """GET /api/reports/summary/ - dashboard KPIs for admins/examinees."""
     sessions = _session_queryset(request.user)
     completed = sessions.filter(status=ExamSession.Status.COMPLETED)
-    active = sessions.filter(status=ExamSession.Status.IN_PROGRESS)
+    active = sessions.filter(
+        status__in=(ExamSession.Status.IN_PROGRESS, ExamSession.Status.PAUSED)
+    )
     terminated = sessions.filter(status=ExamSession.Status.TERMINATED)
 
     alert_qs = Alert.objects.filter(session__in=sessions)
@@ -147,6 +190,8 @@ def report_summary(request):
     )
 
     completed_count = completed.count()
+    monitored = sessions.filter(ebi_average__isnull=False)
+    ebi_stats = monitored.aggregate(avg=Avg("ebi_average"), n=Count("id"))
     return Response(
         {
             "total_sessions": sessions.count(),
@@ -156,6 +201,10 @@ def report_summary(request):
             "unresolved_alerts": alert_qs.filter(resolved=False).count(),
             "resolved_alerts": alert_qs.filter(resolved=True).count(),
             "behavior_events": behavior_qs.count(),
+            "average_ebi": (
+                round(float(ebi_stats["avg"]), 2) if ebi_stats["avg"] is not None else None
+            ),
+            "ebi_session_count": ebi_stats["n"] or 0,
             "average_score": completed.aggregate(avg=Avg("percentage_score"))["avg"],
             "pass_rate": completed.filter(passed=True).count() / completed_count * 100.0
             if completed_count
@@ -168,22 +217,8 @@ def report_summary(request):
     )
 
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def session_report(request, session_id):
-    """GET /api/reports/sessions/<uuid>/ - exhaustive session report."""
-    try:
-        session = _session_queryset(request.user).get(pk=session_id)
-    except ExamSession.DoesNotExist:
-        return Response({"detail": "Session not found."}, status=404)
-
-    behavior_summary = (
-        BehaviorLog.objects.filter(session=session)
-        .values("event_type")
-        .annotate(count=Count("id"), avg_score=Avg("score"))
-        .order_by("-count")
-    )
-
+def _session_department_analytics(session):
+    """Exam/department comparison block shared by the JSON and PDF reports."""
     exam = session.exam
     department = exam.department
     exam_completed = ExamSession.objects.filter(
@@ -257,11 +292,49 @@ def session_report(request, session_id):
             ),
         }
 
+    return department_analytics
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def session_report(request, session_id):
+    """GET /api/reports/sessions/<uuid>/ - exhaustive session report."""
+    try:
+        session = _session_queryset(request.user).get(pk=session_id)
+    except ExamSession.DoesNotExist:
+        return Response({"detail": "Session not found."}, status=404)
+
+    behavior_summary = (
+        BehaviorLog.objects.filter(session=session)
+        .values("event_type")
+        .annotate(count=Count("id"), avg_score=Avg("score"))
+        .order_by("-count")
+    )
+
+    department_analytics = _session_department_analytics(session)
+
+    exam_behavior_index = {
+        "average": (
+            round(float(session.ebi_average), 2) if session.ebi_average is not None else None
+        ),
+        "sample_count": session.ebi_sample_count,
+        "indicator_count": 4 if session.ebi_identity_sample_count else 3,
+        "components": {
+            "face_presence": session.ebi_face_presence_avg,
+            "face_identity": session.ebi_face_identity_avg,
+            "upper_body_presence": session.ebi_upper_body_avg,
+            "looking_away_compliance": session.ebi_looking_away_avg,
+        },
+        "identity_sample_count": session.ebi_identity_sample_count,
+        "formula": "EBI = (Fp + Fi + Up + Gc) / N",
+    }
+
     return Response(
         {
             "session": ExamSessionDetailSerializer(
                 session, context={"request": request}
             ).data,
+            "exam_behavior_index": exam_behavior_index,
             "behavior_summary": list(behavior_summary),
             "behavior_logs": list(
                 BehaviorLog.objects.filter(session=session)
@@ -286,15 +359,95 @@ def session_report(request, session_id):
     )
 
 
+# ``?ordering=`` values accepted by list_session_reports -> model lookup.
+_SESSION_ORDERING = {
+    "started_at": "started_at",
+    "submitted_at": "submitted_at",
+    "percentage_score": "percentage_score",
+    "exam_title": "exam__title",
+}
+
+
+def _order_sessions(qs, ordering: str):
+    """Apply a whitelisted ``?ordering=`` (``-`` prefix = descending).
+
+    Unknown or missing values keep the default newest-first order. Nullable
+    columns sort nulls last either way, and ``-started_at, id`` always breaks
+    ties so paging over equal scores never skips or repeats a row.
+    """
+    field = _SESSION_ORDERING.get(ordering.lstrip("-"))
+    if field is None:
+        return qs.order_by("-started_at", "id")
+    expr = F(field).desc(nulls_last=True) if ordering.startswith("-") else F(field).asc(nulls_last=True)
+    return qs.order_by(expr, "-started_at", "id")
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def session_report_pdf(request, session_id):
+    """GET /api/reports/sessions/<uuid>/pdf/ - printable report for one attempt."""
+    from features.exams import services as exam_services
+    from features.reports.pdf import build_session_report_pdf
+
+    try:
+        session = _session_queryset(request.user).get(pk=session_id)
+    except ExamSession.DoesNotExist:
+        return Response({"detail": "Session not found."}, status=404)
+
+    if session.status in (
+        ExamSession.Status.SETUP,
+        ExamSession.Status.IN_PROGRESS,
+        ExamSession.Status.PAUSED,
+    ):
+        return Response(
+            {"detail": "The report is available once the exam has been submitted."},
+            status=409,
+        )
+
+    is_grader = _requester_is_grader({"request": request})
+    show_correct = is_grader or exam_services.results_visible_to_user(
+        session.exam, request.user
+    )
+    # Same rule as the session serializers: scores stay hidden from the
+    # examinee while essay/short-answer grading is still pending.
+    hide_scores = (
+        session.status == ExamSession.Status.PENDING_REVIEW and not is_grader
+    )
+
+    pdf_bytes = build_session_report_pdf(
+        session,
+        show_correct_answers=show_correct and not hide_scores,
+        hide_scores=hide_scores,
+        department_analytics=_session_department_analytics(session),
+    )
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    filename = f"exam-report-{session.exam_id}-{str(session.id)[:8]}.pdf"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_session_reports(request):
     """GET /api/reports/sessions/ - paginated list with KPI per session."""
-    qs = _session_queryset(request.user).order_by("-started_at")
+    qs = _order_sessions(
+        _session_queryset(request.user),
+        (request.query_params.get("ordering") or "").strip(),
+    )
 
-    status_filter = request.query_params.get("status")
-    if status_filter:
-        qs = qs.filter(status=status_filter)
+    # One status, or a comma-separated list (e.g. "in_progress,paused" for
+    # everything still live).
+    statuses = [
+        part.strip()
+        for part in (request.query_params.get("status") or "").split(",")
+        if part.strip()
+    ]
+    if statuses:
+        qs = qs.filter(status__in=statuses)
+
+    passed = request.query_params.get("passed")
+    if passed in ("true", "false"):
+        qs = qs.filter(passed=(passed == "true"))
 
     exam_id = request.query_params.get("exam")
     if exam_id:
@@ -347,6 +500,8 @@ def export_sessions_csv(request):
             "submitted_at",
             "percentage_score",
             "passed",
+            "exam_behavior_index",
+            "ebi_sample_count",
             "alert_count",
             "unresolved_alerts",
             "behavior_event_count",
@@ -366,6 +521,8 @@ def export_sessions_csv(request):
                 s.submitted_at.isoformat() if s.submitted_at else "",
                 float(s.percentage_score) if s.percentage_score is not None else "",
                 s.passed if s.passed is not None else "",
+                round(float(s.ebi_average), 2) if s.ebi_average is not None else "",
+                s.ebi_sample_count,
                 s._alert_count,
                 s._unresolved,
                 s._behavior_count,
@@ -404,8 +561,8 @@ def export_sessions_pdf(request):
     y -= 30
 
     pdf.setFont("Helvetica-Bold", 9)
-    headers = ["Session", "Exam", "User", "Status", "Score", "Alerts"]
-    col_x = [50, 130, 250, 330, 410, 470]
+    headers = ["Session", "Exam", "User", "Status", "Score", "EBI", "Alerts"]
+    col_x = [50, 125, 235, 315, 390, 445, 500]
     for x, label in zip(col_x, headers):
         pdf.drawString(x, y, label)
     y -= 16
@@ -422,12 +579,18 @@ def export_sessions_pdf(request):
             if session.percentage_score is not None
             else "-"
         )
+        ebi = (
+            f"{float(session.ebi_average):.0f}"
+            if session.ebi_average is not None
+            else "-"
+        )
         row = [
             str(session.id)[:8],
-            (session.exam.title or "")[:18],
-            session.user.username[:14],
-            session.status[:12],
+            (session.exam.title or "")[:16],
+            session.user.username[:12],
+            session.status[:11],
             score,
+            ebi,
             str(session._alert_count),
         ]
         for x, value in zip(col_x, row):
@@ -445,6 +608,7 @@ def export_sessions_pdf(request):
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@cache_get_response("reports", scope=_report_cache_scope)
 def analytics_timeseries(request):
     """GET /api/reports/timeseries/ - behaviors and alerts per day (last 30 days)."""
     from django.db.models.functions import TruncDate
@@ -481,3 +645,8 @@ def analytics_timeseries(request):
             "behaviors": list(behaviors_per_day),
         }
     )
+
+
+# Download endpoints return raw HttpResponses; see IgnoreClientContentNegotiation.
+for _download_view in (export_sessions_csv, export_sessions_pdf, session_report_pdf):
+    _download_view.cls.content_negotiation_class = IgnoreClientContentNegotiation

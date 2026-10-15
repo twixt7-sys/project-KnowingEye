@@ -5,10 +5,13 @@ import {
   apiClient,
   type Exam,
   type ExamCategory,
+  type ExamPreview,
+  type ExamSection,
   type PublishReadiness,
   type Question,
   type QuestionAttachment,
 } from "@/core/config/api";
+import { type QuestionFormRow, toImportPayload } from "@/features/exams/lib/question-import-form";
 
 export interface ExamAssignment {
   id: number;
@@ -38,6 +41,10 @@ export function fetchExamById(id: number) {
   return apiClient.getExam(id);
 }
 
+export function fetchExamPreview(id: number) {
+  return apiClient.getExamPreview(id);
+}
+
 export function createExam(payload: Partial<Exam>) {
   return apiClient.createExam(payload);
 }
@@ -54,8 +61,16 @@ export function publishExam(id: number) {
   return apiClient.publishExam(id);
 }
 
+export function unpublishExam(id: number) {
+  return apiClient.unpublishExam(id);
+}
+
 export function archiveExam(id: number) {
   return apiClient.archiveExam(id);
+}
+
+export function unarchiveExam(id: number) {
+  return apiClient.unarchiveExam(id);
 }
 
 export function submitExamForReview(id: number) {
@@ -94,12 +109,20 @@ export function fetchExamReadiness(examId: number) {
   return apiClient.getExamReadiness(examId);
 }
 
-export function importQuestionsCsv(examId: number, csv: string) {
-  return apiClient.importQuestions(examId, csv);
+export function importQuestionRows(examId: number, rows: QuestionFormRow[]) {
+  return apiClient.importQuestions(examId, toImportPayload(rows));
+}
+
+export function checkQuestionRows(examId: number, rows: QuestionFormRow[]) {
+  return apiClient.checkQuestionImport(examId, toImportPayload(rows));
 }
 
 export function reorderQuestions(examId: number, questionIds: number[]) {
   return apiClient.reorderQuestions(examId, questionIds);
+}
+
+export function fetchExamSections(examId: number) {
+  return apiClient.listExamSections(examId);
 }
 
 export function createExamSection(
@@ -107,6 +130,18 @@ export function createExamSection(
   payload: { title: string; instructions?: string; order?: number; questions_per_page?: number }
 ) {
   return apiClient.createExamSection(examId, payload);
+}
+
+export function updateExamSection(
+  examId: number,
+  sectionId: number,
+  payload: Partial<Pick<ExamSection, "title" | "instructions" | "order" | "questions_per_page">>
+) {
+  return apiClient.updateExamSection(examId, sectionId, payload);
+}
+
+export function deleteExamSection(examId: number, sectionId: number) {
+  return apiClient.deleteExamSection(examId, sectionId);
 }
 
 export function uploadQuestionAttachment(
@@ -126,8 +161,8 @@ export function deleteQuestionAttachment(
   return apiClient.deleteQuestionAttachment(examId, questionId, attachmentId);
 }
 
-export function uploadOptionImage(examId: number, questionId: number, file: File) {
-  return apiClient.uploadOptionImage(examId, questionId, file);
+export function uploadOptionImage(examId: number, file: File) {
+  return apiClient.uploadOptionImage(examId, file);
 }
 
 export function fetchExamAssignments(examId: number) {
@@ -145,4 +180,4 @@ export function importExamAssignments(examId: number, csv: string) {
   return apiClient.importExamAssignments(examId, csv);
 }
 
-export type { Exam, ExamCategory, Question, PublishReadiness, QuestionAttachment };
+export type { Exam, ExamCategory, ExamPreview, Question, PublishReadiness, QuestionAttachment };

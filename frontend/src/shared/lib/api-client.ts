@@ -1,5 +1,11 @@
 import { API_BASE_URL } from "@/core/config/env";
 import { ApiError } from "@/shared/lib/api-error";
+import {
+  ATTACHMENT_IMAGE_COMPRESSION,
+  AVATAR_COMPRESSION,
+  OPTION_IMAGE_COMPRESSION,
+  compressImage,
+} from "@/shared/lib/image-compress";
 import { toQuery } from "@/shared/lib/query-params";
 import { tokenStore } from "@/shared/lib/token-store";
 import type {
@@ -10,6 +16,8 @@ import type {
   Department,
   Exam,
   ExamCategory,
+  ExamPreview,
+  ExamSection,
   ExamSession,
   FrameAnalysis,
   ProfileUser,
@@ -20,6 +28,7 @@ import type {
   ResponseData,
   Role,
   SessionDepartmentAnalytics,
+  SessionExamBehaviorIndex,
   SessionReportRow,
   SubmitSessionData,
   UserPermissions,
@@ -30,7 +39,28 @@ import type { PaginatedResponse } from "@/shared/types/api";
 class ApiClient {
   constructor(public baseURL: string) {}
 
-  private async refresh(): Promise<boolean> {
+  // Access tokens are short-lived and several polling loops (autosave,
+  // heartbeat, monitoring frames) can all hit a 401 in the same tick. The
+  // backend rotates + blacklists refresh tokens on use (SIMPLE_JWT
+  // ROTATE_REFRESH_TOKENS/BLACKLIST_AFTER_ROTATION), so if each caller ran
+  // its own refresh() they'd race on the same stored refresh token: the
+  // first swap succeeds, every other concurrent call then sends the
+  // already-rotated token, gets rejected, and calls tokenStore.clear() -
+  // wiping out the valid tokens the first call just saved and logging the
+  // user out mid-exam. Sharing one in-flight promise means every concurrent
+  // 401 awaits the same single refresh instead.
+  private refreshPromise: Promise<boolean> | null = null;
+
+  private refresh(): Promise<boolean> {
+    if (!this.refreshPromise) {
+      this.refreshPromise = this.doRefresh().finally(() => {
+        this.refreshPromise = null;
+      });
+    }
+    return this.refreshPromise;
+  }
+
+  private async doRefresh(): Promise<boolean> {
     const refresh = tokenStore.refresh;
     if (!refresh) return false;
     const res = await fetch(`${this.baseURL}/auth/token/refresh/`, {
@@ -120,12 +150,16 @@ class ApiClient {
     form.append("first_name", userData.first_name);
     form.append("last_name", userData.last_name);
     if (userData.avatar) {
-      form.append("avatar", userData.avatar);
+      form.append("avatar", await compressImage(userData.avatar, AVATAR_COMPRESSION));
     }
     if (userData.role) {
       form.append("role", userData.role);
     }
-    return this.request<{ message: string; user: AuthUser }>("/auth/register/", {
+    return this.request<{
+      message: string;
+      user: AuthUser;
+      verification_email_sent: boolean;
+    }>("/auth/register/", {
       method: "POST",
       body: form,
     });
@@ -160,7 +194,7 @@ class ApiClient {
 
   async uploadAvatar(file: File) {
     const form = new FormData();
-    form.append("avatar", file);
+    form.append("avatar", await compressImage(file, AVATAR_COMPRESSION));
     return this.request<ProfileUser>("/auth/profile/avatar/", {
       method: "POST",
       body: form,
@@ -168,9 +202,10 @@ class ApiClient {
   }
 
   async requestEmailVerification() {
-    return this.request<{ message: string }>("/auth/profile/verify-email/request/", {
-      method: "POST",
-    });
+    return this.request<{ message: string; debug_code?: string }>(
+      "/auth/profile/verify-email/request/",
+      { method: "POST" },
+    );
   }
 
   async confirmEmailVerification(code: string) {
@@ -345,24 +380,33 @@ class ApiClient {
   }
 
   async listExamSections(examId: number) {
-    return this.request<
-      {
-        id: number;
-        title: string;
-        instructions: string;
-        order: number;
-        questions_per_page: number;
-      }[]
-    >(`/exams/${examId}/sections/`);
+    return this.request<ExamSection[]>(`/exams/${examId}/sections/`);
   }
 
   async createExamSection(
     examId: number,
     payload: { title: string; instructions?: string; order?: number; questions_per_page?: number },
   ) {
-    return this.request(`/exams/${examId}/sections/`, {
+    return this.request<ExamSection>(`/exams/${examId}/sections/`, {
       method: "POST",
       body: JSON.stringify(payload),
+    });
+  }
+
+  async updateExamSection(
+    examId: number,
+    sectionId: number,
+    payload: Partial<Pick<ExamSection, "title" | "instructions" | "order" | "questions_per_page">>,
+  ) {
+    return this.request<ExamSection>(`/exams/${examId}/sections/${sectionId}/`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteExamSection(examId: number, sectionId: number) {
+    return this.request<void>(`/exams/${examId}/sections/${sectionId}/`, {
+      method: "DELETE",
     });
   }
 
@@ -386,6 +430,11 @@ class ApiClient {
     return this.request<Exam>(`/exams/${id}/`);
   }
 
+  /** The exam as a student would be handed it, with no attempt created. */
+  async getExamPreview(id: number) {
+    return this.request<ExamPreview>(`/exams/${id}/preview/`);
+  }
+
   async createExam(payload: Partial<Exam>) {
     return this.request<Exam>("/exams/", { method: "POST", body: JSON.stringify(payload) });
   }
@@ -404,8 +453,20 @@ class ApiClient {
     });
   }
 
+  async unpublishExam(id: number) {
+    return this.request<{ message: string; exam: Exam }>(`/exams/${id}/unpublish/`, {
+      method: "POST",
+    });
+  }
+
   async archiveExam(id: number) {
     return this.request<{ message: string }>(`/exams/${id}/archive/`, { method: "POST" });
+  }
+
+  async unarchiveExam(id: number) {
+    return this.request<{ message: string; exam: Exam }>(`/exams/${id}/unarchive/`, {
+      method: "POST",
+    });
   }
 
   async submitExamForReview(id: number) {
@@ -460,11 +521,19 @@ class ApiClient {
     return this.request<PublishReadiness>(`/exams/${examId}/readiness/`);
   }
 
-  async importQuestions(examId: number, csv: string) {
+  async importQuestions(examId: number, questions: Record<string, unknown>[]) {
     return this.request<{ imported: number; questions: Question[] }>(
       `/exams/${examId}/questions/import/`,
-      { method: "POST", body: JSON.stringify({ csv }) },
+      { method: "POST", body: JSON.stringify({ questions }) },
     );
+  }
+
+  /** Validate an import batch without saving; rejects with row issues when invalid. */
+  async checkQuestionImport(examId: number, questions: Record<string, unknown>[]) {
+    return this.request<{ valid: true; count: number }>(`/exams/${examId}/questions/import/`, {
+      method: "POST",
+      body: JSON.stringify({ questions, dry_run: true }),
+    });
   }
 
   async reorderQuestions(examId: number, questionIds: number[]) {
@@ -476,7 +545,7 @@ class ApiClient {
 
   async uploadQuestionAttachment(examId: number, questionId: number, file: File, caption?: string) {
     const form = new FormData();
-    form.append("file", file);
+    form.append("file", await compressImage(file, ATTACHMENT_IMAGE_COMPRESSION));
     if (caption) form.append("caption", caption);
     return this.request<QuestionAttachment>(
       `/exams/${examId}/questions/${questionId}/attachments/`,
@@ -491,13 +560,14 @@ class ApiClient {
     );
   }
 
-  async uploadOptionImage(examId: number, questionId: number, file: File) {
+  /** Uploads an answer-choice picture; works before the question has been saved. */
+  async uploadOptionImage(examId: number, file: File) {
     const form = new FormData();
-    form.append("file", file);
-    return this.request<{ url: string }>(
-      `/exams/${examId}/questions/${questionId}/option-image/`,
-      { method: "POST", body: form },
-    );
+    form.append("file", await compressImage(file, OPTION_IMAGE_COMPRESSION));
+    return this.request<{ url: string }>(`/exams/${examId}/option-image/`, {
+      method: "POST",
+      body: form,
+    });
   }
 
   async startExamSession(examId: number) {
@@ -513,6 +583,13 @@ class ApiClient {
       method: "POST",
     });
     return res.session;
+  }
+
+  /** Abandon a not-yet-started proctoring setup so it stops blocking other exams. */
+  async cancelSetupSession(sessionId: string) {
+    return this.request<{ message: string }>(`/sessions/${sessionId}/cancel-setup/`, {
+      method: "POST",
+    });
   }
 
   async submitExamSession(sessionId: string, data: SubmitSessionData) {
@@ -539,6 +616,7 @@ class ApiClient {
       deadline_at: string | null;
       time_remaining_seconds: number;
       status: string;
+      pause_reason?: string;
     }>(`/sessions/${sessionId}/heartbeat/`, { method: "POST" });
   }
 
@@ -564,6 +642,7 @@ class ApiClient {
       points_awarded?: number;
       grader_comment?: string;
       flagged_for_review?: boolean;
+      send_email?: boolean;
     },
   ) {
     return this.request(`/responses/${responseId}/grade/`, {
@@ -576,6 +655,21 @@ class ApiClient {
     const qs = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : "";
     const data = await this.request<{ results?: ExamSession[] } | ExamSession[]>(`/sessions/${qs}`);
     return Array.isArray(data) ? data : (data.results ?? []);
+  }
+
+  /** Stop an in-progress exam's clock until it is resumed (needs `sessions.pause`). */
+  async pauseSession(sessionId: string, reason?: string) {
+    return this.request<{ message: string; status: string; time_remaining_seconds: number }>(
+      `/sessions/${sessionId}/pause/`,
+      { method: "POST", body: JSON.stringify(reason?.trim() ? { reason: reason.trim() } : {}) },
+    );
+  }
+
+  async resumeSession(sessionId: string) {
+    return this.request<{ message: string; status: string; time_remaining_seconds: number }>(
+      `/sessions/${sessionId}/resume/`,
+      { method: "POST" },
+    );
   }
 
   async terminateSession(sessionId: string) {
@@ -594,7 +688,7 @@ class ApiClient {
     }>("/monitoring/frame/", { method: "POST", body: JSON.stringify(body) });
   }
 
-  async enrollReference(body: { image: string; session_id: string }) {
+  async enrollReference(body: { image: string; images?: string[]; session_id: string }) {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 90_000);
     try {
@@ -633,6 +727,13 @@ class ApiClient {
     return this.request<AlertRow>(`/behavior/alerts/${alertId}/resolve/`, { method: "POST" });
   }
 
+  async resolveAlertsBulk(params: { session?: string; alert_type?: string }) {
+    return this.request<{ updated: number }>(`/behavior/alerts/resolve_all/`, {
+      method: "POST",
+      body: JSON.stringify(params),
+    });
+  }
+
   async getReportSummary() {
     return this.request<ReportSummary>("/reports/summary/");
   }
@@ -642,6 +743,10 @@ class ApiClient {
     exam?: number;
     department?: number;
     search?: string;
+    /** Only sessions with a recorded pass (true) or fail (false) result. */
+    passed?: boolean;
+    /** started_at | submitted_at | percentage_score | exam_title, `-` prefix = descending. */
+    ordering?: string;
     page?: number;
     page_size?: number;
   }) {
@@ -653,6 +758,7 @@ class ApiClient {
   async getSessionReport(sessionId: string) {
     return this.request<{
       session: ExamSession;
+      exam_behavior_index: SessionExamBehaviorIndex;
       behavior_summary: { event_type: string; count: number; avg_score: number }[];
       behavior_logs: BehaviorLogRow[];
       alerts: AlertRow[];
@@ -703,6 +809,14 @@ class ApiClient {
       "/reports/export/pdf/",
       "application/pdf",
       "knowing-eye-sessions.pdf",
+    );
+  }
+
+  async downloadSessionReportPDF(sessionId: string, filename?: string): Promise<void> {
+    return this.downloadExport(
+      `/reports/sessions/${sessionId}/pdf/`,
+      "application/pdf",
+      filename ?? `exam-report-${sessionId.slice(0, 8)}.pdf`,
     );
   }
 }

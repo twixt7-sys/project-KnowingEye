@@ -24,12 +24,13 @@ export const examFormSchema = z.object({
   monitoring_enabled: z.boolean(),
   shuffle_questions: z.boolean(),
   shuffle_options: z.boolean(),
+  disable_copy_paste: z.boolean(),
   requires_assignment: z.boolean(),
   is_practice: z.boolean(),
   presentation_mode: presentationModeSchema,
   show_correct_answers: showCorrectAnswersSchema,
-  available_from: z.string(),
-  available_until: z.string(),
+  available_from: z.string().min(1, "Opening date is required"),
+  available_until: z.string().min(1, "Closing date is required"),
   results_release_at: z.string(),
   category_id: z.number().nullable(),
   department_ids: z.array(z.number()),
@@ -46,6 +47,7 @@ export const questionDraftSchema = z.object({
   options: z.array(questionOptionSchema),
   correct_answer: z.string(),
   points: z.number().min(1),
+  section: z.number().nullable(),
 });
 
 export type ExamForm = z.infer<typeof examFormSchema>;
@@ -60,6 +62,7 @@ export const EMPTY_QUESTION: QuestionDraft = {
   options: [{ ...EMPTY_OPTION }, { ...EMPTY_OPTION }, { ...EMPTY_OPTION }, { ...EMPTY_OPTION }],
   correct_answer: "",
   points: 1,
+  section: null,
 };
 
 export function toDatetimeLocal(iso?: string | null): string {
@@ -85,6 +88,7 @@ export function examToForm(exam: Exam): ExamForm {
     monitoring_enabled: exam.monitoring_enabled !== false,
     shuffle_questions: exam.shuffle_questions === true,
     shuffle_options: exam.shuffle_options === true,
+    disable_copy_paste: exam.disable_copy_paste === true,
     requires_assignment: exam.requires_assignment === true,
     is_practice: exam.is_practice === true,
     presentation_mode: exam.presentation_mode ?? "one_per_page",
@@ -108,6 +112,7 @@ export function examFormToPayload(form: ExamForm): Partial<Exam> {
     monitoring_enabled: form.monitoring_enabled,
     shuffle_questions: form.shuffle_questions,
     shuffle_options: form.shuffle_options,
+    disable_copy_paste: form.disable_copy_paste,
     requires_assignment: form.requires_assignment,
     is_practice: form.is_practice,
     presentation_mode: form.presentation_mode,

@@ -9,6 +9,18 @@ from .base import Csv, decouple_config, env_bool
 
 DEBUG = env_bool("DJANGO_DEBUG", default=False)
 
+# Static files have no reverse proxy / CDN in front of them on a single-dyno
+# PaaS deploy (Railway) - WhiteNoise serves them straight from Daphne.
+MIDDLEWARE = [  # noqa: F405
+    *MIDDLEWARE[:2],  # noqa: F405
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    *MIDDLEWARE[2:],  # noqa: F405
+]
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
 if SECRET_KEY.startswith("django-insecure"):  # noqa: F405
     sys.stderr.write(
         "WARNING: DJANGO_SECRET_KEY is still the insecure default. "
@@ -24,6 +36,10 @@ CORS_ALLOWED_ORIGINS = decouple_config(
 CORS_ALLOW_CREDENTIALS = True
 
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", default=True)
+# Railway's internal healthcheck prober hits the container directly over
+# plain HTTP (no X-Forwarded-Proto), so it gets redirected and never sees a
+# 200 - exempt just this path rather than disabling the redirect everywhere.
+SECURE_REDIRECT_EXEMPT = [r"^api/monitoring/health/?$"]
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
@@ -36,7 +52,14 @@ SECURE_HSTS_PRELOAD = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 EMAIL_BACKEND = decouple_config(
-    "EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend"
+    "EMAIL_BACKEND",
+    default=(
+        "core.utils.supabase_email_backend.SupabaseEmailBackend"
+        # Both must be set - a blank secret would send x-otp-secret: "" and
+        # the edge function would reject every call with 401.
+        if SUPABASE_URL and SUPABASE_OTP_FUNCTION_SECRET  # noqa: F405
+        else "django.core.mail.backends.smtp.EmailBackend"
+    ),
 )
 EMAIL_HOST = decouple_config("EMAIL_HOST", default="")
 EMAIL_PORT = int(decouple_config("EMAIL_PORT", default="587"))

@@ -3,10 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Save } from "@/shared/icons";
 
 import type { Exam } from "@/core/config/api";
-import { BuilderField } from "@/features/exams/components/builder/builder-primitives";
+import {
+  BuilderField,
+  CheckboxSetting,
+  DepartmentChecklist,
+} from "@/features/exams/components/builder/builder-primitives";
 import { dashboardQueries } from "@/features/dashboard/queries/queries";
-import type { ExamForm } from "@/features/exams/schemas/builder-schemas";
-import { Checkbox } from "@/shared/components/ui/checkbox";
+import { toDatetimeLocal, type ExamForm } from "@/features/exams/schemas/builder-schemas";
 
 interface BuilderSettingsTabProps {
   exam: Exam;
@@ -37,13 +40,6 @@ export function BuilderSettingsTab({
   const departmentsQuery = useQuery(dashboardQueries.departments(true));
   const categories = categoriesQuery.data ?? [];
   const departments = departmentsQuery.data ?? [];
-
-  const toggleDepartment = (id: number) => {
-    const set = new Set(form.department_ids);
-    if (set.has(id)) set.delete(id);
-    else set.add(id);
-    update({ department_ids: Array.from(set) });
-  };
 
   return (
     <div className="bg-card border border-border rounded-xl p-6 space-y-4">
@@ -109,27 +105,13 @@ export function BuilderSettingsTab({
         </BuilderField>
       </div>
       <BuilderField label="Also visible to (shared/general-ed departments)">
-        <div className="flex flex-wrap gap-2">
-          {departments.map((d) => {
-            const checked = form.department_ids.includes(d.id);
-            return (
-              <label
-                key={d.id}
-                className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs ${
-                  checked ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
-                }`}
-              >
-                <Checkbox
-                  checked={checked}
-                  onCheckedChange={() => toggleDepartment(d.id)}
-                  disabled={!isDraft}
-                  className="h-3.5 w-3.5"
-                />
-                {d.abbreviation}
-              </label>
-            );
-          })}
-        </div>
+        <DepartmentChecklist
+          departments={departments}
+          value={form.department_ids}
+          onChange={(department_ids) => update({ department_ids })}
+          lockedId={exam.department?.id ?? null}
+          disabled={!isDraft}
+        />
         <p className="mt-1 text-xs text-muted-foreground">
           The home department above is always included. Add more for shared or general-education
           exams discoverable from other departments too.
@@ -181,6 +163,13 @@ export function BuilderSettingsTab({
           description="Randomize multiple-choice option order per attempt."
         />
         <CheckboxSetting
+          checked={form.disable_copy_paste}
+          onCheckedChange={(checked) => update({ disable_copy_paste: checked === true })}
+          disabled={!isDraft}
+          title="Disable copy and paste"
+          description="Block copy, cut, and paste while examinees take the exam, including inside answer fields, so answers must be typed."
+        />
+        <CheckboxSetting
           checked={form.requires_assignment}
           onCheckedChange={(checked) => update({ requires_assignment: checked === true })}
           disabled={!isDraft}
@@ -229,22 +218,26 @@ export function BuilderSettingsTab({
         </BuilderField>
       </div>
       <div className="grid md:grid-cols-2 gap-4">
-        <BuilderField label="Opens at (optional)">
+        <BuilderField label="Opens at">
           <input
             type="datetime-local"
             value={form.available_from}
             onChange={(e) => update({ available_from: e.target.value })}
+            min={toDatetimeLocal(new Date().toISOString())}
             className="field-input"
             disabled={!isDraft}
+            required
           />
         </BuilderField>
-        <BuilderField label="Closes at (optional)">
+        <BuilderField label="Closes at">
           <input
             type="datetime-local"
             value={form.available_until}
             onChange={(e) => update({ available_until: e.target.value })}
+            min={form.available_from || undefined}
             className="field-input"
             disabled={!isDraft}
+            required
           />
         </BuilderField>
       </div>
@@ -285,40 +278,10 @@ export function BuilderSettingsTab({
         </button>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Published exams cannot be edited here. Archive and duplicate to create a new cycle.
+          Only draft exams can be edited here. Unpublish a published exam that no one has attempted
+          yet, or archive and duplicate it to create a new cycle.
         </p>
       )}
-    </div>
-  );
-}
-
-function CheckboxSetting({
-  checked,
-  onCheckedChange,
-  disabled,
-  title,
-  description,
-}: {
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-  disabled: boolean;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border/70 bg-muted/20 p-4">
-      <label className="flex items-start gap-3 cursor-pointer">
-        <Checkbox
-          checked={checked}
-          onCheckedChange={(v) => onCheckedChange(v === true)}
-          disabled={disabled}
-          className="mt-0.5"
-        />
-        <span>
-          <span className="block text-sm font-medium">{title}</span>
-          <span className="block text-xs text-muted-foreground mt-1">{description}</span>
-        </span>
-      </label>
     </div>
   );
 }

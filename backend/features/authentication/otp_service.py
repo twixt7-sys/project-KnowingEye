@@ -13,6 +13,7 @@ email" prompt visible until it's done.
 
 from __future__ import annotations
 
+import logging
 import secrets
 from datetime import timedelta
 
@@ -23,6 +24,8 @@ from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
 from .models import EmailVerification
+
+logger = logging.getLogger(__name__)
 
 
 def _generate_code() -> str:
@@ -36,12 +39,15 @@ def _active_code_qs(user, purpose: str):
     )
 
 
-def issue_otp(user, purpose: str = EmailVerification.Purpose.EMAIL_VERIFY) -> None:
+def issue_otp(user, purpose: str = EmailVerification.Purpose.EMAIL_VERIFY) -> str:
     """Generate a fresh OTP, invalidate any prior pending one, and email it.
+
+    Returns the plaintext code (only useful for local/dev tooling that opts
+    into ``OTP_DEBUG_RETURN_CODE`` - callers should not otherwise rely on it).
 
     Raises:
         ValidationError: If a code was already sent within the resend
-            cooldown window.
+            cooldown window, or if the email failed to send.
     """
     now = timezone.now()
     cooldown = timedelta(seconds=settings.OTP_RESEND_COOLDOWN_SECONDS)
@@ -56,24 +62,36 @@ def issue_otp(user, purpose: str = EmailVerification.Purpose.EMAIL_VERIFY) -> No
     _active_code_qs(user, purpose).update(consumed_at=now)
 
     code = _generate_code()
-    EmailVerification.objects.create(
+    entry = EmailVerification.objects.create(
         user=user,
         purpose=purpose,
         code_hash=make_password(code),
         expires_at=now + timedelta(minutes=settings.OTP_TTL_MINUTES),
     )
 
-    send_mail(
-        subject="Verify your email",
-        message=(
-            f"Your Knowing Eye verification code is {code}.\n\n"
-            f"This code expires in {settings.OTP_TTL_MINUTES} minutes. "
-            "If you didn't request this, you can ignore this email."
-        ),
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
-    )
+    try:
+        send_mail(
+            subject="Verify your email",
+            message=(
+                f"Your Knowing Eye verification code is {code}.\n\n"
+                f"This code expires in {settings.OTP_TTL_MINUTES} minutes. "
+                "If you didn't request this, you can ignore this email."
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+    except Exception as exc:
+        logger.exception("Failed to send OTP email to %s", user.email)
+        # Don't leave a pending code the user never received sitting active -
+        # it would otherwise trip the resend cooldown on their very next
+        # (first real) attempt.
+        entry.delete()
+        raise ValidationError(
+            {"detail": "We couldn't send the verification email. Please try again shortly."}
+        ) from exc
+
+    return code
 
 
 def verify_otp(user, code: str, purpose: str = EmailVerification.Purpose.EMAIL_VERIFY) -> None:

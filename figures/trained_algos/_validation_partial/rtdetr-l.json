@@ -1,0 +1,1 @@
+{"model": "rtdetr-l", "mAP50 (%)": 90.14, "mAP50-95 (%)": 68.17, "Precision (%)": 92.97, "Recall (%)": 84.09, "F1 (%)": 88.31, "Mean Confidence (%)": 69.27, "Detections (n)": 2906}

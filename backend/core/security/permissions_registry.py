@@ -26,7 +26,9 @@ PERMISSIONS: set[str] = {
     "behavior.resolve",
     # reports
     "reports.export",
-    # sessions
+    # sessions - pause/resume stops and restarts an examinee's exam clock;
+    # terminate ends the attempt for good.
+    "sessions.pause",
     "sessions.terminate",
     "sessions.grade",
     # user management

@@ -145,7 +145,10 @@ class ExamSessionListSerializer(serializers.ModelSerializer):
             'id', 'exam_title', 'user_name', 'started_at', 'status',
             'time_remaining_seconds', 'total_score', 'percentage_score', 'passed'
         ]
-        read_only_fields = ['id', 'started_at']
+        # ``status`` only ever changes through the named actions (begin,
+        # submit, pause, resume, terminate...). Writable here, an examinee
+        # could PATCH their own session out of a pause - or into "completed".
+        read_only_fields = ['id', 'started_at', 'status']
 
     def get_time_remaining_seconds(self, obj):
         return obj.time_remaining_seconds
@@ -203,6 +206,16 @@ class ExamSessionDetailSerializer(serializers.ModelSerializer):
             "deadline_at",
             "option_order",
             "accommodation_extra_minutes",
+            "ebi_average",
+            "ebi_face_presence_avg",
+            "ebi_face_identity_avg",
+            "ebi_upper_body_avg",
+            "ebi_looking_away_avg",
+            "ebi_sample_count",
+            "ebi_identity_sample_count",
+            "paused_at",
+            "paused_total_seconds",
+            "pause_reason",
         ]
         read_only_fields = [
             "id",
@@ -335,6 +348,13 @@ class ExamSessionSubmitSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     f"Question {question_id} does not exist in this exam."
                 )
+            # Match the autosave path (ResponseUpsertSerializer): a question
+            # can belong to the exam but not this attempt (e.g. not drawn
+            # from a pool), so exam-membership alone isn't enough.
+            if session.question_order and question_id not in session.question_order:
+                raise serializers.ValidationError(
+                    f"Question {question_id} is not part of this attempt."
+                )
 
             validated_responses.append({
                 'question': question,
@@ -344,6 +364,17 @@ class ExamSessionSubmitSerializer(serializers.Serializer):
             })
 
         return validated_responses
+
+
+class SessionPauseSerializer(serializers.Serializer):
+    """Body of POST /api/sessions/{id}/pause/."""
+
+    reason = serializers.CharField(
+        max_length=255,
+        required=False,
+        allow_blank=True,
+        help_text='Optional note shown to the examinee while the exam is paused',
+    )
 
 
 class SessionLogSerializer(serializers.ModelSerializer):

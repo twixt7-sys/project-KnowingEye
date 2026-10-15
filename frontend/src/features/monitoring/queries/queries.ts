@@ -13,7 +13,8 @@ export const monitoringQueries = {
       const res = await fetchActiveSessions();
       return res.results;
     },
-    refetchInterval: 15_000,
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: true,
   }),
   unresolvedAlerts: () => ({
     queryKey: monitoringKeys.alerts({ resolved: false }),

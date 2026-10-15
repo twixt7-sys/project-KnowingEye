@@ -28,6 +28,10 @@ interface RulesStepProps {
   monitoringEnabled: boolean;
   beginning?: boolean;
   onContinue: () => void;
+  /** Replaces the header line under "Before you begin". */
+  description?: string;
+  /** Replaces the button label (unmonitored exams only). */
+  continueLabel?: string;
 }
 
 export function RulesStep({
@@ -35,6 +39,8 @@ export function RulesStep({
   monitoringEnabled,
   beginning = false,
   onContinue,
+  description,
+  continueLabel = "Begin exam",
 }: RulesStepProps) {
   const rules = monitoringEnabled
     ? DEFAULT_RULES
@@ -50,9 +56,10 @@ export function RulesStep({
           Before you begin
         </CardTitle>
         <CardDescription className="text-muted-foreground">
-          {monitoringEnabled
-            ? "A quick environment check keeps the exam fair for everyone."
-            : "This is an unmonitored exam — no webcam or identity check is required."}
+          {description ??
+            (monitoringEnabled
+              ? "A quick environment check keeps the exam fair for everyone."
+              : "This is an unmonitored exam — no webcam or identity check is required.")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -80,7 +87,7 @@ export function RulesStep({
           ) : monitoringEnabled ? (
             "Continue to camera check"
           ) : (
-            "Begin exam"
+            continueLabel
           )}
         </Button>
       </CardContent>
