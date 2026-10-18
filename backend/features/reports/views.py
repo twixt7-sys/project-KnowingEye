@@ -189,6 +189,14 @@ def report_summary(request):
         behavior_qs.values("event_type").annotate(count=Count("id")).order_by("-count")
     )
 
+    # Integrity headline: a session is flagged when monitoring raised at least
+    # one alert on it or a proctor terminated it; a candidate is flagged when
+    # any of their sessions is. Counting candidates (not just sessions) keeps
+    # one examinee who retook an exam from being counted twice.
+    flagged = sessions.filter(
+        Q(status=ExamSession.Status.TERMINATED) | Q(alerts__isnull=False)
+    ).distinct()
+
     completed_count = completed.count()
     monitored = sessions.filter(ebi_average__isnull=False)
     ebi_stats = monitored.aggregate(avg=Avg("ebi_average"), n=Count("id"))
@@ -198,6 +206,8 @@ def report_summary(request):
             "active_sessions": active.count(),
             "completed_sessions": completed_count,
             "terminated_sessions": terminated.count(),
+            "flagged_sessions": flagged.count(),
+            "flagged_candidates": flagged.values("user_id").distinct().count(),
             "unresolved_alerts": alert_qs.filter(resolved=False).count(),
             "resolved_alerts": alert_qs.filter(resolved=True).count(),
             "behavior_events": behavior_qs.count(),

@@ -20,3 +20,13 @@ describe("getLayoutMode - exam preview", () => {
     expect(getLayoutMode("/examiner/exams/5/preview", student)).not.toBe("preview");
   });
 });
+
+describe("getLayoutMode - archived exams", () => {
+  it("puts the archived exams page in the examiner workspace", () => {
+    expect(getLayoutMode("/examiner/archived", staff)).toBe("examiner");
+  });
+
+  it("keeps the archive out of the student workspace", () => {
+    expect(getLayoutMode("/examiner/archived", student)).toBe("public");
+  });
+});

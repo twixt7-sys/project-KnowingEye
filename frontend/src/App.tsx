@@ -5,6 +5,7 @@ import { ThemeProvider } from "./core/providers/theme-provider";
 import { QueryProvider } from "./core/providers/query-provider";
 import { ConfirmProvider } from "./shared/components/common/confirm-dialog";
 import { ErrorBoundary } from "./shared/components/common/error-boundary";
+import { ProcessingOverlay } from "./shared/components/common/processing-overlay";
 import { Toaster } from "./shared/components/ui/sonner";
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
             <ConfirmProvider>
               <RouterProvider router={router} />
             </ConfirmProvider>
+            <ProcessingOverlay />
             <Toaster />
           </AuthProvider>
         </QueryProvider>

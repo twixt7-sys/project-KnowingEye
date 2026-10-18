@@ -1,4 +1,4 @@
-type QueryParamValue = string | number | boolean | undefined | null;
+export type QueryParamValue = string | number | boolean | undefined | null;
 
 export function toQuery(params?: Record<string, QueryParamValue>): string {
   if (!params) return "";

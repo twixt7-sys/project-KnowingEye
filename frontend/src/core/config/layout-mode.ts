@@ -13,7 +13,14 @@ export type LayoutMode =
   | "examinee-focus"
   | "preview";
 
-const EXAMINER_PREFIXES = ["/monitoring", "/reports", "/users", "/settings", "/examiner/exams"];
+const EXAMINER_PREFIXES = [
+  "/monitoring",
+  "/reports",
+  "/users",
+  "/settings",
+  "/examiner/exams",
+  "/examiner/archived",
+];
 
 export function getLayoutMode(pathname: string, auth: LayoutAuth): LayoutMode {
   if (pathname === "/login") return "auth";

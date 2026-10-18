@@ -1,6 +1,7 @@
 export const dashboardKeys = {
   all: ["dashboard"] as const,
   examiner: () => [...dashboardKeys.all, "examiner"] as const,
+  examinerExams: () => [...dashboardKeys.all, "examiner-exams"] as const,
   student: () => [...dashboardKeys.all, "student"] as const,
   studentExams: () => [...dashboardKeys.student(), "exams"] as const,
   studentSessions: (params: Record<string, unknown>) =>

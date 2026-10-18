@@ -16,6 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
     """Lightweight serializer for User listings."""
 
     avatar_url = serializers.SerializerMethodField()
+    email_verified = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -32,6 +33,11 @@ class UserSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "created_at", "avatar_url", "email_verified"]
+
+    def get_email_verified(self, obj) -> bool:
+        # The admin account is provisioned by the operator rather than through
+        # signup, so no OTP is ever issued for it: it never owes a verification.
+        return obj.email_verified or obj.is_admin()
 
     def get_avatar_url(self, obj):
         if not obj.avatar:
@@ -57,12 +63,30 @@ class UserDetailSerializer(UserSerializer):
             "last_seen_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at", "last_seen_at", "avatar_url"]
+        # role / is_active / email_verified are managed by administrators and
+        # the OTP flow, never by the account holder's own profile edits.
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "last_seen_at",
+            "avatar_url",
+            "email_verified",
+            "role",
+            "is_active",
+        ]
 
     def validate_phone(self, value):
         from shared.utils.validators import validate_phone
 
         return validate_phone(value)
+
+    def update(self, instance, validated_data):
+        # A changed address is unverified until its own OTP is confirmed.
+        new_email = validated_data.get("email")
+        if new_email is not None and new_email != instance.email:
+            instance.email_verified = False
+        return super().update(instance, validated_data)
 
 
 class RegisterSerializer(serializers.ModelSerializer):

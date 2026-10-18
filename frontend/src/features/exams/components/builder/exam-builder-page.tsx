@@ -17,6 +17,8 @@ const TABS: { key: BuilderTab; label: string }[] = [
   { key: "publish", label: "Review & publish" },
 ];
 
+const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
+
 export function ExamBuilderPage() {
   const { examId } = useParams();
   const id = Number(examId);
@@ -62,17 +64,20 @@ export function ExamBuilderPage() {
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
         <Link
-          to="/examiner"
+          to={builder.exam.status === "archived" ? "/examiner/archived" : "/examiner"}
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to dashboard
+          <ArrowLeft className="w-4 h-4" />{" "}
+          {builder.exam.status === "archived" ? "Back to archived exams" : "Back to dashboard"}
         </Link>
         <div className="flex-1">
           <h1 className="text-2xl md:text-3xl font-bold">{builder.exam.title}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {builder.exam.exam_code ? `Code: ${builder.exam.exam_code} · ` : ""}
             {builder.questions.length} questions · {builder.totalPoints} pts ·{" "}
-            {builder.exam.status}
+            <span className="font-medium text-foreground">
+              {builder.exam.status === "active" ? "Published" : capitalize(builder.exam.status)}
+            </span>
           </p>
         </div>
         {canPreview && (

@@ -88,6 +88,8 @@ class Command(BaseCommand):
             'last_name': cfg['last_name'],
             'role': 'ADMIN',
             'is_active': True,
+            # Provisioned by the operator, not by signup - no OTP is ever issued.
+            'email_verified': True,
         }
 
         admin = (

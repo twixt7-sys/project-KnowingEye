@@ -29,6 +29,11 @@ export const dashboardQueries = {
     },
     refetchInterval: 30_000,
   }),
+  /** Just the exam list, for pages (like the archive) that don't need the dashboard's KPIs. */
+  examinerExams: () => ({
+    queryKey: dashboardKeys.examinerExams(),
+    queryFn: () => apiClient.getExams(),
+  }),
   /** Exams the examinee can take. The endpoint is unpaginated, so the table pages client-side. */
   studentExams: () => ({
     queryKey: dashboardKeys.studentExams(),

@@ -6,7 +6,7 @@ import {
   OPTION_IMAGE_COMPRESSION,
   compressImage,
 } from "@/shared/lib/image-compress";
-import { toQuery } from "@/shared/lib/query-params";
+import { type QueryParamValue, toQuery } from "@/shared/lib/query-params";
 import { tokenStore } from "@/shared/lib/token-store";
 import type {
   AccessMap,
@@ -36,8 +36,37 @@ import type {
 } from "@/shared/types/api";
 import type { PaginatedResponse } from "@/shared/types/api";
 
+/** The backend's `max_page_size` (core/pagination.py) - the biggest page one request can return. */
+const LIST_ALL_PAGE_SIZE = 100;
+/** Backstop so a misbehaving `next` link can never loop forever. */
+const LIST_ALL_MAX_PAGES = 50;
+
 class ApiClient {
   constructor(public baseURL: string) {}
+
+  /**
+   * Read every page of a list endpoint.
+   *
+   * DRF list endpoints paginate at 10 by default, so reading only `results`
+   * silently drops everything past the first page: the 11th exam, department
+   * or alert simply never shows up. Unpaginated endpoints (plain arrays) are
+   * returned as they come.
+   */
+  private async listAll<T>(
+    path: string,
+    params: Record<string, QueryParamValue> = {},
+  ): Promise<T[]> {
+    const items: T[] = [];
+    for (let page = 1; page <= LIST_ALL_MAX_PAGES; page += 1) {
+      const data = await this.request<PaginatedResponse<T> | T[]>(
+        `${path}${toQuery({ ...params, page, page_size: LIST_ALL_PAGE_SIZE })}`,
+      );
+      if (Array.isArray(data)) return data;
+      items.push(...(data.results ?? []));
+      if (!data.next) break;
+    }
+    return items;
+  }
 
   // Access tokens are short-lived and several polling loops (autosave,
   // heartbeat, monitoring frames) can all hit a 401 in the same tick. The
@@ -263,11 +292,9 @@ class ApiClient {
   }
 
   async listDepartments(params?: { active_only?: boolean }) {
-    const qs = params?.active_only ? "?active_only=1" : "";
-    const data = await this.request<{ results?: Department[]; count?: number } | Department[]>(
-      `/departments/${qs}`,
-    );
-    return Array.isArray(data) ? data : (data.results ?? []);
+    return this.listAll<Department>("/departments/", {
+      active_only: params?.active_only ? 1 : undefined,
+    });
   }
 
   async createDepartment(payload: Pick<Department, "name" | "abbreviation"> & Partial<Department>) {
@@ -295,23 +322,13 @@ class ApiClient {
     departments?: number | string;
     ordering?: string;
   }) {
-    const qs = params
-      ? `?${new URLSearchParams(
-          Object.fromEntries(
-            Object.entries(params).filter(([, v]) => v !== undefined && v !== ""),
-          ) as Record<string, string>,
-        ).toString()}`
-      : "";
-    const data = await this.request<{ results?: Exam[]; count?: number } | Exam[]>(`/exams/${qs}`);
-    return Array.isArray(data) ? data : (data.results ?? []);
+    return this.listAll<Exam>("/exams/", params);
   }
 
   async listCategories(params?: { active_only?: boolean }) {
-    const qs = params?.active_only ? "?active_only=1" : "";
-    const data = await this.request<
-      { results?: ExamCategory[]; count?: number } | ExamCategory[]
-    >(`/categories/${qs}`);
-    return Array.isArray(data) ? data : (data.results ?? []);
+    return this.listAll<ExamCategory>("/categories/", {
+      active_only: params?.active_only ? 1 : undefined,
+    });
   }
 
   async createCategory(payload: Pick<ExamCategory, "name" | "slug"> & Partial<ExamCategory>) {
@@ -716,11 +733,7 @@ class ApiClient {
   }
 
   async listAlerts(params?: { session?: string; resolved?: boolean; severity?: string }) {
-    const qs = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : "";
-    const data = await this.request<{ results?: AlertRow[] } | AlertRow[]>(
-      `/behavior/alerts/${qs}`,
-    );
-    return Array.isArray(data) ? data : (data.results ?? []);
+    return this.listAll<AlertRow>("/behavior/alerts/", params);
   }
 
   async resolveAlert(alertId: string) {

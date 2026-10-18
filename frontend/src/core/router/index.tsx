@@ -17,6 +17,7 @@ function page<K extends string>(
 }
 
 const About = page(() => import("../../pages/about"), "About");
+const ExaminerArchived = page(() => import("../../pages/examiner-archived"), "ExaminerArchived");
 const ExamBuilder = page(() => import("../../pages/exam-builder"), "ExamBuilder");
 const ExamGrader = page(() => import("../../pages/exam-grader"), "ExamGrader");
 const ExamPreview = page(() => import("../../pages/exam-preview"), "ExamPreview");
@@ -119,6 +120,7 @@ export const router = createBrowserRouter([
         element: <LegacyExamineeExamRedirect suffix="/results" />,
       },
 
+      protectedRoute("examiner/archived", { requiredModule: "exams" }, ExaminerArchived),
       protectedRoute("examiner/exams/:examId/edit", { requiredModule: "exams" }, ExamBuilder),
       protectedRoute("examiner/exams/:examId/grading", { requiredModule: "exams" }, ExamGrader),
       protectedRoute("examiner/exams/:examId/preview", { requiredModule: "exams" }, ExamPreview),

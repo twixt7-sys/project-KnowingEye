@@ -390,6 +390,10 @@ export interface ReportSummary {
   active_sessions: number;
   completed_sessions: number;
   terminated_sessions: number;
+  /** Sessions with at least one monitoring alert, or terminated by a proctor. */
+  flagged_sessions?: number;
+  /** Distinct examinees behind those sessions - one person with several flagged attempts counts once. */
+  flagged_candidates?: number;
   unresolved_alerts: number;
   resolved_alerts: number;
   behavior_events: number;

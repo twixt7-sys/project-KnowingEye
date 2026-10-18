@@ -1,5 +1,6 @@
 import {
   Activity,
+  Archive,
   BarChart3,
   ClipboardList,
   LayoutDashboard,
@@ -25,6 +26,13 @@ export const examinerNav: WorkspaceNavItem[] = [
     icon: LayoutDashboard,
     description: "Exams and live activity",
     module: "dashboard",
+  },
+  {
+    label: "Archived exams",
+    path: "/examiner/archived",
+    icon: Archive,
+    description: "Closed exams, kept for the record",
+    module: "exams",
   },
   {
     label: "Monitoring",

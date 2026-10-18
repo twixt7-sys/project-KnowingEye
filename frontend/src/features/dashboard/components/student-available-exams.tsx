@@ -123,7 +123,9 @@ export function StudentAvailableExams({
 
       {loading ? (
         <LoadingState label="Loading exams…" />
-      ) : filtered.length === 0 ? (
+      ) : filtered.length === 0 && !error ? (
+        // Only claim "no exams" once the load succeeded; a failed load shows
+        // the error above instead of a misleading empty list.
         filtersActive ? (
           <EmptyState
             icon={SearchX}
