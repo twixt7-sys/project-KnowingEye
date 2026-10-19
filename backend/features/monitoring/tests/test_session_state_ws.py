@@ -166,7 +166,8 @@ class SessionStateWebsocketTests(TransactionTestCase):
                     await examinee.send_to(text_data=json.dumps({"type": "frame", "image": "x"}))
                     reply = await self._next_of_type(examinee, "analysis")
                     self.assertEqual(len(reply["payload"]["alerts"]), 1)
-                    await self._next_of_type(examinee, "alert")
+                    # The alert rides in the reply; it is not echoed back a second time.
+                    await examinee.receive_nothing(timeout=0.5)
             finally:
                 await examinee.disconnect()
 

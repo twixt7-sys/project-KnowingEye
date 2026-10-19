@@ -14,11 +14,23 @@ export interface ObservedSessionState {
   pauseReason: string;
 }
 
+/** The few numbers a grid tile shows; sent with each snapshot. */
+export interface ObservedSummary {
+  exam_behavior_index_pct?: number | null;
+  face_presence_pct?: number | null;
+}
+
+export interface UseSessionObserverOptions {
+  /** Also stream the full per-frame analysis (the single-session page); tiles leave this off. */
+  detail?: boolean;
+}
+
 export interface UseSessionObserverResult {
   status: ObserverStatus;
   error: string | null;
   sessionState: ObservedSessionState | null;
   analysis: FrameAnalysis | null;
+  summary: ObservedSummary | null;
   snapshot: string | null;
   alerts: FrameAlert[];
   connect: () => void;
@@ -29,21 +41,30 @@ const HEARTBEAT_MS = 20_000;
 const RECONNECT_BASE_MS = 1_000;
 const RECONNECT_MAX_MS = 8_000;
 
-export function useSessionObserver(sessionId: string | undefined): UseSessionObserverResult {
+export function useSessionObserver(
+  sessionId: string | undefined,
+  { detail = false }: UseSessionObserverOptions = {}
+): UseSessionObserverResult {
   const [status, setStatus] = useState<ObserverStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<FrameAnalysis | null>(null);
+  const [summary, setSummary] = useState<ObservedSummary | null>(null);
   const [snapshot, setSnapshot] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<FrameAlert[]>([]);
   const [sessionState, setSessionState] = useState<ObservedSessionState | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const closedRef = useRef(false);
   const heartbeatRef = useRef<number | null>(null);
+  const visibilityRef = useRef<(() => void) | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const connectRef = useRef<() => void>(() => {});
 
   const clearHeartbeat = useCallback(() => {
+    if (visibilityRef.current) {
+      document.removeEventListener("visibilitychange", visibilityRef.current);
+      visibilityRef.current = null;
+    }
     if (heartbeatRef.current !== null) {
       window.clearInterval(heartbeatRef.current);
       heartbeatRef.current = null;
@@ -109,16 +130,25 @@ export function useSessionObserver(sessionId: string | undefined): UseSessionObs
     setSessionState(null);
     setStatus("connecting");
     try {
-      const ws = new WebSocket(buildSessionObserverWsUrl(sessionId));
+      const ws = new WebSocket(buildSessionObserverWsUrl(sessionId, detail));
       wsRef.current = ws;
+      const ping = () => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "ping" }));
+        }
+      };
+      const onVisible = () => {
+        if (document.visibilityState === "visible") ping();
+      };
       ws.onopen = () => {
         reconnectAttemptsRef.current = 0;
         setStatus("live");
-        heartbeatRef.current = window.setInterval(() => {
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ type: "ping" }));
-          }
-        }, HEARTBEAT_MS);
+        // The ping is also the "still watching" signal that keeps the examinee's
+        // stream fanning out to us. Browsers throttle timers in hidden tabs, so
+        // announce again as soon as the tab is visible.
+        heartbeatRef.current = window.setInterval(ping, HEARTBEAT_MS);
+        visibilityRef.current = onVisible;
+        document.addEventListener("visibilitychange", onVisible);
       };
       ws.onmessage = (event) => {
         try {
@@ -127,6 +157,7 @@ export function useSessionObserver(sessionId: string | undefined): UseSessionObs
             setAnalysis(msg.payload as FrameAnalysis);
           } else if (msg.type === "snapshot" && msg.image) {
             setSnapshot(msg.image as string);
+            if (msg.summary) setSummary(msg.summary as ObservedSummary);
             if (msg.analysis) setAnalysis(msg.analysis as FrameAnalysis);
           } else if (msg.type === "alert" && msg.payload) {
             setAlerts((prev) => [msg.payload as FrameAlert, ...prev].slice(0, 50));
@@ -156,11 +187,11 @@ export function useSessionObserver(sessionId: string | undefined): UseSessionObs
       setStatus("error");
       scheduleReconnect();
     }
-  }, [clearHeartbeat, clearReconnectTimer, scheduleReconnect, sessionId]);
+  }, [clearHeartbeat, clearReconnectTimer, scheduleReconnect, sessionId, detail]);
 
   connectRef.current = connect;
 
   useEffect(() => () => disconnect(), [disconnect]);
 
-  return { status, error, sessionState, analysis, snapshot, alerts, connect, disconnect };
+  return { status, error, sessionState, analysis, summary, snapshot, alerts, connect, disconnect };
 }

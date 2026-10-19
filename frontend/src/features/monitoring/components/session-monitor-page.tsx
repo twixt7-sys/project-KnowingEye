@@ -31,7 +31,7 @@ const METRICS = [
 
 export function SessionMonitorPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const observer = useSessionObserver(sessionId);
+  const observer = useSessionObserver(sessionId, { detail: true });
   const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [terminating, setTerminating] = useState(false);

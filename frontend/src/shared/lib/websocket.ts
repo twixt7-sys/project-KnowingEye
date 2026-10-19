@@ -14,8 +14,14 @@ export function buildMonitoringWsUrl(sessionId: string): string {
   return `${wsBase()}/ws/monitoring/${sessionId}/${withToken()}`;
 }
 
-export function buildSessionObserverWsUrl(sessionId: string): string {
-  return `${wsBase()}/ws/monitoring/observe/${sessionId}/${withToken()}`;
+/**
+ * `detail` opts in to the per-frame analysis stream (bounding boxes, every
+ * metric). Grid tiles leave it off and get just snapshots + a one-line summary.
+ */
+export function buildSessionObserverWsUrl(sessionId: string, detail = false): string {
+  const token = withToken();
+  const query = detail ? `${token ? `${token}&` : "?"}detail=1` : token;
+  return `${wsBase()}/ws/monitoring/observe/${sessionId}/${query}`;
 }
 
 export function buildAdminAlertsWsUrl(): string {

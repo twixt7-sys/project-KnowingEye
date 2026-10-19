@@ -2,7 +2,7 @@
  * Monitoring feature API - typed wrappers over the shared API client.
  * Frames can be streamed via WebSocket (preferred) or this REST fallback.
  */
-import { apiClient, buildAdminAlertsWsUrl } from "@/core/config/api";
+import { apiClient, buildAdminAlertsWsUrl, type SessionReportRow } from "@/core/config/api";
 
 export { buildAdminAlertsWsUrl };
 
@@ -23,8 +23,25 @@ export function fetchMonitoringHealth() {
 }
 
 /** Every session still live: running or paused by a proctor. */
-export function fetchActiveSessions(pageSize = 50) {
-  return apiClient.listSessionReports({ status: "in_progress,paused", page_size: pageSize });
+const ACTIVE_SESSIONS_PAGE_SIZE = 100;
+const ACTIVE_SESSIONS_MAX_PAGES = 10;
+
+/**
+ * Every in-progress or paused session. Several exams can run at once, so one
+ * page is not enough: follow pagination (capped) and return them as one list.
+ */
+export async function fetchActiveSessions() {
+  const results: SessionReportRow[] = [];
+  for (let page = 1; page <= ACTIVE_SESSIONS_MAX_PAGES; page += 1) {
+    const res = await apiClient.listSessionReports({
+      status: "in_progress,paused",
+      page,
+      page_size: ACTIVE_SESSIONS_PAGE_SIZE,
+    });
+    results.push(...res.results);
+    if (!res.next) break;
+  }
+  return { results };
 }
 
 export function fetchAlerts(params?: { resolved?: boolean }) {
