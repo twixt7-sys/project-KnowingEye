@@ -32,8 +32,8 @@ def decode_image_bytes(data: bytes):
     return cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
 
-def encode_jpeg_snapshot(frame_bgr, max_width: int = 320, quality: int = 65) -> str | None:
-    """Return a data-URL JPEG suitable for observer thumbnails."""
+def encode_jpeg_bytes(frame_bgr, max_width: int = 320, quality: int = 65) -> tuple[bytes, int, int] | None:
+    """Return ``(jpeg bytes, width, height)`` after downscaling to ``max_width``."""
     if frame_bgr is None:
         return None
     import cv2
@@ -42,8 +42,16 @@ def encode_jpeg_snapshot(frame_bgr, max_width: int = 320, quality: int = 65) -> 
     if w > max_width:
         scale = max_width / w
         frame_bgr = cv2.resize(frame_bgr, (max_width, int(h * scale)))
+        h, w = frame_bgr.shape[:2]
     ok, buf = cv2.imencode(".jpg", frame_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
     if not ok:
         return None
-    encoded = base64.b64encode(buf.tobytes()).decode("ascii")
-    return f"data:image/jpeg;base64,{encoded}"
+    return buf.tobytes(), w, h
+
+
+def encode_jpeg_snapshot(frame_bgr, max_width: int = 320, quality: int = 65) -> str | None:
+    """Return a data-URL JPEG suitable for observer thumbnails."""
+    encoded = encode_jpeg_bytes(frame_bgr, max_width, quality)
+    if encoded is None:
+        return None
+    return f"data:image/jpeg;base64,{base64.b64encode(encoded[0]).decode('ascii')}"

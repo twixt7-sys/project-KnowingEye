@@ -35,6 +35,7 @@ def broadcast_frame_result(session, user, frame, analysis: dict[str, Any]) -> No
     """
     from ai.frame_utils import encode_jpeg_snapshot
     from features.monitoring.consumers import ADMIN_ALERTS_GROUP
+    from features.monitoring.evidence import remember_frame
 
     channel_layer = get_channel_layer()
     if channel_layer is None:
@@ -58,6 +59,9 @@ def broadcast_frame_result(session, user, frame, analysis: dict[str, Any]) -> No
         if now - _last_snapshot_at.get(session_id, float("-inf")) >= _SNAPSHOT_INTERVAL_S:
             _last_snapshot_at[session_id] = now
             snapshot = encode_jpeg_snapshot(frame)
+            # The REST fallback feeds the same evidence ring as the socket does.
+            if session.status != "paused":
+                remember_frame(session_id, frame, analysis)
         if snapshot:
             send(
                 group,

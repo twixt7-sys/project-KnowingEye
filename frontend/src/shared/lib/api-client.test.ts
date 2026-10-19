@@ -134,4 +134,32 @@ describe("ApiClient list endpoints", () => {
     const url = new URL(String(fetchMock.mock.calls[0][0]));
     expect(url.searchParams.get("active_only")).toBe("1");
   });
+
+  it("getSnapshotImageSrc sends the bearer token and returns the JPEG as a data URL", async () => {
+    tokenStore.set("access-1", "refresh-1");
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(new Uint8Array([0xff, 0xd8, 0xff]), {
+          status: 200,
+          headers: { "Content-Type": "image/jpeg" },
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const src = await apiClient.getSnapshotImageSrc("snap-1");
+
+    expect(src.startsWith("data:image/jpeg;base64,")).toBe(true);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toMatch(/\/monitoring\/snapshots\/snap-1\/image\/$/);
+    expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer access-1");
+  });
+
+  it("getSnapshotImageSrc surfaces a refusal instead of an empty image", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response('{"detail":"no"}', { status: 403 })),
+    );
+
+    await expect(apiClient.getSnapshotImageSrc("snap-1")).rejects.toMatchObject({ status: 403 });
+  });
 });

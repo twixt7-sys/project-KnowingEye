@@ -139,9 +139,18 @@ EBI_UPDATE_FIELDS = [
 
 
 def persist_analysis(
-    session, analysis: dict[str, Any], *, save_metrics: bool = True
+    session,
+    analysis: dict[str, Any],
+    *,
+    save_metrics: bool = True,
+    evidence_frame=None,
 ) -> dict[str, int]:
-    """Store events and alerts from a frame analysis payload."""
+    """Store events and alerts from a frame analysis payload.
+
+    ``evidence_frame`` is the BGR frame the analysis came from; when an alert is
+    actually created (not skipped by the cooldown) it is kept as that alert's
+    snapshot, so it is only ever encoded for the rare frames that raise one.
+    """
     from features.session.models import ExamSession
 
     # While a proctor has the exam paused nothing is being examined, so the
@@ -178,7 +187,7 @@ def persist_analysis(
         if _recent_alert_exists(session, alert_type):
             continue
         severity = SEVERITY_MAP.get(alert.get("severity", "medium"), Alert.Severity.MEDIUM)
-        Alert.objects.create(
+        created = Alert.objects.create(
             session=session,
             alert_type=alert_type,
             severity=severity,
@@ -187,14 +196,23 @@ def persist_analysis(
             resolved=bool(alert.get("resolved", False)),
         )
         alerts_created += 1
+        _keep_alert_snapshot(session, created, evidence_frame, analysis)
 
     if logs_created:
-        alerts_created += _apply_escalation(session)
+        alerts_created += _apply_escalation(session, evidence_frame, analysis)
 
     return {"behavior_logs": logs_created, "alerts": alerts_created}
 
 
-def _apply_escalation(session) -> int:
+def _keep_alert_snapshot(session, alert, frame, analysis) -> None:
+    if frame is None:
+        return
+    from features.monitoring.evidence import save_alert_snapshot
+
+    save_alert_snapshot(session, alert, frame, analysis)
+
+
+def _apply_escalation(session, evidence_frame=None, analysis=None) -> int:
     """Roll the session-level escalation ladder into a Critical alert.
 
     Per-event alerts above cover individual signals; ``escalation.py``
@@ -213,7 +231,7 @@ def _apply_escalation(session) -> int:
     if _recent_alert_exists(session, "escalation_critical"):
         return 0
 
-    Alert.objects.create(
+    created = Alert.objects.create(
         session=session,
         alert_type="escalation_critical",
         severity=Alert.Severity.HIGH,
@@ -223,4 +241,5 @@ def _apply_escalation(session) -> int:
         ),
         resolved=False,
     )
+    _keep_alert_snapshot(session, created, evidence_frame, analysis)
     return 1

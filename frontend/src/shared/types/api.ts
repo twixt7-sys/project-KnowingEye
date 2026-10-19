@@ -346,6 +346,28 @@ export interface AlertRow {
   created_at: string;
 }
 
+/** Persisted proctoring evidence (staff-only); bytes come from `image_url`. */
+export interface SessionSnapshotRow {
+  id: string;
+  session: string;
+  user: number;
+  student: string;
+  exam: number;
+  exam_title: string;
+  kind: "warning" | "termination";
+  alert: string | null;
+  alert_type: string | null;
+  alert_severity: "low" | "medium" | "high" | null;
+  alert_message: string | null;
+  session_log: number | null;
+  label: string;
+  flags: string[];
+  width: number;
+  height: number;
+  captured_at: string;
+  image_url: string;
+}
+
 export interface DepartmentAnalyticsRow {
   department_id: number | null;
   department_name: string;

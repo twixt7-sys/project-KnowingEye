@@ -60,6 +60,14 @@ export function fetchSessionReport(sessionId: string) {
   return apiClient.getSessionReport(sessionId);
 }
 
+export function fetchSessionSnapshots(sessionId: string) {
+  return apiClient.listSessionSnapshots({ session: sessionId });
+}
+
+export function fetchSnapshotImageSrc(snapshotId: string) {
+  return apiClient.getSnapshotImageSrc(snapshotId);
+}
+
 export function pauseSession(sessionId: string, reason?: string) {
   return apiClient.pauseSession(sessionId, reason);
 }

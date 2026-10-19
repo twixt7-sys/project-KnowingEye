@@ -126,6 +126,7 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         self._ebi_dirty = False
         self._last_ebi_flush = float("-inf")
         self._last_snapshot = float("-inf")
+        self._last_evidence = float("-inf")
         self._observer_seen_at = float("-inf")
         self._alert_sent_at: dict[str, float] = {}
         self._group_name = f"monitoring.session.{self.session_id}"
@@ -232,12 +233,25 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
             logger.exception("monitoring post-frame work failed session=%s", self.session_id)
 
     async def _after_frame(self, frame, analysis: dict[str, Any]) -> None:
+        from features.session.models import ExamSession
+
         now = time.monotonic()
         flush_ebi = now - self._last_ebi_flush >= _EBI_FLUSH_INTERVAL_S
-        await self._persist(analysis, save_metrics=flush_ebi)
+        await self._persist(frame, analysis, save_metrics=flush_ebi)
         if flush_ebi:
             self._last_ebi_flush = now
         self._ebi_dirty = not flush_ebi
+
+        # The evidence ring is fed about once a second whether or not a proctor
+        # is watching: it is what a later termination (or dispute) is judged on.
+        if (
+            now - self._last_evidence >= _SNAPSHOT_INTERVAL_S
+            and self._session.status != ExamSession.Status.PAUSED
+        ):
+            self._last_evidence = now
+            await sync_to_async(self._remember_evidence, thread_sensitive=False)(
+                str(self.session_id), frame, analysis
+            )
 
         if self._has_observers(now):
             await self.channel_layer.group_send(
@@ -335,7 +349,17 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         # Judge by the refreshed row, not the event: a terminate is final, and
         # nothing more is coming for this socket.
         if self._session.status == ExamSession.Status.TERMINATED:
+            await self._keep_termination_evidence()
             await self.close(code=CLOSE_SESSION_TERMINATED)
+
+    async def _keep_termination_evidence(self) -> None:
+        """Save this socket's buffered frames when the terminate request ran elsewhere."""
+        from features.monitoring.evidence import save_termination_snapshots
+
+        try:
+            await database_sync_to_async(save_termination_snapshots)(self._session)
+        except Exception:  # noqa: BLE001 - the terminate itself already succeeded
+            logger.exception("termination evidence failed session=%s", self.session_id)
 
     async def _close_inactive(self) -> None:
         """The session is over without a push having told us: say how, then end the socket.
@@ -350,6 +374,7 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         event = await database_sync_to_async(session_state_event)(self._session)
         await self.send_json(_session_state_message(event))
         if self._session.status == ExamSession.Status.TERMINATED:
+            await self._keep_termination_evidence()
             await self.close(code=CLOSE_SESSION_TERMINATED)
             return
         await self.send_json({"type": "error", "message": "session expired"})
@@ -374,10 +399,12 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         return ensure_active_session(self._session)
 
     @database_sync_to_async
-    def _persist(self, analysis: dict[str, Any], *, save_metrics: bool) -> dict[str, int]:
+    def _persist(self, frame, analysis: dict[str, Any], *, save_metrics: bool) -> dict[str, int]:
         from features.behavior.services import persist_analysis
 
-        return persist_analysis(self._session, analysis, save_metrics=save_metrics)
+        return persist_analysis(
+            self._session, analysis, save_metrics=save_metrics, evidence_frame=frame
+        )
 
     @database_sync_to_async
     def _flush_ebi(self) -> None:
@@ -394,6 +421,12 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         from ai.frame_utils import encode_jpeg_snapshot
 
         return encode_jpeg_snapshot(frame)
+
+    @staticmethod
+    def _remember_evidence(session_id, frame, analysis) -> None:
+        from features.monitoring.evidence import remember_frame
+
+        remember_frame(session_id, frame, analysis)
 
     @staticmethod
     @database_sync_to_async

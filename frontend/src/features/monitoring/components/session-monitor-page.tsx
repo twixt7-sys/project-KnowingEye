@@ -13,6 +13,7 @@ import {
 
 import { formatApiError } from "@/core/config/api";
 import { resolveAlertsBulk, terminateSession } from "@/features/monitoring/api/monitoring-api";
+import { SessionEvidencePanel } from "@/features/monitoring/components/session-evidence-panel";
 import { PauseSessionDialog } from "@/features/monitoring/components/pause-session-dialog";
 import { useSessionObserver } from "@/features/monitoring/hooks/use-session-observer";
 import { useSessionPause } from "@/features/monitoring/hooks/use-session-pause";
@@ -57,6 +58,9 @@ export function SessionMonitorPage() {
     if (!sessionId) return;
     void queryClient.invalidateQueries({
       queryKey: monitoringKeys.sessionReport(sessionId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: monitoringKeys.sessionSnapshots(sessionId),
     });
   };
 
@@ -365,6 +369,8 @@ export function SessionMonitorPage() {
             </ul>
           </div>
         </div>
+
+        {sessionId && <SessionEvidencePanel sessionId={sessionId} />}
       </div>
     </div>
   );
