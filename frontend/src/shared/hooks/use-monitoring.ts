@@ -166,6 +166,30 @@ export function useMonitoring({
     return canvas.toDataURL("image/jpeg", jpegQuality);
   }, [captureMaxWidth, jpegQuality]);
 
+  /**
+   * Same capture as `captureFrame`, but as raw JPEG bytes. A binary websocket
+   * frame skips the base64 + JSON wrapping (~25% fewer bytes per upload).
+   * Resolves null when the camera isn't ready.
+   */
+  const captureFrameBlob = useCallback((): Promise<Blob | null> => {
+    const video = videoRef.current;
+    if (!video || video.readyState < 2) return Promise.resolve(null);
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) return Promise.resolve(null);
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track || track.readyState === "ended" || !track.enabled) return Promise.resolve(null);
+    if (!canvasRef.current) canvasRef.current = document.createElement("canvas");
+    const canvas = canvasRef.current;
+    const scale = vw > captureMaxWidth ? captureMaxWidth / vw : 1;
+    canvas.width = Math.round(vw * scale);
+    canvas.height = Math.round(vh * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return Promise.resolve(null);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", jpegQuality));
+  }, [captureMaxWidth, jpegQuality]);
+
   const sendFrameOverWs = useCallback(() => {
     const ws = wsRef.current;
     if (
@@ -178,9 +202,10 @@ export function useMonitoring({
       return;
     }
     frameBusyRef.current = true;
-    try {
-      const image = captureFrame();
-      if (image) {
+    void captureFrameBlob()
+      .then((blob) => {
+        // The socket may have closed, or an enrollment started, while encoding.
+        if (!blob || ws.readyState !== WebSocket.OPEN || enrollingRef.current) return;
         pendingAckRef.current = true;
         lastSentAtRef.current = performance.now();
         // Safety valve: if a reply never arrives (dropped message, server hiccup) don't
@@ -192,12 +217,12 @@ export function useMonitoring({
           },
           Math.max(intervalMs * 4, 4000),
         );
-        ws.send(JSON.stringify({ type: "frame", image }));
-      }
-    } finally {
-      frameBusyRef.current = false;
-    }
-  }, [captureFrame, intervalMs]);
+        ws.send(blob);
+      })
+      .finally(() => {
+        frameBusyRef.current = false;
+      });
+  }, [captureFrameBlob, intervalMs]);
 
   const stop = useCallback(() => {
     closedRef.current = true;

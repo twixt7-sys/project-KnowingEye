@@ -26,10 +26,13 @@ import asyncio
 import logging
 import time
 from typing import Any
+from urllib.parse import parse_qs
 
 from asgiref.sync import sync_to_async
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+
+from features.monitoring.payloads import ALERT_REBROADCAST_S, analysis_summary, client_analysis
 
 logger = logging.getLogger("knowing_eye.monitoring.consumer")
 
@@ -50,6 +53,13 @@ _ACTIVE_CHECK_INTERVAL_S = 5.0
 _EBI_FLUSH_INTERVAL_S = 1.0
 _SNAPSHOT_INTERVAL_S = 1.0
 
+# Observers (a proctor's tile or detail page) announce themselves to the session
+# group when they connect and with every heartbeat ping (the browser pings every
+# 20 s). The examinee's consumer only encodes snapshots and fans out analysis
+# while it has heard from one this recently, so an unwatched exam costs nothing
+# beyond the examinee's own reply. Two missed heartbeats and fan-out stops.
+OBSERVER_PRESENT_TTL_S = 50.0
+
 # The lifecycle columns a proctor can change while a socket is open (pause,
 # resume, terminate). The cached session row is refreshed from just these:
 # a full refresh would also reload the EBI running means, discarding frames
@@ -64,12 +74,15 @@ _SESSION_STATE_FIELDS = [
 ]
 
 
-def _decode_and_analyze(image_data: str, session_id: str):
+def _decode_and_analyze(image_data: str | bytes, session_id: str):
     """CPU-bound decode + inference. Runs on a worker thread, not the shared DB thread."""
     from ai.adapter import analyze_frame_bgr
-    from ai.frame_utils import decode_base64_image
+    from ai.frame_utils import decode_base64_image, decode_image_bytes
 
-    frame = decode_base64_image(image_data)
+    if isinstance(image_data, (bytes, bytearray)):
+        frame = decode_image_bytes(bytes(image_data))
+    else:
+        frame = decode_base64_image(image_data)
     if frame is None:
         return None, None
     return frame, analyze_frame_bgr(frame, session_id=session_id)
@@ -113,9 +126,15 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         self._ebi_dirty = False
         self._last_ebi_flush = float("-inf")
         self._last_snapshot = float("-inf")
+        self._last_evidence = float("-inf")
+        self._observer_seen_at = float("-inf")
+        self._alert_sent_at: dict[str, float] = {}
         self._group_name = f"monitoring.session.{self.session_id}"
         await self.channel_layer.group_add(self._group_name, self.channel_name)
         await self.accept()
+        # Observers already watching answer with an observer.present, so a
+        # reconnecting examinee doesn't wait out a heartbeat to be seen.
+        await self.channel_layer.group_send(self._group_name, {"type": "examinee.joined"})
 
         from ai.adapter import get_pipeline_mode
         from ai.identity_store import get_reference_embedding
@@ -139,6 +158,12 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         group = getattr(self, "_group_name", None)
         if group:
             await self.channel_layer.group_discard(group, self.channel_name)
+
+    async def receive(self, text_data=None, bytes_data=None, **kwargs) -> None:
+        if bytes_data:
+            await self._handle_frame({"image": bytes(bytes_data)})
+            return
+        await super().receive(text_data=text_data, bytes_data=bytes_data, **kwargs)
 
     async def receive_json(self, content: dict[str, Any], **kwargs) -> None:
         msg_type = content.get("type", "")
@@ -190,7 +215,7 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
 
         # Reply before persisting: the client paces its next frame on this
         # message, and the bounding box shouldn't wait on DB writes.
-        await self.send_json({"type": "analysis", "payload": analysis})
+        await self.send_json({"type": "analysis", "payload": client_analysis(analysis)})
 
         # Persistence + fan-out overlap with the next frame's inference. Only
         # one batch is in flight at a time, so DB writes can't pile up.
@@ -217,52 +242,70 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
             self._last_ebi_flush = now
         self._ebi_dirty = not flush_ebi
 
-        await self.channel_layer.group_send(
-            self._group_name,
-            {
-                "type": "analysis.broadcast",
-                "payload": analysis,
-                "session_id": str(self.session_id),
-            },
-        )
-        # Observers get a fresh snapshot about once a second; the examinee's
-        # frame rate is much higher than a proctor's live tile needs.
-        snapshot = None
-        if now - self._last_snapshot >= _SNAPSHOT_INTERVAL_S:
-            self._last_snapshot = now
-            snapshot = await sync_to_async(self._encode_snapshot, thread_sensitive=False)(
-                frame,
-                str(self.session_id),
-                analysis,
-                self._session.status != ExamSession.Status.PAUSED,
+        # The evidence ring is fed about once a second whether or not a proctor
+        # is watching: it is what a later termination (or dispute) is judged on.
+        if (
+            now - self._last_evidence >= _SNAPSHOT_INTERVAL_S
+            and self._session.status != ExamSession.Status.PAUSED
+        ):
+            self._last_evidence = now
+            await sync_to_async(self._remember_evidence, thread_sensitive=False)(
+                str(self.session_id), frame, analysis
             )
-        if snapshot:
+
+        if self._has_observers(now):
             await self.channel_layer.group_send(
                 self._group_name,
                 {
-                    "type": "snapshot.broadcast",
-                    "image": snapshot,
+                    "type": "analysis.broadcast",
+                    "payload": client_analysis(analysis),
                     "session_id": str(self.session_id),
-                    "analysis": analysis,
                 },
             )
+            # Observers get a fresh snapshot about once a second; the examinee's
+            # frame rate is much higher than a proctor's live tile needs.
+            snapshot = None
+            if now - self._last_snapshot >= _SNAPSHOT_INTERVAL_S:
+                self._last_snapshot = now
+                snapshot = await sync_to_async(self._encode_snapshot, thread_sensitive=False)(frame)
+            if snapshot:
+                await self.channel_layer.group_send(
+                    self._group_name,
+                    {
+                        "type": "snapshot.broadcast",
+                        "image": snapshot,
+                        "session_id": str(self.session_id),
+                        "summary": analysis_summary(analysis),
+                    },
+                )
 
         for alert in analysis.get("alerts", []):
+            # A condition that persists is flagged on every frame; persistence
+            # already records it once per cooldown, so the live feed does too.
+            alert_type = alert.get("type", "compliance")
+            if now - self._alert_sent_at.get(alert_type, float("-inf")) < ALERT_REBROADCAST_S:
+                continue
+            self._alert_sent_at[alert_type] = now
             enriched = {
                 **alert,
                 "session_id": str(self.session_id),
                 "user_id": getattr(self._user, "id", None),
                 "user": getattr(self._user, "username", ""),
             }
-            await self.channel_layer.group_send(
-                self._group_name,
-                {"type": "alert.broadcast", "payload": enriched},
-            )
+            if self._has_observers(now):
+                await self.channel_layer.group_send(
+                    self._group_name,
+                    {"type": "alert.broadcast", "payload": enriched},
+                )
             # Fan out to any admins watching the global live-monitoring feed.
             await self.channel_layer.group_send(
                 ADMIN_ALERTS_GROUP,
                 {"type": "alert.broadcast", "payload": enriched},
             )
+
+    def _has_observers(self, now: float | None = None) -> bool:
+        now = time.monotonic() if now is None else now
+        return now - self._observer_seen_at < OBSERVER_PRESENT_TTL_S
 
     async def _handle_enroll(self, content: dict[str, Any]) -> None:
         import logging
@@ -289,7 +332,13 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({"type": "enroll_result", **result})
 
     async def alert_broadcast(self, event: dict[str, Any]) -> None:
-        await self.send_json({"type": "alert", "payload": event.get("payload", {})})
+        """The examinee's own alerts already ride in its analysis replies; don't echo them."""
+
+    async def observer_present(self, event: dict[str, Any]) -> None:
+        self._observer_seen_at = time.monotonic()
+
+    async def examinee_joined(self, event: dict[str, Any]) -> None:
+        """Our own join announcement, delivered back to us by the group."""
 
     async def session_state(self, event: dict[str, Any]) -> None:
         """A proctor paused/resumed/terminated this session: sync our copy, then tell the browser."""
@@ -368,14 +417,16 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
             logger.exception("EBI flush failed for session %s", self.session_id)
 
     @staticmethod
-    def _encode_snapshot(frame, session_id, analysis, keep_evidence: bool) -> str | None:
-        """Observer thumbnail, plus the session's evidence ring (not while paused)."""
+    def _encode_snapshot(frame) -> str | None:
         from ai.frame_utils import encode_jpeg_snapshot
+
+        return encode_jpeg_snapshot(frame)
+
+    @staticmethod
+    def _remember_evidence(session_id, frame, analysis) -> None:
         from features.monitoring.evidence import remember_frame
 
-        if keep_evidence:
-            remember_frame(session_id, frame, analysis)
-        return encode_jpeg_snapshot(frame)
+        remember_frame(session_id, frame, analysis)
 
     @staticmethod
     @database_sync_to_async
@@ -420,6 +471,10 @@ class SessionObserverConsumer(AsyncJsonWebsocketConsumer):
     Open to any role with the ``monitoring`` module (admin, guidance_staff,
     program_head, faculty, proctor) - matches the "proctor can live-monitor"
     capability, not admin-only.
+
+    A grid tile only needs the picture, a one-line summary and alerts. The
+    per-frame analysis stream (bounding boxes, every metric) is sent only when
+    the client asks for it with ``?detail=1``, as the single-session page does.
     """
 
     async def connect(self) -> None:
@@ -441,6 +496,8 @@ class SessionObserverConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4404)
             return
 
+        query = parse_qs(self.scope.get("query_string", b"").decode("utf-8", "ignore"))
+        self._detail = query.get("detail", ["0"])[0] in ("1", "true")
         self._group_name = f"monitoring.session.{self.session_id}"
         await self.channel_layer.group_add(self._group_name, self.channel_name)
         await self.accept()
@@ -451,6 +508,7 @@ class SessionObserverConsumer(AsyncJsonWebsocketConsumer):
                 "session_id": str(self.session_id),
             }
         )
+        await self._announce()
 
     async def disconnect(self, close_code: int) -> None:
         group = getattr(self, "_group_name", None)
@@ -460,8 +518,21 @@ class SessionObserverConsumer(AsyncJsonWebsocketConsumer):
     async def receive_json(self, content: dict[str, Any], **kwargs) -> None:
         if content.get("type") == "ping":
             await self.send_json({"type": "pong"})
+            # The heartbeat doubles as "still watching" for the examinee's socket.
+            await self._announce()
+
+    async def _announce(self) -> None:
+        await self.channel_layer.group_send(self._group_name, {"type": "observer.present"})
+
+    async def observer_present(self, event: dict[str, Any]) -> None:
+        """Another observer's announcement; only the examinee's socket cares."""
+
+    async def examinee_joined(self, event: dict[str, Any]) -> None:
+        await self._announce()
 
     async def analysis_broadcast(self, event: dict[str, Any]) -> None:
+        if not self._detail:
+            return
         await self.send_json(
             {
                 "type": "analysis",
@@ -476,7 +547,7 @@ class SessionObserverConsumer(AsyncJsonWebsocketConsumer):
                 "type": "snapshot",
                 "image": event.get("image"),
                 "session_id": event.get("session_id"),
-                "analysis": event.get("analysis"),
+                "summary": event.get("summary"),
             }
         )
 

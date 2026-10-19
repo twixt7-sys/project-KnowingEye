@@ -286,9 +286,13 @@ export interface FrameAnalysisPosture {
   posture_compliance_pct?: number;
 }
 
+/**
+ * One analyzed frame. The websocket streams omit `session_id`, `timestamp`,
+ * `events` and `pipeline_mode` (server-side only); the REST fallback still has them.
+ */
 export interface FrameAnalysis {
-  session_id: string | null;
-  timestamp: string | null;
+  session_id?: string | null;
+  timestamp?: string | null;
   frame_index: number | null;
   frame_size?: [number, number] | null;
   face?: FrameAnalysisFace;
@@ -297,7 +301,7 @@ export interface FrameAnalysis {
   overall_compliance_pct: number;
   exam_behavior_index_pct?: number;
   behavior_score: number;
-  events: FrameEvent[];
+  events?: FrameEvent[];
   alerts: FrameAlert[];
   pipeline_mode?: string;
 }

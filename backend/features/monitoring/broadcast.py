@@ -16,12 +16,15 @@ from typing import Any
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
+from features.monitoring.payloads import ALERT_REBROADCAST_S, analysis_summary, client_analysis
+
 logger = logging.getLogger("knowing_eye.monitoring.broadcast")
 
 # Same cadence as the websocket consumer's _SNAPSHOT_INTERVAL_S: the examinee
 # POSTs ~5 frames/s, but a proctor's tile only needs about one picture a second.
 _SNAPSHOT_INTERVAL_S = 1.0
 _last_snapshot_at: dict[str, float] = {}
+_last_alert_at: dict[tuple[str, str], float] = {}
 
 
 def broadcast_frame_result(session, user, frame, analysis: dict[str, Any]) -> None:
@@ -45,7 +48,11 @@ def broadcast_frame_result(session, user, frame, analysis: dict[str, Any]) -> No
     try:
         send(
             group,
-            {"type": "analysis.broadcast", "payload": analysis, "session_id": session_id},
+            {
+                "type": "analysis.broadcast",
+                "payload": client_analysis(analysis),
+                "session_id": session_id,
+            },
         )
         snapshot = None
         now = time.monotonic()
@@ -62,10 +69,16 @@ def broadcast_frame_result(session, user, frame, analysis: dict[str, Any]) -> No
                     "type": "snapshot.broadcast",
                     "image": snapshot,
                     "session_id": session_id,
-                    "analysis": analysis,
+                    "summary": analysis_summary(analysis),
                 },
             )
         for alert in analysis.get("alerts", []):
+            # Same pacing as the websocket consumer: a persistent condition is
+            # reported once per cooldown, not on every frame.
+            alert_key = (session_id, alert.get("type", "compliance"))
+            if now - _last_alert_at.get(alert_key, float("-inf")) < ALERT_REBROADCAST_S:
+                continue
+            _last_alert_at[alert_key] = now
             enriched = {
                 **alert,
                 "session_id": session_id,

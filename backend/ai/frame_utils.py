@@ -18,10 +18,17 @@ def decode_base64_image(image_data: str):
     except (ValueError, TypeError):
         return None
 
+    return decode_image_bytes(decoded)
+
+
+def decode_image_bytes(data: bytes):
+    """Return BGR numpy array or None for raw encoded image bytes (e.g. a binary websocket frame)."""
+    if not data:
+        return None
     import numpy as np
     import cv2
 
-    np_arr = np.frombuffer(decoded, np.uint8)
+    np_arr = np.frombuffer(data, np.uint8)
     return cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
 
