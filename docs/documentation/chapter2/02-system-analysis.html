@@ -28,7 +28,7 @@
       <table>
         <thead><tr><th>Layer</th><th>Component</th><th>Technology</th><th>Interaction</th></tr></thead>
         <tbody>
-          <tr><td>Users</td><td>Administrator, Examinee</td><td>Web browser</td><td>HTTPS + WSS to backend</td></tr>
+          <tr><td>Users</td><td>Administrator, Program Head, Guidance Staff, Faculty, Proctor, Examinee</td><td>Web browser</td><td>HTTPS + WSS to backend</td></tr>
           <tr><td>Presentation</td><td>React SPA</td><td>React 18, Vite, TypeScript</td><td>REST JSON, WebSocket frames</td></tr>
           <tr><td>Application</td><td>Django monolith</td><td>Django 6, DRF, Channels</td><td>Business logic, RBAC, session orchestration</td></tr>
           <tr><td>AI / CV</td><td>Behavior pipeline</td><td>MediaPipe (face/pose landmarks), ArcFace/InsightFace <code>buffalo_l</code> (identity)</td><td>In-process via <code>backend/ai/knowing_eye</code></td></tr>
@@ -73,6 +73,65 @@ flowchart TB
         <p style="padding:0.5rem 0;font-size:0.85rem;color:var(--muted)">See Part C - System Design and <code>assets/graphs/system-architecture.json</code> for deployment topology and component detail.</p>
       </details>
     </figure>
+
+    <h3 id="architecture-ipo">Input–Process–Output (IPO) View</h3>
+    <p>The same architecture read as an <strong>Input–Process–Output</strong> model: <em>users</em> operate <em>hardware</em> that feeds <em>data</em> into the platform; the <em>software</em> tier processes it against the <em>data store</em>; and the system returns results, alerts, evidence, and reports back to the users who act on them.</p>
+    <figure class="doc-fig">
+      <figcaption>Figure 2.1b - System Architecture (Input–Process–Output)</figcaption>
+      <pre class="mermaid">
+flowchart LR
+  subgraph IN["INPUT"]
+    direction TB
+    USERS["<b>Users</b><br/>Administrator · Program Head<br/>Guidance Staff · Faculty<br/>Proctor · Examinee"]
+    HW["<b>Hardware</b><br/>Webcam<br/>Client PC / laptop + browser"]
+    DIN["<b>Data</b><br/>Credentials · OTP code<br/>Exam content · .xlsx import<br/>Answers · tab-switch events<br/>Webcam frames (~1 FPS JPEG)<br/>Enrollment face image"]
+    USERS -->|operate| HW
+    HW -->|capture &amp; submit| DIN
+  end
+
+  subgraph PR["PROCESS"]
+    direction TB
+    SPA["<b>React SPA</b><br/>exam UI · dashboards · webcam stream"]
+    API["<b>Django REST API</b><br/>JWT auth · RBAC/PBAC<br/>exams · sessions · grading"]
+    WS["<b>Channels WebSocket</b><br/>monitoring consumer"]
+    AI["<b>AI / CV Pipeline</b><br/>OpenCV preprocess → MediaPipe face &amp; pose<br/>→ ArcFace identity → scoring &amp; escalation"]
+    DB[("<b>Database</b><br/>PostgreSQL / SQLite")]
+    MED[("<b>Media storage</b><br/>attachments · evidence")]
+    SPA -->|HTTPS · JSON| API
+    SPA -->|WSS · frames| WS
+    WS -->|analyze_frame_bgr| AI
+    API <-->|ORM| DB
+    AI -->|metrics · alerts| DB
+    WS -->|snapshots| MED
+  end
+
+  subgraph OUT["OUTPUT"]
+    direction TB
+    O1["<b>Examinee</b><br/>Exam results &amp; scores"]
+    O2["<b>Proctor · Administrator</b><br/>Real-time alerts · live grid<br/>Evidence snapshots"]
+    O3["<b>Faculty · Program Head · Guidance</b><br/>Behavior logs · compliance metrics<br/>PDF / CSV reports"]
+    O4["<b>All users</b><br/>OTP &amp; notification emails"]
+    O1 ~~~ O2 ~~~ O3 ~~~ O4
+  end
+
+  IN ==>|HTTPS / WSS| PR
+  PR ==> OUT
+
+  style IN stroke:#2563eb,stroke-width:2px
+  style PR stroke:#d97706,stroke-width:2px
+  style OUT stroke:#16a34a,stroke-width:2px
+      </pre>
+    </figure>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Stage</th><th>Users</th><th>Hardware</th><th>Software</th><th>Data</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Input</strong></td><td>Administrator, Program Head, Guidance Staff, Faculty, Proctor, Examinee</td><td>Webcam; client PC/laptop with a modern browser</td><td>Browser MediaDevices API, React SPA forms</td><td>Credentials and OTP codes, exam content and <code>.xlsx</code> imports, answers and tab-switch events, ~1 FPS webcam frames, enrollment face image</td></tr>
+          <tr><td><strong>Process</strong></td><td>Faculty build and submit exams; Program Head / Guidance Staff approve; Examinee takes the exam; Proctor observes live</td><td>Application server (CPU by default, optional CUDA GPU for ArcFace)</td><td>Django REST API (JWT, RBAC + PBAC, exam and session services), Channels WebSocket consumer, AI/CV pipeline (OpenCV preprocessing, MediaPipe face &amp; pose, ArcFace identity, threshold scoring and escalation)</td><td>PostgreSQL / SQLite (users, exams, sessions, responses, behavior logs, alerts); media storage (attachments, evidence snapshots)</td></tr>
+          <tr><td><strong>Output</strong></td><td>Proctor and Administrator act on alerts; Examinee receives results; staff review reports</td><td>Client display</td><td>Proctor live grid, dashboards, ReportLab PDF and CSV export, email service</td><td>Exam results and scores, real-time alerts, behavior logs and compliance metrics, evidence snapshots, PDF/CSV reports, OTP and notification emails</td></tr>
+        </tbody>
+      </table>
+    </div>
 
     <h2 id="requirements">Functional and Non-Functional Requirements</h2>
     <p>Requirements were derived from capstone objectives, stakeholder input from IT faculty, and iterative prototype validation. Each item is numbered for traceability to test cases (prefixes <code>FR-</code>, <code>NFR-</code>).</p>
