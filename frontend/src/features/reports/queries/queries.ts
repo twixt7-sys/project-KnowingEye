@@ -1,12 +1,17 @@
 import {
   fetchDepartments,
   fetchExamAnalytics,
+  fetchIntegrityReport,
+  fetchIntegritySessions,
   fetchReportSummary,
+  fetchSchoolYearDetail,
+  fetchSchoolYearReport,
   fetchSessionReport,
   fetchSessionReports,
   fetchTimeseries,
 } from "@/features/reports/api/reports-api";
 import { reportsKeys } from "@/features/reports/queries/keys";
+import type { IntegrityParams } from "@/shared/types/api";
 
 export interface TimeseriesPoint {
   day: string;
@@ -43,6 +48,24 @@ export const reportsQueries = {
   departments: () => ({
     queryKey: reportsKeys.departments(),
     queryFn: () => fetchDepartments(true),
+  }),
+  integrity: (params: IntegrityParams) => ({
+    queryKey: reportsKeys.integrity(params),
+    queryFn: () => fetchIntegrityReport(params),
+  }),
+  integritySessions: (params: IntegrityParams, enabled = true) => ({
+    queryKey: reportsKeys.integritySessions(params),
+    queryFn: () => fetchIntegritySessions(params),
+    enabled,
+  }),
+  schoolYears: (params: { department?: number } = {}) => ({
+    queryKey: reportsKeys.schoolYears(params),
+    queryFn: () => fetchSchoolYearReport(params),
+  }),
+  schoolYearDetail: (startYear: number | null) => ({
+    queryKey: reportsKeys.schoolYearDetail(startYear ?? 0),
+    queryFn: () => fetchSchoolYearDetail(startYear as number),
+    enabled: startYear != null,
   }),
   examResults: (examId: string) => ({
     queryKey: reportsKeys.examResults(examId),

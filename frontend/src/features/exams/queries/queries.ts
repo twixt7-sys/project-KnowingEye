@@ -1,4 +1,5 @@
 import {
+  fetchCompletedExaminees,
   fetchExamAssignments,
   fetchExamById,
   fetchExamPreview,
@@ -44,6 +45,11 @@ export const examBuilderQueries = {
   assignments: (examId: number) => ({
     queryKey: examBuilderKeys.assignments(examId),
     queryFn: () => fetchExamAssignments(examId).catch(() => []),
+    enabled: examId > 0 && !Number.isNaN(examId),
+  }),
+  completedExaminees: (examId: number) => ({
+    queryKey: examBuilderKeys.completedExaminees(examId),
+    queryFn: () => fetchCompletedExaminees(examId),
     enabled: examId > 0 && !Number.isNaN(examId),
   }),
   sections: (examId: number) => ({

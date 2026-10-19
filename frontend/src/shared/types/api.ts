@@ -92,6 +92,8 @@ export interface Exam {
   disable_copy_paste?: boolean;
   unanswered_counts_as_wrong?: boolean;
   requires_assignment?: boolean;
+  /** Examinees who already completed this exam cannot take it again or be added to its roster. */
+  exclude_completed_examinees?: boolean;
   results_release_at?: string | null;
   show_correct_answers?: "never" | "after_release" | "immediately";
   is_practice?: boolean;
@@ -431,6 +433,152 @@ export interface SessionReportRow {
   /** Mean Exam Behavior Index (0-100) for this session, or null when unmonitored. */
   ebi_average?: number | null;
   ebi_sample_count?: number;
+}
+
+/** One examinee with a finished attempt on an exam (the per-exam exclusion list). */
+export interface CompletedExaminee {
+  user_id: number;
+  username: string;
+  email: string;
+  name: string;
+  attempts_completed: number;
+  last_completed_at: string | null;
+  last_score: number | null;
+  passed: boolean | null;
+  on_roster: boolean;
+  roster_status: string | null;
+}
+
+export interface CompletedExamineesResponse {
+  /** True when the exam has "exclude completed examinees" on (and is not a practice exam). */
+  exclusion_enforced: boolean;
+  count: number;
+  results: CompletedExaminee[];
+}
+
+export interface IntegrityParams {
+  exam?: number;
+  department?: number;
+  /** Start year of the school year, e.g. 2025 for 2025-2026. */
+  school_year?: number;
+  [key: string]: string | number | boolean | undefined | null;
+}
+
+export interface IntegrityAlertBreakdown {
+  alert_count: number;
+  unresolved_alerts: number;
+  alerts_by_type: Record<string, number>;
+  alerts_by_severity: Record<string, number>;
+}
+
+export interface IntegrityTotals extends IntegrityAlertBreakdown {
+  sessions: number;
+  candidates: number;
+  flagged_sessions: number;
+  flagged_candidates: number;
+  terminated_sessions: number;
+  candidate_flag_rate: number | null;
+}
+
+export interface IntegrityExamRow extends IntegrityAlertBreakdown {
+  exam_id: number;
+  exam_title: string;
+  department_id: number | null;
+  department_name: string | null;
+  department_abbreviation: string | null;
+  sessions: number;
+  candidates: number;
+  flagged_sessions: number;
+  flagged_candidates: number;
+  candidate_flag_rate: number | null;
+  terminated_sessions: number;
+}
+
+export interface IntegrityReport {
+  totals: IntegrityTotals;
+  by_exam: IntegrityExamRow[];
+  filters: { exam_id: number | null; department_id: number | null; school_year: number | null };
+  school_year_start_month: number;
+  generated_at: string;
+}
+
+export interface IntegrityAlert {
+  id: string;
+  alert_type: string;
+  severity: string;
+  message: string;
+  metric_pct: number | null;
+  resolved: boolean;
+  created_at: string;
+}
+
+export interface IntegritySessionRow {
+  session_id: string;
+  exam_id: number;
+  exam_title: string;
+  department_abbreviation: string | null;
+  user_id: number;
+  username: string;
+  full_name: string;
+  seat_label: string | null;
+  status: string;
+  terminated: boolean;
+  started_at: string;
+  submitted_at: string | null;
+  percentage_score: number | null;
+  ebi_average: number | null;
+  alert_count: number;
+  unresolved_alerts: number;
+  alerts: IntegrityAlert[];
+}
+
+export interface IntegritySessionsResponse {
+  count: number;
+  truncated: boolean;
+  results: IntegritySessionRow[];
+}
+
+/** Outcome metrics for a slice of finished sessions (a school year, or an exam/department within one). */
+export interface OutcomeMetrics {
+  sessions: number;
+  completed_sessions: number;
+  examinees: number;
+  pass_rate: number | null;
+  average_score: number | null;
+  average_ebi: number | null;
+  flagged_sessions: number;
+  flagged_candidates: number;
+  /** Flagged sessions as a percentage of finished sessions. */
+  flagged_rate: number | null;
+}
+
+export interface SchoolYearRow extends OutcomeMetrics {
+  /** "2025-2026" (or "2025" for a January start). */
+  school_year: string;
+  start_year: number;
+  period_start: string;
+  period_end: string;
+  exams: number;
+}
+
+export interface SchoolYearReport {
+  start_month: number;
+  years: SchoolYearRow[];
+}
+
+export interface SchoolYearDetail {
+  school_year: string;
+  start_year: number;
+  by_exam: (OutcomeMetrics & {
+    exam_id: number;
+    exam_title: string;
+    department_abbreviation: string | null;
+  })[];
+  by_department: (OutcomeMetrics & {
+    department_id: number | null;
+    department_name: string;
+    department_abbreviation: string;
+  })[];
 }
 
 export interface PaginatedResponse<T> {

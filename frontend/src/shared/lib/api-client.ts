@@ -13,6 +13,7 @@ import type {
   AlertRow,
   AuthUser,
   BehaviorLogRow,
+  CompletedExamineesResponse,
   Department,
   Exam,
   ExamCategory,
@@ -20,6 +21,9 @@ import type {
   ExamSection,
   ExamSession,
   FrameAnalysis,
+  IntegrityParams,
+  IntegrityReport,
+  IntegritySessionsResponse,
   ProfileUser,
   PublishReadiness,
   Question,
@@ -27,6 +31,8 @@ import type {
   ReportSummary,
   ResponseData,
   Role,
+  SchoolYearDetail,
+  SchoolYearReport,
   SessionDepartmentAnalytics,
   SessionExamBehaviorIndex,
   SessionReportRow,
@@ -390,10 +396,14 @@ class ApiClient {
   }
 
   async importExamAssignments(examId: number, csv: string) {
-    return this.request<{ created: number; updated: number }>(
+    return this.request<{ created: number; updated: number; skipped?: string[] }>(
       `/exams/${examId}/assignments/import/`,
       { method: "POST", body: JSON.stringify({ csv }) },
     );
+  }
+
+  async listCompletedExaminees(examId: number) {
+    return this.request<CompletedExamineesResponse>(`/exams/${examId}/completed-examinees/`);
   }
 
   async listExamSections(examId: number) {
@@ -751,6 +761,22 @@ class ApiClient {
     return this.request<ReportSummary>("/reports/summary/");
   }
 
+  async getIntegrityReport(params?: IntegrityParams) {
+    return this.request<IntegrityReport>(`/reports/integrity/${toQuery(params)}`);
+  }
+
+  async listIntegritySessions(params?: IntegrityParams) {
+    return this.request<IntegritySessionsResponse>(`/reports/integrity/sessions/${toQuery(params)}`);
+  }
+
+  async getSchoolYearReport(params?: { department?: number }) {
+    return this.request<SchoolYearReport>(`/reports/school-years/${toQuery(params)}`);
+  }
+
+  async getSchoolYearDetail(startYear: number) {
+    return this.request<SchoolYearDetail>(`/reports/school-years/${startYear}/`);
+  }
+
   async listSessionReports(params?: {
     status?: string;
     exam?: number;
@@ -822,6 +848,22 @@ class ApiClient {
       "/reports/export/pdf/",
       "application/pdf",
       "knowing-eye-sessions.pdf",
+    );
+  }
+
+  async downloadIntegrityCSV(params?: IntegrityParams): Promise<void> {
+    return this.downloadExport(
+      `/reports/integrity/export/csv/${toQuery(params)}`,
+      "text/csv",
+      "knowing-eye-integrity.csv",
+    );
+  }
+
+  async downloadIntegrityPDF(params?: IntegrityParams): Promise<void> {
+    return this.downloadExport(
+      `/reports/integrity/export/pdf/${toQuery(params)}`,
+      "application/pdf",
+      "knowing-eye-integrity.pdf",
     );
   }
 

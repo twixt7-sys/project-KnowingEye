@@ -177,6 +177,13 @@ export function BuilderSettingsTab({
           description="Only rostered examinees can see and start this exam."
         />
         <CheckboxSetting
+          checked={form.exclude_completed_examinees}
+          onCheckedChange={(checked) => update({ exclude_completed_examinees: checked === true })}
+          disabled={!isDraft || form.is_practice}
+          title="Exclude examinees who already completed this exam"
+          description="Anyone with a finished attempt cannot start it again, even if attempts remain, and is skipped when adding candidates. Not applied to practice exams."
+        />
+        <CheckboxSetting
           checked={form.is_practice}
           onCheckedChange={(checked) => update({ is_practice: checked === true })}
           disabled={!isDraft}
