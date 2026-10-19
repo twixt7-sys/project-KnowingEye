@@ -125,7 +125,7 @@ class UserProfileViewSet(viewsets.ViewSet):
         """Send (or resend) the OTP code for the current user's email."""
         from .otp_service import issue_otp
 
-        if request.user.email_verified:
+        if request.user.email_verified or request.user.is_admin():
             return Response({"message": "Email is already verified."})
         code = issue_otp(request.user)
         payload = {"message": f"A verification code was sent to {request.user.email}."}

@@ -169,7 +169,18 @@ export function ReportsPage() {
               tone={summary.pass_rate != null && summary.pass_rate >= 60 ? "success" : "warning"}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+            <MetricTile
+              label="Flagged candidates"
+              value={summary.flagged_candidates ?? 0}
+              tone="danger"
+              hint="Alerted or terminated"
+            />
+            <MetricTile
+              label="Terminated sessions"
+              value={summary.terminated_sessions}
+              tone="danger"
+            />
             <MetricTile label="Unresolved alerts" value={summary.unresolved_alerts} tone="danger" />
             <MetricTile label="Resolved alerts" value={summary.resolved_alerts} />
             <MetricTile label="Behavior events" value={summary.behavior_events} />
@@ -445,10 +456,12 @@ function MetricTile({
   label,
   value,
   tone = "default",
+  hint,
 }: {
   label: string;
   value: number;
   tone?: "default" | "success" | "danger";
+  hint?: string;
 }) {
   const tones = {
     default: "text-foreground",
@@ -459,6 +472,7 @@ function MetricTile({
     <div className="surface-panel px-4 py-3">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className={`mt-0.5 text-xl font-semibold tracking-tight ${tones[tone]}`}>{value}</p>
+      {hint && <p className="mt-0.5 text-[0.6875rem] text-muted-foreground">{hint}</p>}
     </div>
   );
 }

@@ -33,11 +33,9 @@ export function LiveSessionCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.id]);
 
-  const compliance =
-    observer.analysis?.exam_behavior_index_pct ??
-    observer.analysis?.metrics?.exam_behavior_index_pct ??
-    observer.analysis?.overall_compliance_pct;
-  const metrics = observer.analysis?.metrics;
+  // A tile subscribes to snapshots + a summary, not the per-frame analysis stream.
+  const compliance = observer.summary?.exam_behavior_index_pct;
+  const facePresence = observer.summary?.face_presence_pct;
 
   const handleTerminate = async () => {
     const confirmed = await confirm({
@@ -136,9 +134,7 @@ export function LiveSessionCard({
               Face
             </dt>
             <dd className="mt-0.5 font-mono text-sm font-medium tabular-nums">
-              {metrics?.face_presence_pct == null
-                ? "—"
-                : `${metrics.face_presence_pct.toFixed(0)}%`}
+              {facePresence == null ? "—" : `${facePresence.toFixed(0)}%`}
             </dd>
           </div>
           <div className="px-3 py-2">

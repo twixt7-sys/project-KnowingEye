@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -50,6 +51,59 @@ class ReportsAPITests(APITestCase):
         self.assertIn("total_sessions", response.data)
         self.assertIn("alerts_by_severity", response.data)
         self.assertIn("by_department", response.data)
+
+    @override_settings(API_CACHE_TTL_SECONDS=0)
+    def test_report_summary_counts_flagged_candidates(self):
+        """Integrity headline: candidates with an alert or a terminated session.
+
+        The setUp session (admin, one alert) is flagged. A second alerted
+        session by the same person must not count them twice; a terminated
+        session with no alerts counts; a clean completed session does not.
+        """
+        exam = self.session.exam
+        Alert.objects.create(
+            session=self.session, alert_type="no_face", severity="low", message="y"
+        )
+        second = ExamSession.objects.create(
+            exam=exam,
+            user=self.admin,
+            status=ExamSession.Status.COMPLETED,
+            exam_started_at=timezone.now(),
+        )
+        Alert.objects.create(session=second, alert_type="looking_away", message="z")
+
+        terminated_user = User.objects.create_user(
+            username="terminated_examinee",
+            email="terminated@test.local",
+            password="TestPass123!",
+            role=User.Role.STUDENT,
+        )
+        ExamSession.objects.create(
+            exam=exam,
+            user=terminated_user,
+            status=ExamSession.Status.TERMINATED,
+            exam_started_at=timezone.now(),
+        )
+        clean_user = User.objects.create_user(
+            username="clean_examinee",
+            email="clean@test.local",
+            password="TestPass123!",
+            role=User.Role.STUDENT,
+        )
+        ExamSession.objects.create(
+            exam=exam,
+            user=clean_user,
+            status=ExamSession.Status.COMPLETED,
+            exam_started_at=timezone.now(),
+        )
+
+        response = self.client.get("/api/reports/summary/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["total_sessions"], 4)
+        self.assertEqual(response.data["flagged_sessions"], 3)
+        self.assertEqual(response.data["flagged_candidates"], 2)
+        self.assertEqual(response.data["terminated_sessions"], 1)
 
     def test_session_report_detail(self):
         response = self.client.get(f"/api/reports/sessions/{self.session.id}/")

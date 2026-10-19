@@ -151,7 +151,7 @@ class SessionObserverWebsocketTests(TransactionTestCase):
             headers = [(b"origin", b"http://127.0.0.1")]
             observer = WebsocketCommunicator(
                 application,
-                f"/ws/monitoring/observe/{self.session.id}/?token={self.admin_token}",
+                f"/ws/monitoring/observe/{self.session.id}/?token={self.admin_token}&detail=1",
                 headers=headers,
             )
             examinee = WebsocketCommunicator(

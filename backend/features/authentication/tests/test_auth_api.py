@@ -129,6 +129,50 @@ class AuthenticationAPITests(APITestCase):
         self.assertEqual(self.examinee.first_name, "Updated")
         self.assertEqual(self.examinee.phone, "+63-900-0000")
 
+    def test_profile_update_cannot_escalate_role_or_skip_verification(self):
+        """Self-service profile edits must never touch role, active flag or
+        email verification - otherwise a student could promote themselves or
+        mark their own email verified without the OTP."""
+        self.client.force_authenticate(user=self.examinee)
+        response = self.client.patch(
+            "/api/auth/profile/update_profile/",
+            {"role": User.Role.ADMIN, "email_verified": True, "first_name": "Still"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.examinee.refresh_from_db()
+        self.assertEqual(self.examinee.role, User.Role.STUDENT)
+        self.assertFalse(self.examinee.email_verified)
+        self.assertEqual(self.examinee.first_name, "Still")
+
+    def test_changing_email_requires_verifying_it_again(self):
+        self.examinee.email_verified = True
+        self.examinee.save(update_fields=["email_verified"])
+        self.client.force_authenticate(user=self.examinee)
+        response = self.client.patch(
+            "/api/auth/profile/update_profile/",
+            {"email": "new-address@test.local"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.examinee.refresh_from_db()
+        self.assertEqual(self.examinee.email, "new-address@test.local")
+        self.assertFalse(self.examinee.email_verified)
+        self.assertFalse(response.data["user"]["email_verified"])
+
+    def test_admin_never_needs_email_verification(self):
+        """The admin account is provisioned by the operator, not by signup, so
+        it reports as verified even though no OTP was ever issued for it."""
+        self.assertFalse(self.admin.email_verified)
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get("/api/auth/profile/me/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["email_verified"])
+
+        self.client.force_authenticate(user=self.examinee)
+        response = self.client.get("/api/auth/profile/me/")
+        self.assertFalse(response.data["email_verified"])
+
     def test_change_password(self):
         self.client.force_authenticate(user=self.examinee)
         response = self.client.post(

@@ -286,9 +286,13 @@ export interface FrameAnalysisPosture {
   posture_compliance_pct?: number;
 }
 
+/**
+ * One analyzed frame. The websocket streams omit `session_id`, `timestamp`,
+ * `events` and `pipeline_mode` (server-side only); the REST fallback still has them.
+ */
 export interface FrameAnalysis {
-  session_id: string | null;
-  timestamp: string | null;
+  session_id?: string | null;
+  timestamp?: string | null;
   frame_index: number | null;
   frame_size?: [number, number] | null;
   face?: FrameAnalysisFace;
@@ -297,7 +301,7 @@ export interface FrameAnalysis {
   overall_compliance_pct: number;
   exam_behavior_index_pct?: number;
   behavior_score: number;
-  events: FrameEvent[];
+  events?: FrameEvent[];
   alerts: FrameAlert[];
   pipeline_mode?: string;
 }
@@ -390,6 +394,10 @@ export interface ReportSummary {
   active_sessions: number;
   completed_sessions: number;
   terminated_sessions: number;
+  /** Sessions with at least one monitoring alert, or terminated by a proctor. */
+  flagged_sessions?: number;
+  /** Distinct examinees behind those sessions - one person with several flagged attempts counts once. */
+  flagged_candidates?: number;
   unresolved_alerts: number;
   resolved_alerts: number;
   behavior_events: number;
