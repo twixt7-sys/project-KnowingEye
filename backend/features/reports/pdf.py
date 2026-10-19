@@ -1,4 +1,4 @@
-"""Printable per-session exam report (examinee-facing PDF)."""
+"""Printable reports: the per-session examinee PDF and the exam-integrity PDF."""
 
 from __future__ import annotations
 
@@ -286,6 +286,174 @@ def build_session_report_pdf(
         topMargin=0.7 * inch,
         bottomMargin=0.75 * inch,
         title=f"Exam report - {exam.title}",
+        author="Knowing Eye",
+    )
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    return buffer.getvalue()
+
+
+def build_integrity_report_pdf(report: dict, rows: list[dict], *, truncated: bool, filters: dict) -> bytes:
+    """Render the exam-integrity report: headline totals, per-exam table, flagged candidates."""
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import inch
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+    from features.reports.school_year import school_year_label
+
+    styles = getSampleStyleSheet()
+    h1 = ParagraphStyle("h1", parent=styles["Heading1"], fontSize=18, spaceAfter=4)
+    h2 = ParagraphStyle("h2", parent=styles["Heading2"], fontSize=12, spaceBefore=12, spaceAfter=6)
+    body = ParagraphStyle("body", parent=styles["BodyText"], fontSize=9, leading=12)
+    small = ParagraphStyle("small", parent=body, fontSize=8, leading=10, textColor=colors.grey)
+    cell = ParagraphStyle("cell", parent=body, fontSize=8, leading=10)
+
+    def p(text, style=cell):
+        return Paragraph(escape(str(text)), style)
+
+    grid = TableStyle(
+        [
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#c8ccd4")),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eef1f6")),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 8),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("LEFTPADDING", (0, 0), (-1, -1), 5),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ]
+    )
+
+    totals = report["totals"]
+    story = [Paragraph("Knowing Eye - Exam Integrity Report", h1)]
+
+    scope = []
+    if filters.get("school_year") is not None:
+        scope.append(
+            f"School year {school_year_label(filters['school_year'], report.get('school_year_start_month'))}"
+        )
+    if filters.get("exam_id"):
+        scope.append(f"Exam #{filters['exam_id']}")
+    if filters.get("department_id"):
+        scope.append(f"Department #{filters['department_id']}")
+    story.append(Paragraph(escape(", ".join(scope) or "All exams and school years"), body))
+    story.append(
+        Paragraph(
+            "A session is flagged when monitoring raised at least one alert or a proctor "
+            "terminated it. A candidate is flagged when any of their sessions is, and is "
+            "counted once.",
+            small,
+        )
+    )
+
+    story.append(Paragraph("Overview", h2))
+    overview = [
+        ["Flagged candidates", "Flagged sessions", "Terminated", "Alerts", "Unresolved"],
+        [
+            f"{totals['flagged_candidates']} of {totals['candidates']}",
+            f"{totals['flagged_sessions']} of {totals['sessions']}",
+            str(totals["terminated_sessions"]),
+            str(totals["alert_count"]),
+            str(totals["unresolved_alerts"]),
+        ],
+    ]
+    t = Table(overview, colWidths=[1.5 * inch, 1.4 * inch, 1.2 * inch, 1.4 * inch, 1.4 * inch])
+    t.setStyle(grid)
+    story.append(t)
+
+    if totals["alerts_by_type"]:
+        story.append(Paragraph("Alerts by type", h2))
+        rows_ = [["Alert type", "Count"]] + [
+            [p(k.replace("_", " ")), str(v)] for k, v in totals["alerts_by_type"].items()
+        ]
+        t = Table(rows_, colWidths=[4.5 * inch, 1.5 * inch], repeatRows=1)
+        t.setStyle(grid)
+        story.append(t)
+
+    story.append(Paragraph("By exam", h2))
+    if report["by_exam"]:
+        exam_rows = [["Exam", "Candidates", "Flagged", "Terminated", "Alerts", "Unresolved"]]
+        for e in report["by_exam"]:
+            exam_rows.append(
+                [
+                    p(e["exam_title"]),
+                    str(e["candidates"]),
+                    f"{e['flagged_candidates']} ({e['candidate_flag_rate'] or 0:.0f}%)",
+                    str(e["terminated_sessions"]),
+                    str(e["alert_count"]),
+                    str(e["unresolved_alerts"]),
+                ]
+            )
+        t = Table(
+            exam_rows,
+            colWidths=[2.5 * inch, 0.9 * inch, 1.0 * inch, 0.9 * inch, 0.8 * inch, 0.8 * inch],
+            repeatRows=1,
+        )
+        t.setStyle(grid)
+        story.append(t)
+    else:
+        story.append(Paragraph("No sessions in scope.", body))
+
+    story.append(Paragraph("Flagged candidates and alerts", h2))
+    if not rows:
+        story.append(Paragraph("No candidates were flagged.", body))
+    for r in rows:
+        who = r["full_name"] or r["username"]
+        seat = f" - seat {r['seat_label']}" if r["seat_label"] else ""
+        story.append(
+            Paragraph(
+                f"<b>{escape(who)}</b> ({escape(r['username'])}){escape(seat)} - "
+                f"{escape(r['exam_title'])} - {escape(r['status'].replace('_', ' '))}, "
+                f"{_fmt_dt(r['started_at'])}",
+                body,
+            )
+        )
+        if r["alerts"]:
+            alert_rows = [["Time", "Type", "Severity", "Resolved", "Detail"]]
+            for a in r["alerts"]:
+                alert_rows.append(
+                    [
+                        _fmt_dt(a["created_at"]),
+                        p(a["alert_type"].replace("_", " ")),
+                        a["severity"],
+                        "Yes" if a["resolved"] else "No",
+                        p(a["message"]),
+                    ]
+                )
+            t = Table(
+                alert_rows,
+                colWidths=[1.05 * inch, 1.1 * inch, 0.7 * inch, 0.7 * inch, 3.35 * inch],
+                repeatRows=1,
+            )
+            t.setStyle(grid)
+            story.append(t)
+        else:
+            story.append(Paragraph("Terminated by a proctor; no alerts recorded.", small))
+        story.append(Spacer(1, 8))
+    if truncated:
+        story.append(
+            Paragraph("The list was cut off at the export limit; narrow the filters to see the rest.", small)
+        )
+
+    generated = timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M %Z")
+
+    def footer(canvas, doc):
+        canvas.saveState()
+        canvas.setFont("Helvetica", 7)
+        canvas.setFillColor(colors.grey)
+        canvas.drawString(doc.leftMargin, 0.45 * inch, f"Generated {generated} - Knowing Eye")
+        canvas.drawRightString(letter[0] - doc.rightMargin, 0.45 * inch, f"Page {doc.page}")
+        canvas.restoreState()
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        leftMargin=0.8 * inch,
+        rightMargin=0.8 * inch,
+        topMargin=0.7 * inch,
+        bottomMargin=0.75 * inch,
+        title="Exam integrity report",
         author="Knowing Eye",
     )
     doc.build(story, onFirstPage=footer, onLaterPages=footer)

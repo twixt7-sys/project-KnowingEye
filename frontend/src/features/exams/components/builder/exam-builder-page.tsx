@@ -175,6 +175,10 @@ export function ExamBuilderPage() {
 
       {builder.tab === "candidates" && (
         <BuilderCandidatesTab
+          examId={builder.exam.id}
+          exclusionEnforced={
+            builder.exam.exclude_completed_examinees === true && !builder.exam.is_practice
+          }
           assignments={builder.assignments}
           candidateEmail={builder.candidateEmail}
           setCandidateEmail={builder.setCandidateEmail}

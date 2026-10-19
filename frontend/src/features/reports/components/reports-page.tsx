@@ -11,10 +11,12 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { BarChart, DonutChart, LineChart } from "@tremor/react";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { formatApiError } from "@/core/config/api";
 import { downloadSessionsCsv, downloadSessionsPdf } from "@/features/reports/api/reports-api";
+import { IntegrityReportSection } from "@/features/reports/components/integrity-report-section";
+import { SchoolYearSection } from "@/features/reports/components/school-year-section";
 import { reportsQueries } from "@/features/reports/queries/queries";
 import { DataTablePagination } from "@/shared/components/common/data-table-pagination";
 import { ScrollableDataTable } from "@/shared/components/common/scrollable-data-table";
@@ -27,7 +29,18 @@ import { Button } from "@/shared/components/ui/button";
 import { useDebounce } from "@/shared/hooks/use-debounce";
 import { usePagination } from "@/shared/hooks/use-pagination";
 
+const VIEWS = [
+  { key: "overview", label: "Overview" },
+  { key: "integrity", label: "Integrity" },
+  { key: "school-years", label: "School years" },
+] as const;
+
+type ReportsView = (typeof VIEWS)[number]["key"];
+
 export function ReportsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedView = searchParams.get("view");
+  const view: ReportsView = VIEWS.find((v) => v.key === requestedView)?.key ?? "overview";
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
   const [query, setQuery] = useState("");
@@ -109,6 +122,7 @@ export function ReportsPage() {
         title="Reports & analytics"
         description="KPIs, exam outcomes, and behavioral patterns across all sessions."
         actions={
+          view !== "overview" ? undefined : (
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleExportCsv} disabled={exporting !== null}>
               <Download className="h-4 w-4" />
@@ -119,8 +133,34 @@ export function ReportsPage() {
               {exporting === "pdf" ? "Exporting…" : "Export PDF"}
             </Button>
           </div>
+          )
         }
       />
+
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Report views">
+        {VIEWS.map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={view === key}
+            onClick={() => setSearchParams(key === "overview" ? {} : { view: key })}
+            className={`px-4 py-2 rounded-lg text-sm border ${
+              view === key
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border hover:bg-accent"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === "integrity" && <IntegrityReportSection />}
+      {view === "school-years" && <SchoolYearSection />}
+
+      {view === "overview" && (
+        <>
 
       {displayError && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
@@ -448,6 +488,8 @@ export function ReportsPage() {
           loading={tableLoading}
         />
       </SectionPanel>
+        </>
+      )}
     </PageShell>
   );
 }

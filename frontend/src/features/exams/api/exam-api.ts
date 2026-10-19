@@ -180,4 +180,8 @@ export function importExamAssignments(examId: number, csv: string) {
   return apiClient.importExamAssignments(examId, csv);
 }
 
+export function fetchCompletedExaminees(examId: number) {
+  return apiClient.listCompletedExaminees(examId);
+}
+
 export type { Exam, ExamCategory, ExamPreview, Question, PublishReadiness, QuestionAttachment };

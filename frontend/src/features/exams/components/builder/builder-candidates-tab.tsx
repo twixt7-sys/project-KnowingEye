@@ -1,6 +1,9 @@
 import type { ExamAssignment } from "@/features/exams/api/exam-api";
+import { CompletedExamineesPanel } from "@/features/exams/components/builder/completed-examinees-panel";
 
 interface BuilderCandidatesTabProps {
+  examId: number;
+  exclusionEnforced: boolean;
   assignments: ExamAssignment[];
   candidateEmail: string;
   setCandidateEmail: (value: string) => void;
@@ -13,6 +16,8 @@ interface BuilderCandidatesTabProps {
 }
 
 export function BuilderCandidatesTab({
+  examId,
+  exclusionEnforced,
   assignments,
   candidateEmail,
   setCandidateEmail,
@@ -24,6 +29,7 @@ export function BuilderCandidatesTab({
   importCandidatesPending,
 }: BuilderCandidatesTabProps) {
   return (
+    <div className="space-y-4">
     <div className="bg-card border border-border rounded-xl p-6 space-y-4">
       <h2 className="text-lg font-semibold">Candidate roster</h2>
       <p className="text-sm text-muted-foreground">
@@ -77,6 +83,8 @@ export function BuilderCandidatesTab({
           ))
         )}
       </ul>
+    </div>
+    <CompletedExamineesPanel examId={examId} enforced={exclusionEnforced} />
     </div>
   );
 }

@@ -166,6 +166,10 @@ else:
 # Seconds to cache expensive read-only aggregate endpoints (reports).
 # 0 disables response caching entirely.
 API_CACHE_TTL_SECONDS = int(decouple_config("API_CACHE_TTL_SECONDS", default="30"))
+# Month (1-12) the academic year begins in. Reports group sessions into school
+# years by submission date: with 6, June 2025 - May 2026 is "2025-2026".
+SCHOOL_YEAR_START_MONTH = int(decouple_config("SCHOOL_YEAR_START_MONTH", default="6"))
+
 # Seconds to cache rarely-changing reference lists (departments, categories).
 # Writes invalidate them immediately; this is only the upper bound.
 API_REFERENCE_CACHE_TTL_SECONDS = int(

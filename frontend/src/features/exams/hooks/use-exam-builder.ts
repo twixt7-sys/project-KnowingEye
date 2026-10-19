@@ -399,6 +399,9 @@ export function useExamBuilder(examId: number) {
       setCandidateEmail("");
       setMessage("Candidate added.");
       await queryClient.invalidateQueries({ queryKey: examBuilderKeys.assignments(examId) });
+      await queryClient.invalidateQueries({
+        queryKey: examBuilderKeys.completedExaminees(examId),
+      });
     },
     onError: (e) => setActionError(formatApiError(e)),
   });
@@ -406,7 +409,10 @@ export function useExamBuilder(examId: number) {
   const importCandidatesMutation = useMutation({
     mutationFn: (csv: string) => importExamAssignments(examId, csv),
     onSuccess: async (res) => {
-      setMessage(`Imported ${res.created} new, updated ${res.updated}.`);
+      const skipped = res.skipped?.length
+        ? ` Skipped ${res.skipped.length} who already completed this exam.`
+        : "";
+      setMessage(`Imported ${res.created} new, updated ${res.updated}.${skipped}`);
       await queryClient.invalidateQueries({ queryKey: examBuilderKeys.assignments(examId) });
     },
     onError: (e) => setActionError(formatApiError(e)),

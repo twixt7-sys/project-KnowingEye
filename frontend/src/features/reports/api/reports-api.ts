@@ -2,6 +2,7 @@
  * Reports feature API - typed wrappers over the shared API client.
  */
 import { apiClient } from "@/core/config/api";
+import type { IntegrityParams } from "@/shared/types/api";
 
 export function fetchReportSummary() {
   return apiClient.getReportSummary();
@@ -24,6 +25,30 @@ export function fetchSessionReport(sessionId: string) {
 
 export function fetchTimeseries() {
   return apiClient.getTimeseries();
+}
+
+export function fetchIntegrityReport(params?: IntegrityParams) {
+  return apiClient.getIntegrityReport(params);
+}
+
+export function fetchIntegritySessions(params?: IntegrityParams) {
+  return apiClient.listIntegritySessions(params);
+}
+
+export function fetchSchoolYearReport(params?: { department?: number }) {
+  return apiClient.getSchoolYearReport(params);
+}
+
+export function fetchSchoolYearDetail(startYear: number) {
+  return apiClient.getSchoolYearDetail(startYear);
+}
+
+export function downloadIntegrityCsv(params?: IntegrityParams) {
+  return apiClient.downloadIntegrityCSV(params);
+}
+
+export function downloadIntegrityPdf(params?: IntegrityParams) {
+  return apiClient.downloadIntegrityPDF(params);
 }
 
 export function fetchDepartments(activeOnly = true) {

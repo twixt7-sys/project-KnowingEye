@@ -9,9 +9,11 @@ from django.db.models import Avg, Count, F, Q
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from core.security.drf import HasModuleAccess
 from core.utils.api_cache import cache_get_response
 from core.utils.constants import MAX_REPORT_EXPORT_ROWS
 
@@ -463,6 +465,11 @@ def list_session_reports(request):
     if exam_id:
         qs = qs.filter(exam_id=exam_id)
 
+    if request.query_params.get("flagged") == "true":
+        from features.reports.integrity import FLAGGED, with_flag
+
+        qs = with_flag(qs).filter(FLAGGED)
+
     department_id = request.query_params.get("department")
     if department_id:
         qs = qs.filter(exam__department_id=department_id)
@@ -657,6 +664,182 @@ def analytics_timeseries(request):
     )
 
 
+def _int_param(request, name: str) -> int | None:
+    raw = (request.query_params.get(name) or "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        raise ValidationError({name: "Must be an integer."})
+
+
+def _integrity_filters(request) -> dict:
+    return {
+        "exam_id": _int_param(request, "exam"),
+        "department_id": _int_param(request, "department"),
+        "school_year": _int_param(request, "school_year"),
+    }
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, HasModuleAccess("reports")])
+def integrity_report_view(request):
+    """GET /api/reports/integrity/ - flagged-candidate totals and per-exam breakdown.
+
+    Optional ``?exam=``, ``?department=`` and ``?school_year=`` (start year,
+    e.g. 2025 for 2025-2026) narrow the report.
+    """
+    from features.reports.integrity import integrity_report
+    from features.reports.school_year import start_month
+
+    filters = _integrity_filters(request)
+    report = integrity_report(_session_queryset(request.user), **filters)
+    report["filters"] = filters
+    report["school_year_start_month"] = start_month()
+    report["generated_at"] = timezone.now().isoformat()
+    return Response(report)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, HasModuleAccess("reports")])
+def integrity_sessions_view(request):
+    """GET /api/reports/integrity/sessions/ - drill-down: flagged sessions with their alerts."""
+    from features.reports.integrity import flagged_session_rows
+
+    rows, truncated = flagged_session_rows(
+        _session_queryset(request.user), **_integrity_filters(request)
+    )
+    return Response({"count": len(rows), "truncated": truncated, "results": rows})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, HasModuleAccess("reports")])
+def export_integrity_csv(request):
+    """GET /api/reports/integrity/export/csv/ - one row per alert on a flagged session.
+
+    A flagged session without alerts (terminated by a proctor) still gets one
+    row, with the alert columns blank, so every flagged candidate appears.
+    """
+    from features.reports.integrity import flagged_session_rows
+
+    rows, _ = flagged_session_rows(
+        _session_queryset(request.user),
+        limit=MAX_REPORT_EXPORT_ROWS,
+        **_integrity_filters(request),
+    )
+    buffer = StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(
+        [
+            "exam_id",
+            "exam_title",
+            "department",
+            "username",
+            "full_name",
+            "seat_label",
+            "session_id",
+            "session_status",
+            "started_at",
+            "submitted_at",
+            "percentage_score",
+            "exam_behavior_index",
+            "alert_type",
+            "alert_severity",
+            "alert_message",
+            "alert_metric_pct",
+            "alert_resolved",
+            "alert_created_at",
+        ]
+    )
+    for r in rows:
+        head = [
+            r["exam_id"],
+            r["exam_title"],
+            r["department_abbreviation"] or "",
+            r["username"],
+            r["full_name"],
+            r["seat_label"] or "",
+            r["session_id"],
+            r["status"],
+            r["started_at"].isoformat() if r["started_at"] else "",
+            r["submitted_at"].isoformat() if r["submitted_at"] else "",
+            r["percentage_score"] if r["percentage_score"] is not None else "",
+            r["ebi_average"] if r["ebi_average"] is not None else "",
+        ]
+        if not r["alerts"]:
+            writer.writerow(head + [""] * 6)
+        for a in r["alerts"]:
+            writer.writerow(
+                head
+                + [
+                    a["alert_type"],
+                    a["severity"],
+                    a["message"],
+                    a["metric_pct"] if a["metric_pct"] is not None else "",
+                    a["resolved"],
+                    a["created_at"].isoformat(),
+                ]
+            )
+
+    response = HttpResponse(buffer.getvalue(), content_type="text/csv")
+    filename = f"knowing-eye-integrity-{timezone.now():%Y%m%d-%H%M%S}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, HasModuleAccess("reports")])
+def export_integrity_pdf(request):
+    """GET /api/reports/integrity/export/pdf/ - printable exam-integrity report."""
+    from features.reports.integrity import flagged_session_rows, integrity_report
+    from features.reports.pdf import build_integrity_report_pdf
+
+    sessions = _session_queryset(request.user)
+    filters = _integrity_filters(request)
+    report = integrity_report(sessions, **filters)
+    rows, truncated = flagged_session_rows(
+        sessions, limit=MAX_REPORT_EXPORT_ROWS, **filters
+    )
+    pdf_bytes = build_integrity_report_pdf(report, rows, truncated=truncated, filters=filters)
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    filename = f"knowing-eye-integrity-{timezone.now():%Y%m%d-%H%M%S}.pdf"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, HasModuleAccess("reports")])
+def school_year_report(request):
+    """GET /api/reports/school-years/ - pass rate, score, EBI and flagged rate per school year.
+
+    Years come from ``submitted_at`` and the configured start month; only years
+    with completed sessions are listed. ``?department=`` narrows the data.
+    """
+    from features.reports.school_year import school_year_metrics
+
+    sessions = _session_queryset(request.user)
+    department_id = _int_param(request, "department")
+    if department_id:
+        sessions = sessions.filter(exam__department_id=department_id)
+    return Response(school_year_metrics(sessions))
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, HasModuleAccess("reports")])
+def school_year_detail(request, start_year: int):
+    """GET /api/reports/school-years/<start_year>/ - one year's metrics per exam and department."""
+    from features.reports.school_year import school_year_breakdown
+
+    return Response(school_year_breakdown(_session_queryset(request.user), start_year))
+
+
 # Download endpoints return raw HttpResponses; see IgnoreClientContentNegotiation.
-for _download_view in (export_sessions_csv, export_sessions_pdf, session_report_pdf):
+for _download_view in (
+    export_sessions_csv,
+    export_sessions_pdf,
+    session_report_pdf,
+    export_integrity_csv,
+    export_integrity_pdf,
+):
     _download_view.cls.content_negotiation_class = IgnoreClientContentNegotiation

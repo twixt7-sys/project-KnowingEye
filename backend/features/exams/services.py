@@ -296,21 +296,84 @@ def user_is_assigned_to_exam(exam: Exam, user) -> bool:
     ).exists()
 
 
+def _completed_sessions(exam: Exam):
+    """Finished attempts on ``exam`` (submitted, graded or awaiting review)."""
+    from features.session.models import ExamSession
+
+    return ExamSession.objects.filter(
+        exam=exam,
+        status__in=(
+            ExamSession.Status.COMPLETED,
+            ExamSession.Status.PENDING_REVIEW,
+        ),
+    )
+
+
+def user_excluded_for_completion(exam: Exam, user) -> bool:
+    """Whether ``user`` is shut out of ``exam`` because they already completed it.
+
+    Only applies when the examiner turned on ``exclude_completed_examinees``;
+    practice exams allow unlimited attempts so they are never excluded.
+    """
+    if not exam.exclude_completed_examinees or exam.is_practice:
+        return False
+    return _completed_sessions(exam).filter(user=user).exists()
+
+
+def completed_examinees(exam: Exam) -> list[dict[str, Any]]:
+    """Per-exam exclusion list: every examinee with a finished attempt.
+
+    One row per examinee, newest completion first. ``on_roster`` /
+    ``roster_status`` tell the examiner whether they still hold an assignment.
+    """
+    rows: dict[int, dict[str, Any]] = {}
+    sessions = (
+        _completed_sessions(exam)
+        .select_related("user")
+        .order_by("-submitted_at", "-started_at")
+    )
+    for session in sessions:
+        row = rows.get(session.user_id)
+        if row is None:
+            full_name = f"{session.user.first_name} {session.user.last_name}".strip()
+            rows[session.user_id] = row = {
+                "user_id": session.user_id,
+                "username": session.user.username,
+                "email": session.user.email,
+                "name": full_name or session.user.username,
+                "attempts_completed": 0,
+                "last_completed_at": session.submitted_at,
+                "last_score": (
+                    float(session.percentage_score)
+                    if session.percentage_score is not None
+                    else None
+                ),
+                "passed": session.passed,
+                "on_roster": False,
+                "roster_status": None,
+            }
+        row["attempts_completed"] += 1
+
+    assignments = {
+        a.user_id: a.status
+        for a in ExamAssignment.objects.filter(exam=exam, user_id__in=list(rows))
+    }
+    for user_id, row in rows.items():
+        if user_id in assignments:
+            row["on_roster"] = True
+            row["roster_status"] = assignments[user_id]
+    return list(rows.values())
+
+
 def attempts_remaining_for_user(exam: Exam, user) -> int | None:
     """Return remaining attempts (None = unlimited for practice exams)."""
     if exam.is_practice:
         return None
 
-    from features.session.models import ExamSession
+    if user_excluded_for_completion(exam, user):
+        return 0
 
-    completed = ExamSession.objects.filter(
-        exam=exam,
-        user=user,
-        status__in=(
-            ExamSession.Status.COMPLETED,
-            ExamSession.Status.PENDING_REVIEW,
-        ),
-    ).count()
+    completed = _completed_sessions(exam).filter(user=user).count()
 
     max_attempts = exam.max_attempts
     if exam.requires_assignment:
@@ -339,6 +402,11 @@ def assert_exam_available_for_user(exam: Exam, user) -> None:
 
     if exam.requires_assignment and not user_is_assigned_to_exam(exam, user):
         raise ValidationError({"exam": "You are not assigned to this exam."})
+
+    if user_excluded_for_completion(exam, user):
+        raise ValidationError(
+            {"exam": "You have already completed this exam and cannot take it again."}
+        )
 
     remaining = attempts_remaining_for_user(exam, user)
     if remaining is not None and remaining <= 0:
@@ -1343,6 +1411,7 @@ def import_assignments(exam: Exam, user, *, csv_text: str) -> dict[str, Any]:
     created = 0
     updated = 0
     errors: list[str] = []
+    skipped: list[str] = []
 
     for line_no, row in enumerate(reader, start=2):
         email = (row.get("email") or "").strip()
@@ -1361,6 +1430,10 @@ def import_assignments(exam: Exam, user, *, csv_text: str) -> dict[str, Any]:
             continue
         seat_label = (row.get("seat_label") or "").strip()[:32]
 
+        if user_excluded_for_completion(exam, candidate):
+            skipped.append(email)
+            continue
+
         _, was_created = ExamAssignment.objects.update_or_create(
             exam=exam,
             user=candidate,
@@ -1378,7 +1451,7 @@ def import_assignments(exam: Exam, user, *, csv_text: str) -> dict[str, Any]:
     if errors:
         raise ValidationError({"errors": errors})
 
-    return {"created": created, "updated": updated}
+    return {"created": created, "updated": updated, "skipped": skipped}
 
 
 def exam_item_analytics(exam: Exam) -> dict[str, Any]:
