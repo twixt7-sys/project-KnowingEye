@@ -183,6 +183,14 @@ class Exam(models.Model):
         default=False,
         help_text='When true, only assigned candidates may start this exam',
     )
+    exclude_completed_examinees = models.BooleanField(
+        default=False,
+        help_text=(
+            'When true, examinees who already completed this exam are excluded: '
+            'they cannot start it again regardless of max_attempts, and are skipped '
+            'when candidates are added to the roster'
+        ),
+    )
     results_release_at = models.DateTimeField(
         null=True,
         blank=True,

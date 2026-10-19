@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -383,6 +384,10 @@ class ExamViewSet(viewsets.ModelViewSet):
         serializer = ExamAssignmentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data.pop("user")
+        if services.user_excluded_for_completion(exam, user):
+            raise ValidationError(
+                {"email": "This examinee already completed the exam and is excluded."}
+            )
         assignment, created = ExamAssignment.objects.update_or_create(
             exam=exam,
             user=user,
@@ -391,6 +396,20 @@ class ExamViewSet(viewsets.ModelViewSet):
         return Response(
             ExamAssignmentSerializer(assignment).data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["get"], url_path="completed-examinees")
+    def completed_examinees(self, request, pk=None):
+        """Per-exam exclusion list: examinees who already completed this exam."""
+        exam = self.get_object()
+        services.assert_can_modify_exam(exam, request.user)
+        rows = services.completed_examinees(exam)
+        return Response(
+            {
+                "exclusion_enforced": exam.exclude_completed_examinees and not exam.is_practice,
+                "count": len(rows),
+                "results": rows,
+            }
         )
 
     @action(detail=True, methods=["get", "post"], url_path="sections")
