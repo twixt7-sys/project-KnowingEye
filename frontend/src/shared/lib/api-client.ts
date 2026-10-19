@@ -30,6 +30,7 @@ import type {
   SessionDepartmentAnalytics,
   SessionExamBehaviorIndex,
   SessionReportRow,
+  SessionSnapshotRow,
   SubmitSessionData,
   UserPermissions,
   UserStats,
@@ -745,6 +746,38 @@ class ApiClient {
       method: "POST",
       body: JSON.stringify(params),
     });
+  }
+
+  /** Evidence snapshots (warning frames, last frames before a termination), oldest first. */
+  async listSessionSnapshots(params: { session: string; kind?: "warning" | "termination" }) {
+    return this.listAll<SessionSnapshotRow>("/monitoring/snapshots/", params);
+  }
+
+  /**
+   * Fetch a snapshot JPEG with the caller's token and return it as a data URL
+   * (an <img> tag cannot send the bearer token, and a data URL, unlike an
+   * object URL, needs no cleanup when several views share the same image).
+   */
+  async getSnapshotImageSrc(snapshotId: string, retry = true): Promise<string> {
+    const headers: Record<string, string> = { Accept: "image/jpeg" };
+    if (tokenStore.access) {
+      headers.Authorization = `Bearer ${tokenStore.access}`;
+    }
+    const res = await fetch(`${this.baseURL}/monitoring/snapshots/${snapshotId}/image/`, {
+      headers,
+    });
+    if (res.status === 401 && retry && tokenStore.refresh && (await this.refresh())) {
+      return this.getSnapshotImageSrc(snapshotId, false);
+    }
+    if (!res.ok) {
+      throw new ApiError(res.status, await res.text());
+    }
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    return `data:image/jpeg;base64,${btoa(binary)}`;
   }
 
   async getReportSummary() {

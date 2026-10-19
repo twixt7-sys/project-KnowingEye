@@ -109,7 +109,7 @@ def receive_frame(request):
         # while the exam is paused (persist_analysis also records nothing).
         analysis = {**analysis, "alerts": []}
 
-    persisted = persist_analysis(session, analysis)
+    persisted = persist_analysis(session, analysis, evidence_frame=frame)
     broadcast_frame_result(session, request.user, frame, analysis)
 
     return Response(

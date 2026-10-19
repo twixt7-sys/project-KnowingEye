@@ -208,9 +208,11 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
             logger.exception("monitoring post-frame work failed session=%s", self.session_id)
 
     async def _after_frame(self, frame, analysis: dict[str, Any]) -> None:
+        from features.session.models import ExamSession
+
         now = time.monotonic()
         flush_ebi = now - self._last_ebi_flush >= _EBI_FLUSH_INTERVAL_S
-        await self._persist(analysis, save_metrics=flush_ebi)
+        await self._persist(frame, analysis, save_metrics=flush_ebi)
         if flush_ebi:
             self._last_ebi_flush = now
         self._ebi_dirty = not flush_ebi
@@ -228,7 +230,12 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         snapshot = None
         if now - self._last_snapshot >= _SNAPSHOT_INTERVAL_S:
             self._last_snapshot = now
-            snapshot = await sync_to_async(self._encode_snapshot, thread_sensitive=False)(frame)
+            snapshot = await sync_to_async(self._encode_snapshot, thread_sensitive=False)(
+                frame,
+                str(self.session_id),
+                analysis,
+                self._session.status != ExamSession.Status.PAUSED,
+            )
         if snapshot:
             await self.channel_layer.group_send(
                 self._group_name,
@@ -293,7 +300,17 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         # Judge by the refreshed row, not the event: a terminate is final, and
         # nothing more is coming for this socket.
         if self._session.status == ExamSession.Status.TERMINATED:
+            await self._keep_termination_evidence()
             await self.close(code=CLOSE_SESSION_TERMINATED)
+
+    async def _keep_termination_evidence(self) -> None:
+        """Save this socket's buffered frames when the terminate request ran elsewhere."""
+        from features.monitoring.evidence import save_termination_snapshots
+
+        try:
+            await database_sync_to_async(save_termination_snapshots)(self._session)
+        except Exception:  # noqa: BLE001 - the terminate itself already succeeded
+            logger.exception("termination evidence failed session=%s", self.session_id)
 
     async def _close_inactive(self) -> None:
         """The session is over without a push having told us: say how, then end the socket.
@@ -308,6 +325,7 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         event = await database_sync_to_async(session_state_event)(self._session)
         await self.send_json(_session_state_message(event))
         if self._session.status == ExamSession.Status.TERMINATED:
+            await self._keep_termination_evidence()
             await self.close(code=CLOSE_SESSION_TERMINATED)
             return
         await self.send_json({"type": "error", "message": "session expired"})
@@ -332,10 +350,12 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
         return ensure_active_session(self._session)
 
     @database_sync_to_async
-    def _persist(self, analysis: dict[str, Any], *, save_metrics: bool) -> dict[str, int]:
+    def _persist(self, frame, analysis: dict[str, Any], *, save_metrics: bool) -> dict[str, int]:
         from features.behavior.services import persist_analysis
 
-        return persist_analysis(self._session, analysis, save_metrics=save_metrics)
+        return persist_analysis(
+            self._session, analysis, save_metrics=save_metrics, evidence_frame=frame
+        )
 
     @database_sync_to_async
     def _flush_ebi(self) -> None:
@@ -348,9 +368,13 @@ class MonitoringConsumer(AsyncJsonWebsocketConsumer):
             logger.exception("EBI flush failed for session %s", self.session_id)
 
     @staticmethod
-    def _encode_snapshot(frame) -> str | None:
+    def _encode_snapshot(frame, session_id, analysis, keep_evidence: bool) -> str | None:
+        """Observer thumbnail, plus the session's evidence ring (not while paused)."""
         from ai.frame_utils import encode_jpeg_snapshot
+        from features.monitoring.evidence import remember_frame
 
+        if keep_evidence:
+            remember_frame(session_id, frame, analysis)
         return encode_jpeg_snapshot(frame)
 
     @staticmethod

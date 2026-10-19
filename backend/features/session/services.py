@@ -430,12 +430,17 @@ def terminate_session(
         )
 
     session.refresh_from_db()
-    SessionLog.objects.create(
+    log = SessionLog.objects.create(
         session=session,
         event_type=SessionLog.EventType.TERMINATED,
         ip_address=ip_address,
         details={"terminated_by": getattr(terminated_by, "username", None)},
     )
+    # Keep the last frames as evidence before the examinee's socket is told (and
+    # closed); when the frames live in another process its consumer saves them.
+    from features.monitoring.evidence import save_termination_snapshots
+
+    save_termination_snapshots(session, session_log=log)
     broadcast_session_state(session)
     return session
 

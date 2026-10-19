@@ -58,6 +58,16 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
             return ExamSession.objects.all()
         return ExamSession.objects.filter(user=self.request.user)
 
+    def destroy(self, request, *args, **kwargs):
+        """Deleting a session cascades to its alerts, logs and snapshots (the proctoring
+        evidence), so an examinee must not be able to do it to their own attempt."""
+        if not security.has_module(request.user, "sessions"):
+            return APIResponse(
+                {'error': 'You do not have permission to delete sessions.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().destroy(request, *args, **kwargs)
+
     def get_serializer_class(self):
         """Return appropriate serializer."""
         if self.action == 'start':
