@@ -56,7 +56,7 @@ export function ExamCard({ group }: { group: ExamGroup }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate font-serif text-lg font-semibold tracking-tight">
+          <h3 className="line-clamp-2 font-serif text-lg font-semibold leading-snug tracking-tight">
             {group.title}
           </h3>
           <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">

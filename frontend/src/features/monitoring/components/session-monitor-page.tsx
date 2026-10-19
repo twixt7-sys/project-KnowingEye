@@ -20,6 +20,7 @@ import { monitoringQueries } from "@/features/monitoring/queries/queries";
 import { monitoringKeys } from "@/features/monitoring/queries/keys";
 import { useConfirm } from "@/shared/components/common/confirm-dialog";
 import { Button } from "@/shared/components/ui/button";
+import { examMonitoringPath } from "@/features/monitoring/components/exam-overview";
 import { groupAlerts } from "@/shared/lib/alert-grouping";
 
 const METRICS = [
@@ -66,6 +67,10 @@ export function SessionMonitorPage() {
     status: sessionStatus,
     onChanged: refreshHistory,
   });
+
+  // Back to the exam this candidate is sitting, not the all-exams overview.
+  const examId = reportQuery.data?.session?.exam?.id;
+  const backTo = examId ? examMonitoringPath(examId) : "/monitoring";
 
   const metrics = observer.analysis?.metrics;
   const liveEbi =
@@ -139,7 +144,7 @@ export function SessionMonitorPage() {
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <Link
-          to="/monitoring"
+          to={backTo}
           className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> Back to monitoring
