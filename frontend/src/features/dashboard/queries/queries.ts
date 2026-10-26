@@ -10,6 +10,9 @@ import {
 } from "@/features/dashboard/api/dashboard-api";
 import { dashboardKeys } from "@/features/dashboard/queries/keys";
 
+/** How often the examinee's exam list re-checks for newly published or newly opened exams. */
+export const STUDENT_EXAMS_POLL_MS = 30_000;
+
 export const dashboardQueries = {
   examiner: () => ({
     queryKey: dashboardKeys.examiner(),
@@ -34,10 +37,19 @@ export const dashboardQueries = {
     queryKey: dashboardKeys.examinerExams(),
     queryFn: () => apiClient.getExams(),
   }),
-  /** Exams the examinee can take. The endpoint is unpaginated, so the table pages client-side. */
+  /**
+   * Exams the examinee can take. The endpoint is unpaginated, so the table pages client-side.
+   *
+   * The server only lists an exam once it is published and its window has opened, and the
+   * builder requires the window to open in the future - so a new exam always becomes
+   * available *after* this page loaded. Poll, and refetch when the tab regains focus (off
+   * app-wide), so it shows up without a manual reload.
+   */
   studentExams: () => ({
     queryKey: dashboardKeys.studentExams(),
     queryFn: fetchMyExams,
+    refetchInterval: STUDENT_EXAMS_POLL_MS,
+    refetchOnWindowFocus: true,
   }),
   /** One page of the examinee's completed attempts; search/sort/filter/page run on the server. */
   studentSessions: (params: CompletedSessionParams) => ({
