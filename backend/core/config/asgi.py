@@ -2,7 +2,8 @@
 ASGI entrypoint for Knowing Eye.
 
 Routes HTTP requests through Django and WebSocket requests through Channels,
-with JWT-aware authentication for monitoring streams.
+with JWT-aware authentication for monitoring streams and live data-change
+notifications.
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ django_asgi_app = get_asgi_application()
 # Imported *after* Django is configured so that apps + models are loadable.
 from channels.routing import ProtocolTypeRouter, URLRouter  # noqa: E402
 
+from core.realtime.routing import websocket_urlpatterns as data_ws_urlpatterns  # noqa: E402
 from features.monitoring.routing import websocket_urlpatterns  # noqa: E402
 from features.monitoring.middleware import (  # noqa: E402
     JWTAuthMiddlewareStack,
@@ -29,7 +31,7 @@ application = ProtocolTypeRouter(
     {
         "http": django_asgi_app,
         "websocket": WebsocketOriginValidator(
-            JWTAuthMiddlewareStack(URLRouter(websocket_urlpatterns))
+            JWTAuthMiddlewareStack(URLRouter(data_ws_urlpatterns + websocket_urlpatterns))
         ),
     }
 )

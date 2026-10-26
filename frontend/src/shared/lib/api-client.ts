@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/core/config/env";
 import { ApiError } from "@/shared/lib/api-error";
+import { changesForRequest, publishDataChanges } from "@/shared/lib/data-changes";
 import {
   ATTACHMENT_IMAGE_COMPRESSION,
   AVATAR_COMPRESSION,
@@ -143,6 +144,8 @@ class ApiClient {
       }
       throw new ApiError(res.status, body);
     }
+
+    publishDataChanges(changesForRequest(options.method ?? "GET", endpoint, options.body), "local");
 
     const raw = await res.text();
     if (!raw) {

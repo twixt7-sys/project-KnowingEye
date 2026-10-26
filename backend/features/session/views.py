@@ -24,6 +24,7 @@ from .serializers import (
     SessionLogSerializer,
     SessionPauseSerializer,
 )
+from .signals import session_changed
 from .submission import submit_session_with_responses, upsert_response
 from .services import (
     begin_exam_session,
@@ -545,6 +546,8 @@ class ResponseViewSet(viewsets.ReadOnlyModelViewSet):
             instance.flagged_for_review = False
             instance.save(update_fields=['is_correct', 'flagged_for_review'])
             finalize_grading_if_complete(instance.session, send_email=send_email)
+        # The grading queue and results move even before the attempt is final.
+        session_changed(instance.session)
 
         return APIResponse(ResponseSerializer(instance).data, status=status.HTTP_200_OK)
 

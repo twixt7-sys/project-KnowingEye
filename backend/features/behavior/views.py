@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from core.realtime.events import STAFF_GROUP, Topic, notify
 from core.security import service as security
 from features.behavior.models import Alert, BehaviorLog
 from features.behavior.serializers import AlertSerializer, BehaviorLogSerializer
@@ -66,4 +67,7 @@ class AlertViewSet(viewsets.ModelViewSet):
         if alert_type:
             qs = qs.filter(alert_type=alert_type)
         updated = qs.update(resolved=True)
+        if updated:
+            # A queryset update sends no post_save, so announce the change here.
+            notify(Topic.ALERTS, audience=STAFF_GROUP)
         return Response({"updated": updated})

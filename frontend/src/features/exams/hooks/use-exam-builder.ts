@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router";
 
@@ -132,10 +132,18 @@ export function useExamBuilder(examId: number) {
 
   const error = actionError ?? (exam ? null : loadError);
 
+  // The exam is refetched whenever anything about it changes - a question
+  // saved, an examinee starting an attempt, another author's edit. Reset the
+  // form only when the saved settings themselves differ, so a refetch that
+  // touched nothing on this form never throws away what the author is typing.
+  const appliedFormRef = useRef<string | null>(null);
   useEffect(() => {
-    if (exam) {
-      setForm(examToForm(exam));
-    }
+    if (!exam) return;
+    const next = examToForm(exam);
+    const key = JSON.stringify(next);
+    if (key === appliedFormRef.current) return;
+    appliedFormRef.current = key;
+    setForm(next);
   }, [exam]);
 
   const invalidateBuilder = useCallback(async () => {
