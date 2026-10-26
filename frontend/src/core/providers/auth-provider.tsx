@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import {
   type ReactNode,
   createContext,
@@ -5,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { toast } from "sonner";
@@ -76,22 +78,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [access, setAccess] = useState<AccessMap>(EMPTY_ACCESS);
   const [isLoading, setIsLoading] = useState(true);
 
+  // The QueryClient outlives sign-ins, so every cached query (exam lists,
+  // sessions, reports) belongs to whoever was signed in when it was fetched.
+  // Drop the whole cache *before* the identity changes so the next render -
+  // and the next user - never reads the previous user's data.
+  const queryClient = useQueryClient();
+  const signedInId = useRef<User["id"] | null>(null);
+  const setSignedInUser = useCallback(
+    (next: User | null) => {
+      const nextId = next?.id ?? null;
+      if (nextId !== signedInId.current) {
+        signedInId.current = nextId;
+        queryClient.clear();
+      }
+      setUserState(next);
+    },
+    [queryClient],
+  );
+
   const refresh = useCallback(async () => {
     if (!tokenStore.access) {
-      setUserState(null);
+      setSignedInUser(null);
       setAccess(EMPTY_ACCESS);
       return;
     }
     try {
       const [profile, accessMap] = await Promise.all([apiClient.getProfile(), fetchAccess()]);
-      setUserState(decorate(profile));
+      setSignedInUser(decorate(profile));
       setAccess(accessMap);
     } catch {
       tokenStore.clear();
-      setUserState(null);
+      setSignedInUser(null);
       setAccess(EMPTY_ACCESS);
     }
-  }, []);
+  }, [setSignedInUser]);
 
   useEffect(() => {
     refresh().finally(() => setIsLoading(false));
@@ -103,13 +123,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiClient.login({ username, password });
       const [profile, accessMap] = await Promise.all([apiClient.getProfile(), fetchAccess()]);
       const decorated = decorate(profile);
-      setUserState(decorated);
+      setSignedInUser(decorated);
       setAccess(accessMap);
       return decorated;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [setSignedInUser]);
 
   const register = useCallback(
     async (userData: {
@@ -144,11 +164,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     tokenStore.clear();
-    setUserState(null);
+    setSignedInUser(null);
     setAccess(EMPTY_ACCESS);
-  }, []);
+  }, [setSignedInUser]);
 
-  const setUser = useCallback((u: User | null) => setUserState(u), []);
+  const setUser = useCallback((u: User | null) => setSignedInUser(u), [setSignedInUser]);
 
   const modules = useMemo(() => new Set(access.modules), [access]);
   const permissions = useMemo(() => new Set(access.permissions), [access]);
