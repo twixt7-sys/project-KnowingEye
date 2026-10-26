@@ -8,6 +8,8 @@ from .views import (
     UserListViewSet,
     UserProfileViewSet,
     access_map,
+    role_permissions,
+    role_permissions_detail,
 )
 
 
@@ -22,6 +24,8 @@ urlpatterns = [
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("token/verify/", TokenVerifyView.as_view(), name="token_verify"),
     path("access-map/", access_map, name="access_map"),
+    path("roles/permissions/", role_permissions, name="role_permissions"),
+    path("roles/<str:role>/permissions/", role_permissions_detail, name="role_permissions_detail"),
 
     path("", include(router.urls)),
 ]

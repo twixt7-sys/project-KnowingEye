@@ -3,6 +3,8 @@ import {
   type Department,
   type ProfileUser,
   type Role,
+  type RoleAccessConfig,
+  type RolePermissionsMatrix,
   type UserPermissions,
   type UserStats,
   apiClient,
@@ -64,10 +66,30 @@ export function updateUserPermissions(
   id: number,
   body: {
     modules?: Record<string, "grant" | "deny" | null>;
-    actions?: Record<string, boolean>;
+    actions?: Record<string, boolean | null>;
   },
 ) {
   return apiClient.setUserPermissions(id, body);
 }
 
-export type { AccessMap, Department, ProfileUser, Role, UserPermissions, UserStats };
+export function fetchRolePermissions() {
+  return apiClient.getRolePermissions();
+}
+
+export function updateRolePermissions(
+  role: Role,
+  body: { modules?: Record<string, boolean>; actions?: Record<string, boolean> } | { reset: true },
+) {
+  return apiClient.setRolePermissions(role, body);
+}
+
+export type {
+  AccessMap,
+  Department,
+  ProfileUser,
+  Role,
+  RoleAccessConfig,
+  RolePermissionsMatrix,
+  UserPermissions,
+  UserStats,
+};
