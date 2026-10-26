@@ -15,7 +15,8 @@ interface BuilderSettingsTabProps {
   exam: Exam;
   form: ExamForm;
   setForm: React.Dispatch<React.SetStateAction<ExamForm | null>>;
-  isDraft: boolean;
+  /** False while the exam is published, in progress or archived (see `exam.edit_lock`). */
+  editable: boolean;
   saving: boolean;
   onSave: () => void;
 }
@@ -31,7 +32,7 @@ export function BuilderSettingsTab({
   exam,
   form,
   setForm,
-  isDraft,
+  editable,
   saving,
   onSave,
 }: BuilderSettingsTabProps) {
@@ -57,7 +58,7 @@ export function BuilderSettingsTab({
             value={form.title}
             onChange={(e) => update({ title: e.target.value })}
             className="field-input"
-            disabled={!isDraft}
+            disabled={!editable}
           />
         </BuilderField>
         <BuilderField label="Home department">
@@ -93,7 +94,7 @@ export function BuilderSettingsTab({
             value={form.category_id ?? ""}
             onChange={(e) => update({ category_id: e.target.value ? Number(e.target.value) : null })}
             className="field-input"
-            disabled={!isDraft}
+            disabled={!editable}
           >
             <option value="">No category</option>
             {categories.map((c) => (
@@ -110,7 +111,7 @@ export function BuilderSettingsTab({
           value={form.department_ids}
           onChange={(department_ids) => update({ department_ids })}
           lockedId={exam.department?.id ?? null}
-          disabled={!isDraft}
+          disabled={!editable}
         />
         <p className="mt-1 text-xs text-muted-foreground">
           The home department above is always included. Add more for shared or general-education
@@ -123,7 +124,7 @@ export function BuilderSettingsTab({
           value={form.description}
           onChange={(e) => update({ description: e.target.value })}
           className="field-input"
-          disabled={!isDraft}
+          disabled={!editable}
         />
       </BuilderField>
       <BuilderField label="Instructions shown to examinees before start">
@@ -137,56 +138,56 @@ export function BuilderSettingsTab({
               : "Read each question carefully, manage your time, no external resources…"
           }
           className="field-input"
-          disabled={!isDraft}
+          disabled={!editable}
         />
       </BuilderField>
       <div className="space-y-3">
         <CheckboxSetting
           checked={form.monitoring_enabled}
           onCheckedChange={(checked) => update({ monitoring_enabled: checked === true })}
-          disabled={!isDraft}
+          disabled={!editable}
           title="Camera monitoring"
           description="When enabled, examinees complete proctoring setup and their webcam stays active during the exam. Disable for practice quizzes or environments where monitoring is not required."
         />
         <CheckboxSetting
           checked={form.shuffle_questions}
           onCheckedChange={(checked) => update({ shuffle_questions: checked === true })}
-          disabled={!isDraft}
+          disabled={!editable}
           title="Shuffle questions"
           description="Present questions in a random order for each examinee. The order stays fixed for the duration of their attempt."
         />
         <CheckboxSetting
           checked={form.shuffle_options}
           onCheckedChange={(checked) => update({ shuffle_options: checked === true })}
-          disabled={!isDraft}
+          disabled={!editable}
           title="Shuffle answer options"
           description="Randomize multiple-choice option order per attempt."
         />
         <CheckboxSetting
           checked={form.disable_copy_paste}
           onCheckedChange={(checked) => update({ disable_copy_paste: checked === true })}
-          disabled={!isDraft}
+          disabled={!editable}
           title="Disable copy and paste"
           description="Block copy, cut, and paste while examinees take the exam, including inside answer fields, so answers must be typed."
         />
         <CheckboxSetting
           checked={form.requires_assignment}
           onCheckedChange={(checked) => update({ requires_assignment: checked === true })}
-          disabled={!isDraft}
+          disabled={!editable}
           title="Assigned candidates only"
           description="Only rostered examinees can see and start this exam."
         />
         <CheckboxSetting
           checked={form.exclude_completed_examinees}
           onCheckedChange={(checked) => update({ exclude_completed_examinees: checked === true })}
-          disabled={!isDraft || form.is_practice}
+          disabled={!editable || form.is_practice}
           title="Exclude examinees who already completed this exam"
           description="Anyone with a finished attempt cannot start it again, even if attempts remain, and is skipped when adding candidates. Not applied to practice exams."
         />
         <CheckboxSetting
           checked={form.is_practice}
           onCheckedChange={(checked) => update({ is_practice: checked === true })}
-          disabled={!isDraft}
+          disabled={!editable}
           title="Practice exam"
           description="Unlimited attempts; use for dry runs before the real admission exam."
         />
@@ -199,7 +200,7 @@ export function BuilderSettingsTab({
             value={form.duration_minutes}
             onChange={(e) => update({ duration_minutes: Number(e.target.value) })}
             className="field-input"
-            disabled={!isDraft}
+            disabled={!editable}
           />
         </BuilderField>
         <BuilderField label="Passing score (%)">
@@ -210,7 +211,7 @@ export function BuilderSettingsTab({
             value={form.passing_score}
             onChange={(e) => update({ passing_score: Number(e.target.value) })}
             className="field-input"
-            disabled={!isDraft}
+            disabled={!editable}
           />
         </BuilderField>
         <BuilderField label="Max attempts per examinee">
@@ -220,7 +221,7 @@ export function BuilderSettingsTab({
             value={form.max_attempts}
             onChange={(e) => update({ max_attempts: Number(e.target.value) })}
             className="field-input"
-            disabled={!isDraft}
+            disabled={!editable}
           />
         </BuilderField>
       </div>
@@ -232,7 +233,7 @@ export function BuilderSettingsTab({
             onChange={(e) => update({ available_from: e.target.value })}
             min={toDatetimeLocal(new Date().toISOString())}
             className="field-input"
-            disabled={!isDraft}
+            disabled={!editable}
             required
           />
         </BuilderField>
@@ -243,7 +244,7 @@ export function BuilderSettingsTab({
             onChange={(e) => update({ available_until: e.target.value })}
             min={form.available_from || undefined}
             className="field-input"
-            disabled={!isDraft}
+            disabled={!editable}
             required
           />
         </BuilderField>
@@ -256,7 +257,7 @@ export function BuilderSettingsTab({
               update({ presentation_mode: e.target.value as ExamForm["presentation_mode"] })
             }
             className="field-input"
-            disabled={!isDraft}
+            disabled={!editable}
           >
             <option value="one_per_page">One question per page</option>
             <option value="section_per_page">One section per page</option>
@@ -269,11 +270,11 @@ export function BuilderSettingsTab({
             value={form.results_release_at}
             onChange={(e) => update({ results_release_at: e.target.value })}
             className="field-input"
-            disabled={!isDraft}
+            disabled={!editable}
           />
         </BuilderField>
       </div>
-      {isDraft ? (
+      {editable ? (
         <button
           type="button"
           onClick={onSave}
@@ -285,8 +286,8 @@ export function BuilderSettingsTab({
         </button>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Only draft exams can be edited here. Unpublish a published exam that no one has attempted
-          yet, or archive and duplicate it to create a new cycle.
+          {exam.edit_lock_message ??
+            "Only draft exams can be edited here. Unpublish this exam to edit it."}
         </p>
       )}
     </div>

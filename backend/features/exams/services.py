@@ -161,65 +161,115 @@ def exam_has_active_session(exam: Exam) -> bool:
     ).exists()
 
 
+def exam_scheduled_start_reached(exam: Exam) -> bool:
+    """Whether a published exam's window is open right now, by server time.
+
+    A published exam with no ``available_from`` is open immediately. Once
+    ``available_until`` passes the exam has ended rather than started, so
+    this turns false again.
+    """
+    if exam.status != Exam.Status.ACTIVE:
+        return False
+    now = timezone.now()
+    if exam.available_from and now < exam.available_from:
+        return False
+    if exam.available_until and now > exam.available_until:
+        return False
+    return True
+
+
+def exam_is_ongoing(exam: Exam) -> bool:
+    """Whether the exam is in progress: its window has opened, or someone is taking it.
+
+    While an exam is ongoing only its candidate roster may change; questions,
+    content and settings are frozen for the examinees taking it (Bug 4).
+    """
+    return exam_scheduled_start_reached(exam) or exam_has_active_session(exam)
+
+
+# Why an exam's questions, content and settings can't be edited right now.
+# The codes are part of the API (``ExamDetailSerializer.edit_lock``), so the
+# builder can show the matching notice and offer the right way out.
+EDIT_LOCK_ONGOING = "ongoing"
+EDIT_LOCK_PUBLISHED = "published"
+EDIT_LOCK_ARCHIVED = "archived"
+
+EDIT_LOCK_MESSAGES = {
+    EDIT_LOCK_ONGOING: (
+        "Exam in progress: only candidates can be edited. Questions, content and "
+        "settings are locked while examinees may be taking it."
+    ),
+    EDIT_LOCK_PUBLISHED: (
+        "This exam is published. Unpublish this exam to edit it, then publish it "
+        "again when your changes are ready."
+    ),
+    EDIT_LOCK_ARCHIVED: "This exam is archived. Unarchive it before making changes.",
+}
+
+
+def exam_edit_lock(exam: Exam) -> str | None:
+    """Return why ``exam`` can't be edited (an ``EDIT_LOCK_*`` code), or ``None``.
+
+    Only a draft with no live session is editable. "Ongoing" wins over
+    "published": a published exam whose window has opened can't simply be
+    unpublished (see :func:`unpublish_exam`), so its message must not
+    suggest that.
+    """
+    if exam_is_ongoing(exam):
+        return EDIT_LOCK_ONGOING
+    if exam.status == Exam.Status.ACTIVE:
+        return EDIT_LOCK_PUBLISHED
+    if exam.status == Exam.Status.ARCHIVED:
+        return EDIT_LOCK_ARCHIVED
+    return None
+
+
 def assert_exam_editable(exam: Exam) -> None:
-    """Ensure structural edits are only allowed on draft exams with no live session.
+    """Ensure the exam's questions, content and settings may be edited.
+
+    This guards every write path except the candidate roster: exam settings
+    and schedule, questions, sections, pools, attachments, option images,
+    reorder and bulk import, plus publish and submit-for-review.
 
     Raises:
-        ValidationError: If the exam is published/archived, or an examinee
-            currently has an in-progress attempt on it.
+        ValidationError: If the exam is ongoing, published or archived.
     """
-    if exam.status != Exam.Status.DRAFT:
-        raise ValidationError(
-            {
-                "status": (
-                    f"Cannot modify exam while status is '{exam.status}'. "
-                    "Only draft exams can be edited."
-                )
-            }
-        )
-    if exam_has_active_session(exam):
-        raise ValidationError(
-            {
-                "status": (
-                    "Cannot modify this exam - an examinee currently has it in "
-                    "progress. Wait for active sessions to finish."
-                )
-            }
-        )
+    lock = exam_edit_lock(exam)
+    if lock is not None:
+        raise ValidationError({"status": EDIT_LOCK_MESSAGES[lock]})
 
 
 def assert_questions_editable(exam: Exam) -> None:
     """Ensure question content (questions, sections, pools, attachments) can be edited.
 
-    Drafts follow :func:`assert_exam_editable`. A published exam stays open
-    for question fixes until the first examinee starts it: from then on
-    responses (and their scores) point at those questions, so they're frozen.
-
-    Raises:
-        ValidationError: If the exam is archived, a draft with a live session,
-            or published and already attempted by an examinee.
+    Same rule as :func:`assert_exam_editable`: a published exam must be
+    unpublished first, and nothing but candidates changes while it's ongoing.
     """
-    if exam.status != Exam.Status.ACTIVE:
-        assert_exam_editable(exam)
-        return
-    if exam.sessions.exists():
-        raise ValidationError(
-            {
-                "status": (
-                    "Questions are locked - examinees have already started this "
-                    "exam. Archive and duplicate it to make changes."
-                )
-            }
-        )
+    assert_exam_editable(exam)
 
 
 def questions_editable(exam: Exam) -> bool:
     """Non-raising form of :func:`assert_questions_editable`, for the builder UI."""
-    try:
-        assert_questions_editable(exam)
-    except ValidationError:
-        return False
-    return True
+    return exam_edit_lock(exam) is None
+
+
+def unpublish_block_reason(exam: Exam) -> str | None:
+    """Why a published exam can't be unpublished right now, or ``None`` if it can.
+
+    Not meaningful for drafts and archived exams, which aren't published.
+    """
+    if exam_is_ongoing(exam):
+        return (
+            "Cannot unpublish - this exam is in progress (its scheduled start time "
+            "has passed or an examinee is taking it). Only candidates can be edited "
+            "while it is ongoing."
+        )
+    if exam.sessions.exists():
+        return (
+            "Cannot unpublish - examinees have already started this exam. Archive "
+            "and duplicate it to make changes."
+        )
+    return None
 
 
 def exam_schedule_state(exam: Exam) -> str | None:
@@ -507,6 +557,8 @@ def publish_exam(exam: Exam, user) -> ExamLifecycleResult:
             fails readiness checks.
     """
     assert_can_modify_exam(exam, user)
+    if exam.status == Exam.Status.ACTIVE:
+        raise ValidationError({"status": "This exam is already published."})
     assert_exam_editable(exam)
 
     if not (user.is_admin() or getattr(user, "is_superuser", False)):
@@ -530,12 +582,16 @@ def publish_exam(exam: Exam, user) -> ExamLifecycleResult:
 
 
 def unpublish_exam(exam: Exam, user) -> ExamLifecycleResult:
-    """Return a published exam to draft, if no examinee has attempted it yet.
+    """Return a published exam to draft so it can be edited (Bug 5).
 
-    Once any session exists, responses and scores point at the questions, so
-    the exam can't safely become editable again - the only option from there
-    is to archive and duplicate (same invariant as
-    :func:`assert_questions_editable`). The approval chain is reset so edits
+    Refused once the exam is ongoing - its scheduled start time has arrived
+    (by server time) or an examinee is mid-attempt. Pulling it then would
+    hide it from examinees already waiting at the start screen, and
+    unpublish -> edit -> republish would undo the in-progress lock (Bug 4).
+    Also refused once any session exists, since responses and scores point at
+    the questions; the only option from there is to archive and duplicate.
+    An exam whose window ended without a single attempt can still be
+    unpublished, e.g. to reschedule it. The approval chain is reset so edits
     made while the exam is a draft are reviewed again before a non-admin
     can republish.
 
@@ -548,7 +604,8 @@ def unpublish_exam(exam: Exam, user) -> ExamLifecycleResult:
 
     Raises:
         PermissionDenied: If the user cannot modify the exam.
-        ValidationError: If the exam is not published, or has been attempted.
+        ValidationError: If the exam is not published, is ongoing, or has
+            been attempted.
     """
     assert_can_modify_exam(exam, user)
 
@@ -559,15 +616,9 @@ def unpublish_exam(exam: Exam, user) -> ExamLifecycleResult:
 
         if locked.status != Exam.Status.ACTIVE:
             raise ValidationError({"status": "Only a published exam can be unpublished."})
-        if locked.sessions.exists():
-            raise ValidationError(
-                {
-                    "status": (
-                        "Cannot unpublish - examinees have already started this "
-                        "exam. Archive and duplicate it to make changes."
-                    )
-                }
-            )
+        reason = unpublish_block_reason(locked)
+        if reason:
+            raise ValidationError({"status": reason})
 
         locked.status = Exam.Status.DRAFT
         locked.approval_status = Exam.ApprovalStatus.NOT_SUBMITTED
@@ -585,7 +636,13 @@ def unpublish_exam(exam: Exam, user) -> ExamLifecycleResult:
             ]
         )
         _record_approval_event(locked, user, "unpublish")
-    return ExamLifecycleResult(exam=locked, message="Exam unpublished and returned to draft.")
+    return ExamLifecycleResult(
+        exam=locked,
+        message=(
+            "Exam unpublished and returned to draft. Make your changes, then publish it "
+            "again when it's ready."
+        ),
+    )
 
 
 def _record_approval_event(exam: Exam, actor, action: str, note: str = "") -> None:
@@ -756,9 +813,17 @@ def delete_exam(exam: Exam, user) -> None:
 
     Raises:
         PermissionDenied: If the user cannot delete the exam.
-        ValidationError: If the exam has exam sessions (attempts) on record.
+        ValidationError: If the exam is published or ongoing, or has exam
+            sessions (attempts) on record.
     """
     assert_can_delete_exam(exam, user)
+    lock = exam_edit_lock(exam)
+    if lock == EDIT_LOCK_ONGOING:
+        raise ValidationError({"status": "Cannot delete an exam that is in progress."})
+    if lock == EDIT_LOCK_PUBLISHED:
+        raise ValidationError(
+            {"status": "Cannot delete a published exam. Unpublish or archive it first."}
+        )
     try:
         exam.delete()
     except ProtectedError:
@@ -830,16 +895,11 @@ def delete_question(question: Question, user) -> None:
 
     Raises:
         PermissionDenied: If the user cannot modify the parent exam.
-        ValidationError: If questions are locked, or this is the last
-            question of a published exam.
+        ValidationError: If questions are locked.
     """
     assert_can_modify_exam(question.exam, user)
     assert_questions_editable(question.exam)
     exam = question.exam
-    if exam.status == Exam.Status.ACTIVE and exam.questions.count() <= 1:
-        raise ValidationError(
-            {"detail": "A published exam needs at least one question. Add another before deleting this one."}
-        )
     question.delete()
     exam.update_question_count()
 

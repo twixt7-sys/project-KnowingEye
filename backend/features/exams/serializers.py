@@ -486,6 +486,9 @@ class ExamDetailSerializer(serializers.ModelSerializer):
     publish_readiness = serializers.SerializerMethodField()
     schedule_state = serializers.SerializerMethodField()
     questions_editable = serializers.SerializerMethodField()
+    edit_lock = serializers.SerializerMethodField()
+    edit_lock_message = serializers.SerializerMethodField()
+    can_unpublish = serializers.SerializerMethodField()
     department = DepartmentSummarySerializer(read_only=True)
     departments = DepartmentSummarySerializer(many=True, read_only=True)
     category = ExamCategorySummarySerializer(read_only=True)
@@ -537,6 +540,9 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "publish_readiness",
             "schedule_state",
             "questions_editable",
+            "edit_lock",
+            "edit_lock_message",
+            "can_unpublish",
             "created_at",
             "updated_at",
         ]
@@ -550,6 +556,9 @@ class ExamDetailSerializer(serializers.ModelSerializer):
             "publish_readiness",
             "schedule_state",
             "questions_editable",
+            "edit_lock",
+            "edit_lock_message",
+            "can_unpublish",
             "approval_status",
             "submitted_by",
             "submitted_by_name",
@@ -575,6 +584,23 @@ class ExamDetailSerializer(serializers.ModelSerializer):
         from . import services
 
         return services.questions_editable(obj)
+
+    def get_edit_lock(self, obj):
+        """Why questions/content/settings are locked: ongoing, published, archived, or null."""
+        from . import services
+
+        return services.exam_edit_lock(obj)
+
+    def get_edit_lock_message(self, obj):
+        from . import services
+
+        lock = services.exam_edit_lock(obj)
+        return services.EDIT_LOCK_MESSAGES[lock] if lock else None
+
+    def get_can_unpublish(self, obj):
+        from . import services
+
+        return obj.status == Exam.Status.ACTIVE and services.unpublish_block_reason(obj) is None
 
 
 class ExamCreateUpdateSerializer(serializers.ModelSerializer):
