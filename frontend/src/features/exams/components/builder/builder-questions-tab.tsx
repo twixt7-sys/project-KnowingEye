@@ -3,7 +3,7 @@ import { Link } from "react-router";
 
 import { PlayCircle, Plus, Trash2 } from "@/shared/icons";
 
-import type { Exam, ExamSection, Question, QuestionAttachment } from "@/core/config/api";
+import type { ExamSection, Question, QuestionAttachment } from "@/core/config/api";
 import { BuilderField } from "@/features/exams/components/builder/builder-primitives";
 import { QuestionFormDialog } from "@/features/exams/components/builder/question-form-dialog";
 import { QuestionImportPanel } from "@/features/exams/components/builder/question-import-panel";
@@ -18,7 +18,7 @@ interface BuilderQuestionsTabProps {
   examId: number;
   questions: Question[];
   sections: ExamSection[];
-  status: Exam["status"];
+  /** False while the exam is published, in progress or archived; the page shows why. */
   editable: boolean;
   /** Whether the user may preview this exam as a student (shows the preview links). */
   canPreview: boolean;
@@ -147,37 +147,10 @@ const SectionManager = memo(function SectionManager({
   );
 });
 
-/** Explains why questions are (or aren't) editable whenever it isn't the plain draft case. */
-function QuestionLockNotice({ status, editable }: { status: Exam["status"]; editable: boolean }) {
-  let text: string | null = null;
-  if (status === "active" && editable) {
-    text =
-      "This exam is published - question changes reach examinees right away. " +
-      "Questions lock once the first examinee starts the exam. " +
-      "Until then you can unpublish it from the Review & publish tab.";
-  } else if (status === "active") {
-    text =
-      "Questions are locked because examinees have already started this exam. " +
-      "Archive and duplicate it to make changes.";
-  } else if (status === "archived") {
-    text = "This exam is archived, so its questions can't be changed.";
-  } else if (!editable) {
-    text = "An examinee is taking this exam right now. Questions unlock when active sessions finish.";
-  }
-  if (!text) return null;
-
-  return (
-    <div className="px-4 py-3 rounded-lg border border-border bg-muted/40 text-sm text-muted-foreground">
-      {text}
-    </div>
-  );
-}
-
 export function BuilderQuestionsTab({
   examId,
   questions,
   sections,
-  status,
   editable,
   canPreview,
   saving,
@@ -221,8 +194,6 @@ export function BuilderQuestionsTab({
 
   return (
     <div className="space-y-6">
-      <QuestionLockNotice status={status} editable={editable} />
-
       <div className="flex flex-wrap gap-3">
         <button
           type="button"

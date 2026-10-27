@@ -148,9 +148,17 @@ export function useExamBuilder(examId: number) {
     ]);
   }, [examId, queryClient]);
 
+  // A write the server refused may mean the exam locked under us (its scheduled start
+  // arrived while the builder was open), so refetch the lock before the next attempt.
+  const refreshExam = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: examBuilderKeys.detail(examId) }),
+    [examId, queryClient]
+  );
+
   const isDraft = exam?.status === "draft";
-  // Wider than isDraft: a published exam's questions stay editable until its first attempt.
-  const questionsEditable = exam?.questions_editable ?? isDraft;
+  // Questions, content and settings: the server decides (by server time) whether the exam
+  // is a draft with no live attempt. Candidates are never locked by this.
+  const examEditable = exam ? (exam.edit_lock === undefined ? isDraft : exam.edit_lock === null) : false;
   const totalPoints = useMemo(
     () => questions.reduce((sum, q) => sum + (q.points || 0), 0),
     [questions]
@@ -166,7 +174,10 @@ export function useExamBuilder(examId: number) {
       setMessage("Exam settings saved.");
       await invalidateBuilder();
     },
-    onError: (e) => setActionError(formatApiError(e, "Could not save settings")),
+    onError: (e) => {
+      setActionError(formatApiError(e, "Could not save settings"));
+      void refreshExam();
+    },
   });
 
   const saveQuestionMutation = useMutation({
@@ -221,12 +232,18 @@ export function useExamBuilder(examId: number) {
       }
       await invalidateBuilder();
     },
-    onError: (e) => setQuestionError(formatApiError(e)),
+    onError: (e) => {
+      setQuestionError(formatApiError(e));
+      void refreshExam();
+    },
   });
 
   const deleteQuestionMutation = useMutation({
     mutationFn: (questionId: number) => deleteQuestion(examId, questionId),
-    onError: (e) => setActionError(formatApiError(e)),
+    onError: (e) => {
+      setActionError(formatApiError(e));
+      void refreshExam();
+    },
     onSuccess: () => invalidateBuilder(),
   });
 
@@ -252,6 +269,7 @@ export function useExamBuilder(examId: number) {
         queryClient.setQueryData(examBuilderKeys.questions(examId), context.previous);
       }
       setActionError(formatApiError(e, "Reorder failed"));
+      void refreshExam();
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: examBuilderKeys.questions(examId) });
@@ -319,7 +337,10 @@ export function useExamBuilder(examId: number) {
       setMessage(res.message);
       await invalidateBuilder();
     },
-    onError: (e) => setActionError(formatApiError(e, "Unpublish failed")),
+    onError: (e) => {
+      setActionError(formatApiError(e, "Unpublish failed"));
+      void refreshExam();
+    },
   });
 
   const submitMutation = useMutation({
@@ -381,7 +402,10 @@ export function useExamBuilder(examId: number) {
       setMessage("Section updated.");
       await invalidateBuilder();
     },
-    onError: (e) => setActionError(formatApiError(e)),
+    onError: (e) => {
+      setActionError(formatApiError(e));
+      void refreshExam();
+    },
   });
 
   const deleteSectionMutation = useMutation({
@@ -390,7 +414,10 @@ export function useExamBuilder(examId: number) {
       setMessage("Section removed. Its questions are now unsectioned.");
       await invalidateBuilder();
     },
-    onError: (e) => setActionError(formatApiError(e)),
+    onError: (e) => {
+      setActionError(formatApiError(e));
+      void refreshExam();
+    },
   });
 
   const addCandidateMutation = useMutation({
@@ -641,7 +668,7 @@ export function useExamBuilder(examId: number) {
     const confirmed = await confirm({
       title: "Unpublish exam?",
       description:
-        "The exam returns to draft and examinees can no longer see it. You can edit it, but a non-admin creator needs it re-approved before publishing again.",
+        "The exam returns to draft and examinees can no longer see it until you publish it again. Edit its questions, content and settings, then republish from Review & publish. A non-admin creator needs it re-approved first.",
       confirmLabel: "Unpublish",
     });
     if (!confirmed) return;
@@ -721,7 +748,7 @@ export function useExamBuilder(examId: number) {
     message,
     setMessage,
     isDraft,
-    questionsEditable,
+    examEditable,
     totalPoints,
     saving,
     saveSettings,

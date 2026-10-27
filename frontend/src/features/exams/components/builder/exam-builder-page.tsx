@@ -5,6 +5,7 @@ import { BuilderCandidatesTab } from "@/features/exams/components/builder/builde
 import { BuilderPublishTab } from "@/features/exams/components/builder/builder-publish-tab";
 import { BuilderQuestionsTab } from "@/features/exams/components/builder/builder-questions-tab";
 import { BuilderSettingsTab } from "@/features/exams/components/builder/builder-settings-tab";
+import { ExamEditLockNotice } from "@/features/exams/components/builder/exam-edit-lock-notice";
 import { useCanPreviewExam } from "@/features/exams/hooks/use-can-preview-exam";
 import { useExamBuilder } from "@/features/exams/hooks/use-exam-builder";
 import { examPreviewPath } from "@/features/exams/lib/exam-paths";
@@ -118,12 +119,20 @@ export function ExamBuilderPage() {
         ))}
       </div>
 
+      <ExamEditLockNotice
+        exam={builder.exam}
+        onCandidatesTab={builder.tab === "candidates"}
+        onUnpublish={builder.unpublish}
+        unpublishPending={builder.unpublishPending}
+        onEditCandidates={() => builder.setTab("candidates")}
+      />
+
       {builder.tab === "settings" && (
         <BuilderSettingsTab
           exam={builder.exam}
           form={builder.form}
           setForm={builder.setForm}
-          isDraft={builder.isDraft}
+          editable={builder.examEditable}
           saving={builder.saving}
           onSave={builder.saveSettings}
         />
@@ -134,8 +143,7 @@ export function ExamBuilderPage() {
           examId={builder.exam.id}
           questions={builder.questions}
           sections={builder.sections}
-          status={builder.exam.status}
-          editable={builder.questionsEditable}
+          editable={builder.examEditable}
           canPreview={canPreview}
           saving={builder.saving}
           showQuestionForm={builder.showQuestionForm}
