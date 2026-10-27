@@ -24,6 +24,11 @@ export function buildSessionObserverWsUrl(sessionId: string, detail = false): st
   return `${wsBase()}/ws/monitoring/observe/${sessionId}/${query}`;
 }
 
+/** Live "data changed" notifications for every signed-in user (see core/sync). */
+export function buildDataChangesWsUrl(): string {
+  return `${wsBase()}/ws/updates/${withToken()}`;
+}
+
 export function buildAdminAlertsWsUrl(): string {
   return `${wsBase()}/ws/monitoring/alerts/${withToken()}`;
 }

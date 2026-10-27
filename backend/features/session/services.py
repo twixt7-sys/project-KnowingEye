@@ -16,6 +16,7 @@ from ai.identity_store import has_reference
 from features.exams.models import ExamAssignment
 from features.monitoring.broadcast import broadcast_session_state
 from features.session.models import ExamSession, SessionLog
+from features.session.signals import session_changed
 from features.session.submission import auto_submit_expired_session
 
 logger = logging.getLogger(__name__)
@@ -342,6 +343,8 @@ def pause_session(
         raise ValidationError(
             {"status": f"Cannot pause session with status: {session.get_status_display()}"}
         )
+    # A queryset update sends no post_save, so announce the change here.
+    session_changed(session)
 
     SessionLog.objects.create(
         session=session,

@@ -3,6 +3,7 @@ import { router } from "./core/router";
 import { AuthProvider } from "./core/providers/auth-provider";
 import { ThemeProvider } from "./core/providers/theme-provider";
 import { QueryProvider } from "./core/providers/query-provider";
+import { DataSync } from "./core/sync/data-sync";
 import { ConfirmProvider } from "./shared/components/common/confirm-dialog";
 import { ErrorBoundary } from "./shared/components/common/error-boundary";
 import { ProcessingOverlay } from "./shared/components/common/processing-overlay";
@@ -14,6 +15,7 @@ export default function App() {
       <ThemeProvider>
         <QueryProvider>
           <AuthProvider>
+            <DataSync />
             <ConfirmProvider>
               <RouterProvider router={router} />
             </ConfirmProvider>

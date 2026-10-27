@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { Bell, Loader2 } from "@/shared/icons";
 import { apiClient, type AlertRow } from "../../../core/config/api";
+import { subscribeDataChanges } from "@/shared/lib/data-changes";
 import { cn } from "../ui/utils";
 
 const SEVERITY_DOT: Record<string, string> = {
@@ -31,7 +32,14 @@ export function WorkspaceAlertsBell() {
   useEffect(() => {
     load();
     const id = window.setInterval(load, 30_000);
-    return () => window.clearInterval(id);
+    // Alerts raised or resolved anywhere show up at once, not on the next poll.
+    const unsubscribe = subscribeDataChanges((changes) => {
+      if (changes.some((c) => c.topic === "alerts" || c.topic === "sessions")) load();
+    });
+    return () => {
+      window.clearInterval(id);
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
