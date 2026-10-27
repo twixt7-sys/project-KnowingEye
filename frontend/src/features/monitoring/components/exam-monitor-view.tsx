@@ -2,10 +2,12 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 
 import type { AlertRow } from "@/core/config/api";
+import { CardLayoutToggle } from "@/features/monitoring/components/card-layout-toggle";
 import { examMonitoringPath } from "@/features/monitoring/components/exam-overview";
 import { type LiveAlert, LiveAlertFeed } from "@/features/monitoring/components/live-alert-feed";
 import { SessionGrid } from "@/features/monitoring/components/session-grid";
 import { UnresolvedAlertsPanel } from "@/features/monitoring/components/unresolved-alerts-panel";
+import { useCardLayout } from "@/features/monitoring/hooks/use-card-layout";
 import type { ExamGroup } from "@/features/monitoring/lib/exam-groups";
 import { PageHeader } from "@/shared/components/layout/page-header";
 import { SectionPanel } from "@/shared/components/layout/section-panel";
@@ -43,6 +45,7 @@ export function ExamMonitorView({
   const examLiveAlerts = liveAlerts.filter((a) => a.sessionId && sessionIds.has(a.sessionId));
   const events = group.sessions.reduce((sum, s) => sum + s.behavior_event_count, 0);
   const others = allGroups.filter((g) => g.examId !== group.examId);
+  const [cardLayout, setCardLayout] = useCardLayout();
 
   return (
     <>
@@ -115,8 +118,9 @@ export function ExamMonitorView({
           className="xl:col-span-2"
           title="Candidates"
           description="Live snapshots via observer WebSocket."
+          action={<CardLayoutToggle value={cardLayout} onChange={setCardLayout} />}
         >
-          <SessionGrid sessions={group.sessions} onChanged={onChanged} />
+          <SessionGrid sessions={group.sessions} layout={cardLayout} onChanged={onChanged} />
         </SectionPanel>
 
         <UnresolvedAlertsPanel
