@@ -33,7 +33,9 @@ interface ManageAccessDialogProps {
 /**
  * Per-user grant/deny module access and action-permission overrides.
  * Admin-only (enforced server-side by GET/PUT /auth/users/{id}/permissions/).
- * A module toggle set to "off" is an explicit deny, overriding the role default.
+ * The switches show effective access (role + overrides). Flipping one away from
+ * what the role gives stores an override; "Reset to role" clears them all so the
+ * user follows Role permissions again.
  */
 export function ManageAccessDialog({ user, onClose }: ManageAccessDialogProps) {
   const queryClient = useQueryClient();
@@ -48,6 +50,8 @@ export function ManageAccessDialog({ user, onClose }: ManageAccessDialogProps) {
     ...adminQueries.userPermissions(user?.id ?? 0),
     enabled: !!user,
   });
+  // Only for labels; the dialog still works (with raw keys) if it fails.
+  const registryQuery = useQuery({ ...adminQueries.rolePermissions(), enabled: !!user });
 
   useEffect(() => {
     setModuleOverrides({});
@@ -62,15 +66,26 @@ export function ManageAccessDialog({ user, onClose }: ManageAccessDialogProps) {
     moduleOverrides[module] ?? data?.modules[module] ?? "deny";
   const actionState = (action: string): boolean =>
     actionOverrides[action] ?? data?.actions[action] ?? false;
+  const moduleLabel = (key: string) =>
+    registryQuery.data?.modules.find((m) => m.key === key)?.label ?? humanize(key);
+  const actionLabel = (key: string) =>
+    registryQuery.data?.actions.find((a) => a.key === key)?.label ?? humanize(key);
+  // Overridden = differs from what the role alone gives (after unsaved edits).
+  const moduleOverridden = (module: string) =>
+    !!data?.role_access && (moduleState(module) === "grant") !== data.role_access.modules[module];
+  const actionOverridden = (action: string) =>
+    !!data?.role_access && actionState(action) !== data.role_access.actions[action];
+  const overrideCount = data
+    ? Object.keys(data.modules).filter(moduleOverridden).length +
+      Object.keys(data.actions).filter(actionOverridden).length
+    : 0;
 
-  const handleSave = async () => {
+  const save = async (body: Parameters<typeof updateUserPermissions>[1]) => {
+    if (!user) return;
     setSaving(true);
     setError(null);
     try {
-      await updateUserPermissions(user.id, {
-        modules: moduleOverrides,
-        actions: actionOverrides,
-      });
+      await updateUserPermissions(user.id, body);
       queryClient.invalidateQueries({ queryKey: adminKeys.userPermissions(user.id) });
       onClose();
     } catch (e) {
@@ -80,15 +95,23 @@ export function ManageAccessDialog({ user, onClose }: ManageAccessDialogProps) {
     }
   };
 
+  const handleSave = () => save({ modules: moduleOverrides, actions: actionOverrides });
+  const handleResetToRole = () =>
+    data &&
+    save({
+      modules: Object.fromEntries(Object.keys(data.modules).map((m) => [m, null])),
+      actions: Object.fromEntries(Object.keys(data.actions).map((a) => [a, null])),
+    });
+
   return (
     <Dialog open={!!user} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Manage access — {user.username}</DialogTitle>
           <DialogDescription>
-            Role: <span className="font-medium">{user.role}</span>. Overrides here take precedence
-            over the role&apos;s defaults; a module denied here stays denied even if the role would
-            normally see it.
+            Role: <span className="font-medium">{user.role}</span>. Switches show what this user
+            can do now. Turning one away from the role&apos;s setting overrides Role permissions for
+            this user only; a module denied here stays denied even if the role would see it.
           </DialogDescription>
         </DialogHeader>
 
@@ -111,7 +134,10 @@ export function ManageAccessDialog({ user, onClose }: ManageAccessDialogProps) {
                         key={module}
                         className="flex items-center justify-between rounded-md border border-border px-3 py-2"
                       >
-                        <span className="text-sm">{humanize(module)}</span>
+                        <span className="text-sm">
+                          {moduleLabel(module)}
+                          {moduleOverridden(module) && <OverrideTag />}
+                        </span>
                         <Switch
                           checked={moduleState(module) === "grant"}
                           onCheckedChange={(checked) =>
@@ -139,7 +165,11 @@ export function ManageAccessDialog({ user, onClose }: ManageAccessDialogProps) {
                         key={action}
                         className="flex items-center justify-between rounded-md border border-border px-3 py-2"
                       >
-                        <span className="text-sm">{action}</span>
+                        <span className="text-sm">
+                          {actionLabel(action)}
+                          {actionOverridden(action) && <OverrideTag />}
+                          <span className="block text-xs text-muted-foreground">{action}</span>
+                        </span>
                         <Switch
                           checked={actionState(action)}
                           onCheckedChange={(checked) =>
@@ -156,6 +186,14 @@ export function ManageAccessDialog({ user, onClose }: ManageAccessDialogProps) {
         )}
 
         <DialogFooter>
+          <Button
+            variant="outline"
+            className="sm:mr-auto"
+            onClick={handleResetToRole}
+            disabled={saving || permissionsQuery.isLoading || overrideCount === 0}
+          >
+            Reset to role
+          </Button>
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
@@ -166,5 +204,13 @@ export function ManageAccessDialog({ user, onClose }: ManageAccessDialogProps) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function OverrideTag() {
+  return (
+    <span className="ml-2 font-mono text-[0.625rem] uppercase tracking-[0.1em] text-status-watch">
+      override
+    </span>
   );
 }

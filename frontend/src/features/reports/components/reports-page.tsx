@@ -14,6 +14,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
 import { formatApiError } from "@/core/config/api";
+import { useAuth } from "@/core/providers/auth-provider";
 import { downloadSessionsCsv, downloadSessionsPdf } from "@/features/reports/api/reports-api";
 import { IntegrityReportSection } from "@/features/reports/components/integrity-report-section";
 import { SchoolYearSection } from "@/features/reports/components/school-year-section";
@@ -46,6 +47,7 @@ export function ReportsPage() {
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState<"csv" | "pdf" | null>(null);
+  const { can } = useAuth();
   const debouncedQuery = useDebounce(query, 300);
   const { page, pageSize, setPage, setPageSize } = usePagination(10);
 
@@ -122,7 +124,7 @@ export function ReportsPage() {
         title="Reports & analytics"
         description="KPIs, exam outcomes, and behavioral patterns across all sessions."
         actions={
-          view !== "overview" ? undefined : (
+          view !== "overview" || !can("reports.export") ? undefined : (
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={handleExportCsv} disabled={exporting !== null}>
               <Download className="h-4 w-4" />

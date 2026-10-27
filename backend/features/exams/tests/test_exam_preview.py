@@ -17,7 +17,11 @@ from rest_framework.test import APITestCase
 
 from core.security.service import apply_role_defaults, revoke_action
 from features.exams.models import Exam, ExamSection, Question, QuestionPool
-from features.exams.services import assert_questions_editable
+from features.exams.services import (
+    EDIT_LOCK_PUBLISHED,
+    exam_edit_lock,
+    unpublish_block_reason,
+)
 from features.session.models import ExamSession, Response, SessionLog
 
 User = get_user_model()
@@ -227,12 +231,15 @@ class ExamPreviewPayloadTests(APITestCase):
         self.exam.refresh_from_db()
         self.assertEqual(self.exam.status, Exam.Status.DRAFT)
 
-    def test_previewing_a_published_exam_does_not_lock_its_questions(self):
+    def test_previewing_a_published_exam_does_not_mark_it_in_progress(self):
         self.exam.status = Exam.Status.ACTIVE
+        self.exam.available_from = timezone.now() + timedelta(days=1)
+        self.exam.available_until = timezone.now() + timedelta(days=2)
         self.exam.save()
         make_question(self.exam, 1)
         self._get()
-        # A real attempt would freeze editing (assert_questions_editable raises
-        # once the exam has a session); a preview must leave it open.
-        assert_questions_editable(self.exam)
+        # A real attempt makes the exam ongoing, which blocks unpublishing it;
+        # a preview must leave it unpublishable so it can still be edited.
+        self.assertEqual(exam_edit_lock(self.exam), EDIT_LOCK_PUBLISHED)
+        self.assertIsNone(unpublish_block_reason(self.exam))
         self.assertEqual(ExamSession.objects.count(), 0)

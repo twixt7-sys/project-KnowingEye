@@ -4,6 +4,7 @@ import { Fragment, useState } from "react";
 import { Link } from "react-router";
 
 import { formatApiError } from "@/core/config/api";
+import { useAuth } from "@/core/providers/auth-provider";
 import {
   downloadIntegrityCsv,
   downloadIntegrityPdf,
@@ -49,6 +50,7 @@ export function IntegrityReportSection() {
   const [openExam, setOpenExam] = useState<number | null>(null);
   const [exporting, setExporting] = useState<"csv" | "pdf" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const { can } = useAuth();
 
   const params: IntegrityParams = {
     ...(schoolYear ? { school_year: Number(schoolYear) } : {}),
@@ -119,16 +121,18 @@ export function IntegrityReportSection() {
                 </option>
               ))}
             </select>
-            <div className="flex gap-2 sm:ml-auto">
-              <Button variant="outline" onClick={() => runExport("csv")} disabled={exporting !== null}>
-                <Download className="h-4 w-4" />
-                {exporting === "csv" ? "Exporting…" : "Export CSV"}
-              </Button>
-              <Button onClick={() => runExport("pdf")} disabled={exporting !== null}>
-                <Download className="h-4 w-4" />
-                {exporting === "pdf" ? "Exporting…" : "Export PDF"}
-              </Button>
-            </div>
+            {can("reports.export") && (
+              <div className="flex gap-2 sm:ml-auto">
+                <Button variant="outline" onClick={() => runExport("csv")} disabled={exporting !== null}>
+                  <Download className="h-4 w-4" />
+                  {exporting === "csv" ? "Exporting…" : "Export CSV"}
+                </Button>
+                <Button onClick={() => runExport("pdf")} disabled={exporting !== null}>
+                  <Download className="h-4 w-4" />
+                  {exporting === "pdf" ? "Exporting…" : "Export PDF"}
+                </Button>
+              </div>
+            )}
           </div>
         }
       >

@@ -14,6 +14,7 @@ import { type ProfileUser, type Role, formatApiError } from "@/core/config/api";
 import { useAuth } from "@/core/providers/auth-provider";
 import { activateUser, deactivateUser, setUserRole } from "@/features/admin/api/admin-api";
 import { ManageAccessDialog } from "@/features/admin/components/manage-access-dialog";
+import { RolePermissionsPanel } from "@/features/admin/components/role-permissions-panel";
 import { adminKeys } from "@/features/admin/queries/keys";
 import { adminQueries } from "@/features/admin/queries/queries";
 import { useConfirm } from "@/shared/components/common/confirm-dialog";
@@ -267,7 +268,12 @@ export function UsersPage() {
                           confirmLabel: "Change role",
                         });
                         if (!confirmed) return;
-                        handleAction(u.id, () => setUserRole(u.id, nextRole));
+                        handleAction(u.id, async () => {
+                          await setUserRole(u.id, nextRole);
+                          queryClient.invalidateQueries({
+                            queryKey: adminKeys.userPermissions(u.id),
+                          });
+                        });
                       }}
                       className={`status-pill border ${ROLE_BADGE[u.role]} cursor-pointer bg-transparent`}
                     >
@@ -346,6 +352,8 @@ export function UsersPage() {
           loading={usersQuery.isLoading}
         />
       </SectionPanel>
+
+      {isAdmin && <RolePermissionsPanel />}
 
       <ManageAccessDialog user={manageAccessUser} onClose={() => setManageAccessUser(null)} />
     </PageShell>
