@@ -14,7 +14,7 @@ import type {
   SchoolYearReport,
 } from "@/shared/types/api";
 
-const auth = vi.hoisted(() => ({ can: (_action: string) => true }));
+const auth = vi.hoisted(() => ({ can: (_action: string): boolean => true }));
 vi.mock("@/core/providers/auth-provider", () => ({ useAuth: () => auth }));
 vi.mock("@tremor/react", () => ({ BarChart: () => null }));
 vi.mock("@/features/reports/api/reports-api", () => ({
