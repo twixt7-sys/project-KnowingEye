@@ -1,4 +1,6 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ACCESS_REFRESH_INTERVAL_MS, AuthProvider, useAuth } from "@/core/providers/auth-provider";
@@ -18,6 +20,15 @@ const granted = {
   permissions: ["exams.update-any", "sessions.pause"],
 };
 
+/** AuthProvider clears the query cache on sign-in changes, so it needs a QueryClient like in App.tsx. */
+function Providers({ children }: { children: ReactNode }) {
+  return (
+    <QueryClientProvider client={new QueryClient()}>
+      <AuthProvider>{children}</AuthProvider>
+    </QueryClientProvider>
+  );
+}
+
 function Probe() {
   const { isLoading, user, can, hasModule } = useAuth();
   if (isLoading) return <p>loading</p>;
@@ -30,9 +41,9 @@ function Probe() {
 
 async function renderSignedIn() {
   render(
-    <AuthProvider>
+    <Providers>
       <Probe />
-    </AuthProvider>,
+    </Providers>,
   );
   await waitFor(() => expect(screen.getByTestId("probe").textContent).toBe("PROCTOR|false|false"));
   // Let the listener/interval effect that follows sign-in commit.
@@ -79,9 +90,9 @@ describe("AuthProvider access refresh", () => {
   it("re-reads the access map after a 403, and drops a revoked permission", async () => {
     mocks.apiClient.getAccessMap.mockResolvedValue(granted);
     render(
-      <AuthProvider>
+      <Providers>
         <Probe />
-      </AuthProvider>,
+      </Providers>,
     );
     await waitFor(() => expect(screen.getByTestId("probe").textContent).toBe("PROCTOR|true|true"));
 
@@ -121,9 +132,9 @@ describe("AuthProvider access refresh", () => {
   it("does nothing while signed out", async () => {
     mocks.tokenStore.access = null;
     render(
-      <AuthProvider>
+      <Providers>
         <Probe />
-      </AuthProvider>,
+      </Providers>,
     );
     await waitFor(() => expect(screen.getByTestId("probe").textContent).toBe("|false|false"));
     act(() => {
