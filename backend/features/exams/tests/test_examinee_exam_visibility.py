@@ -166,13 +166,16 @@ class AdminPublishedExamReachesExamineeTests(APITestCase):
         with mock.patch("django.utils.timezone.now", return_value=later):
             self.assertNotIn(exam_id, self._mine())
 
-    def test_unpublished_exam_is_hidden_again(self):
-        exam_id = self._create_and_publish()
-        self.assertIn(exam_id, self._mine())
+    def test_unpublished_exam_stays_hidden_after_its_window_opens(self):
+        # Unpublishing is only allowed before the start time (an ongoing exam
+        # is locked), so unpublish while upcoming and check past the opening.
+        exam_id = self._create_and_publish(opens_in=timedelta(minutes=5))
         self.client.force_authenticate(user=self.admin)
         res = self.client.post(f"/api/exams/{exam_id}/unpublish/")
         self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
-        self.assertNotIn(exam_id, self._mine())
+        later = timezone.now() + timedelta(minutes=6)
+        with mock.patch("django.utils.timezone.now", return_value=later):
+            self.assertNotIn(exam_id, self._mine())
 
     def test_archived_exam_is_hidden(self):
         exam_id = self._create_and_publish()
