@@ -240,7 +240,10 @@ class QuestionLockDuringActiveSessionTests(APITestCase):
 
 
 class PublishedExamQuestionEditingTests(APITestCase):
-    """A published exam's questions stay editable until its first attempt."""
+    """A published exam's questions are locked until it is unpublished (Bug 5).
+
+    Full state-by-write-path coverage lives in test_exam_edit_lock.
+    """
 
     def setUp(self):
         self.faculty = make_user(User.Role.FACULTY, "pub_faculty")
@@ -248,6 +251,8 @@ class PublishedExamQuestionEditingTests(APITestCase):
         self.exam = Exam.objects.create(
             title="Published exam", department=make_department("PUB"),
             created_by=self.faculty, status=Exam.Status.ACTIVE,
+            available_from=timezone.now() + timedelta(days=1),
+            available_until=timezone.now() + timedelta(days=2),
         )
         self.question = Question.objects.create(
             exam=self.exam, question_text="Q1", question_type=Question.QuestionType.SHORT_ANSWER,
@@ -261,18 +266,27 @@ class PublishedExamQuestionEditingTests(APITestCase):
             {"question_text": "Fixed typo"},
         )
 
-    def test_owner_can_edit_question_before_any_attempt(self):
+    def test_owner_cannot_edit_question_while_published(self):
         res = self._patch_question()
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Unpublish this exam to edit it", str(res.data))
         self.question.refresh_from_db()
-        self.assertEqual(self.question.question_text, "Fixed typo")
+        self.assertEqual(self.question.question_text, "Q1")
 
-    def test_owner_can_add_question_before_any_attempt(self):
+    def test_owner_cannot_add_question_while_published(self):
         res = self.client.post(
             f"/api/exams/{self.exam.id}/questions/",
             {"question_text": "Q2", "question_type": "short_answer", "correct_answer": "y", "points": 1},
         )
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.exam.questions.count(), 1)
+
+    def test_editable_again_after_unpublishing(self):
+        self.assertEqual(
+            self.client.post(f"/api/exams/{self.exam.id}/unpublish/").status_code,
+            status.HTTP_200_OK,
+        )
+        self.assertEqual(self._patch_question().status_code, status.HTTP_200_OK)
 
     def test_locked_once_an_attempt_exists(self):
         ExamSession.objects.create(
@@ -280,14 +294,13 @@ class PublishedExamQuestionEditingTests(APITestCase):
         )
         res = self._patch_question()
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("already started", str(res.data))
 
     def test_archived_exam_stays_locked(self):
         self.exam.status = Exam.Status.ARCHIVED
         self.exam.save(update_fields=["status"])
         self.assertEqual(self._patch_question().status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_cannot_delete_last_question_of_published_exam(self):
+    def test_cannot_delete_question_of_published_exam(self):
         res = self.client.delete(f"/api/exams/{self.exam.id}/questions/{self.question.id}/")
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(Question.objects.filter(pk=self.question.pk).exists())
@@ -298,16 +311,16 @@ class PublishedExamQuestionEditingTests(APITestCase):
 
     def test_detail_reports_questions_editable(self):
         res = self.client.get(f"/api/exams/{self.exam.id}/")
-        self.assertTrue(res.data["questions_editable"])
-        ExamSession.objects.create(
-            exam=self.exam, user=self.student, status=ExamSession.Status.COMPLETED,
-        )
-        res = self.client.get(f"/api/exams/{self.exam.id}/")
         self.assertFalse(res.data["questions_editable"])
+        self.assertEqual(res.data["edit_lock"], "published")
+        self.client.post(f"/api/exams/{self.exam.id}/unpublish/")
+        res = self.client.get(f"/api/exams/{self.exam.id}/")
+        self.assertTrue(res.data["questions_editable"])
+        self.assertIsNone(res.data["edit_lock"])
 
 
 class UnpublishExamTests(APITestCase):
-    """A published exam can return to draft until its first attempt."""
+    """A published exam can return to draft until it starts or is attempted."""
 
     def setUp(self):
         self.faculty = make_user(User.Role.FACULTY, "unpub_faculty")
@@ -316,6 +329,8 @@ class UnpublishExamTests(APITestCase):
         self.exam = Exam.objects.create(
             title="Live exam", department=make_department("UNP"),
             created_by=self.faculty, status=Exam.Status.ACTIVE,
+            available_from=timezone.now() + timedelta(days=1),
+            available_until=timezone.now() + timedelta(days=2),
             approval_status=Exam.ApprovalStatus.APPROVED,
             reviewed_by=self.faculty, reviewed_at=timezone.now(),
         )
@@ -363,6 +378,15 @@ class UnpublishExamTests(APITestCase):
         res = self._unpublish()
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("already started", str(res.data))
+        self.exam.refresh_from_db()
+        self.assertEqual(self.exam.status, Exam.Status.ACTIVE)
+
+    def test_blocked_once_the_scheduled_start_has_passed(self):
+        self.exam.available_from = timezone.now() - timedelta(minutes=1)
+        self.exam.save(update_fields=["available_from"])
+        res = self._unpublish()
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("in progress", str(res.data))
         self.exam.refresh_from_db()
         self.assertEqual(self.exam.status, Exam.Status.ACTIVE)
 

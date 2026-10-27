@@ -56,6 +56,12 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         """Filter sessions based on user role."""
         if security.has_module(self.request.user, "sessions"):
             return ExamSession.objects.all()
+        # Pause/resume/terminate are live-monitoring actions (each checks its
+        # own permission first), so whoever monitors may target any session.
+        if self.action in {"pause", "resume", "terminate"} and security.has_module(
+            self.request.user, "monitoring"
+        ):
+            return ExamSession.objects.all()
         return ExamSession.objects.filter(user=self.request.user)
 
     def destroy(self, request, *args, **kwargs):

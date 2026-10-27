@@ -31,6 +31,8 @@ import type {
   ReportSummary,
   ResponseData,
   Role,
+  RoleAccessConfig,
+  RolePermissionsMatrix,
   SchoolYearDetail,
   SchoolYearReport,
   SessionDepartmentAnalytics,
@@ -42,6 +44,16 @@ import type {
   UserStats,
 } from "@/shared/types/api";
 import type { PaginatedResponse } from "@/shared/types/api";
+
+/**
+ * Fired on every 403 so the auth provider can re-read the access map: a refusal
+ * usually means an admin changed this user's permissions since it was loaded.
+ */
+export const FORBIDDEN_EVENT = "knowing-eye:forbidden";
+
+function notifyForbidden() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(FORBIDDEN_EVENT));
+}
 
 /** The backend's `max_page_size` (core/pagination.py) - the biggest page one request can return. */
 const LIST_ALL_PAGE_SIZE = 100;
@@ -134,6 +146,7 @@ class ApiClient {
     }
 
     if (!res.ok) {
+      if (res.status === 403) notifyForbidden();
       const raw = await res.text();
       let body: unknown = raw;
       try {
@@ -289,10 +302,32 @@ class ApiClient {
     id: number,
     body: {
       modules?: Record<string, "grant" | "deny" | null>;
-      actions?: Record<string, boolean>;
+      /** `null` clears the user's override so the action follows their role again. */
+      actions?: Record<string, boolean | null>;
     },
   ) {
     return this.request<AccessMap>(`/auth/users/${id}/permissions/`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+  }
+
+  /** Role Permissions: every editable role's module/action configuration (admin only). */
+  async getRolePermissions() {
+    return this.request<RolePermissionsMatrix>("/auth/roles/permissions/");
+  }
+
+  /**
+   * Role Permissions: change one role's configuration (admin only). Applies to every
+   * user of the role on their next request. `{ reset: true }` restores the defaults.
+   */
+  async setRolePermissions(
+    role: string,
+    body:
+      | { modules?: Record<string, boolean>; actions?: Record<string, boolean> }
+      | { reset: true },
+  ) {
+    return this.request<RoleAccessConfig>(`/auth/roles/${role}/permissions/`, {
       method: "PUT",
       body: JSON.stringify(body),
     });

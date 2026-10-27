@@ -93,8 +93,14 @@ class User(AbstractUser):
         return self.role != self.Role.STUDENT
 
     def can_approve_exams(self):
-        """Level 1 approval authority, per Directive A1 (Administrator responsibilities)."""
-        return self.role in (self.Role.ADMIN, self.Role.PROGRAM_HEAD)
+        """Level 1 approval authority, per Directive A1 (Administrator responsibilities).
+
+        Follows the configured ``exams.approve`` permission rather than the
+        role name, so an admin's role/user edits apply here too.
+        """
+        from core.security import service as security
+
+        return security.can(self, "exams.approve")
 
     # Back-compat alias for the old binary role model.
     def is_examinee(self):
@@ -128,6 +134,42 @@ class PermissionChange(models.Model):
         indexes = [
             models.Index(fields=["target", "permission", "-created_at"]),
         ]
+
+
+class RolePermission(models.Model):
+    """Role-level module access / action permission, editable by an admin.
+
+    One row per (role, permission) with an explicit on/off, so an admin's
+    "off" is distinguishable from "never configured": seeding only fills in
+    missing rows from the code defaults (``core.security.modules.MODULES`` and
+    ``core.security.permissions_registry.ROLE_DEFAULT_ACTIONS``) and never
+    overwrites a row. Every user of the role inherits these at request time;
+    per-user grants/denies (``user.user_permissions``) layer on top.
+    """
+
+    role = models.CharField(max_length=20, choices=User.Role.choices)
+    permission = models.CharField(
+        max_length=100, help_text="'module.<module>' or 'action.<action>', e.g. 'action.exams.update'"
+    )
+    granted = models.BooleanField(default=False)
+    updated_by = models.ForeignKey(
+        "authentication.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="role_permission_changes",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "authentication_role_permission"
+        ordering = ["role", "permission"]
+        constraints = [
+            models.UniqueConstraint(fields=["role", "permission"], name="uniq_role_permission"),
+        ]
+
+    def __str__(self):
+        return f"{self.role} {self.permission}={'on' if self.granted else 'off'}"
 
 
 class EmailVerification(models.Model):
