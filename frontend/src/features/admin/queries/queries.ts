@@ -1,5 +1,6 @@
 import {
   fetchDepartments,
+  fetchRolePermissions,
   fetchUserPermissions,
   fetchUserStats,
   fetchUsers,
@@ -18,6 +19,10 @@ export const adminQueries = {
   userStats: () => ({
     queryKey: adminKeys.userStats(),
     queryFn: fetchUserStats,
+  }),
+  rolePermissions: () => ({
+    queryKey: adminKeys.rolePermissions(),
+    queryFn: fetchRolePermissions,
   }),
   userPermissions: (id: number) => ({
     queryKey: adminKeys.userPermissions(id),

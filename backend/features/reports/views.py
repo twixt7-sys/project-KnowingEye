@@ -13,7 +13,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from core.security.drf import HasModuleAccess
+from core.security.drf import HasModuleAccess, HasPermission
 from core.utils.api_cache import cache_get_response
 from core.utils.constants import MAX_REPORT_EXPORT_ROWS
 
@@ -492,7 +492,7 @@ def list_session_reports(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, HasPermission("reports.export")])
 def export_sessions_csv(request):
     """GET /api/reports/export/csv/ - downloadable CSV of session reports."""
     qs = (
@@ -553,7 +553,7 @@ def export_sessions_csv(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, HasPermission("reports.export")])
 def export_sessions_pdf(request):
     """GET /api/reports/export/pdf/ - downloadable PDF summary of session reports."""
     from reportlab.lib.pagesizes import letter
@@ -714,7 +714,7 @@ def integrity_sessions_view(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, HasModuleAccess("reports")])
+@permission_classes([IsAuthenticated, HasModuleAccess("reports"), HasPermission("reports.export")])
 def export_integrity_csv(request):
     """GET /api/reports/integrity/export/csv/ - one row per alert on a flagged session.
 
@@ -789,7 +789,7 @@ def export_integrity_csv(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated, HasModuleAccess("reports")])
+@permission_classes([IsAuthenticated, HasModuleAccess("reports"), HasPermission("reports.export")])
 def export_integrity_pdf(request):
     """GET /api/reports/integrity/export/pdf/ - printable exam-integrity report."""
     from features.reports.integrity import flagged_session_rows, integrity_report

@@ -124,6 +124,8 @@ class SessionPauseTests(APITestCase):
         self.assertEqual(too_long.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_pause_requires_the_pause_permission(self):
+        # Proctors pause by role default; an explicit per-user deny removes it.
+        security.revoke_action(self.proctor, "sessions.pause")
         for user in (self.student, self.proctor):
             self.client.force_authenticate(user)
             response = self._pause()
@@ -132,9 +134,10 @@ class SessionPauseTests(APITestCase):
         self.session.refresh_from_db()
         self.assertEqual(self.session.status, ExamSession.Status.IN_PROGRESS)
 
-    def test_granted_user_can_pause(self):
-        security.grant_action(self.proctor, "sessions.pause")
-        security.grant_module_access(self.proctor, "sessions")
+    def test_proctor_can_pause_by_role_default(self):
+        # No per-user grant and no Exam Sessions module: the Proctor role's
+        # sessions.pause plus Live Monitoring is enough.
+        self.assertEqual(self.proctor.user_permissions.count(), 0)
         self.client.force_authenticate(self.proctor)
         self.assertEqual(self._pause().status_code, status.HTTP_200_OK)
         self.assertEqual(self._resume().status_code, status.HTTP_200_OK)

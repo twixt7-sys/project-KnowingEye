@@ -23,11 +23,11 @@ User = get_user_model()
 def assert_can_modify_exam(exam: Exam, user) -> None:
     """Ensure ``user`` is allowed to modify ``exam``.
 
-    Admins (and superusers) may modify any exam. Everyone else needs both
-    the ``exams.update`` action permission (a role-default grant for
-    faculty, revocable per-user) AND ownership - holding the permission is a
-    prerequisite, not a bypass, so it never widens editing to exams a user
-    didn't create.
+    Admins (and superusers) may modify any exam, as may anyone holding
+    ``exams.update-any`` (granted to a role or user from the admin screens).
+    Otherwise ``exams.update`` (a role default for the exam-creating roles)
+    covers only exams the user created - it never widens editing to exams
+    they didn't create.
 
     Args:
         exam: The exam to be modified.
@@ -40,9 +40,16 @@ def assert_can_modify_exam(exam: Exam, user) -> None:
 
     if user.is_admin() or getattr(user, "is_superuser", False):
         return
+    if security.can(user, "exams.update-any"):
+        return
     if security.can(user, "exams.update") and exam.created_by_id == getattr(user, "id", None):
         return
-    raise PermissionDenied("You can only modify exams you created (or as admin).")
+    if security.can(user, "exams.update"):
+        raise PermissionDenied(
+            "You can only modify exams you created. Editing other users' exams needs the "
+            "'Edit any exam' permission."
+        )
+    raise PermissionDenied("You do not have permission to edit exams.")
 
 
 def assert_can_delete_exam(exam: Exam, user) -> None:

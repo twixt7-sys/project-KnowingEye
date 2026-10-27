@@ -14,6 +14,8 @@ import type {
   SchoolYearReport,
 } from "@/shared/types/api";
 
+const auth = vi.hoisted(() => ({ can: (_action: string): boolean => true }));
+vi.mock("@/core/providers/auth-provider", () => ({ useAuth: () => auth }));
 vi.mock("@tremor/react", () => ({ BarChart: () => null }));
 vi.mock("@/features/reports/api/reports-api", () => ({
   fetchIntegrityReport: vi.fn(),
@@ -176,6 +178,7 @@ const detail: SchoolYearDetail = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  auth.can = () => true;
   vi.mocked(api.fetchIntegrityReport).mockResolvedValue(integrity);
   vi.mocked(api.fetchIntegritySessions).mockResolvedValue(flagged);
   vi.mocked(api.fetchSchoolYearReport).mockResolvedValue(years);
@@ -227,6 +230,14 @@ describe("IntegrityReportSection", () => {
     await waitFor(() => expect(api.downloadIntegrityCsv).toHaveBeenCalledWith({ school_year: 2024 }));
     fireEvent.click(screen.getByText("Export PDF"));
     await waitFor(() => expect(api.downloadIntegrityPdf).toHaveBeenCalledWith({ school_year: 2024 }));
+  });
+
+  it("hides the export buttons without the reports.export permission", async () => {
+    auth.can = (action) => action !== "reports.export";
+    render(wrap(<IntegrityReportSection />));
+    await screen.findByText("Entrance Exam");
+    expect(screen.queryByText("Export CSV")).toBeNull();
+    expect(screen.queryByText("Export PDF")).toBeNull();
   });
 
   it("shows an export failure", async () => {

@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { toast } from "sonner";
 
 import { type SessionReportRow, apiClient, formatApiError } from "../../../core/config/api";
+import { useAuth } from "../../../core/providers/auth-provider";
 import { useConfirm } from "../../../shared/components/common/confirm-dialog";
 import { IconAction } from "../../../shared/components/common/icon-action";
 import { Button } from "../../../shared/components/ui/button";
@@ -21,6 +22,7 @@ export function LiveSessionCard({
 }) {
   const observer = useSessionObserver(session.id);
   const confirm = useConfirm();
+  const { can } = useAuth();
   const [terminating, setTerminating] = useState(false);
   // A pushed state is fresher than the polled row.
   const status = observer.sessionState?.status ?? session.status;
@@ -177,15 +179,17 @@ export function LiveSessionCard({
                 onClick={() => pauseControls.setDialogOpen(true)}
               />
             ))}
-          <IconAction
-            label="Terminate session"
-            icon={Power}
-            tone="danger"
-            disabled={terminating}
-            onClick={handleTerminate}
-          >
-            {terminating ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
-          </IconAction>
+          {can("sessions.terminate") && (
+            <IconAction
+              label="Terminate session"
+              icon={Power}
+              tone="danger"
+              disabled={terminating}
+              onClick={handleTerminate}
+            >
+              {terminating ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+            </IconAction>
+          )}
         </div>
       </div>
 

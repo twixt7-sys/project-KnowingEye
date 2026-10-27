@@ -20,19 +20,13 @@ def revert_student_to_examinee(apps, schema_editor):
 
 
 def backfill_role_default_permissions(apps, schema_editor):
-    from core.security.service import apply_role_defaults, ensure_registry_permissions
-    from django.contrib.auth import get_user_model
+    # Used to copy each role's default actions onto every user. Users now
+    # inherit their role's permissions live (0010_role_permission seeds the
+    # role configuration and converts earlier copies), so on a fresh
+    # database only the Permission rows are needed here.
+    from core.security.service import ensure_registry_permissions
 
     ensure_registry_permissions()
-
-    # .only() restricts the SELECT to columns that exist as of *this*
-    # migration - querying the real (non-historical) model with a bare
-    # .exclude()/full fetch would pull in every field the *current* code
-    # defines, including ones added by migrations that haven't run yet when
-    # this migration is replayed forward on a fresh database.
-    User = get_user_model()
-    for user in User.objects.only('pk', 'role').exclude(role='ADMIN'):
-        apply_role_defaults(user)
 
 
 def noop_reverse(apps, schema_editor):

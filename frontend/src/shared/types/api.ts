@@ -25,8 +25,33 @@ export interface AccessMap {
 /** GET/PUT /auth/users/{id}/permissions/ - per-user module + action overrides. */
 export interface UserPermissions {
   role: Role;
+  /** Effective access: the role's configuration with this user's overrides applied. */
   modules: Record<string, "grant" | "deny">;
   actions: Record<string, boolean>;
+  /** What the user's role alone grants. */
+  role_access: { modules: Record<string, boolean>; actions: Record<string, boolean> };
+  /** Explicit per-user overrides; anything absent follows the role. */
+  overrides: {
+    modules: Record<string, "grant" | "deny">;
+    actions: Record<string, "grant" | "deny">;
+  };
+}
+
+export interface RoleAccessConfig {
+  role: Role;
+  label: string;
+  modules: Record<string, boolean>;
+  actions: Record<string, boolean>;
+  /** The role's predefined set, for "reset to defaults". */
+  defaults: { modules: Record<string, boolean>; actions: Record<string, boolean> };
+}
+
+/** GET /auth/roles/permissions/ - every editable role's configuration plus the registry. */
+export interface RolePermissionsMatrix {
+  modules: { key: string; label: string }[];
+  /** `modules` lists the modules an action needs; enabling it turns them on. */
+  actions: { key: string; label: string; modules: string[] }[];
+  roles: RoleAccessConfig[];
 }
 
 export interface ProfileUser extends AuthUser {

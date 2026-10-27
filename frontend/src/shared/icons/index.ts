@@ -96,6 +96,7 @@ export {
   PushPin as PinIcon,
   Radio,
   ArrowsClockwise as RefreshCw,
+  ArrowCounterClockwise as RotateCcw,
   FloppyDisk as Save,
   ScanSmiley as ScanFace,
   MagnifyingGlass as Search,

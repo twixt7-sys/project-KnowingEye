@@ -12,6 +12,7 @@ import {
 } from "@/shared/icons";
 
 import { formatApiError } from "@/core/config/api";
+import { useAuth } from "@/core/providers/auth-provider";
 import { resolveAlertsBulk, terminateSession } from "@/features/monitoring/api/monitoring-api";
 import { SessionEvidencePanel } from "@/features/monitoring/components/session-evidence-panel";
 import { PauseSessionDialog } from "@/features/monitoring/components/pause-session-dialog";
@@ -35,6 +36,7 @@ export function SessionMonitorPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const observer = useSessionObserver(sessionId, { detail: true });
   const confirm = useConfirm();
+  const { can } = useAuth();
   const queryClient = useQueryClient();
   const [terminating, setTerminating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -197,19 +199,21 @@ export function SessionMonitorPage() {
                   Pause
                 </Button>
               ))}
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={terminating}
-              onClick={handleTerminate}
-            >
-              {terminating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Power className="h-4 w-4" />
-              )}
-              Terminate
-            </Button>
+            {can("sessions.terminate") && (
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={terminating}
+                onClick={handleTerminate}
+              >
+                {terminating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Power className="h-4 w-4" />
+                )}
+                Terminate
+              </Button>
+            )}
           </div>
         </header>
 

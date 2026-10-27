@@ -15,7 +15,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from core.security import service as security
 from core.security.drf import HasRole
 from core.security.modules import MODULES
-from core.security.permissions_registry import PERMISSIONS
+from core.security.permissions_registry import PERMISSION_META, PERMISSIONS
 
 from .serializers import (
     AvatarUploadSerializer,
@@ -39,6 +39,71 @@ def access_map(request):
     routes/controls, so it can never drift from what the backend enforces.
     """
     return Response(security.list_user_access(request.user))
+
+
+def _split_access(config: dict) -> dict:
+    """``{"module.exams": True, "action.exams.update": False}`` -> ``{"modules": {...}, "actions": {...}}``."""
+    return {
+        "modules": {k[len("module."):]: v for k, v in config.items() if k.startswith("module.")},
+        "actions": {k[len("action."):]: v for k, v in config.items() if k.startswith("action.")},
+    }
+
+
+def _role_payload(role: str, config: dict | None = None) -> dict:
+    config = security.role_access(role) if config is None else config
+    return {
+        "role": role,
+        "label": User.Role(role).label,
+        **_split_access(config),
+        "defaults": _split_access(security.role_defaults(role)),
+    }
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, HasRole("admin")])
+def role_permissions(request):
+    """GET /api/auth/roles/permissions/ - every role's module + action configuration.
+
+    Admin only, like per-user Manage Access. Also lists the registry (labels
+    and which modules each action needs) so the screen renders from one call.
+    """
+    security.ensure_role_defaults()
+    return Response(
+        {
+            "modules": [{"key": m, "label": meta["label"]} for m, meta in MODULES.items()],
+            "actions": [
+                {"key": a, "label": meta["label"], "modules": meta.get("modules", [])}
+                for a, meta in sorted(PERMISSION_META.items())
+            ],
+            "roles": [_role_payload(role) for role in security.configurable_roles()],
+        }
+    )
+
+
+@api_view(["PUT"])
+@permission_classes([IsAuthenticated, HasRole("admin")])
+def role_permissions_detail(request, role: str):
+    """PUT /api/auth/roles/<ROLE>/permissions/ - edit one role's configuration.
+
+    Body: ``{"modules": {"<module>": bool}, "actions": {"<action>": bool}}``,
+    or ``{"reset": true}`` to restore the role's predefined set. Takes effect
+    for every user of the role on their next request; per-user overrides from
+    Manage Access still apply on top.
+    """
+    role = role.upper()
+    if role not in security.configurable_roles():
+        return Response(
+            {"detail": f"Unknown or non-editable role. Choose one of {security.configurable_roles()}."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    data = request.data or {}
+    if data.get("reset"):
+        defaults = _split_access(security.role_defaults(role))
+        modules, actions = defaults["modules"], defaults["actions"]
+    else:
+        modules, actions = data.get("modules") or {}, data.get("actions") or {}
+    config = security.set_role_permissions(role, modules, actions, actor=request.user)
+    return Response(_role_payload(role, config))
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -282,8 +347,10 @@ class UserListViewSet(viewsets.ReadOnlyModelViewSet):
         ``role:super_admin``-gated ``UserPermissionController``.
 
         PUT body: {"modules": {"<module>": "grant"|"deny"|null}, "actions":
-        {"<action>": true|false}}. ``null``/omitted clears an override,
-        falling back to the role default.
+        {"<action>": true|false|null}}. ``null`` clears an override, falling
+        back to the role's configuration; a value equal to the role's is
+        stored as no override, so the user keeps following later role edits.
+        Granting an action also opens the modules it needs.
         """
         user = self.get_object()
 
@@ -296,6 +363,8 @@ class UserListViewSet(viewsets.ReadOnlyModelViewSet):
                         for m in MODULES
                     },
                     "actions": {p: security.can(user, p) for p in PERMISSIONS},
+                    "role_access": _split_access(security.role_access(user.role)),
+                    "overrides": security.user_overrides(user),
                 }
             )
 
@@ -305,19 +374,17 @@ class UserListViewSet(viewsets.ReadOnlyModelViewSet):
         for module, state in modules.items():
             if module not in MODULES:
                 continue
-            if state == "grant":
-                security.grant_module_access(user, module, actor=request.user)
-            elif state == "deny":
-                security.deny_module_access(user, module, actor=request.user)
-            else:
-                security.revoke_module_override(user, module, actor=request.user)
+            security.set_user_module(
+                user, module, state if state in ("grant", "deny") else None, actor=request.user
+            )
 
         for action_name, enabled in actions.items():
             if action_name not in PERMISSIONS:
                 continue
+            security.set_user_action(user, action_name, enabled, actor=request.user)
             if enabled:
-                security.grant_action(user, action_name, actor=request.user)
-            else:
-                security.revoke_action(user, action_name, actor=request.user)
+                for module in PERMISSION_META[action_name].get("modules", []):
+                    if not security.has_module(user, module):
+                        security.set_user_module(user, module, "grant", actor=request.user)
 
         return Response(security.list_user_access(user))
