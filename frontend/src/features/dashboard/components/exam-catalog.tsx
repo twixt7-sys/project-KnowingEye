@@ -188,7 +188,7 @@ export function ExamCatalog({
   const unpublish = async (exam: Exam) => {
     const confirmed = await confirm({
       title: "Unpublish exam?",
-      description: `"${exam.title}" returns to draft and examinees can no longer see it. Exams that have already been attempted can't be unpublished.`,
+      description: `"${exam.title}" returns to draft so you can edit it, and examinees can no longer see it until you publish it again. Exams that are in progress or already attempted can't be unpublished.`,
       confirmLabel: "Unpublish",
     });
     if (confirmed) await run("Unpublishing exam…", () => unpublishExam(exam.id));

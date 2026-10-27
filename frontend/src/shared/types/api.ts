@@ -144,9 +144,21 @@ export interface Exam {
   questions?: Question[];
   sections?: ExamSection[];
   publish_readiness?: PublishReadiness;
-  /** Questions can still change: a draft, or published but not yet attempted. */
+  /** Questions, content and settings can change: only a draft with no live attempt. */
   questions_editable?: boolean;
+  /** Why the exam can't be edited (null = editable). Only candidates may change while "ongoing". */
+  edit_lock?: ExamEditLock | null;
+  /** Server-written explanation of `edit_lock`, safe to show as-is. */
+  edit_lock_message?: string | null;
+  /** Published and neither in progress nor attempted, so it can return to draft for editing. */
+  can_unpublish?: boolean;
 }
+
+/**
+ * Computed server-side by server time: "ongoing" once the scheduled start has arrived or
+ * an examinee is mid-attempt, "published" for any other published exam.
+ */
+export type ExamEditLock = "ongoing" | "published" | "archived";
 
 /** Student-shaped exam payload for the examiner's "Preview as student" view (no answer keys). */
 export type ExamPreview = Exam & {
