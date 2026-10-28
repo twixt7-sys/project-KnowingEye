@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowing Eye Bandwidth Specs</title>
+<style>
+  body {
+    background: #ffffff;
+    color: #000000;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    margin: 0;
+    padding: 32px max(16px, 5vw) 64px;
+  }
+  .page { max-width: 816px; margin: 0 auto; }
+  h1 { font-size: 16pt; font-weight: bold; margin: 0 0 6pt; }
+  h2 { font-size: 12pt; font-weight: bold; margin: 18pt 0 12pt; }
+  h3 { font-size: 12pt; font-weight: bold; font-style: italic; margin: 12pt 0 12pt; }
+  p { margin: 0 0 12pt; text-align: justify; }
+  .caption { font-weight: bold; text-align: left; margin: 12pt 0 6pt; }
+  .caption i { font-weight: normal; }
+  .tnote { font-size: 10pt; text-align: left; margin: 6pt 0 12pt; }
+  table { border-collapse: collapse; width: 100%; font-size: 11pt; line-height: 1.3; margin: 0 0 6pt; }
+  th, td { border: 1px solid #000000; padding: 2pt 5pt; text-align: left; vertical-align: top; }
+  th { font-weight: bold; }
+  .r { text-align: right; white-space: nowrap; }
+  .guide {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    line-height: 1.4;
+    color: #333333;
+    background: #f2f2f2;
+    border: 1px solid #bfbfbf;
+    padding: 8pt 10pt;
+    margin: 24pt 0 12pt;
+  }
+  .guide p { text-align: left; margin: 0 0 4pt; }
+  .guide p:last-child { margin: 0; }
+  .guide b { color: #000000; }
+  .part { border-top: 2px solid #000000; margin-top: 30pt; padding-top: 4pt; }
+  .tbl { overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Knowing Eye: Bandwidth, Real-Time Data Volume and Deployment Specifications</h1>
+<div class="guide">
+  <p><b>How to use this file.</b> The gray boxes are placement notes for you. Do not paste them into the paper. Everything else is formatted for the paper (Times New Roman 12 pt, black table borders).</p>
+  <p>To copy into Word, select the text and tables between two gray boxes, press Ctrl+C, then press Ctrl+V in Word. You can also open this file directly in Word (File → Open) and copy from there.</p>
+  <p>Measurements were taken on 28 October 2026 from the Knowing Eye source code and from real webcam frames run through the production analysis pipeline.</p>
+</div>
+
+<!-- ============================ PART 1 ============================ -->
+<div class="part"></div>
+<div class="guide">
+  <p><b>Part 1 → Chapter 2 → System Maintenance → Technical Requirements.</b></p>
+  <p>Paste after the existing "Component / Recommended Specification" table and its paragraph, before References. The existing table has no caption, so the tables here start at Table 1.</p>
+</div>
+
+<h3>Bandwidth and Real-Time Data Requirements</h3>
+<p>Knowing Eye does not transmit continuous video. During a monitored examination, the examinee's browser captures still frames from the webcam, scales each frame to 480×360 pixels, encodes it as a JPEG image at quality 0.6, and sends it to the server as a binary WebSocket message. The target rate is five frames per second. The server analyzes each frame and replies with a short JSON result. The browser sends the next frame only after the reply to the previous one arrives, so the actual rate never exceeds what the server can process.</p>
+<p>To determine the bandwidth and the volume of data processed in real time, 60 frames were captured from a laptop webcam at 640×480 pixels and encoded with the same settings the browser uses. Each frame was then passed through the production analysis pipeline, which consists of MediaPipe face and pose landmark detection and ArcFace identity verification. Message sizes were measured directly. Bandwidth figures were derived from the measured sizes and the configured frame rates.</p>
+
+<p class="caption">Table 1. <i>Frame capture and transmission parameters</i></p>
+<div class="tbl"><table>
+  <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Camera input</td><td>640×480 pixels, video only (no audio)</td></tr>
+    <tr><td>Transmitted frame resolution</td><td>480×360 pixels</td></tr>
+    <tr><td>Image encoding</td><td>JPEG, quality 0.6 (0.45 during pre-exam setup)</td></tr>
+    <tr><td>Target frame rate (examination)</td><td>5 frames per second</td></tr>
+    <tr><td>Frame rate (pre-exam setup)</td><td>1 frame per second</td></tr>
+    <tr><td>Flow control</td><td>Next frame is sent only after the server's reply to the previous frame</td></tr>
+    <tr><td>Transport</td><td>Secure WebSocket (WSS), binary messages; HTTPS fallback</td></tr>
+    <tr><td>Proctor live view</td><td>320-pixel JPEG snapshot, at most once per second, sent only while a proctor is watching</td></tr>
+    <tr><td>Identity verification rate</td><td>Every third analyzed frame</td></tr>
+    <tr><td>Video recording</td><td>None; frames are discarded after analysis, except evidence frames attached to alerts</td></tr>
+  </tbody>
+</table></div>
+
+<p class="caption">Table 2. <i>Measured message sizes</i></p>
+<div class="tbl"><table>
+  <thead><tr><th>Message</th><th class="r">Median</th><th class="r">95th percentile</th></tr></thead>
+  <tbody>
+    <tr><td>Webcam frame, examinee to server (480×360 JPEG)</td><td class="r">13.6 KB</td><td class="r">14.0 KB</td></tr>
+    <tr><td>Webcam frame, pre-exam setup (quality 0.45)</td><td class="r">11.6 KB</td><td class="r">–</td></tr>
+    <tr><td>Webcam frame, HTTPS fallback (Base64 JSON)</td><td class="r">18.2 KB</td><td class="r">18.8 KB</td></tr>
+    <tr><td>Analysis result, server to examinee</td><td class="r">1.1 KB</td><td class="r">1.3 KB</td></tr>
+    <tr><td>Live snapshot, server to proctor</td><td class="r">11.1 KB</td><td class="r">11.4 KB</td></tr>
+    <tr><td>Identity enrollment (once per session, 3 frames)</td><td class="r">47 KB</td><td class="r">–</td></tr>
+  </tbody>
+</table></div>
+
+<p class="caption">Table 3. <i>Bandwidth required per user</i></p>
+<div class="tbl"><table>
+  <thead><tr><th>User and activity</th><th>Direction</th><th class="r">Bandwidth</th><th class="r">Data per hour</th></tr></thead>
+  <tbody>
+    <tr><td>Examinee, during examination (5 fps)</td><td>Upload</td><td class="r">0.56 Mbps</td><td class="r">245 MB</td></tr>
+    <tr><td>Examinee, during examination (5 fps)</td><td>Download</td><td class="r">0.055 Mbps</td><td class="r">25 MB</td></tr>
+    <tr><td>Examinee, pre-exam setup (1 fps)</td><td>Upload</td><td class="r">0.10 Mbps</td><td class="r">–</td></tr>
+    <tr><td>Examinee, HTTPS fallback (5 fps)</td><td>Upload</td><td class="r">0.76 Mbps</td><td class="r">330 MB</td></tr>
+    <tr><td>Proctor, per examinee shown on the monitoring grid</td><td>Download</td><td class="r">0.095 Mbps</td><td class="r">41 MB</td></tr>
+    <tr><td>Proctor, single-examinee detail view</td><td>Download</td><td class="r">0.15 Mbps</td><td class="r">62 MB</td></tr>
+  </tbody>
+</table></div>
+<p class="tnote">Bandwidth includes an estimated 3–6% for TCP/IP, TLS and WebSocket headers. A minimum sustained upload speed of 1 Mbps is recommended for each examinee.</p>
+
+<p class="caption">Table 4. <i>Aggregate bandwidth and real-time data volume at the design rate of 5 frames per second</i></p>
+<div class="tbl"><table>
+  <thead><tr><th class="r">Concurrent examinees</th><th class="r">Frames analyzed per second</th><th class="r">Raw image data processed per second</th><th class="r">Server ingress</th><th class="r">Server egress</th><th class="r">Data received per exam-hour</th></tr></thead>
+  <tbody>
+    <tr><td class="r">1</td><td class="r">5</td><td class="r">2.6 MB/s</td><td class="r">0.56 Mbps</td><td class="r">0.15 Mbps</td><td class="r">0.25 GB</td></tr>
+    <tr><td class="r">30</td><td class="r">150</td><td class="r">78 MB/s</td><td class="r">17 Mbps</td><td class="r">4.4 Mbps</td><td class="r">7.3 GB</td></tr>
+    <tr><td class="r">100</td><td class="r">500</td><td class="r">259 MB/s</td><td class="r">56 Mbps</td><td class="r">14.5 Mbps</td><td class="r">24.5 GB</td></tr>
+  </tbody>
+</table></div>
+<p class="tnote">Raw image data is the decoded frame (480 × 360 pixels × 3 bytes = 518 KB per frame). Server egress assumes one proctor viewing every examinee on the monitoring grid.</p>
+
+<p>A single examinee requires about 0.56 Mbps of upload bandwidth, so a classroom of 30 examinees requires about 17 Mbps of upload capacity on the school's connection to the server. Download requirements for examinees are small, at about 0.055 Mbps each. Table 5 lists the resulting deployment specifications.</p>
+
+<p class="caption">Table 5. <i>Deployment specifications</i></p>
+<div class="tbl"><table>
+  <thead><tr><th>Component</th><th>Parameter</th><th>Specification</th></tr></thead>
+  <tbody>
+    <tr><td rowspan="5">Examinee device</td><td>Camera</td><td>Any USB or built-in webcam, 640×480 or higher</td></tr>
+    <tr><td>Browser</td><td>Current Chrome, Edge, Firefox or Safari</td></tr>
+    <tr><td>Upload speed</td><td>At least 1 Mbps sustained (0.56 Mbps measured)</td></tr>
+    <tr><td>Download speed</td><td>At least 0.5 Mbps (0.055 Mbps measured)</td></tr>
+    <tr><td>Data usage</td><td>About 245 MB uploaded per examination hour</td></tr>
+    <tr><td rowspan="2">Proctor device</td><td>Download speed</td><td>About 0.1 Mbps per examinee displayed; 3 Mbps for 30 examinees</td></tr>
+    <tr><td>Browser</td><td>Current Chrome, Edge, Firefox or Safari</td></tr>
+    <tr><td>School network</td><td>Upload capacity to server</td><td>About 17 Mbps per 30 concurrent examinees</td></tr>
+    <tr><td rowspan="5">Application server</td><td>Runtime</td><td>Python 3.12 with Django Channels on the Daphne ASGI server</td></tr>
+    <tr><td>Processing cost</td><td>About 0.85 CPU-core-seconds per analyzed frame</td></tr>
+    <tr><td>Processes</td><td>One process per 10 frames per second required; Redis 7 broker when more than one process is used</td></tr>
+    <tr><td>Memory</td><td>About 0.5 GB per process, plus at least 2 GB free</td></tr>
+    <tr><td>Network</td><td>About 0.56 Mbps ingress per concurrent examinee</td></tr>
+    <tr><td>Database</td><td>Engine</td><td>PostgreSQL</td></tr>
+    <tr><td>Storage</td><td>Evidence images</td><td>Up to 0.75 MB per examination session; no video is recorded</td></tr>
+  </tbody>
+</table></div>
+
+<!-- ============================ PART 2 ============================ -->
+<div class="part"></div>
+<div class="guide">
+  <p><b>Part 2 → Chapter 2 → System Testing.</b></p>
+  <p>Paste at the end of System Testing, after the RT-DETR-l discussion and before System Maintenance. System Testing already has Tables 1–5, so this table is Table 6.</p>
+</div>
+
+<h3>Server Throughput Testing</h3>
+<p>Server throughput was measured by running one to sixteen simulated examinees against a single server process on an Intel Core i5-11300H laptop (4 cores, 8 threads, 7.7 GB RAM). Each simulated examinee sent the next frame only after receiving the reply to the previous one, in the same way as the browser. The frames contained a face, so both MediaPipe detection and ArcFace identity verification ran during the test.</p>
+
+<p class="caption">Table 6. <i>Measured throughput of a single server process</i></p>
+<div class="tbl"><table>
+  <thead><tr><th class="r">Concurrent examinees</th><th class="r">Total frames per second</th><th class="r">Frames per second per examinee</th><th class="r">Median response time</th><th class="r">95th percentile response time</th></tr></thead>
+  <tbody>
+    <tr><td class="r">1</td><td class="r">5.4–6.7</td><td class="r">5.4–6.7</td><td class="r">156–182 ms</td><td class="r">191–228 ms</td></tr>
+    <tr><td class="r">2</td><td class="r">5.3</td><td class="r">2.7</td><td class="r">364 ms</td><td class="r">456 ms</td></tr>
+    <tr><td class="r">4</td><td class="r">5.3–6.0</td><td class="r">1.3–1.5</td><td class="r">660–750 ms</td><td class="r">750–870 ms</td></tr>
+    <tr><td class="r">8</td><td class="r">5.5</td><td class="r">0.7</td><td class="r">1.43 s</td><td class="r">1.60 s</td></tr>
+    <tr><td class="r">16</td><td class="r">5.6–5.8</td><td class="r">0.35</td><td class="r">2.6–2.8 s</td><td class="r">3.0–3.4 s</td></tr>
+  </tbody>
+</table></div>
+<p class="tnote">Measured on an Intel Core i5-11300H (4 cores, 8 threads) with 7.7 GB RAM. Ranges show the spread across repeated runs.</p>
+
+<p>Server processing is the limiting factor. Each analyzed frame consumed about 0.85 CPU-core-seconds, of which ArcFace identity verification accounted for roughly 85 to 90 percent. A single server process analyzed about 5.5 to 6.7 frames per second in total, regardless of how many examinees were connected, so each additional examinee reduced the frame rate of the others. Because the face and pose detectors are shared within a process and run one frame at a time, a process cannot exceed about 10 frames per second even on a larger machine. Supporting 30 examinees at five frames per second therefore requires about 150 frames per second of capacity, distributed across at least 15 server processes connected through a Redis message broker.</p>
+<p>Because each browser waits for the server's reply before sending the next frame, the system degrades gradually rather than failing under load. An overloaded server analyzes frames less often, and the bandwidth used falls with it.</p>
+<p>Message sizes do not depend on server hardware and are expected to hold in deployment, although brighter or more detailed scenes produce larger images. For this reason, capacity planning should use the 95th percentile sizes. Processing figures were measured on a development laptop that had less than 1 GB of free memory during testing, and repeated runs varied by up to a factor of two. These figures are therefore conservative. A dedicated server is expected to perform better, and the processing measurements should be repeated on the deployment hardware before final capacity is stated. Network overhead was estimated rather than captured.</p>
+
+<!-- ============================ PART 3 ============================ -->
+<div class="part"></div>
+<div class="guide">
+  <p><b>Part 3 → Replacements for existing lines in the paper.</b></p>
+  <p>These lines currently disagree with the measurements. Replace each one in place.</p>
+</div>
+
+<div class="guide">
+  <p><b>Chapter 2 → System Analysis → Functional and Non-Functional Requirements → Non-Function Requirements.</b></p>
+  <p>Replace the current "Performance" line.</p>
+</div>
+<p>Performance: Frame analysis completes in about 160–180 ms per frame for a single examinee at the 5 FPS target; response time increases as more examinees share one server process (about 0.7 s with four examinees). REST API responses ≤ 2 s under normal load.</p>
+
+<div class="guide">
+  <p><b>Same list.</b> Replace the current "Scalability" line.</p>
+</div>
+<p>Scalability: One server process analyzes about 5.5–6.7 frames per second in total. Supporting more concurrent examinees at the target rate requires additional server processes connected through the Redis channel layer, at about one process per 10 frames per second.</p>
+
+<div class="guide">
+  <p><b>Chapter 2 → System Maintenance → Technical Requirements → existing specification table.</b></p>
+  <p>Replace the right-hand cell of the "Camera" row and of the "Network" row.</p>
+</div>
+<div class="tbl"><table>
+  <thead><tr><th>Component</th><th>Recommended Specification</th></tr></thead>
+  <tbody>
+    <tr><td>Camera</td><td>External or built-in webcam, 640×480 or higher (frames are scaled to 480×360 and sent at up to 5 frames per second)</td></tr>
+    <tr><td>Network</td><td>Stable wired Ethernet or 5 GHz Wi-Fi with at least 1 Mbps sustained upload</td></tr>
+  </tbody>
+</table></div>
+
+</div>
+</body>
+</html>
