@@ -233,7 +233,7 @@ erDiagram
         <div><h3>Tailwind CSS 4 + Radix UI (shadcn/ui)</h3><p>Design system in <code>shared/components/ui/</code>—forms, dialogs, tables, and charts used across login, exam setup, and monitoring views.</p></div>
       </article>
       <article class="tech-card">
-        <div><h3>Browser Media APIs</h3><p><code>getUserMedia()</code>, Canvas JPEG encoding, and WebSocket in <code>shared/hooks/use-monitoring.ts</code> capture and stream ~1 FPS webcam frames during an exam session.</p></div>
+        <div><h3>Browser Media APIs</h3><p><code>getUserMedia()</code>, Canvas JPEG encoding, and WebSocket in <code>shared/hooks/use-monitoring.ts</code> capture and stream webcam frames (480×360 JPEG, up to 5 FPS, paced by the server's replies) during an exam session.</p></div>
       </article>
     </div>
 
@@ -538,22 +538,63 @@ erDiagram
         <tr><td>Distance / field of view</td><td>~40-70cm (arm's length), standard laptop-webcam FOV (~60-78°), framing head <strong>and</strong> shoulders - derived from <code>face_detector.py</code>'s minimum detectable face size (<code>_MIN_FACE_PX=56</code> at the pipeline's 480px capture width, ≈12% of frame width minimum) and from the upper-body-visibility signal needing shoulder landmarks in frame</td></tr>
         <tr><td>Resolution</td><td>640×480 minimum/recommended - matches the frontend's capture request and <code>preprocessing.max_width: 640</code>; higher source resolution is downscaled before inference, so it doesn't improve accuracy</td></tr>
         <tr><td>Lighting</td><td>Even, front-facing illumination; avoid backlighting (light source behind the examinee) - a general face-detection failure mode, not project-specific research</td></tr>
-        <tr><td rowspan="5">Client device</td><td>RAM</td><td>≥4GB - one browser tab encoding a 480px JPEG at 1fps is not resource-heavy; this is a generic modern-browser floor, not a pipeline-specific figure</td></tr>
+        <tr><td rowspan="5">Client device</td><td>RAM</td><td>≥4GB - one browser tab encoding a 480px JPEG at up to 5fps is not resource-heavy; this is a generic modern-browser floor, not a pipeline-specific figure</td></tr>
         <tr><td>Processor</td><td>Dual-core 1.6GHz+</td></tr>
         <tr><td>OS / Browser</td><td>Any OS running an evergreen browser with <code>getUserMedia</code>, WebSocket, and Canvas 2D support (Chrome/Edge/Firefox/Safari, current)</td></tr>
         <tr><td>Camera</td><td>Any UVC-compliant webcam meeting the camera requirements above</td></tr>
-        <tr><td>Internet</td><td>≥1 Mbps upload recommended - measured frame payload is ~5.4KB (see below), ≈43 kbps sustained at 1fps per examinee; 1 Mbps leaves headroom for TLS/WS overhead and shared classroom network load</td></tr>
-        <tr><td rowspan="6">Server</td><td>CPU</td><td>≥4 dedicated vCPUs for a single-process deployment - <strong>measured:</strong> 3 concurrent WebSocket connections drove one Django/Daphne process to 100% of a single logical core; inference is unparallelized per frame, so CPU scales roughly with concurrent connections (see load-test results below for the honest limits of this extrapolation)</td></tr>
-        <tr><td>RAM</td><td>Several GB of true free headroom beyond the app's own footprint - <strong>measured:</strong> the server process itself used ~271MB RSS regardless of host memory pressure, but running with &lt;0.5GB of total system-free RAM caused catastrophic OS-level latency degradation (p95 response time 164s vs. 1.9s with adequate headroom) even at only 3 concurrent connections. The app's footprint alone underrepresents what to provision.</td></tr>
+        <tr><td>Internet</td><td>≥1 Mbps sustained upload recommended (≥0.5 Mbps download) - <strong>measured:</strong> a real 480×360 webcam frame at JPEG quality 0.6 is 13.6KB median (14.0KB p95), ≈544 kbps payload / ≈0.56 Mbps on the wire at the 5fps exam rate, ≈245MB uploaded per exam-hour; downstream replies are ≈1.1KB per frame (≈55 kbps). See <a href="#bandwidth">Bandwidth &amp; real-time data volume</a></td></tr>
+        <tr><td rowspan="6">Server</td><td>CPU</td><td>Sized by analyzed frames per second, not by user count - <strong>measured:</strong> ≈0.82-0.90 CPU-core-seconds per frame with ArcFace identity checks enabled (≈0.08-0.15 with MediaPipe alone), and one Daphne process saturates at ≈5.5-6.7 frames/s in total however many examinees are connected. A process-wide lock around the MediaPipe landmarkers also caps one process at roughly 10 frames/s even with unlimited cores, so beyond that the server must scale out to more processes (Redis channel layer). See <a href="#throughput">Measured server throughput</a></td></tr>
+        <tr><td>RAM</td><td>Several GB of true free headroom beyond the app's own footprint - <strong>measured:</strong> the server process itself used ~271MB RSS regardless of host memory pressure (≈440-510MB once the ArcFace models are loaded), but running with &lt;0.5GB of total system-free RAM caused catastrophic OS-level latency degradation (p95 response time 164s vs. 1.9s with adequate headroom) even at only 3 concurrent connections. The app's footprint alone underrepresents what to provision.</td></tr>
         <tr><td>Storage</td><td>Minimal - raw frames are not stored by default (<code>KE_STORE_FRAMES=False</code>, see <a href="#snapshot-monitoring">Snapshot Monitoring</a>); standard footprint for code/logs/DB</td></tr>
-        <tr><td>Network</td><td>Scales with the client estimate above: ≈1.3 Mbps for 30 concurrent examinees, ≈4.3 Mbps for 100, plus REST/DB/broadcast overhead - provision generously</td></tr>
+        <tr><td>Network</td><td>At the 5fps design rate: ingress ≈17 Mbps for 30 concurrent examinees and ≈56 Mbps for 100; egress ≈4.4 / ≈14.5 Mbps including one proctor watching every examinee as a grid tile (≈95 kbps per tile). Because each browser waits for its reply before sending the next frame, real usage never exceeds what the server analyzes - ≈0.65 Mbps total on a single process</td></tr>
         <tr><td>Hosting environment</td><td>Daphne/ASGI behind Nginx (see <code>docs/deployment.md</code>). <strong>Correction from this sprint's testing:</strong> the project's actual configured database engine is PostgreSQL, not SQLite - discovered because the load-test harness's direct-database seeding command failed against an unmigrated Postgres instance. The Channels layer defaults to <code>InMemoryChannelLayer</code> (single-process only) unless <code>REDIS_URL</code> is set and <code>channels-redis</code> installed (documented as an optional production step in <code>docs/deployment.md</code>) - multi-worker horizontal scaling requires that step, and was not exercised by this load test (a single Daphne process was the test target).</td></tr>
         <tr><td>Concurrent-user target</td><td>See "Answering the Directive's question" below</td></tr>
       </tbody>
     </table></div>
 
+    <h3 id="bandwidth">Bandwidth &amp; real-time data volume</h3>
+    <p>Measured with <code>scripts/load/measure_payloads.py</code>: 60 real webcam frames (640×480 source, held in memory only) encoded exactly as <code>use-monitoring.ts</code> does, then run through the production pipeline. Payload sizes do not depend on the server hardware. Wire overhead (TCP/IP, TLS, WebSocket headers, ≈3-6%) is estimated, not packet-captured. Full derivations: <code>docs/bandwidth-and-deployment-specs.md</code>.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Parameter</th><th>Value</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Uploaded frame</td><td>480×360 JPEG, quality 0.6 (0.45 during setup), binary WebSocket message</td><td><code>use-monitoring.ts</code></td></tr>
+        <tr><td>Exam frame rate</td><td>Target 5 frames/s; next frame sent only after the server's reply</td><td><code>use-exam-taking.ts</code>, <code>target_fps: 5</code></td></tr>
+        <tr><td>Frame size</td><td>13.6KB median, 14.0KB p95</td><td>measured</td></tr>
+        <tr><td>Analysis reply to examinee</td><td>1.1KB median, 1.26KB p95</td><td>measured</td></tr>
+        <tr><td>Proctor tile snapshot</td><td>320px JPEG, 11.1KB, at most once per second, only while a proctor is watching</td><td>measured; <code>consumers.py</code></td></tr>
+        <tr><td>Examinee upload</td><td>≈0.56 Mbps (≈245MB per exam-hour)</td><td>derived</td></tr>
+        <tr><td>Examinee download</td><td>≈55 kbps</td><td>derived</td></tr>
+        <tr><td>Proctor download</td><td>≈95 kbps per visible tile (30 tiles ≈ 3 Mbps)</td><td>derived</td></tr>
+        <tr><td>REST fallback upload</td><td>18.2KB base64 JSON per frame, ≈0.76 Mbps</td><td>measured / derived</td></tr>
+        <tr><td>Decoded data per frame</td><td>480×360×3 = 518KB raw pixels</td><td>arithmetic</td></tr>
+      </tbody>
+    </table></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Concurrent examinees</th><th>Frames analyzed / s</th><th>Raw pixels processed / s</th><th>Server ingress</th><th>Server egress</th><th>Upload volume per exam-hour</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>5</td><td>2.6MB/s</td><td>0.56 Mbps</td><td>0.15 Mbps</td><td>0.25GB</td></tr>
+        <tr><td>30</td><td>150</td><td>78MB/s</td><td>≈17 Mbps</td><td>≈4.4 Mbps</td><td>7.3GB</td></tr>
+        <tr><td>100</td><td>500</td><td>259MB/s</td><td>≈56 Mbps</td><td>≈14.5 Mbps</td><td>24.5GB</td></tr>
+      </tbody>
+    </table></div>
+    <p class="doc-lead" style="font-size:0.85rem">These are design-rate figures (every examinee at 5 fps). Egress assumes one proctor watching every examinee as a grid tile.</p>
+
+    <h3 id="throughput">Measured server throughput</h3>
+    <p>Measured with <code>scripts/load/measure_throughput.py</code>: N simulated examinees share one pipeline on worker threads (the same threading model as <code>MonitoringConsumer</code>), each waiting for its reply before sending the next frame. Machine: Intel Core i5-11300H (4 cores / 8 threads), 7.7GB RAM with 0.5-0.9GB free (shared development laptop). These are conservative figures; dedicated server hardware should do better.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Concurrent examinees</th><th>Total frames/s</th><th>Frames/s each</th><th>Reply latency (median)</th><th>Reply latency (p95)</th><th>Process CPU</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>5.4-6.7</td><td>5.4-6.7</td><td>156-182ms</td><td>191-228ms</td><td>480-535%</td></tr>
+        <tr><td>2</td><td>5.3</td><td>2.7</td><td>364ms</td><td>456ms</td><td>540%</td></tr>
+        <tr><td>4</td><td>5.3-6.0</td><td>1.3-1.5</td><td>660-750ms</td><td>750-870ms</td><td>550-610%</td></tr>
+        <tr><td>8</td><td>5.5</td><td>0.7</td><td>1.43s</td><td>1.60s</td><td>580%</td></tr>
+        <tr><td>16</td><td>5.6-5.8</td><td>0.35</td><td>2.6-2.8s</td><td>3.0-3.4s</td><td>560%</td></tr>
+      </tbody>
+    </table></div>
+    <p class="doc-lead" style="font-size:0.85rem">Total throughput stays flat as examinees are added; each new examinee only splits the same budget. The ArcFace identity check (every third frame) accounts for roughly 85-90% of the per-frame CPU cost. Beyond about 10 examinees per process, the interval between analyses exceeds the 2s <code>no_face_grace_seconds</code>. Compute to provision ≈ examinees × frames/s × 0.85 core-seconds, spread over at least one process per ≈10 frames/s.</p>
+
     <h3>Load testing</h3>
-    <p>Harness: <code>scripts/load/</code> (Locust, driving both the REST health endpoint and the WebSocket snapshot channel at the real ~1fps frontend cadence). Full methodology and how to re-run it: <code>scripts/load/README.md</code>.</p>
+    <p>Harness: <code>scripts/load/</code> (Locust, driving both the REST health endpoint and the WebSocket snapshot channel at a ~1fps cadence; the exam itself now targets 5fps, see <a href="#throughput">Measured server throughput</a>). Full methodology and how to re-run it: <code>scripts/load/README.md</code>.</p>
     <p><strong>What was actually run:</strong> the Directive's 5→10→20→30→50→100 concurrency ladder was <strong>not completed at target scale</strong> on this development machine, and that is reported honestly rather than papered over. The development laptop available for this sprint had well under 1GB of free system RAM throughout testing (0.19-0.94GB, fluctuating for reasons unrelated to this test - other work already running on a shared machine), which is not a safe or representative environment to push to 100 simulated concurrent ML-inference connections. Two validation runs at n=3 were completed instead, deliberately, to prove the harness itself works correctly before ever attempting higher rungs:</p>
     <div class="table-wrap"><table>
       <thead><tr><th>Concurrent examinees</th><th>Host free RAM</th><th>Requests</th><th>Failures</th><th>Median</th><th>p95</th><th>Peak CPU</th><th>Peak RSS</th></tr></thead>
@@ -565,10 +606,11 @@ erDiagram
     <p class="doc-lead" style="font-size:0.85rem">The two runs' near-identical RSS with wildly different latency is itself the finding: at n=3, the application's own resource use is stable and modest - the second run's collapse was the <em>host</em> running out of memory underneath it, not the app scaling badly. That distinction is exactly why the server RAM requirement above is stated as "headroom beyond the app's footprint," not just "the app's footprint."</p>
     <h4>Answering the Directive's question</h4>
     <p><em>"Can it handle ~30 examinees in a room, and ~100 overall?"</em> Honest answer: <strong>not established empirically at that scale yet.</strong> What is established: the harness that measures it is built, debugged (three real bugs were found and fixed while validating it - see <code>scripts/load/README.md</code>), and ready to run the full ladder in one command against hardware with confirmed free CPU/RAM headroom - a dedicated test VM or server, not a shared development laptop mid other work. Reporting "yes, 100" without having run that test would be exactly the kind of unresearched claim this whole sprint exists to eliminate. The n=3 result plus the memory-pressure finding are real, defensible data; the 30/100 target-scale numbers are the next, mechanically straightforward step once suitable hardware is available.</p>
+    <p><strong>What the throughput measurement adds:</strong> a single Daphne process cannot give 30 examinees the 5fps design rate. It analyzes ≈5.5-6.7 frames/s in total, which leaves each of 30 examinees one analysis every ≈5.5s. Serving 30 examinees at 5fps needs ≈150 frames/s, i.e. at least 15 processes behind the Redis channel layer. On the measured laptop-class CPU that is ≈128 cores, or ≈26 cores at 1fps. Those core counts come from the conservative laptop measurement and must be re-measured on the deployment host before they are quoted as final.</p>
 
     <h3>CV Pipeline Stages</h3>
     <div class="two-col">
-      <div class="card"><h4>1. Data Collection</h4><p class="muted" style="font-size:0.9rem">Browser <code>getUserMedia()</code> captures webcam video; canvas encodes JPEG/base64 at ~1 FPS. Transport: WebSocket <code>/ws/monitoring/{session_id}/</code> (REST <code>/api/monitoring/frame/</code> fallback).</p></div>
+      <div class="card"><h4>1. Data Collection</h4><p class="muted" style="font-size:0.9rem">Browser <code>getUserMedia()</code> captures webcam video; canvas encodes a 480×360 JPEG (quality 0.6) up to 5 FPS, sent as a binary WebSocket message. Transport: WebSocket <code>/ws/monitoring/{session_id}/</code> (REST <code>/api/monitoring/frame/</code> fallback).</p></div>
       <div class="card"><h4>2. Pre-processing</h4><p class="muted" style="font-size:0.9rem">Base64 → BGR; resize to ≤640px; optional denoise; YCbCr histogram equalization. Config: <code>backend/ai/config/pipeline.yaml</code>.</p></div>
       <div class="card"><h4>3. Feature Extraction</h4><p class="muted" style="font-size:0.9rem">MediaPipe (468 face landmarks, head yaw/pitch, posture ratios) and ArcFace identity embedding.</p></div>
       <div class="card"><h4>4. Classification &amp; Scoring</h4><p class="muted" style="font-size:0.9rem">Threshold-based 0–100% metrics, rule-based event flags, sliding-window temporal patterns, and equal-weight aggregation into the <a href="04-system-testing.html#ebi">Exam Behavior Index</a> (<code>exam_behavior_index_pct</code>, also exposed as <code>overall_compliance_pct</code>).</p></div>
