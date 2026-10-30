@@ -100,72 +100,364 @@ erDiagram
 }</code></pre>
 
     <h2 id="data-dictionary">Data Dictionary</h2>
-    <h3>authentication_user</h3>
+    <p>Every table in the Knowing Eye database (20 tables), generated from the Django models under <code>backend/features/</code>. Tables are grouped by the data store they make up in the <a href="02-system-analysis.html#dfd1">Level 1 DFD</a> (D1–D6). Types use generic SQL names. On PostgreSQL (production) <code>DATETIME</code> is <code>timestamptz</code>, <code>JSON</code> is <code>jsonb</code> and <code>FLOAT</code> is <code>double precision</code>; SQLite (development) stores the same columns with its own affinity types. <code>auto</code> timestamps are set by Django on create or update.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Store</th><th>Name</th><th>Django app</th><th>Tables</th></tr></thead>
+      <tbody>
+        <tr><td>D1</td><td>User &amp; Access Store</td><td><code>authentication</code></td><td><code>authentication_user</code>, <code>authentication_permission_change</code>, <code>authentication_email_verification</code></td></tr>
+        <tr><td>D2</td><td>Exam &amp; Question Bank</td><td><code>exams</code></td><td><code>exams_department</code>, <code>exams_category</code>, <code>exams_exam</code>, <code>exams_exam_departments</code>, <code>exams_section</code>, <code>exams_question_pool</code>, <code>exams_question</code>, <code>exams_question_attachment</code>, <code>exams_assignment</code>, <code>exams_approval_event</code></td></tr>
+        <tr><td>D3</td><td>Session &amp; Response Store</td><td><code>exam_sessions</code></td><td><code>user_sessions_exam_session</code>, <code>user_sessions_response</code>, <code>user_sessions_session_log</code></td></tr>
+        <tr><td>D4</td><td>Identity Reference Store</td><td><code>monitoring</code></td><td><code>monitoring_identity_reference</code></td></tr>
+        <tr><td>D5</td><td>Behavior &amp; Alert Log</td><td><code>behavior</code></td><td><code>behavior_log</code>, <code>behavior_alert</code></td></tr>
+        <tr><td>D6</td><td>Evidence Snapshot Store</td><td><code>monitoring</code></td><td><code>monitoring_session_snapshot</code></td></tr>
+      </tbody>
+    </table></div>
+    <h3 id="dd-d1">D1 - User &amp; Access Store</h3>
+    <h4><code>authentication_user</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Account for every role. Extends Django's <code>AbstractUser</code>; groups/permissions M2M tables are inherited from Django.</p>
     <div class="table-wrap"><table>
       <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td>id</td><td>INTEGER</td><td>PK, auto</td><td>Unique user identifier</td></tr>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Unique user identifier</td></tr>
         <tr><td>username</td><td>VARCHAR(150)</td><td>UNIQUE, NOT NULL</td><td>Login username</td></tr>
-        <tr><td>email</td><td>VARCHAR(254)</td><td>UNIQUE, NOT NULL</td><td>Contact email</td></tr>
-        <tr><td>password</td><td>VARCHAR(128)</td><td>NOT NULL</td><td>Hashed password (PBKDF2)</td></tr>
-        <tr><td>role</td><td>VARCHAR(20)</td><td>ADMIN | GUIDANCE_STAFF | PROGRAM_HEAD | FACULTY | PROCTOR | STUDENT</td><td>RBAC role (see <a href="#access-control">Access Control</a>)</td></tr>
+        <tr><td>email</td><td>VARCHAR(254)</td><td>UNIQUE, NOT NULL</td><td>Contact email; target of OTP and result emails</td></tr>
+        <tr><td>password</td><td>VARCHAR(128)</td><td>NOT NULL</td><td>Hashed password (PBKDF2), never plaintext</td></tr>
+        <tr><td>first_name, last_name</td><td>VARCHAR(150)</td><td>blank allowed</td><td>Display name</td></tr>
+        <tr><td>role</td><td>VARCHAR(20)</td><td>ADMIN | GUIDANCE_STAFF | PROGRAM_HEAD | FACULTY | PROCTOR | STUDENT; DEFAULT STUDENT; indexed</td><td>RBAC role (see <a href="#access-control">Access Control</a>)</td></tr>
         <tr><td>email_verified</td><td>BOOLEAN</td><td>DEFAULT false</td><td>Set once the registration OTP is confirmed</td></tr>
+        <tr><td>avatar</td><td>VARCHAR(100)</td><td>NULL; file path under <code>avatars/{id}/</code></td><td>Profile picture</td></tr>
+        <tr><td>phone</td><td>VARCHAR(32)</td><td>DEFAULT ''</td><td>Contact number</td></tr>
+        <tr><td>institution</td><td>VARCHAR(255)</td><td>DEFAULT ''</td><td>School / organisation</td></tr>
+        <tr><td>student_id</td><td>VARCHAR(64)</td><td>DEFAULT ''</td><td>Institutional ID number (examinees)</td></tr>
         <tr><td>is_active</td><td>BOOLEAN</td><td>DEFAULT true</td><td>Account enabled flag</td></tr>
+        <tr><td>is_staff, is_superuser</td><td>BOOLEAN</td><td>DEFAULT false</td><td>Django admin-site flags only; app permissions come from <code>role</code> + PBAC grants</td></tr>
+        <tr><td>last_login, last_seen_at</td><td>DATETIME</td><td>NULL</td><td>Last sign-in / last activity</td></tr>
+        <tr><td>date_joined, created_at, updated_at</td><td>DATETIME</td><td>auto</td><td>Audit timestamps</td></tr>
+      </tbody>
+    </table></div>
+    <h4><code>authentication_permission_change</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Audit trail of delegated PBAC grant / deny / revoke actions.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>target_id</td><td>BIGINT</td><td>FK → authentication_user, CASCADE</td><td>User whose permissions changed</td></tr>
+        <tr><td>actor_id</td><td>BIGINT</td><td>FK → authentication_user, SET NULL, NULL</td><td>Who made the change</td></tr>
+        <tr><td>permission</td><td>VARCHAR(100)</td><td>NOT NULL</td><td>Permission key, e.g. <code>module.exams</code> or <code>action.exams.create</code></td></tr>
+        <tr><td>action</td><td>VARCHAR(10)</td><td>grant | deny | revoke</td><td>What was done</td></tr>
+        <tr><td>created_at</td><td>DATETIME</td><td>auto; indexed with target, permission</td><td>When it happened</td></tr>
+      </tbody>
+    </table></div>
+    <h4><code>authentication_email_verification</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">One-time codes for OTP email verification.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>user_id</td><td>BIGINT</td><td>FK → authentication_user, CASCADE</td><td>Account the code was issued to</td></tr>
+        <tr><td>purpose</td><td>VARCHAR(20)</td><td>email_verify; DEFAULT email_verify</td><td>Generalised for future OTP purposes (e.g. password reset)</td></tr>
+        <tr><td>code_hash</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>OTP hashed with Django's password hasher, never stored in plaintext</td></tr>
+        <tr><td>attempts</td><td>INTEGER</td><td>≥ 0, DEFAULT 0 (limit <code>OTP_MAX_ATTEMPTS</code>, default 5)</td><td>Failed verification attempts before a new code is required</td></tr>
+        <tr><td>expires_at</td><td>DATETIME</td><td>NOT NULL</td><td>Issue time + <code>OTP_TTL_MINUTES</code> (default 10)</td></tr>
+        <tr><td>consumed_at</td><td>DATETIME</td><td>NULL until used / invalidated</td><td>Set on successful verify or when superseded by a resend</td></tr>
+        <tr><td>created_at</td><td>DATETIME</td><td>auto</td><td>Issue time; the resend cooldown (<code>OTP_RESEND_COOLDOWN_SECONDS</code>, default 60) is measured from it</td></tr>
+      </tbody>
+    </table></div>
+    <h3 id="dd-d2">D2 - Exam &amp; Question Bank</h3>
+    <h4><code>exams_department</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Institutional departments; the home department's abbreviation prefixes exam codes.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>name</td><td>VARCHAR(255)</td><td>UNIQUE</td><td>Department name</td></tr>
+        <tr><td>abbreviation</td><td>VARCHAR(16)</td><td>UNIQUE</td><td>Short code used in exam codes (e.g. ENT, IIT)</td></tr>
+        <tr><td>is_active</td><td>BOOLEAN</td><td>DEFAULT true</td><td>Shown in pickers</td></tr>
+        <tr><td>sort_order</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Display order</td></tr>
         <tr><td>created_at, updated_at</td><td>DATETIME</td><td>auto</td><td>Audit timestamps</td></tr>
       </tbody>
     </table></div>
-    <h3>authentication_email_verification</h3>
+    <h4><code>exams_category</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Guidance content classification (psychological, behavioral, …), independent of department.</p>
     <div class="table-wrap"><table>
       <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td>user_id</td><td>INTEGER</td><td>FK → authentication_user</td><td>Account the code was issued to</td></tr>
-        <tr><td>purpose</td><td>VARCHAR(20)</td><td>email_verify</td><td>Generalized for future OTP purposes (e.g. password reset)</td></tr>
-        <tr><td>code_hash</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>OTP hashed with Django's password hasher, never stored in plaintext</td></tr>
-        <tr><td>attempts</td><td>INTEGER</td><td>DEFAULT 0, max 5</td><td>Failed verification attempts before a new code is required</td></tr>
-        <tr><td>expires_at</td><td>DATETIME</td><td>NOT NULL</td><td>10 minutes from issue</td></tr>
-        <tr><td>consumed_at</td><td>DATETIME</td><td>NULL until used/invalidated</td><td>Set on successful verify or when superseded by a resend</td></tr>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>name</td><td>VARCHAR(255)</td><td>UNIQUE</td><td>Category name</td></tr>
+        <tr><td>slug</td><td>VARCHAR(64)</td><td>UNIQUE</td><td>URL / filter key</td></tr>
+        <tr><td>description</td><td>TEXT</td><td>DEFAULT ''</td><td>What the category covers</td></tr>
+        <tr><td>is_active</td><td>BOOLEAN</td><td>DEFAULT true</td><td>Shown in pickers</td></tr>
+        <tr><td>sort_order</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Display order</td></tr>
+        <tr><td>created_at, updated_at</td><td>DATETIME</td><td>auto</td><td>Audit timestamps</td></tr>
       </tbody>
     </table></div>
-    <h3>exams_exam &amp; exams_question</h3>
+    <h4><code>exams_exam</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Exam definition, delivery settings, and approval-chain state.</p>
     <div class="table-wrap"><table>
       <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td>exam.title</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Exam name</td></tr>
-        <tr><td>exam.duration_minutes</td><td>INTEGER</td><td>DEFAULT 120</td><td>Time limit</td></tr>
-        <tr><td>exam.passing_score</td><td>INTEGER</td><td>0–100</td><td>Minimum % to pass</td></tr>
-        <tr><td>exam.status</td><td>VARCHAR(20)</td><td>draft | active | archived</td><td>Publish lifecycle state</td></tr>
-        <tr><td>exam.approval_status</td><td>VARCHAR(20)</td><td>not_submitted | pending | approved | rejected</td><td>Level 0/1 review chain gating publish (see <a href="#access-control">Access Control</a>)</td></tr>
-        <tr><td>exam.submitted_by, submitted_at</td><td>FK, DATETIME</td><td>NULL until submitted</td><td>Who submitted the exam for review, and when</td></tr>
-        <tr><td>exam.reviewed_by, reviewed_at</td><td>FK, DATETIME</td><td>NULL until reviewed</td><td>Who approved/rejected the exam, and when</td></tr>
-        <tr><td>exam.rejection_note</td><td>TEXT</td><td>blank by default</td><td>Reviewer feedback when rejected</td></tr>
-        <tr><td>question.question_type</td><td>VARCHAR(20)</td><td>MCQ, T/F, etc.</td><td>Answer format</td></tr>
-        <tr><td>question.options</td><td>JSON</td><td>DEFAULT []</td><td>MCQ choices</td></tr>
-        <tr><td>question.correct_answer</td><td>TEXT</td><td>NOT NULL</td><td>Scoring key</td></tr>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Unique exam identifier</td></tr>
+        <tr><td>title</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Exam name</td></tr>
+        <tr><td>description, instructions</td><td>TEXT</td><td>blank allowed</td><td>Overview and examinee instructions</td></tr>
+        <tr><td>exam_code</td><td>VARCHAR(32)</td><td>UNIQUE, NULL; indexed</td><td>Institutional code (e.g. ENT-2026-A)</td></tr>
+        <tr><td>department_id</td><td>BIGINT</td><td>FK → exams_department, PROTECT, NULL</td><td>Home department (used for the code)</td></tr>
+        <tr><td>category_id</td><td>BIGINT</td><td>FK → exams_category, SET NULL, NULL; indexed</td><td>Guidance content category</td></tr>
+        <tr><td>duration_minutes</td><td>INTEGER</td><td>≥ 1, DEFAULT 120</td><td>Time limit</td></tr>
+        <tr><td>total_questions</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Auto-calculated question count</td></tr>
+        <tr><td>passing_score</td><td>INTEGER</td><td>0–100, DEFAULT 40</td><td>Minimum % to pass</td></tr>
+        <tr><td>available_from, available_until</td><td>DATETIME</td><td>NULL; indexed together</td><td>Scheduling window for starting the exam</td></tr>
+        <tr><td>max_attempts</td><td>INTEGER</td><td>≥ 1, DEFAULT 1</td><td>Completed attempts allowed per examinee</td></tr>
+        <tr><td>is_practice</td><td>BOOLEAN</td><td>DEFAULT false</td><td>Practice exam: unlimited attempts, optional answer reveal</td></tr>
+        <tr><td>requires_assignment</td><td>BOOLEAN</td><td>DEFAULT false</td><td>Only rostered examinees (exams_assignment) may start</td></tr>
+        <tr><td>monitoring_enabled</td><td>BOOLEAN</td><td>DEFAULT true</td><td>Require proctoring setup and webcam monitoring</td></tr>
+        <tr><td>shuffle_questions, shuffle_options</td><td>BOOLEAN</td><td>DEFAULT false</td><td>Randomise question / option order per attempt</td></tr>
+        <tr><td>presentation_mode</td><td>VARCHAR(20)</td><td>one_per_page | section_per_page | scroll_all; DEFAULT one_per_page</td><td>How questions are paged</td></tr>
+        <tr><td>disable_copy_paste</td><td>BOOLEAN</td><td>DEFAULT false</td><td>Block copy, cut and paste during the exam</td></tr>
+        <tr><td>max_tab_switches</td><td>INTEGER</td><td>≥ 0, NULL = no limit</td><td>Tab switches allowed before the attempt is flagged</td></tr>
+        <tr><td>unanswered_counts_as_wrong</td><td>BOOLEAN</td><td>DEFAULT true</td><td>Unanswered questions score zero toward the total</td></tr>
+        <tr><td>results_release_at</td><td>DATETIME</td><td>NULL = immediately on submit</td><td>When examinees may view results</td></tr>
+        <tr><td>show_correct_answers</td><td>VARCHAR(20)</td><td>never | after_release | immediately; DEFAULT never</td><td>When correct answers are revealed</td></tr>
+        <tr><td>status</td><td>VARCHAR(20)</td><td>draft | active | archived; DEFAULT draft; indexed</td><td>Publish lifecycle state</td></tr>
+        <tr><td>previous_status</td><td>VARCHAR(20)</td><td>DEFAULT ''</td><td>Status before archiving, restored on unarchive</td></tr>
+        <tr><td>approval_status</td><td>VARCHAR(20)</td><td>not_submitted | pending | approved | rejected; DEFAULT not_submitted; indexed</td><td>Review chain state; must be approved before publish (see <a href="#access-control">Access Control</a>)</td></tr>
+        <tr><td>submitted_by_id, submitted_at</td><td>BIGINT, DATETIME</td><td>FK → authentication_user, SET NULL; NULL until submitted</td><td>Who last submitted the exam for review, and when</td></tr>
+        <tr><td>reviewed_by_id, reviewed_at</td><td>BIGINT, DATETIME</td><td>FK → authentication_user, SET NULL; NULL until reviewed</td><td>Program Head / Admin who last approved or rejected it, and when</td></tr>
+        <tr><td>rejection_note</td><td>TEXT</td><td>DEFAULT ''</td><td>Reviewer feedback when rejected</td></tr>
+        <tr><td>created_by_id</td><td>BIGINT</td><td>FK → authentication_user, PROTECT; indexed</td><td>Exam creator</td></tr>
+        <tr><td>created_at, updated_at</td><td>DATETIME</td><td>auto</td><td>Audit timestamps</td></tr>
       </tbody>
     </table></div>
-    <h3>exams_approval_event</h3>
+    <h4><code>exams_exam_departments</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Many-to-many join: every department an exam is assigned to, including its home department.</p>
     <div class="table-wrap"><table>
       <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td>exam_id</td><td>INTEGER</td><td>FK → exams_exam</td><td>Exam the event belongs to</td></tr>
-        <tr><td>actor_id</td><td>INTEGER</td><td>FK → authentication_user, SET_NULL</td><td>Who performed the transition</td></tr>
-        <tr><td>action</td><td>VARCHAR(10)</td><td>submit | approve | reject</td><td>One immutable row per transition - the audit trail behind "who approved this and when"</td></tr>
-        <tr><td>note</td><td>TEXT</td><td>blank by default</td><td>Reviewer feedback on reject</td></tr>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>exam_id</td><td>BIGINT</td><td>FK → exams_exam; UNIQUE with department_id</td><td>Exam</td></tr>
+        <tr><td>department_id</td><td>BIGINT</td><td>FK → exams_department</td><td>Department the exam is shared with</td></tr>
       </tbody>
     </table></div>
-    <h3>exam_session, responses, logs, behavior &amp; identity</h3>
+    <h4><code>exams_section</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Logical section within an exam.</p>
     <div class="table-wrap"><table>
-      <thead><tr><th>Table</th><th>Key Fields</th><th>Description</th></tr></thead>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
       <tbody>
-        <tr><td>exam_session</td><td>id (UUID), exam_id, user_id, status, percentage_score, passed</td><td>Timed attempt; UUID used in WebSocket URL</td></tr>
-        <tr><td>responses</td><td>session_id, question_id, answer_text, is_correct, time_spent</td><td>Per-question answers</td></tr>
-        <tr><td>session_logs</td><td>session_id, event_type, details, timestamp</td><td>Lifecycle audit (started, submitted, terminated)</td></tr>
-        <tr><td>behavior_log</td><td>session_id, event_type, score, confidence, metadata</td><td>AI-detected behavioral events</td></tr>
-        <tr><td>behavior_alert</td><td>session_id, alert_type, severity, resolved</td><td>Flagged integrity violations</td></tr>
-        <tr><td>monitoring_identity_reference</td><td>session_id (1:1), embedding (JSON), backend</td><td>Enrolled face vector for identity verification</td></tr>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>exam_id</td><td>BIGINT</td><td>FK → exams_exam, CASCADE; UNIQUE with order</td><td>Parent exam</td></tr>
+        <tr><td>title</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Section heading</td></tr>
+        <tr><td>instructions</td><td>TEXT</td><td>DEFAULT ''</td><td>Section-specific instructions</td></tr>
+        <tr><td>order</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Position within the exam</td></tr>
+        <tr><td>questions_per_page</td><td>INTEGER</td><td>≥ 0, DEFAULT 1 (0 = whole section)</td><td>Paging inside the section</td></tr>
+        <tr><td>created_at</td><td>DATETIME</td><td>auto</td><td>Creation time</td></tr>
       </tbody>
     </table></div>
-    <p class="doc-lead" style="font-size:0.85rem">Full dictionary in <code>database/database_schema.json</code> and Django models under <code>backend/features/</code>.</p>
+    <h4><code>exams_question_pool</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Random-draw pool: N questions picked from the linked questions per attempt.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>exam_id</td><td>BIGINT</td><td>FK → exams_exam, CASCADE</td><td>Parent exam</td></tr>
+        <tr><td>name</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Pool name</td></tr>
+        <tr><td>draw_count</td><td>INTEGER</td><td>≥ 0, DEFAULT 1</td><td>Questions drawn per attempt</td></tr>
+        <tr><td>order</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Position within the exam</td></tr>
+      </tbody>
+    </table></div>
+    <h4><code>exams_question</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">A single question.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>exam_id</td><td>BIGINT</td><td>FK → exams_exam, CASCADE; UNIQUE with order</td><td>Parent exam</td></tr>
+        <tr><td>section_id</td><td>BIGINT</td><td>FK → exams_section, SET NULL, NULL</td><td>Section it belongs to</td></tr>
+        <tr><td>pool_id</td><td>BIGINT</td><td>FK → exams_question_pool, SET NULL, NULL</td><td>Pool it can be drawn from</td></tr>
+        <tr><td>question_text</td><td>TEXT</td><td>NOT NULL</td><td>Question content</td></tr>
+        <tr><td>question_type</td><td>VARCHAR(20)</td><td>multiple_choice | true_false | short_answer | essay; DEFAULT multiple_choice</td><td>Answer format; short answer and essay can go to manual grading</td></tr>
+        <tr><td>options</td><td>JSON</td><td>DEFAULT []</td><td>Choices as <code>{"text": str, "image": url | null}</code>; image options support abstract / psychological items</td></tr>
+        <tr><td>correct_answer</td><td>TEXT</td><td>NOT NULL</td><td>Answer key</td></tr>
+        <tr><td>acceptable_answers</td><td>JSON</td><td>DEFAULT []</td><td>Extra accepted answers for short-answer auto-grading</td></tr>
+        <tr><td>case_sensitive</td><td>BOOLEAN</td><td>DEFAULT false</td><td>Short-answer matching option</td></tr>
+        <tr><td>trim_whitespace</td><td>BOOLEAN</td><td>DEFAULT true</td><td>Short-answer matching option</td></tr>
+        <tr><td>points</td><td>INTEGER</td><td>≥ 0, DEFAULT 1</td><td>Points for a correct answer</td></tr>
+        <tr><td>order</td><td>INTEGER</td><td>DEFAULT 0</td><td>Display order within the exam</td></tr>
+        <tr><td>shuffle_options_override</td><td>BOOLEAN</td><td>NULL = inherit exam setting</td><td>Per-question option shuffle</td></tr>
+        <tr><td>created_at, updated_at</td><td>DATETIME</td><td>auto</td><td>Audit timestamps</td></tr>
+      </tbody>
+    </table></div>
+    <h4><code>exams_question_attachment</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Media file attached to a question.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>question_id</td><td>BIGINT</td><td>FK → exams_question, CASCADE</td><td>Parent question</td></tr>
+        <tr><td>file</td><td>VARCHAR(100)</td><td>file path under <code>questions/{exam}/{question}/</code></td><td>Uploaded file</td></tr>
+        <tr><td>kind</td><td>VARCHAR(16)</td><td>image | pdf | audio</td><td>Media type</td></tr>
+        <tr><td>caption</td><td>VARCHAR(255)</td><td>DEFAULT ''</td><td>Caption shown with the media</td></tr>
+        <tr><td>order</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Display order</td></tr>
+        <tr><td>created_at</td><td>DATETIME</td><td>auto</td><td>Upload time</td></tr>
+      </tbody>
+    </table></div>
+    <h4><code>exams_assignment</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Roster entry: which examinee may take an exam, with per-candidate accommodations.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>exam_id</td><td>BIGINT</td><td>FK → exams_exam, CASCADE; UNIQUE with user_id</td><td>Exam</td></tr>
+        <tr><td>user_id</td><td>BIGINT</td><td>FK → authentication_user, CASCADE; indexed</td><td>Examinee</td></tr>
+        <tr><td>status</td><td>VARCHAR(20)</td><td>invited | eligible | blocked; DEFAULT eligible</td><td>Whether the candidate may start</td></tr>
+        <tr><td>access_code</td><td>VARCHAR(64)</td><td>DEFAULT ''</td><td>Optional code required to start</td></tr>
+        <tr><td>attempts_override</td><td>INTEGER</td><td>NULL = use exam max_attempts</td><td>Per-candidate attempt limit</td></tr>
+        <tr><td>extra_time_minutes</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Accommodation time added to the attempt</td></tr>
+        <tr><td>seat_label</td><td>VARCHAR(32)</td><td>DEFAULT ''</td><td>Seat / room / station, so a proctor can find a flagged examinee in person</td></tr>
+        <tr><td>created_at</td><td>DATETIME</td><td>auto</td><td>When the candidate was added</td></tr>
+      </tbody>
+    </table></div>
+    <h4><code>exams_approval_event</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Immutable audit trail of the submit → review → approve / reject chain.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>exam_id</td><td>BIGINT</td><td>FK → exams_exam, CASCADE</td><td>Exam the event belongs to</td></tr>
+        <tr><td>actor_id</td><td>BIGINT</td><td>FK → authentication_user, SET NULL, NULL</td><td>Who performed the transition</td></tr>
+        <tr><td>action</td><td>VARCHAR(10)</td><td>submit | approve | reject | unpublish</td><td>One row per transition: the record behind "who approved this and when"</td></tr>
+        <tr><td>note</td><td>TEXT</td><td>DEFAULT ''</td><td>Reviewer feedback on reject</td></tr>
+        <tr><td>created_at</td><td>DATETIME</td><td>auto; indexed with exam</td><td>When it happened</td></tr>
+      </tbody>
+    </table></div>
+    <h3 id="dd-d3">D3 - Session &amp; Response Store</h3>
+    <h4><code>user_sessions_exam_session</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">One timed attempt by one examinee, with scores and the running Exam Behavior Index (EBI).</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>UUID</td><td>PK</td><td>Session identifier; also used in the WebSocket URL <code>/ws/monitoring/{id}/</code></td></tr>
+        <tr><td>exam_id</td><td>BIGINT</td><td>FK → exams_exam, PROTECT</td><td>Exam being taken</td></tr>
+        <tr><td>user_id</td><td>BIGINT</td><td>FK → authentication_user, PROTECT</td><td>Examinee</td></tr>
+        <tr><td>status</td><td>VARCHAR(20)</td><td>setup | in_progress | paused | pending_review | completed | terminated | expired; DEFAULT setup</td><td>Attempt lifecycle; only one setup / in_progress / paused session per user (unique constraint)</td></tr>
+        <tr><td>started_at</td><td>DATETIME</td><td>auto</td><td>When the session record was created</td></tr>
+        <tr><td>exam_started_at</td><td>DATETIME</td><td>NULL</td><td>When the timed portion began</td></tr>
+        <tr><td>deadline_at</td><td>DATETIME</td><td>NULL</td><td>Server-computed end of the timed exam</td></tr>
+        <tr><td>submitted_at</td><td>DATETIME</td><td>NULL</td><td>When the exam was submitted</td></tr>
+        <tr><td>time_remaining</td><td>INTEGER</td><td>DEFAULT 0</td><td>Seconds left at submission</td></tr>
+        <tr><td>accommodation_extra_minutes</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Extra time granted for this attempt</td></tr>
+        <tr><td>paused_at</td><td>DATETIME</td><td>NULL unless paused</td><td>When the current proctor pause began</td></tr>
+        <tr><td>paused_total_seconds</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Total paused time; pushes the deadline out so no exam time is lost</td></tr>
+        <tr><td>pause_reason</td><td>VARCHAR(255)</td><td>DEFAULT ''</td><td>Proctor's note shown to the examinee while paused</td></tr>
+        <tr><td>question_order</td><td>JSON</td><td>NULL</td><td>Question IDs in the order presented (after pools and shuffle)</td></tr>
+        <tr><td>option_order</td><td>JSON</td><td>NULL</td><td>Per-question shuffled option order</td></tr>
+        <tr><td>total_score</td><td>INTEGER</td><td>NULL until scored</td><td>Points earned</td></tr>
+        <tr><td>percentage_score</td><td>DECIMAL(5,2)</td><td>0–100, NULL until scored</td><td>Percentage score</td></tr>
+        <tr><td>passed</td><td>BOOLEAN</td><td>NULL until scored</td><td>percentage_score ≥ exam passing_score</td></tr>
+        <tr><td>ebi_average</td><td>FLOAT</td><td>0–100, NULL</td><td>Mean Exam Behavior Index across analysed frames</td></tr>
+        <tr><td>ebi_face_presence_avg, ebi_face_identity_avg, ebi_upper_body_avg, ebi_looking_away_avg</td><td>FLOAT</td><td>NULL</td><td>Component means that show which indicator lowered the EBI</td></tr>
+        <tr><td>ebi_sample_count</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Frames folded into the EBI mean</td></tr>
+        <tr><td>ebi_identity_sample_count</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Frames where identity was evaluated</td></tr>
+        <tr><td>ip_address</td><td>INET</td><td>NULL</td><td>Client IP for security tracking</td></tr>
+        <tr><td>user_agent</td><td>TEXT</td><td>NULL</td><td>Browser / client information</td></tr>
+      </tbody>
+    </table></div>
+    <h4><code>user_sessions_response</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">One answer to one question within a session.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>session_id</td><td>UUID</td><td>FK → user_sessions_exam_session, CASCADE; UNIQUE with question_id</td><td>Parent session</td></tr>
+        <tr><td>question_id</td><td>BIGINT</td><td>FK → exams_question, PROTECT</td><td>Question answered</td></tr>
+        <tr><td>answer_text</td><td>TEXT</td><td>NOT NULL</td><td>Examinee's answer</td></tr>
+        <tr><td>is_correct</td><td>BOOLEAN</td><td>DEFAULT false; indexed</td><td>Auto-grade result</td></tr>
+        <tr><td>flagged_for_review</td><td>BOOLEAN</td><td>DEFAULT false; indexed</td><td>Needs manual grading (essays, unmatched short answers)</td></tr>
+        <tr><td>points_awarded</td><td>INTEGER</td><td>NULL = use auto-grade</td><td>Grader's manual score</td></tr>
+        <tr><td>grader_comment</td><td>TEXT</td><td>DEFAULT ''</td><td>Feedback from the grader</td></tr>
+        <tr><td>graded_by_id, graded_at</td><td>BIGINT, DATETIME</td><td>FK → authentication_user, SET NULL; NULL</td><td>Who graded it, and when</td></tr>
+        <tr><td>time_spent</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Seconds spent on the question</td></tr>
+        <tr><td>answered_at</td><td>DATETIME</td><td>auto</td><td>When the answer was first saved</td></tr>
+        <tr><td>autosaved_at</td><td>DATETIME</td><td>NULL</td><td>Last autosave during the attempt</td></tr>
+      </tbody>
+    </table></div>
+    <h4><code>user_sessions_session_log</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Lifecycle and browser-event audit log for a session.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>BIGINT</td><td>PK, auto</td><td>Row identifier</td></tr>
+        <tr><td>session_id</td><td>UUID</td><td>FK → user_sessions_exam_session, CASCADE</td><td>Parent session</td></tr>
+        <tr><td>event_type</td><td>VARCHAR(20)</td><td>started | submitted | terminated | expired | resumed | paused | exam_began | tab_hidden | tab_visible | fullscreen_exit</td><td>What happened</td></tr>
+        <tr><td>details</td><td>JSON</td><td>DEFAULT {}</td><td>Event details</td></tr>
+        <tr><td>ip_address</td><td>INET</td><td>NULL</td><td>IP at the time of the event</td></tr>
+        <tr><td>timestamp</td><td>DATETIME</td><td>auto; indexed</td><td>When it happened</td></tr>
+      </tbody>
+    </table></div>
+    <h3 id="dd-d4">D4 - Identity Reference Store</h3>
+    <h4><code>monitoring_identity_reference</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Face embedding enrolled at session start and compared against every later frame.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>UUID</td><td>PK</td><td>Row identifier</td></tr>
+        <tr><td>session_id</td><td>UUID</td><td>FK → user_sessions_exam_session, CASCADE, UNIQUE (1 : 1)</td><td>Session the reference belongs to (one per session, so references never leak across sessions)</td></tr>
+        <tr><td>embedding</td><td>JSON</td><td>DEFAULT []</td><td>Reference face vector (list of floats; 512-D with ArcFace)</td></tr>
+        <tr><td>dims</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Embedding dimensionality</td></tr>
+        <tr><td>backend</td><td>VARCHAR(32)</td><td>production | stub | disabled; DEFAULT stub</td><td>Pipeline backend that produced the embedding</td></tr>
+        <tr><td>created_at, updated_at</td><td>DATETIME</td><td>auto</td><td>Audit timestamps</td></tr>
+      </tbody>
+    </table></div>
+    <h3 id="dd-d5">D5 - Behavior &amp; Alert Log</h3>
+    <h4><code>behavior_log</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Behavioral events detected by the AI pipeline.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>UUID</td><td>PK</td><td>Row identifier</td></tr>
+        <tr><td>session_id</td><td>UUID</td><td>FK → user_sessions_exam_session, CASCADE</td><td>Session</td></tr>
+        <tr><td>event_type</td><td>VARCHAR(32)</td><td>no_face | looking_away | bad_posture | leaving_seat | identity_mismatch | suspicious_pattern; indexed</td><td>Detected behavior</td></tr>
+        <tr><td>score</td><td>FLOAT</td><td>0.0–1.0</td><td>Compliance score for the event</td></tr>
+        <tr><td>confidence</td><td>FLOAT</td><td>DEFAULT 0.0</td><td>Detector confidence</td></tr>
+        <tr><td>metadata</td><td>JSON</td><td>DEFAULT {}</td><td>Raw detection details</td></tr>
+        <tr><td>timestamp</td><td>DATETIME</td><td>auto; indexed with session</td><td>When it was detected</td></tr>
+      </tbody>
+    </table></div>
+    <h4><code>behavior_alert</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Integrity warnings raised for proctors.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>UUID</td><td>PK</td><td>Row identifier</td></tr>
+        <tr><td>session_id</td><td>UUID</td><td>FK → user_sessions_exam_session, CASCADE</td><td>Session</td></tr>
+        <tr><td>alert_type</td><td>VARCHAR(64)</td><td>NOT NULL</td><td>Kind of violation</td></tr>
+        <tr><td>severity</td><td>VARCHAR(16)</td><td>low | medium | high; DEFAULT medium</td><td>Escalation level</td></tr>
+        <tr><td>message</td><td>TEXT</td><td>NOT NULL</td><td>Human-readable description</td></tr>
+        <tr><td>metric_pct</td><td>FLOAT</td><td>NULL</td><td>Metric value that triggered the alert (%)</td></tr>
+        <tr><td>resolved</td><td>BOOLEAN</td><td>DEFAULT false; indexed</td><td>Cleared by staff</td></tr>
+        <tr><td>created_at</td><td>DATETIME</td><td>auto; indexed with session</td><td>When it was raised</td></tr>
+      </tbody>
+    </table></div>
+    <h3 id="dd-d6">D6 - Evidence Snapshot Store</h3>
+    <h4><code>monitoring_session_snapshot</code></h4>
+    <p class="doc-lead" style="font-size:0.9rem">Proctoring stills kept as evidence: the frame behind each warning, and the last frames before a termination. The JPEG is stored in the database, not under <code>MEDIA_ROOT</code>, so it can only be read through permission-checked endpoints.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Field</th><th>Type</th><th>Constraints</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>id</td><td>UUID</td><td>PK</td><td>Row identifier</td></tr>
+        <tr><td>session_id</td><td>UUID</td><td>FK → user_sessions_exam_session, CASCADE</td><td>Session</td></tr>
+        <tr><td>user_id</td><td>BIGINT</td><td>FK → authentication_user, PROTECT</td><td>Examinee shown in the frame</td></tr>
+        <tr><td>exam_id</td><td>BIGINT</td><td>FK → exams_exam, PROTECT</td><td>Exam</td></tr>
+        <tr><td>kind</td><td>VARCHAR(16)</td><td>warning | termination</td><td>Why the frame was kept</td></tr>
+        <tr><td>alert_id</td><td>UUID</td><td>FK → behavior_alert, SET NULL, NULL</td><td>Warning this frame triggered (warning snapshots)</td></tr>
+        <tr><td>session_log_id</td><td>BIGINT</td><td>FK → user_sessions_session_log, SET NULL, NULL</td><td>Termination record (termination snapshots)</td></tr>
+        <tr><td>label</td><td>VARCHAR(128)</td><td>blank allowed</td><td>What the frame was flagged for</td></tr>
+        <tr><td>flags</td><td>JSON</td><td>DEFAULT []</td><td>Anomaly types reported for the frame</td></tr>
+        <tr><td>image</td><td>BYTEA</td><td>NOT NULL</td><td>JPEG bytes</td></tr>
+        <tr><td>width, height</td><td>INTEGER</td><td>≥ 0, DEFAULT 0</td><td>Image size in pixels</td></tr>
+        <tr><td>captured_at</td><td>DATETIME</td><td>NOT NULL; indexed with session, kind</td><td>When the frame was captured</td></tr>
+        <tr><td>created_at</td><td>DATETIME</td><td>auto; indexed</td><td>When it was saved</td></tr>
+      </tbody>
+    </table></div>
+    <p class="doc-lead" style="font-size:0.85rem">Source of truth: the Django models in <code>backend/features/*/models.py</code>. Regenerate this section whenever a migration adds, removes or changes a column.</p>
 
     <h2 id="access-control">Access Control (RBAC + PBAC)</h2>
     <p>Per the Capstone Defense Revision Directive, Area 01 ("Authentication, Roles &amp; Access Control"): a single administrator account is a bottleneck and a single point of failure. Access is enforced in three tiers (<code>backend/core/security/</code>), mirroring the LCC OSAS System pattern: <strong>role guard</strong> (is this broadly this kind of user?), <strong>module access</strong> (can this user see this feature area?), and <strong>action permission</strong> (can this user perform this specific mutating operation?). An explicit per-user deny always overrides a role default; an explicit grant can extend it — so an admin can delegate a narrower slice of access without changing anyone's role.</p>
